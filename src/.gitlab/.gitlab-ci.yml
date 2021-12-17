@@ -1,0 +1,33 @@
+stages:
+  - pipeline_event
+
+pipeline-event-job:
+  stage: pipeline_event
+  image: "dockerhub.io/jupyterSCINCO/gitlab-pipeline:latest"
+  rules:
+      # Trigger job on push
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+      # Trigger job on merge
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event'
+      when: always
+  variables:
+    # All variables except for $JWT and $WEBHOOK_URL are 
+    # predefined varibles in gitlab.
+    # $JWT is used to authenticate the source of the api call in notify.sh
+    # $WEBHOOK_URL is the endpoint in the build service VM that triggers the build process
+    # Non-predefined variables are set and stored in the GitLab repo.
+    # (Settings -> CI/CD -> Variables)
+    WEBHOOK_URL: "$WEBHOOK_URL"
+    JWT: "$JWT"
+    WEBHOOK_PAYLOAD: '{
+        "action": "$CI_JOB_STAGE",
+        "branch": "$CI_COMMIT_BRANCH",
+        "commit": "$CI_COMMIT_SHA",
+        "event": "$CI_PIPELINE_SOURCE",
+        "message": "$CI_COMMIT_MESSAGE",
+        "user": "$GITLAB_USER_LOGIN"
+      }'
+  script:
+      # Sends an HTTP POST request containing the payload to the webhook url
+    - bash /pipeline_event.sh
