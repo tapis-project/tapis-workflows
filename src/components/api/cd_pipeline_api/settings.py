@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 from pathlib import Path
 
+import pymysql
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -74,11 +76,19 @@ WSGI_APPLICATION = 'cd_pipeline_api.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "cicd", # TODO os.environ["DB_NAME"]
+        "HOST": "localhost", # TODO os.environ["DB_HOST"]
+        "USER": "root", # TODO os.environ["DB_USER"]
+        "PASSWORD": "quanta10" # TODO os.environ["DB_PASSWORD"]
     }
 }
+
+# Fake PyMySQL's version and install as MySQLdb
+# https://adamj.eu/tech/2020/02/04/how-to-use-pymysql-with-django/
+pymysql.version_info = (1, 4, 2, "final", 0)
+pymysql.install_as_MySQLdb()
 
 
 # Password validation
