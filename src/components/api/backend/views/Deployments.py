@@ -3,7 +3,7 @@ from django.views import View
 import inspect
 
 
-class Configs(View):
+class Deployments(View):
     def get(self, request):
         return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
 
