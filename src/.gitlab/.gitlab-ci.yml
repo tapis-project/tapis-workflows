@@ -12,16 +12,16 @@ pipeline-event-job:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event'
       when: always
   variables:
-    # All variables except for $JWT and $WEBHOOK_URL are 
+    # All variables except for $ACCESS_TOKEN and $WEBHOOK_URL are 
     # predefined varibles in gitlab.
-    # $JWT is used to authenticate the source of the api call in notify.sh
+    # $ACCESS_TOKEN is used to authenticate the source of the api call in notify.sh
     # $WEBHOOK_URL is the endpoint in the build service VM that triggers the build process
     # Non-predefined variables are set and stored in the GitLab repo.
     # (Settings -> CI/CD -> Variables)
     WEBHOOK_URL: "$WEBHOOK_URL"
-    JWT: "$JWT"
+    ACCESS_TOKEN: "$ACCESS_TOKEN"
     WEBHOOK_PAYLOAD: '{
-        "action": "$CI_JOB_STAGE",
+        "source": "gitlab",
         "branch": "$CI_COMMIT_BRANCH",
         "commit": "$CI_COMMIT_SHA",
         "event": "$CI_PIPELINE_SOURCE",
