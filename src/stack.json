@@ -7,15 +7,16 @@
         "resources": [
           {
             "kind": "PersistentVolumeClaim",
-            "configPath": "src/registry/.kube/pvc.yml"
+            "configPath": "src/components/database/.kube/pvc.yml"
           },
           {
             "kind": "Service",
-            "configPath": "src/registry/.kube/service.yml"
+            "configPath": "src/components/database/.kube/service.yml"
           },
           {
             "kind": "Deployment",
-            "configPath": "src/registry/.kube/deployment.yml"
+            "configPath": "src/components/database/.kube/deployment.yml",
+            "onBurndown": "delete"
           }
         ]
       }
@@ -27,11 +28,11 @@
         "resources": [
           {
             "kind": "Service",
-            "resourceConfigPath": "src/api/.kube/"
+            "resourceConfigPath": "src/components/api/.kube/"
           },
           {
             "kind": "Deployment",
-            "resourceConfigPath": "src/api/.kube/"
+            "resourceConfigPath": "src/components/api/.kube/"
           }
         ]
       }
@@ -40,7 +41,7 @@
       "type": "Kubernetes",
       "spec": {
         "name": "ingress",
-        "resourceConfigPath": "src/registry/.kube/",
+        "resourceConfigPath": "src/components/registry/.kube/",
         "resources": []
       }
     },
@@ -51,11 +52,11 @@
         "resources": [
           {
             "kind": "Service",
-            "resourceConfigPath": "src/build/.kube/service.yml"
+            "resourceConfigPath": "src/components/build/.kube/service.yml"
           },
           {
             "kind": "Deployment",
-            "resourceConfigPath": "src/build/.kube/deployment.yml"
+            "resourceConfigPath": "src/components/build/.kube/deployment.yml"
           }
         ]
       }
@@ -67,15 +68,15 @@
         "resources": [
           {
             "kind": "PersistentVolumeClaim",
-            "configPath": "src/message/.kube/pvc.yml"
+            "configPath": "src/components/message/.kube/pvc.yml"
           },
           {
             "kind": "Service",
-            "configPath": "src/message/.kube/service.yml"
+            "configPath": "src/components/message/.kube/service.yml"
           },
           {
             "kind": "Deployment",
-            "configPath": "src/message/.kube/deployment.yml"
+            "configPath": "src/components/message/.kube/deployment.yml"
           }
         ]
       }
@@ -87,11 +88,11 @@
         "resources": [
           {
             "kind": "Service",
-            "configPath": "src/notification/.kube/service.yml"
+            "configPath": "src/components/notification/.kube/service.yml"
           },
           {
             "kind": "Deployment",
-            "configPath": "src/notification/.kube/deployment.yml"
+            "configPath": "src/components/notification/.kube/deployment.yml"
           }
         ]
       }
@@ -102,16 +103,18 @@
         "name": "registry",
         "resources": [
           {
-            "kind": "PersistentVolumeClaim",
-            "configPath": "src/registry/.kube/pvc.yml"
-          },
-          {
-            "kind": "Service",
-            "configPath": "src/registry/.kube/service.yml"
+            "kind": "ConfigMap",
+            "configPath": "src/components/registry/.kube/service.yml",
+            "onBurndown": "delete"
           },
           {
             "kind": "Deployment",
-            "configPath": "src/registry/.kube/deployment.yml"
+            "configPath": "src/components/registry/.kube/deployment.yml",
+            "onBurndown": "delete"
+          },
+          {
+            "kind": "Service",
+            "configPath": "src/components/registry/.kube/service.yml"
           }
         ]
       }
