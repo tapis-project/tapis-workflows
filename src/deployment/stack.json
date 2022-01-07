@@ -28,11 +28,11 @@
         "resources": [
           {
             "kind": "Service",
-            "resourceConfigPath": "src/components/api/.kube/"
+            "configPath": "src/components/api/.kube/"
           },
           {
             "kind": "Deployment",
-            "resourceConfigPath": "src/components/api/.kube/"
+            "configPath": "src/components/api/.kube/"
           }
         ]
       }
@@ -41,7 +41,7 @@
       "type": "Kubernetes",
       "spec": {
         "name": "ingress",
-        "resourceConfigPath": "src/components/registry/.kube/",
+        "configPath": "src/components/registry/.kube/",
         "resources": []
       }
     },
@@ -52,11 +52,11 @@
         "resources": [
           {
             "kind": "Service",
-            "resourceConfigPath": "src/components/build/.kube/service.yml"
+            "configPath": "src/components/build/.kube/service.yml"
           },
           {
             "kind": "Deployment",
-            "resourceConfigPath": "src/components/build/.kube/deployment.yml"
+            "configPath": "src/components/build/.kube/deployment.yml"
           }
         ]
       }

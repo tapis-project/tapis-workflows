@@ -1,0 +1,50 @@
+version: "3.8"
+services:
+  database:
+    container_name: database
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_DATABASE: "cicd"
+      MYSQL_USERNAME: "root"
+      MYSQL_PASSWORD: "quanta10"
+      MYSQL_ROOT_PASSWORD: "quanta10"
+    ports:
+      - "3306:3306"
+    expose:
+      - "3306"
+    volumes:
+      - mysql-db:/var/lib/mysql
+
+  api:
+    container_name: api
+    tty: true
+    build: ./../../../components/api/src/
+    command: python3 manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./../../../components/api/src/:/cicd/
+    ports:
+      - "8000:8000"
+    depends_on:
+      - database
+
+  message:
+    container_name: message
+    image: rabbitmq:3.9.11-management
+    environment:
+      RABBITMQ_DEFAULT_USER: "dev"
+      RABBITMQ_DEFAULT_PASS: "dev"
+    ports:
+    - "5672:5672"
+    - "15672:15672"
+
+  build:
+    container_name: build
+    volumes:
+      - ./../../../components/build/src/:/cicd/
+    ports:
+      - "9000:9000"
+
+volumes:
+  mysql-db:
+    

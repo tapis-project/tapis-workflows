@@ -1,6 +1,6 @@
 import sys
 
-from deployers.Kubernetes import deployer
+from deployment.deployers.Kubernetes import deployer
 
 
 args = sys.argv[1:]
@@ -12,7 +12,7 @@ if len(args) == 0:
 action = args[0]
 
 if hasattr(deployer, action) == False:
-    print(f"Deployer has no method {action}")
+    print(f"Deployer has no action {action}")
     sys.exit(1)
 
 components = []

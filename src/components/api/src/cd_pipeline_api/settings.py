@@ -80,7 +80,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "cicd", # TODO os.environ["DB_NAME"]
-        "HOST": "localhost", # TODO os.environ["DB_HOST"]
+        "HOST": "database", # TODO os.environ["DB_HOST"]
         "USER": "root", # TODO os.environ["DB_USER"]
         "PASSWORD": "quanta10" # TODO os.environ["DB_PASSWORD"]
     }

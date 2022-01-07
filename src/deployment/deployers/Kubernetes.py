@@ -2,7 +2,7 @@ import subprocess
 
 from configs import BASE_DIR
 
-from deployers.BaseDeployer import BaseDeployer
+from deployment.deployers.BaseDeployer import BaseDeployer
 
 
 class Kubernetes(BaseDeployer):
@@ -11,6 +11,9 @@ class Kubernetes(BaseDeployer):
 
     def handle(self, action_name, component_names):
         if len(component_names) == 0:
+            raise Exception(f"You must provide a list of components upon which to run the '{action_name}' action")
+
+        if component_names[0] == "--all":
             component_names = [ component.spec.name for component in self.components ]
 
         components = self._get_components(component_names)
@@ -18,11 +21,13 @@ class Kubernetes(BaseDeployer):
         action = getattr(self, action_name)
 
         for component in components:
+            print(f"Performing action '{action_name}' on component '{component.spec.name}':")
             action(component.spec.resources)
 
-    def burnup(self, resources):
+    def up(self, resources):
         cmd_base = ["kubectl", "apply", "-f"]
         for resource in resources:
+            print(resource.kind + ":")
             if hasattr(resource, "onBurnup"):
                 # TODO Do things on burnup
                 pass
@@ -35,10 +40,11 @@ class Kubernetes(BaseDeployer):
 
             print(process.stdout)
 
-    def burndown(self, resources):
+    def down(self, resources):
         cmd_base = ["kubectl", "delete", "-f"]
         for resource in resources:
             if hasattr(resource, "onBurndown") and resource.onBurndown == "delete":
+                print(resource.kind + ":")
                 cmd = cmd_base[:]
                 cmd.append(BASE_DIR + resource.configPath)
                 process = subprocess.run(
