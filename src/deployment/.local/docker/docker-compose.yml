@@ -7,8 +7,8 @@ services:
     environment:
       MYSQL_DATABASE: "cicd"
       MYSQL_USERNAME: "root"
-      MYSQL_PASSWORD: "quanta10"
-      MYSQL_ROOT_PASSWORD: "quanta10"
+      MYSQL_PASSWORD: "dev"
+      MYSQL_ROOT_PASSWORD: "dev"
     ports:
       - "3306:3306"
     expose:
@@ -23,6 +23,15 @@ services:
     command: python3 manage.py runserver 0.0.0.0:8000
     volumes:
       - ./../../../components/api/src/:/cicd/
+    environment:
+      DB_HOST: "database"
+      DB_NAME: "cicd"
+      DB_USER: "root"
+      DB_PASSWORED: "dev"
+      BROKER_USER: "dev"
+      BROKER_PASSWORD: "dev"
+      BROKER_URL: "message"
+      BROKER_PORT: 5672
     ports:
       - "8000:8000"
     depends_on:
@@ -40,10 +49,19 @@ services:
 
   build:
     container_name: build
+    tty: true
+    build: ./../../../components/build/src/
     volumes:
       - ./../../../components/build/src/:/cicd/
+    environment:
+      BROKER_USER: "dev"
+      BROKER_PASSWORD: "dev"
+      BROKER_URL: "message"
+      BROKER_PORT: 5672
     ports:
       - "9000:9000"
+    depends_on:
+      - message
 
 volumes:
   mysql-db:
