@@ -51,6 +51,7 @@ services:
     container_name: build
     tty: true
     build: ./../../../components/build/src/
+    command: python3 main.py
     volumes:
       - ./../../../components/build/src/:/cicd/
     environment:

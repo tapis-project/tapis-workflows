@@ -1,15 +1,26 @@
-import os
+from json.decoder import JSONDecodeError
+import os, sys, time
 
 import pika
 
 from pika.exchange_type import ExchangeType
 
+from utils.bytes_to_json import bytes_to_json
+from services.ImageBuilder import image_builder as builder
+from conf.configs import MAX_CONNECTION_ATTEMPTS, RETRY_DELAY
+
 
 # Define on_message_callback
 def on_message_callback(ch, method, properties, body):
-    print(body)
+    try:
+        deployment = bytes_to_json(body)
+    except JSONDecodeError:
+        # TODO reject the message if the body is not valid json
+        return
 
-# Initialize connection to the message queue
+    builder.build(deployment)
+
+# Initialize connection parameters
 credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
 connection_parameters = pika.ConnectionParameters(
     os.environ["BROKER_URL"],
@@ -18,7 +29,25 @@ connection_parameters = pika.ConnectionParameters(
     credentials
 )
 
-connection = pika.BlockingConnection(connection_parameters)
+# Attempt to connect to the message broker
+connected = False
+connection_attempts = 0
+print("Starting connection with message broker...")
+while connected == False and connection_attempts <= MAX_CONNECTION_ATTEMPTS:
+    try:
+        connection_attempts = connection_attempts + 1
+        connection = pika.BlockingConnection(connection_parameters)
+        connected = True
+    except Exception:
+        print(f"Attempting to connect to message broker... Attempts({connection_attempts})")
+        time.sleep(RETRY_DELAY)
+
+# Kill the build service if unable to connect
+if connected == False:
+    print(f"Error: Maximum connection attempts reached({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker.")
+    sys.exit(1)
+
+print("Successfully connected to message broker")
 
 # Create a channel and declare an exchange
 channel = connection.channel()
