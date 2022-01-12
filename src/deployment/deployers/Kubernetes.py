@@ -1,6 +1,6 @@
 import subprocess
 
-from configs import BASE_DIR
+from conf.configs import BASE_DIR
 
 from deployment.deployers.BaseDeployer import BaseDeployer
 

@@ -2,7 +2,7 @@ import json
 
 from types import SimpleNamespace
 
-from configs import STACK_FILE
+from conf.configs import STACK_FILE
 
 
 class BaseDeployer:

@@ -71,7 +71,7 @@ services:
     image: registry:2
     restart: always
     volumes:
-      - ./../../../deployment/local/docker/volumes/docker-registry:/var/lib/registry
+      - ./../../../deployment/local/.volumes/docker/docker-registry:/var/lib/registry
     ports:
       - "5000:5000"
 

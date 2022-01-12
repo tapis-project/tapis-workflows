@@ -1,4 +1,4 @@
 __pycache__/
 *.py[cod]
 
-src/deployment/local/*/volumes/
+src/deployment/local/.volumes/

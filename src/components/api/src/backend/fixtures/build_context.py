@@ -1,4 +1,4 @@
-deployment = {
+build_context = {
     "branch": "main",
     "context": "https://github.com/nathandf/jscicd-image-demo.git",
     "dockerfile_dir": "src/Dockerfile",
