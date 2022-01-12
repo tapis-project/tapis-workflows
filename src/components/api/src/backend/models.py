@@ -30,13 +30,19 @@ class Build(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-class Deployment(models.Model):
-    image_repository = models.CharField(max_length=128)
-    branch = models.CharField(max_length=255, null=True)
-    user = models.CharField(max_length=255, null=True)
+class BuildContext(models.Model):
+    branch = models.CharField(max_length=255)
+    context = models.CharField(max_length=64)
+    destination = models.CharField(max_length=128)
+    dockerfile_dir = models.CharField(max_length=255, default="/")
     event_type = models.CharField(max_length=1, choices=EVENT_TYPES, null=True)
+    image_tag = models.CharField(max_length=64, null=True)
+    name = models.CharField(max_length=128)
+    repository_url = models.CharField(max_length=255)
+    user = models.CharField(max_length=255, null=True)
 
 class Event(models.Model):
+    source = models.CharField(max_length=255)
     branch = models.CharField(max_length=255)
     user = models.CharField(max_length=255)
     commit = models.CharField(max_length=128)

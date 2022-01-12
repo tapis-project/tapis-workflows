@@ -81,10 +81,10 @@ WSGI_APPLICATION = 'cd_pipeline_api.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "cicd", # TODO os.environ["DB_NAME"]
-        "HOST": "database", # TODO os.environ["DB_HOST"]
-        "USER": "root", # TODO os.environ["DB_USER"]
-        "PASSWORD": "quanta10" # TODO os.environ["DB_PASSWORD"]
+        "NAME": os.environ["DB_NAME"],
+        "HOST": os.environ["DB_HOST"],
+        "USER": os.environ["DB_USER"],
+        "PASSWORD": os.environ["DB_PASSWORD"]
     }
 }
 

@@ -21,7 +21,7 @@ pipeline-event-job:
     WEBHOOK_URL: "$WEBHOOK_URL"
     ACCESS_TOKEN: "$ACCESS_TOKEN"
     WEBHOOK_PAYLOAD: '{
-        "source": "gitlab",
+        "source": "CI_PROJECT_PATH",
         "branch": "$CI_COMMIT_BRANCH",
         "commit": "$CI_COMMIT_SHA",
         "event": "$CI_PIPELINE_SOURCE",

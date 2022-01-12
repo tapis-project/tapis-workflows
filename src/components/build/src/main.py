@@ -6,19 +6,19 @@ import pika
 from pika.exchange_type import ExchangeType
 
 from utils.bytes_to_json import bytes_to_json
-from services.ImageBuilder import image_builder as builder
+from services.KubernetesImageBuilder import image_builder as builder
 from conf.configs import MAX_CONNECTION_ATTEMPTS, RETRY_DELAY
 
 
 # Define on_message_callback
 def on_message_callback(ch, method, properties, body):
     try:
-        deployment = bytes_to_json(body)
+        build_context = bytes_to_json(body)
     except JSONDecodeError:
         # TODO reject the message if the body is not valid json
         return
 
-    builder.build(deployment)
+    builder.build(build_context)
 
 # Initialize connection parameters
 credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])

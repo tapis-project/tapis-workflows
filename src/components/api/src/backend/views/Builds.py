@@ -4,20 +4,22 @@ import pika
 
 from django.http import HttpResponse
 from django.views import View
-from django.conf import settings
 from pika.exchange_type import ExchangeType
+
+# TODO Remove
+from backend.fixtures.build_context import build_context
 
 
 class Builds(View):
 
     def get(self, request):
-        # TODO remove: Testing post
+        # TODO Remove: Testing build
         return self.post(request)
     
     def post(self, request):
-        # Fetch the deployment that matches incoming request
-        # TODO fetch deployent data
-        message = json.dumps({"deployment": "data"})
+        # Fetch the build context that matches incoming request
+        # TODO fetch build context data
+        message = json.dumps(build_context)
 
         # Initialize connection to the message queue
         credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
@@ -40,7 +42,7 @@ class Builds(View):
         # Create the build object with status QUEUED
         # TODO create build object
 
-        # Respond with the deployment and build data
+        # Respond with the build_context and build data
         return HttpResponse(f"Build data here")
 
     def put(self, request):
