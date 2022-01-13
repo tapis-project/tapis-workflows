@@ -34,7 +34,7 @@ class BuildContext(models.Model):
     branch = models.CharField(max_length=255)
     context = models.CharField(max_length=64)
     destination = models.CharField(max_length=128)
-    dockerfile_dir = models.CharField(max_length=255, default="/")
+    dockerfile_path = models.CharField(max_length=255, default="/")
     event_type = models.CharField(max_length=1, choices=EVENT_TYPES, null=True)
     image_tag = models.CharField(max_length=64, null=True)
     name = models.CharField(max_length=128)

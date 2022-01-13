@@ -6,7 +6,7 @@ import pika
 from pika.exchange_type import ExchangeType
 
 from utils.bytes_to_json import bytes_to_json
-from services.KubernetesImageBuilder import image_builder as builder
+from ImageBuilders.Kaniko import image_builder as builder
 from conf.configs import MAX_CONNECTION_ATTEMPTS, RETRY_DELAY
 
 

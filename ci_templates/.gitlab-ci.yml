@@ -30,4 +30,4 @@ pipeline-event-job:
       }'
   script:
       # Sends an HTTP POST request containing the payload to the webhook url
-    - bash /pipeline_event.sh
+    - bash /scripts/pipeline_event.sh
