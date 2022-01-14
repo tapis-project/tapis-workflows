@@ -9,7 +9,7 @@ pipeline-event-job:
     - if: '$CI_PIPELINE_SOURCE == "push"'
       when: always
       # Trigger job on merge
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
   variables:
     # All variables except for $ACCESS_TOKEN and $WEBHOOK_URL are 
@@ -28,6 +28,8 @@ pipeline-event-job:
         "message": "$CI_COMMIT_MESSAGE",
         "user": "$GITLAB_USER_LOGIN"
       }'
+  # Sends an HTTP POST request containing the payload to the webhook url
   script:
-      # Sends an HTTP POST request containing the payload to the webhook url
-    - bash /scripts/pipeline_event.sh
+    'curl -X POST -H "Content-Type: application/json" \
+      -d $WEBHOOK_PAYLOAD \
+      $WEBHOOK_URL'
