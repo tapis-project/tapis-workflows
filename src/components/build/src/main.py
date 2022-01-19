@@ -1,24 +1,32 @@
-from json.decoder import JSONDecodeError
 import os, sys, time
+
+from json.decoder import JSONDecodeError
 
 import pika
 
 from pika.exchange_type import ExchangeType
 
 from utils.bytes_to_json import bytes_to_json
-from ImageBuilders.Kaniko import image_builder as builder
+from core.BuilderResolver import builder_resolver as resolver
 from conf.configs import MAX_CONNECTION_ATTEMPTS, RETRY_DELAY
 
 
-# Define on_message_callback
+# Resolve the image builder 
 def on_message_callback(ch, method, properties, body):
     try:
-        build_context = bytes_to_json(body)
+        request = bytes_to_json(body)
     except JSONDecodeError:
         # TODO reject the message if the body is not valid json
         return
 
-    builder.build(build_context)
+    # Returns the image builder specified in the env vars and builds the image
+    # based on the request sent from the message broker
+    builder = resolver.resolve(os.environ["BUILD_METHOD"])
+    
+    try:
+        builder.build(request)
+    except Exception as e:
+        print(e)
 
 # Initialize connection parameters
 credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])

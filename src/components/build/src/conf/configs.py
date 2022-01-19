@@ -1,3 +1,5 @@
+import os
+
 from pathlib import Path
 
 
@@ -7,4 +9,6 @@ MAX_CONNECTION_ATTEMPTS = 24
 RETRY_DELAY = 5
 
 BASE_KANIKO_FILE = BASE_DIR + "conf/kaniko-base.yml"
-WORK_DIR = BASE_DIR + "work/"
+SCRATCH_DIR = BASE_DIR + "scratch/"
+
+DEPLOYMENT_TYPE = os.environ["DEPLOYMENT_TYPE"]

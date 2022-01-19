@@ -9,7 +9,7 @@ spec:
       containers:
       - name: kaniko
         image: gcr.io/kaniko-project/executor:debug
-        # args: ['--context=git://github.com/mpackard/dockertest.git','--dockerfile=Dockerfile','--destination=mrghort/centosutil:latest']
+        # args: ['--context=git://github.com/example/some-repo.git','--dockerfile=Dockerfile','--destination=example/some-repo:some-tag']
         args: []
         volumeMounts:
         - name: docker-config

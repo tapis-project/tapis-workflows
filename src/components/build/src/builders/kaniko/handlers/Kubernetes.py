@@ -1,21 +1,27 @@
-import json, time, uuid
+import time, uuid, os
 
 import yaml
 
-from conf.configs import BASE_KANIKO_FILE, WORK_DIR
+from conf.configs import BASE_KANIKO_FILE, SCRATCH_DIR
+from core.AbstractBuildHandler import AbstractBuildHandler
 
 
-class Kaniko:
-
-    def build(self, request):
-        # Load a fresh kaniko config from the kaniko template file
+class Kubernetes(AbstractBuildHandler):
+    def handle(self, build_context):
+        # Load a fresh kaniko base config
         self.load_config()
 
         # Build the config file with the data of the build request
-        # and store it in the work dir
-        config_path = self._prepare_config(request)
+        # and store it in the scratch dir
+        config_path = self._prepare_config(build_context)
 
-        print(config_path)
+        print(f"Build start: {config_path}")
+        # TODO apply the kaniko config in the scratch dir using the kubernetes api
+        print(f"Build end: {config_path}")
+
+        # Delete the config from the scratch dir
+        os.remove(config_path)
+        print(f"Kaniko config deleted: {config_path}")
 
     def add_arg(self, arg, value):
         if value is not None:
@@ -24,27 +30,27 @@ class Kaniko:
         # kaniko config
         self.config["spec"]["template"]["spec"]["containers"][0]["args"].append(f"{arg}{value}")
 
-    def _prepare_config(self, request):
-        build_context = json.loads(request)
+    def _prepare_config(self, build_context):
 
         # Add the context, docerkfile, and destination(or --no-push) arguments that
         # kaniko requires
         # --context is the git repositry that kaniko pulls for the build
-        self.add_arg("--context", build_context["context"])
+        self.add_arg("--context", build_context.context)
 
         # --dockerfile is the path to the Dockerfile in the repository
-        self.add_arg("--dockerfile", build_context["dockerfile_path"])
+        self.add_arg("--dockerfile", build_context.dockerfile_path)
 
         # --destination is the image registry that the newly built image will be pushed to.
         # If none is specificed, the argument --no-push will be passed to kaniko
-        if build_context["destination"] == None:
+        if build_context.destination == None:
             self.add_arg("--no-push")
         else:
-            self.add_arg("--destination", build_context["destination"])
+            self.add_arg("--destination", build_context.destination)
 
         # Create a unique filename for the kaniko config
         filename = self._create_config_filename()
-        config_path = WORK_DIR + filename
+        config_path = SCRATCH_DIR + filename
+        print(f"Kaniko config created: {config_path}")
 
         # Write the arguments to the config
         file = open(config_path, "w")
@@ -61,5 +67,5 @@ class Kaniko:
             open(BASE_KANIKO_FILE, "r").read()
         )
 
-
-image_builder = Kaniko()
+handler = Kubernetes()
+        
