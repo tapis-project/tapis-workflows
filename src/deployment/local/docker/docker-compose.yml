@@ -32,6 +32,8 @@ services:
       BROKER_PASSWORD: "dev"
       BROKER_URL: "message"
       BROKER_PORT: 5672
+      REGISTRY_USER: nathandf
+      REGISTRY_TOKEN: a190f902-d418-491a-9abc-c22eff2aa335
     ports:
       - "8000:8000"
     depends_on:
@@ -55,6 +57,8 @@ services:
     volumes:
       - ./../../../components/build/src/:/cicd/
       - /var/run/docker.sock:/var/run/docker.sock
+      # - kaniko-data:/kaniko-data/
+      - /tmp/:/tmp/
     environment:
       BROKER_USER: "dev"
       BROKER_PASSWORD: "dev"
@@ -64,8 +68,7 @@ services:
       DEPLOYMENT_TYPE: "docker"
       REGISTRY_HOST: registry
       REGISTRY_PORT: 5000
-      REGISTRY_USER: nathandf
-      REGISTRY_TOKEN: 75562122-d1e4-4583-8353-e3b8053d2f61
+
     ports:
       - "9000:9000"
     depends_on:
@@ -91,4 +94,5 @@ services:
 
 volumes:
   mysql-db:
+  kaniko-data:
     

@@ -30,7 +30,7 @@ class Build(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-class BuildContext(models.Model):
+class Deployments(models.Model):
     branch = models.CharField(max_length=255)
     context = models.CharField(max_length=64)
     destination = models.CharField(max_length=128)

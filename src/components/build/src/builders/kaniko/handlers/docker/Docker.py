@@ -1,85 +1,81 @@
-import json, uuid, time, os
+import json, uuid, time, os, base64
 
 import docker
 
-from conf.configs import SCRATCH_DIR
 from core.AbstractBuildHandler import AbstractBuildHandler
 
 
 class Docker(AbstractBuildHandler):
     def __init__(self):
-        self.run_file = None
+        self.config_file = None
 
-    def handle(self, build_context):
+    def handle(self, deployment):
+        print(deployment)
         # Create a docker client
         client = docker.from_env()
 
-        # Generate bash script
-        filename = self.generate_file()
+        # Generate config script
+        self.generate_config(deployment)
 
-        # Credentials for destination image registry
-        # Create the config file in which the credentials will be stored
-        self.add_cmd("mkdir -p /kaniko/.docker")
-
-        # Add the credentials json object to the file
-        registry_creds = {
-            "auths": {
-                "nathandf/jscicd-kaniko-test": {
-                    "auth": f"{os.environ['REGISTRY_USER']} {os.environ['REGISTRY_TOKEN']}"
-                }
-            }
-        }
-        self.add_cmd(f"echo {json.dumps(registry_creds)} > /kaniko/.docker/config.json")
-
-        # Create the directory for the mounted runfile
-        self.add_cmd("mkdir -p /cicd/scratch")
-
-        # Build the cmd for kaniko based on the build_context.
+        # Build the cmd for kaniko based on the deployment.
         kaniko_cmd = (
-            "/kaniko/executor"
-            f" --context {build_context.context}"
-            f" --dockerfile {build_context.dockerfile_path}"
-            f" --destination {build_context.destination}"
-                if build_context.destination is not None else f" --no-push"
+            "/kaniko/executor" +
+            " --cache=false" +
+            f" --context {deployment.context}" +
+            (f" --context-sub-path {deployment.context_sub_path}" 
+                if deployment.context_sub_path is not None else "") +
+            f" --dockerfile {deployment.dockerfile_path}" +
+            (f" --destination {deployment.destination}"
+                if deployment.destination is not None else f" --no-push") +
+            (f" --git branch={deployment.branch}"
+                if deployment.branch is not None else "")
         )
-
-        # Context arg (the repository in which the Dockerfile lives)
-        self.add_cmd(kaniko_cmd)
-
-        print(kaniko_cmd)
 
         # Run the kaniko build
         container = client.containers.run(
             "gcr.io/kaniko-project/executor:debug",
-            f"sh {self.run_file}",
-            mounts={self.run_file: {"bind": "/cicd/scratch", "mode": "rw"}},
+            volumes={
+                self.config_file: {"bind": "/kaniko/.docker/config.json", "mode": "ro"},
+                "kaniko-data": {"bind": "/kaniko-data/", "mode": "rw"}
+            },
             detach=True,
-            entrypoint=""
+            entrypoint=kaniko_cmd,
+            # auto_remove=True
+        ).wait()
+
+        self.reset()
+
+    def generate_config(self, deployment):
+        self.config_file = f"/tmp/docker-config-{time.time() * 1000}-{str(uuid.uuid4())}.json"
+
+        # Base64 encode credentials
+        encoded_creds = base64.b64encode(
+            f"{deployment.registry_secret.key}:{deployment.registry_secret.value}"
+                .encode("utf-8")
         )
 
-        print(container)
+        # Add the credentials to the config file
+        registry_creds = {
+            "auths": {
+                "https://index.docker.io/v1/": {
+                    "auth": encoded_creds.decode("utf-8")
+                }
+            }
+        }
 
-        print(container.logs(stderr=True, stdout=True))
-
-        # Remove the container upon completion
-        #container.remove()
-
-        # Delete the run_file from the scratch dir
-        os.remove(self.run_file)
-        print(f"Run file config deleted: {self.run_file}")
-
-    def add_cmd(self, cmd):
-        # Write the commands to the docker bash
-        with open(self.run_file, "a") as file:
-            file.write(cmd + "\n")
-
-    def generate_file(self):
-        filename = f"docker-{time.time() * 1000}-{str(uuid.uuid4())}.sh"
-        self.run_file = SCRATCH_DIR + filename
+        print("creds", registry_creds)
         
-        with open(self.run_file, "w") as file:
-            file.write("#!/bin/sh\n")
-        return filename
+        print(f"Creating config file: {self.config_file}")
+
+        with open(self.config_file, "w") as file:
+            file.write(json.dumps(registry_creds))
+
+    def reset(self):
+        # Delete the config file
+        os.remove(self.config_file)
+        print(f"Config file deleted: {self.config_file}")
+
+        self.config_file = None
 
 
 
