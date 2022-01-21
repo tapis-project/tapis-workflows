@@ -64,6 +64,8 @@ services:
       DEPLOYMENT_TYPE: "docker"
       REGISTRY_HOST: registry
       REGISTRY_PORT: 5000
+      REGISTRY_USER: nathandf
+      REGISTRY_TOKEN: 75562122-d1e4-4583-8353-e3b8053d2f61
     ports:
       - "9000:9000"
     depends_on:
