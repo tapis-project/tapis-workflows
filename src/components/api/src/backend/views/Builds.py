@@ -7,7 +7,7 @@ from django.views import View
 from pika.exchange_type import ExchangeType
 
 # TODO Remove
-from backend.fixtures.deployment import deployment
+from backend.fixtures.build_context import build_context
 
 
 class Builds(View):
@@ -19,7 +19,7 @@ class Builds(View):
     def post(self, request):
         # Fetch the build context that matches incoming request
         # TODO fetch build context data
-        message = json.dumps(deployment)
+        message = json.dumps(build_context)
 
         # Initialize connection to the message queue
         credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])

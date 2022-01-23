@@ -3,29 +3,43 @@ import json, uuid, time, os, base64
 import docker
 
 from core.AbstractBuildHandler import AbstractBuildHandler
+from helpers.parse_commit import parse_commit as parse
 
 
 class Docker(AbstractBuildHandler):
     def __init__(self):
         self.config_file = None
 
-    def handle(self, deployment):
-        print(deployment)
+    def handle(self, build_context):
+        deployment = build_context.deployment
+
+        # Get the directives from the commit message
+        directives = parse(build_context.meta.commit)
+
+        # Do not build if there is no DEPLOY directive
+        if directives is None or "DEPLOY" not in directives:
+            print("Build cancelled. No 'deploy' directive found.")
+            self.config_file = None
+            return
+
         # Create a docker client
         client = docker.from_env()
-
+        
         # Generate config script
         self.generate_config(deployment)
+
+        # Build destiniation
+        destination = self.resolve_destination(build_context, directives)
 
         # Build the cmd for kaniko based on the deployment.
         kaniko_cmd = (
             "/kaniko/executor" +
             " --cache=false" +
             f" --context {deployment.context}" +
-            (f" --context-sub-path {deployment.context_sub_path}" 
+            (f" --context-sub-path {deployment.context_sub_path}"
                 if deployment.context_sub_path is not None else "") +
             f" --dockerfile {deployment.dockerfile_path}" +
-            (f" --destination {deployment.destination}"
+            (f" --destination {destination}"
                 if deployment.destination is not None else f" --no-push") +
             (f" --git branch={deployment.branch}"
                 if deployment.branch is not None else "")
@@ -77,6 +91,30 @@ class Docker(AbstractBuildHandler):
 
         self.config_file = None
 
+    def resolve_destination(self, build_context, directives=None):
+        # If an image tag is provided, tag the image
+        deployment = build_context.deployment
+        meta = build_context.meta
 
+
+        tag = deployment.image_tag
+        if deployment.image_tag is None:
+            tag = "latest"
+
+        # The image tag can be overwritten by specifying directives in the 
+        # commit message. Image tagging directives take precedence over the
+        # the image_property of the deployment.
+        if directives is not None:
+            for key, value in directives.items():
+                if key == "CUSTOM_TAG" and key is not None:
+                    tag = value
+                elif key == "CUSTOM_TAG" and key is None:
+                    tag = deployment.image_tag
+                elif key == "TAG_COMMIT_SHA":
+                    tag = meta.commit_sha
+            
+        destination = deployment.destination + f":{tag}"
+
+        return destination
 
 handler = Docker()
