@@ -2,7 +2,13 @@ import re
 
 
 DIRECTIVE_DELIMITER = "|"
-SUPPORTED_DIRECTIVES = [ "DEPLOY", "CUSTOM_TAG", "TAG_COMMIT_SHA" ]
+SUPPORTED_DIRECTIVES = [
+    "DEPLOY",
+    "CUSTOM_TAG",
+    "TAG_COMMIT_SHA",
+    "DRY_RUN",
+    "NO_PUSH",
+]
 DIRECTIVE_SET_PATTERN = r"(?<=[\[]{1})[a-zA-Z0-9\s:|._-]+(?=[\]]{1})"
 KEY_VAL_DELIMITER = ":"
 

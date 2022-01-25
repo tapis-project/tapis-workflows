@@ -4,6 +4,7 @@ import docker
 
 from core.AbstractBuildHandler import AbstractBuildHandler
 from helpers.parse_commit import parse_commit as parse
+from errors.errors import CredentialError
 
 
 class Docker(AbstractBuildHandler):
@@ -14,7 +15,7 @@ class Docker(AbstractBuildHandler):
         deployment = build_context.deployment
 
         # Get the directives from the commit message
-        directives = parse(build_context.meta.commit)
+        directives = parse(build_context.event.commit)
 
         # Do not build if there is no DEPLOY directive
         if directives is None or "DEPLOY" not in directives:
@@ -54,17 +55,32 @@ class Docker(AbstractBuildHandler):
             },
             detach=True,
             entrypoint=kaniko_cmd,
-            # auto_remove=True
+            auto_remove=True,
+            stderr=True,
+            stdout=True,
         ).wait()
+
+        print(container)
 
         self.reset()
 
     def generate_config(self, deployment):
+        # Get image registry credentials from config
+        creds = list(filter(self._cred_filter, deployment.deployment_credentials))
+
+        if len(creds) == 0:
+            raise CredentialError(
+                "No credentials found with type 'image_registry' for this deployment")
+
+        # Take the first image registry credential available. There should only be one.
+        credential = creds[0].credential
+
+        # Create the config file to store the credentials temporarily
         self.config_file = f"/tmp/docker-config-{time.time() * 1000}-{str(uuid.uuid4())}.json"
 
         # Base64 encode credentials
         encoded_creds = base64.b64encode(
-            f"{deployment.registry_secret.key}:{deployment.registry_secret.value}"
+            f"{credential.data.username}:{credential.data.token}"
                 .encode("utf-8")
         )
 
@@ -94,7 +110,7 @@ class Docker(AbstractBuildHandler):
     def resolve_destination(self, build_context, directives=None):
         # If an image tag is provided, tag the image
         deployment = build_context.deployment
-        meta = build_context.meta
+        event = build_context.event
 
 
         tag = deployment.image_tag
@@ -111,10 +127,15 @@ class Docker(AbstractBuildHandler):
                 elif key == "CUSTOM_TAG" and key is None:
                     tag = deployment.image_tag
                 elif key == "TAG_COMMIT_SHA":
-                    tag = meta.commit_sha
+                    tag = event.commit_sha
             
         destination = deployment.destination + f":{tag}"
 
         return destination
+    
+    def _cred_filter(self, credential):
+        if credential.type == "image_registry":
+            return True
+        return False
 
 handler = Docker()
