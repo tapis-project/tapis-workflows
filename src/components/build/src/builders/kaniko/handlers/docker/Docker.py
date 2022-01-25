@@ -3,8 +3,8 @@ import json, uuid, time, os, base64
 import docker
 
 from core.AbstractBuildHandler import AbstractBuildHandler
-from helpers.parse_commit import parse_commit as parse
 from errors.errors import CredentialError
+from utils.attrs import has_one_of
 
 
 class Docker(AbstractBuildHandler):
@@ -13,14 +13,15 @@ class Docker(AbstractBuildHandler):
 
     def handle(self, build_context):
         deployment = build_context.deployment
-
-        # Get the directives from the commit message
-        directives = parse(build_context.event.commit)
+        directives = build_context.directives
 
         # Do not build if there is no DEPLOY directive
-        if directives is None or "DEPLOY" not in directives:
+        if (
+            deployment.auto_deploy == False 
+            and has_one_of(directives, [ "BUILD", "DEPLOY" ]) == False
+        ):
             print("Build cancelled. No 'deploy' directive found.")
-            self.config_file = None
+            self.reset()
             return
 
         # Create a docker client
@@ -47,6 +48,7 @@ class Docker(AbstractBuildHandler):
         )
 
         # Run the kaniko build
+        print(f"Starting build: Deployment {deployment.name}:{deployment.id}")
         container = client.containers.run(
             "gcr.io/kaniko-project/executor:debug",
             volumes={
@@ -60,9 +62,9 @@ class Docker(AbstractBuildHandler):
             stdout=True,
         ).wait()
 
-        print(container)
+        print(dir(container))
 
-        self.reset()
+        self.reset(delete_config=True)
 
     def generate_config(self, deployment):
         # Get image registry credentials from config
@@ -93,17 +95,15 @@ class Docker(AbstractBuildHandler):
             }
         }
 
-        print("creds", registry_creds)
-        
-        print(f"Creating config file: {self.config_file}")
-
+        # Create the .docker/config.json file that will be mounted to the
+        # kaniko container and write the registry credentials to it
         with open(self.config_file, "w") as file:
             file.write(json.dumps(registry_creds))
 
-    def reset(self):
+    def reset(self, delete_config=False):
         # Delete the config file
-        os.remove(self.config_file)
-        print(f"Config file deleted: {self.config_file}")
+        if delete_config:
+            os.remove(self.config_file)
 
         self.config_file = None
 
@@ -121,7 +121,7 @@ class Docker(AbstractBuildHandler):
         # commit message. Image tagging directives take precedence over the
         # the image_property of the deployment.
         if directives is not None:
-            for key, value in directives.items():
+            for key, value in directives.__dict__.items():
                 if key == "CUSTOM_TAG" and key is not None:
                     tag = value
                 elif key == "CUSTOM_TAG" and key is None:

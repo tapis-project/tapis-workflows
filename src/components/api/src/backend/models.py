@@ -69,9 +69,9 @@ class Credential(models.Model):
 
 class Deployment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    owner = models.CharField(max_length=32)
-    branch = models.CharField(max_length=255)
-    context = models.CharField(max_length=64)
+    auto_deploy = models.BooleanField(default=False, null=False)
+    branch = models.CharField(max_length=255, null=False)
+    context = models.CharField(max_length=64, null=False)
     deployment_credentials = models.ForeignKey("backend.DeploymentCredential", on_delete=models.PROTECT)
     deployment_policies = models.ForeignKey("backend.DeploymentPolicy", on_delete=models.PROTECT)
     destination = models.CharField(max_length=128)
@@ -79,6 +79,7 @@ class Deployment(models.Model):
     event_type = models.CharField(max_length=1, choices=EVENT_TYPES, null=True)
     image_tag = models.CharField(max_length=64, null=True)
     name = models.CharField(max_length=128)
+    owner = models.CharField(max_length=32)
     repository_url = models.CharField(max_length=255)
     user = models.CharField(max_length=255, null=True)
     class Meta:

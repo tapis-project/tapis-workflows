@@ -3,7 +3,8 @@ import re
 
 DIRECTIVE_DELIMITER = "|"
 SUPPORTED_DIRECTIVES = [
-    "DEPLOY",
+    "BUILD",
+    "DEPLOY", # Implies Build
     "CUSTOM_TAG",
     "TAG_COMMIT_SHA",
     "DRY_RUN",

@@ -3,6 +3,7 @@ import string, random, os
 build_context = {
     "deployment": {
         "id": ''.join(random.choices(string.ascii_uppercase + string.digits, k = 15)),
+        "auto_deploy": False,
         "branch": None,
         "context": "git://github.com/nathandf/jscicd-image-demo.git",
         "context_sub_path": None,
@@ -45,5 +46,6 @@ build_context = {
     "event": {
         "commit": "This is a commit message with directives [deploy|custom_tag:custom-tagV0.1]",
         "commit_sha": "37c2a4f"
-    }
+    },
+    "directives": {}
 }

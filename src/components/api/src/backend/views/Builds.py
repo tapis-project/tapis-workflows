@@ -8,6 +8,7 @@ from pika.exchange_type import ExchangeType
 
 # TODO Remove
 from backend.fixtures.build_context import build_context
+from backend.helpers.parse_commit import parse_commit as parse
 
 
 class Builds(View):
@@ -19,6 +20,8 @@ class Builds(View):
     def post(self, request):
         # Fetch the build context that matches incoming request
         # TODO fetch build context data
+        directives = parse(build_context["event"]["commit"])
+        build_context["directives"] = directives
         message = json.dumps(build_context)
 
         # Initialize connection to the message queue
@@ -43,7 +46,7 @@ class Builds(View):
         # TODO create build object
 
         # Respond with the build_context and build data
-        return HttpResponse(f"Build data here")
+        return HttpResponse(f"Build data here: \n{directives}")
 
     def put(self, request):
         return HttpResponse(f"put")
