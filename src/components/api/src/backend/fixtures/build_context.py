@@ -3,8 +3,10 @@ import string, random, os
 build_context = {
     "deployment": {
         "id": ''.join(random.choices(string.ascii_uppercase + string.digits, k = 15)),
+        "auto_build": False,
         "auto_deploy": False,
         "branch": None,
+        "cache": False,
         "context": "git://github.com/nathandf/jscicd-image-demo.git",
         "context_sub_path": None,
         "dockerfile_path": "src/Dockerfile",

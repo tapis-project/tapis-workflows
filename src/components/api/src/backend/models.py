@@ -70,6 +70,7 @@ class Credential(models.Model):
 class Deployment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     auto_deploy = models.BooleanField(default=False, null=False)
+    auto_deploy = models.BooleanField(default=False, null=False)
     branch = models.CharField(max_length=255, null=False)
     context = models.CharField(max_length=64, null=False)
     deployment_credentials = models.ForeignKey("backend.DeploymentCredential", on_delete=models.PROTECT)

@@ -5,6 +5,7 @@ DIRECTIVE_DELIMITER = "|"
 SUPPORTED_DIRECTIVES = [
     "BUILD",
     "DEPLOY", # Implies Build
+    "CACHE", # TODO Document this
     "CUSTOM_TAG",
     "TAG_COMMIT_SHA",
     "DRY_RUN",

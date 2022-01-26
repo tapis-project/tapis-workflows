@@ -15,12 +15,14 @@ class Docker(AbstractBuildHandler):
         deployment = build_context.deployment
         directives = build_context.directives
 
-        # Do not build if there is no DEPLOY directive
+        # Do not build or deploy if there is no BUILD or DEPLOY directive and
+        # the auto_build and auto_deploy flags are set to False
         if (
-            deployment.auto_deploy == False 
+            deployment.auto_build == False
+            and deployment.auto_deploy == False
             and has_one_of(directives, [ "BUILD", "DEPLOY" ]) == False
         ):
-            print("Build cancelled. No 'deploy' directive found.")
+            print("Build cancelled. No 'build' or 'deploy' directive found.")
             self.reset()
             return
 
@@ -33,10 +35,13 @@ class Docker(AbstractBuildHandler):
         # Build destiniation
         destination = self.resolve_destination(build_context, directives)
 
+        # Cache image
+        cache = deployment.cache or hasattr(directives, "CACHE")
+
         # Build the cmd for kaniko based on the deployment.
         kaniko_cmd = (
             "/kaniko/executor" +
-            " --cache=false" +
+            f" --cache={'true' if cache else 'false'}" +
             f" --context {deployment.context}" +
             (f" --context-sub-path {deployment.context_sub_path}"
                 if deployment.context_sub_path is not None else "") +
@@ -48,7 +53,7 @@ class Docker(AbstractBuildHandler):
         )
 
         # Run the kaniko build
-        print(f"Starting build: Deployment {deployment.name}:{deployment.id}")
+        print(f"Build Service start: Deployment {deployment.name}:{deployment.id}")
         container = client.containers.run(
             "gcr.io/kaniko-project/executor:debug",
             volumes={
@@ -62,9 +67,12 @@ class Docker(AbstractBuildHandler):
             stdout=True,
         ).wait()
 
-        print(dir(container))
-
         self.reset(delete_config=True)
+
+        result = dict(container.items())
+
+        print(f"Build Service end: Deployment {deployment.name}:{deployment.id}")
+        print(f"Build Service exited with status: {result['StatusCode']}")
 
     def generate_config(self, deployment):
         # Get image registry credentials from config
