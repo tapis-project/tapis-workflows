@@ -2,13 +2,16 @@ import uuid
 
 from django.db import models
 
-CREDENTIAL_TYPE_IMAGE_REGISTRY = "I"
-CREDENTIAL_TYPE_REPOSITORY = "R"
-CREDENTIAL_TYPE_API = "A"
-CREDENTIAL_TYPES = [
-    (CREDENTIAL_TYPE_IMAGE_REGISTRY, "image_registry"),
-    (CREDENTIAL_TYPE_REPOSITORY, "repository"),
-    (CREDENTIAL_TYPE_API, "api"),
+ACTION_WEBHOOK = "W"
+ACTIONS = [
+    (ACTION_WEBHOOK, "webhook"),
+]
+
+CONTEXT_TYPE_GITHUB = 0
+CONTEXT_TYPE_GITLAB = 1
+CONTEXT_TYPES = [
+    (CONTEXT_TYPE_GITHUB, "github"),
+    (CONTEXT_TYPE_GITLAB, "gitlab"),
 ]
 
 EVENT_PUSH = "P"
@@ -18,11 +21,11 @@ EVENT_TYPES = [
     (EVENT_MERGE_REQUEST_EVENT, "merge_request_event"),
 ]
 
-POLICY_TYPE_GROUP = "G"
-POLICY_TYPE_USER = "U"
-POLICY_TYPES = [
-    (POLICY_TYPE_GROUP, "group"),
-    (POLICY_TYPE_USER, "user"),
+GROUP_STATUS_DISABLED = 0
+GROUP_STATUS_ENABLED = 1
+GROUP_STATUSES = [
+    (GROUP_STATUS_DISABLED, "disabled"),
+    (GROUP_STATUS_ENABLED, "enabled")
 ]
 
 READ = "R"
@@ -34,11 +37,11 @@ PERMISSIONS = [
     (MODIFY, "modify"), # Modify implies write which implies read
 ]
 
-ALLOW = True
-DENY = False
+ACCESS_CONTROL_ALLOW = True
+ACCESS_CONTROL_DENY = False
 ACCESS_CONTROLS = [
-    (ALLOW, "allow"),
-    (DENY, "deny")
+    (ACCESS_CONTROL_ALLOW, "allow"),
+    (ACCESS_CONTROL_DENY, "deny")
 ]
 
 STATUS_QUEUED = 0
@@ -54,7 +57,28 @@ STATUSES = [
     ( STATUS_SUCCESS, "success" ),
 ]
 
+VISIBILITY_PUBLIC = 0
+VISIBILITY_PRIVATE = 1
+VISIBILITY_TYPES = [
+    ( VISIBILITY_PUBLIC, "public" ),
+    ( VISIBILITY_PRIVATE, "private" )
+]
+
+REPOSITORY_GITHUB = 0
+REPOSITORY_GITLAB = 1
+REPOSITORIES = [
+    ( REPOSITORY_GITHUB, "github.com" ),
+    ( REPOSITORY_GITLAB, "gitlab.com" ),
+]
+
+DESTINATION_TYPE_REGISTRY = 0
+DESTINATION_TYPES = [
+    ( DESTINATION_TYPE_REGISTRY, "dockerhub" )
+    # NOTE support s3 destinations?
+]
+
 class Build(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     status = models.PositiveSmallIntegerField(choices=STATUSES, default=STATUS_QUEUED)
     event = models.ForeignKey("backend.Event", on_delete=models.PROTECT)
     deployment = models.ForeignKey("backend.Deployment", on_delete=models.PROTECT)
@@ -63,45 +87,56 @@ class Build(models.Model):
 
 class Credential(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=128)
     description = models.TextField(null=True)
+    group = models.ForeignKey("backend.Group", on_delete=models.PROTECT)
+    name = models.CharField(max_length=128, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class Context(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    credential = models.ForeignKey(
+        "backend.Credential", default=None, null=True, on_delete=models.PROTECT)
+    name = models.CharField(max_length=64, null=False)
+    type = models.PositiveSmallIntegerField(choices=REPOSITORIES, null=False)
+    repo = models.CharField(max_length=255, null=False)
+    visibility = models.PositiveSmallIntegerField(choices=VISIBILITY_TYPES, null=False)
 
 class Deployment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     auto_deploy = models.BooleanField(default=False, null=False)
     auto_deploy = models.BooleanField(default=False, null=False)
     branch = models.CharField(max_length=255, null=False)
-    context = models.CharField(max_length=64, null=False)
-    deployment_credentials = models.ForeignKey("backend.DeploymentCredential", on_delete=models.PROTECT)
+    context = models.ForeignKey("backend.Context", on_delete=models.PROTECT)
     deployment_policies = models.ForeignKey("backend.DeploymentPolicy", on_delete=models.PROTECT)
-    destination = models.CharField(max_length=128)
+    destination = models.ForeignKey("backend.Destination", on_delete=models.PROTECT)
     dockerfile_path = models.CharField(max_length=255, default="/")
     event_type = models.CharField(max_length=1, choices=EVENT_TYPES, null=True)
+    group = models.ForeignKey("backend.Group", on_delete=models.PROTECT)
     image_tag = models.CharField(max_length=64, null=True)
     name = models.CharField(max_length=128)
     owner = models.CharField(max_length=32)
-    repository_url = models.CharField(max_length=255)
-    user = models.CharField(max_length=255, null=True)
-    class Meta:
-        unique_together = [["destination", "image_tag"]]
 
-class DeploymentCredential(models.Model):
+class Destination(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    deployment_id = models.UUIDField(editable=False, null=False)
-    credential = models.ForeignKey("backend.Credential", on_delete=models.PROTECT)
-    type = models.CharField(max_length=1, choices=CREDENTIAL_TYPES, null=False)
+    group = models.ForeignKey("backend.Group", on_delete=models.PROTECT)
+    credential = models.ForeignKey(
+        "backend.Credential", default=None, null=True, on_delete=models.PROTECT)
+    name = models.CharField(max_length=64, null=False)
+    type = models.SmallIntegerField(choices=DESTINATION_TYPES, null=False)
+    url = models.CharField(max_length=255)
+    tag = models.CharField(max_length=128)
 
 class DeploymentPolicy(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     deployment_id = models.UUIDField(editable=False, null=False)
     policy = models.ForeignKey("backend.Policy", on_delete=models.PROTECT)
-    policy_type = models.CharField(max_length=1, choices=POLICY_TYPES, null=False)
-    policy_type_value = models.CharField(max_length=128, null=False)
+    group = models.ForeignKey("backend.Group", on_delete=models.PROTECT)
 
 class Group(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=128)
+    name = models.CharField(max_length=128, unique=True)
+    owner = models.CharField(max_length=64)
+    users = models.ForeignKey("backend.GroupUser", on_delete=models.PROTECT)
 
 class GroupUser(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -122,13 +157,9 @@ class Event(models.Model):
 class Policy(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=64, unique=True)
-    deploy: models.BooleanField(choices=ACCESS_CONTROLS, default=DENY, null=False)
-    custom_tag: models.BooleanField(choices=ACCESS_CONTROLS, default=DENY, null=False)
-    tag_commit_sha: models.BooleanField(choices=ACCESS_CONTROLS, default=DENY, null=False)
-    no_push: models.BooleanField(choices=ACCESS_CONTROLS, default=DENY, null=False)
-    dry_run: models.BooleanField(choices=ACCESS_CONTROLS, default=DENY, null=False)
-    policies: models.CharField(choices=PERMISSIONS, null=True)
+    deploy: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
+    custom_tag: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
+    tag_commit_sha: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
+    no_push: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
+    dry_run: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
     credentials: models.CharField(choices=PERMISSIONS, null=True)
-    deployments: models.CharField(choices=PERMISSIONS, null=True)
-    groups: models.CharField(choices=PERMISSIONS, null=True)
-    group_users: models.CharField(choices=PERMISSIONS, null=True)

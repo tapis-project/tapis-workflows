@@ -14,7 +14,6 @@ from backend.helpers.parse_commit import parse_commit as parse
 class Builds(View):
 
     def get(self, request):
-        # TODO Remove: Testing build
         return self.post(request)
     
     def post(self, request):
@@ -46,7 +45,7 @@ class Builds(View):
         # TODO create build object
 
         # Respond with the build_context and build data
-        return HttpResponse(f"Build data here: \n{directives}")
+        return HttpResponse(f"Build data here")
 
     def put(self, request):
         return HttpResponse(f"put")

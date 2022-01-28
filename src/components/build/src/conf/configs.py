@@ -12,3 +12,5 @@ BASE_KANIKO_FILE = BASE_DIR + "conf/kaniko-base.yml"
 SCRATCH_DIR = BASE_DIR + "scratch/"
 
 DEPLOYMENT_TYPE = os.environ["DEPLOYMENT_TYPE"]
+
+API_BASE_URL = os.environ["API_BASE_URL"]

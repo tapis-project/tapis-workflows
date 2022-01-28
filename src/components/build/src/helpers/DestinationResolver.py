@@ -1,0 +1,2 @@
+class DestinationResolver:
+    pass

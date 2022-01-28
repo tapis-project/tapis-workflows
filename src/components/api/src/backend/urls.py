@@ -7,5 +7,5 @@ from backend.views.Deployments import Deployments
 urlpatterns = [
     path("builds/", Builds.as_view()),
     path("deployments/", Deployments.as_view()),
-    path("events/", Events.as_view()),
+    path("events/", Events.as_view())
 ]

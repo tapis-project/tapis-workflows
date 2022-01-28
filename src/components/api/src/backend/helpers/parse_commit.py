@@ -4,12 +4,13 @@ import re
 DIRECTIVE_DELIMITER = "|"
 SUPPORTED_DIRECTIVES = [
     "BUILD",
-    "DEPLOY", # Implies Build
+    "DEPLOY",
     "CACHE", # TODO Document this
     "CUSTOM_TAG",
-    "TAG_COMMIT_SHA",
+    "COMMIT_DESTINATION",
     "DRY_RUN",
     "NO_PUSH",
+    "COMMIT_CONTEXT", # TODO Document this
 ]
 DIRECTIVE_SET_PATTERN = r"(?<=[\[]{1})[a-zA-Z0-9\s:|._-]+(?=[\]]{1})"
 KEY_VAL_DELIMITER = ":"

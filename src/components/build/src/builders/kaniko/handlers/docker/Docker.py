@@ -3,25 +3,31 @@ import json, uuid, time, os, base64
 import docker
 
 from core.AbstractBuildHandler import AbstractBuildHandler
-from errors.errors import CredentialError
+from helpers.ContextResolver import context_resolver
+# from helpers.DestinationResolver import destination_resolver
+from errors.credential import CredentialError
 from utils.attrs import has_one_of
 
 
 class Docker(AbstractBuildHandler):
     def __init__(self):
         self.config_file = None
+        self.can_build = False
+        self.can_deploy = False
+        self.can_cache = False
+        self.build_succeeded = False
 
     def handle(self, build_context):
         deployment = build_context.deployment
         directives = build_context.directives
 
-        # Do not build or deploy if there is no BUILD or DEPLOY directive and
+        # Determines whether the build service can build, deploy or
+        # cache the image. Caching handled by kaniko
+        self._set_flags(deployment, directives)
+
+        # Do not build if there is no BUILD or DEPLOY directive and
         # the auto_build and auto_deploy flags are set to False
-        if (
-            deployment.auto_build == False
-            and deployment.auto_deploy == False
-            and has_one_of(directives, [ "BUILD", "DEPLOY" ]) == False
-        ):
+        if self.can_build == False:
             print("Build cancelled. No 'build' or 'deploy' directive found.")
             self.reset()
             return
@@ -29,31 +35,39 @@ class Docker(AbstractBuildHandler):
         # Create a docker client
         client = docker.from_env()
         
-        # Generate config script
+        # Generate the credentials config that kaniko will use to push the
+        # image to an image registry
         self.generate_config(deployment)
 
-        # Build destiniation
+        # Set the repository from which the code containing the Dockerfile
+        # will be pulled
+        context = context_resolver.resolve(build_context.deployment.context)
+
+        print(context)
+        print(type(context))
+
+        # Set the image registry to which the image will be pushed after build
         destination = self.resolve_destination(build_context, directives)
 
-        # Cache image
-        cache = deployment.cache or hasattr(directives, "CACHE")
-
-        # Build the cmd for kaniko based on the deployment.
-        kaniko_cmd = (
+        # Build the entrypoint for the kaniko executor based on the deployment
+        # and directives
+        # TODO implement entrypoint_builder
+        entrypoint = (
             "/kaniko/executor" +
-            f" --cache={'true' if cache else 'false'}" +
-            f" --context {deployment.context}" +
+            f" --cache={'true' if self.can_cache else 'false'}" +
+            f" --context {context}" +
             (f" --context-sub-path {deployment.context_sub_path}"
-                if deployment.context_sub_path is not None else "") +
-            f" --dockerfile {deployment.dockerfile_path}" +
+                if deployment.context.sub_path is not None else "") +
+            f" --dockerfile {deployment.context.dockerfile_path}" +
             (f" --destination {destination}"
                 if deployment.destination is not None else f" --no-push") +
             (f" --git branch={deployment.branch}"
                 if deployment.branch is not None else "")
         )
 
+        print(f"Build start started for deployment {deployment.name}:{deployment.id}")
+
         # Run the kaniko build
-        print(f"Build Service start: Deployment {deployment.name}:{deployment.id}")
         container = client.containers.run(
             "gcr.io/kaniko-project/executor:debug",
             volumes={
@@ -61,29 +75,55 @@ class Docker(AbstractBuildHandler):
                 "kaniko-data": {"bind": "/kaniko-data/", "mode": "rw"}
             },
             detach=True,
-            entrypoint=kaniko_cmd,
-            auto_remove=True,
+            entrypoint=entrypoint,
             stderr=True,
             stdout=True,
-        ).wait()
+        )
+
+        # TODO Update the build status to "in_progress"
+
+        # Waits until the container is finished running to return the
+        # result that contains the status code and the error
+        result = dict(container.wait().items())
+
+        logs = self._get_container_logs(client, container)
+
+        for log in logs:
+            print(log)
+
+        print(f"Build ended for deployment {deployment.name}:{deployment.id}")
+        if result["StatusCode"] == 0:
+            self.build_succeeded = True
+
+        status = "fail"
+        if self.build_succeeded:
+            status = "success"
+        
+        print(f"Build status: {status}")
+
+        # Remove the container and reset the builder
+        container.remove()
+
+        # Handle post build deployment
+        if self.can_deploy:
+            self.deploy(deployment)
 
         self.reset(delete_config=True)
 
-        result = dict(container.items())
-
-        print(f"Build Service end: Deployment {deployment.name}:{deployment.id}")
-        print(f"Build Service exited with status: {result['StatusCode']}")
-
+    def deploy(self, deployment):
+        print(f"Deployment started for {deployment.name}:{deployment.id}")
+        # TODO Implement post-build deployment
+        status = "success"
+        print(f"Deployment ended for {deployment.name}:{deployment.id}")
+        print(f"Deployment status: {status}")
+ 
     def generate_config(self, deployment):
         # Get image registry credentials from config
-        creds = list(filter(self._cred_filter, deployment.deployment_credentials))
+        credential = deployment.destination.credential
 
-        if len(creds) == 0:
+        if credential == None:
             raise CredentialError(
-                "No credentials found with type 'image_registry' for this deployment")
-
-        # Take the first image registry credential available. There should only be one.
-        credential = creds[0].credential
+                "No credentials for the destination")
 
         # Create the config file to store the credentials temporarily
         self.config_file = f"/tmp/docker-config-{time.time() * 1000}-{str(uuid.uuid4())}.json"
@@ -114,15 +154,19 @@ class Docker(AbstractBuildHandler):
             os.remove(self.config_file)
 
         self.config_file = None
-
+        self.can_build = False
+        self.can_deploy = False
+        self.can_cache = False
+        self.build_succeeded = False
+        
     def resolve_destination(self, build_context, directives=None):
         # If an image tag is provided, tag the image
         deployment = build_context.deployment
         event = build_context.event
 
-
-        tag = deployment.image_tag
-        if deployment.image_tag is None:
+        # Default to latest tag
+        tag = deployment.destination.tag
+        if tag is None:
             tag = "latest"
 
         # The image tag can be overwritten by specifying directives in the 
@@ -145,5 +189,33 @@ class Docker(AbstractBuildHandler):
         if credential.type == "image_registry":
             return True
         return False
+
+    def _get_container_logs(self, client, container):
+        logs = []
+        iterator = client.containers.get(container.name).logs(stream=True, follow=False)
+        try:
+            while True:
+                logs.append(next(iterator).decode("utf-8").rstrip())
+        except StopIteration:
+            pass
+
+        return logs
+
+    def _set_flags(self, deployment, directives):
+        # Set the can_build flag
+        self.can_build = (
+            has_one_of(directives, ["BUILD", "DEPLOY"])
+            or deployment.auto_build
+            or deployment.auto_deploy
+        )
+
+        # Set the can_deploy flag
+        self.can_deploy = (
+            hasattr(directives, "DEPLOY")
+            or deployment.auto_deploy
+        )
+
+        # Set the cache flag to indicate whether kaniko should cache the image
+        self.can_cache = deployment.cache or hasattr(directives, "CACHE")
 
 handler = Docker()

@@ -60,6 +60,7 @@ services:
       # - kaniko-data:/kaniko-data/
       - /tmp/:/tmp/
     environment:
+      API_BASE_URL: "localhost:8000"
       BROKER_USER: "dev"
       BROKER_PASSWORD: "dev"
       BROKER_URL: "message"
