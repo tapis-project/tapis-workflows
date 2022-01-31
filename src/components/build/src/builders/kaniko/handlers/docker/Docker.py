@@ -46,8 +46,6 @@ class Docker(AbstractBuildHandler):
         # Set the image registry to which the image will be pushed after build
         destination = self.resolve_destination(build_context, directives)
 
-        print("destination", destination)
-
         # Build the entrypoint for the kaniko executor based on the deployment
         # and directives
         # TODO implement entrypoint_builder

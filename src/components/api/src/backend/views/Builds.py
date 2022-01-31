@@ -1,15 +1,11 @@
-import json, os
-
-import pika
-
 from django.http import HttpResponse
 from django.views import View
-from pika.exchange_type import ExchangeType
 
+from backend.helpers.parse_commit import parse_commit as parse
+from backend.services.BuildService import build_service
 # TODO Remove
 from backend.fixtures.build_context import build_context
-from backend.helpers.parse_commit import parse_commit as parse
-
+import json
 
 class Builds(View):
 
@@ -17,35 +13,18 @@ class Builds(View):
         return self.post(request)
     
     def post(self, request):
-        # Fetch the build context that matches incoming request
+        # Fetch the deployment and related daata that matches incoming request
         # TODO fetch build context data
         directives = parse(build_context["event"]["commit"])
         build_context["directives"] = directives
-        message = json.dumps(build_context)
 
-        # Initialize connection to the message queue
-        credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
-        connection_parameters = pika.ConnectionParameters(
-            os.environ["BROKER_URL"],
-            os.environ["BROKER_PORT"],
-            "/",
-            credentials
-        )
-        connection = pika.BlockingConnection(connection_parameters)
-
-        # Create a channel and declare an exchange
-        channel = connection.channel()
-        channel.exchange_declare("builds", exchange_type=ExchangeType.fanout)
-
-        # Publish message to the message queue and close the connection
-        channel.basic_publish(exchange="builds", routing_key="", body=message)
-        connection.close()
+        build = build_service.start(build_context)
 
         # Create the build object with status QUEUED
         # TODO create build object
 
         # Respond with the build_context and build data
-        return HttpResponse(f"Build data here")
+        return HttpResponse(json.dumps(build))
 
     def put(self, request):
         return HttpResponse(f"put")

@@ -37,36 +37,7 @@ build_context = {
             "url": "nathandf/jscicd-kaniko-test",
         },
         "event_type": "push",
-        "name": "test-deployment",
-        # "deployment_credentials": [
-        #     {
-        #         "id": "some-unique-id",
-        #         "credential": {
-        #             "id": "some-credential-id",
-        #             "name": "My Dockerhub Secret",
-        #             "description": "Username and password(or access token) to push Dockerhub",
-        #             "data": {
-        #                 "username": os.environ["REGISTRY_USER"],
-        #                 "token": os.environ["REGISTRY_TOKEN"]
-        #             }
-        #         },
-        #         "type": "image_registry",
-        #     },
-        #     {
-        #         "id": "some-unique-id",
-        #         "name": "My Github secret",
-        #         "credential": {
-        #             "id": "some-credential-id",
-        #             "name": "My Github Credential",
-        #             "description": "Username and personal access token to pull repository code from Github", 
-        #             "data": {
-        #                 "username": os.environ["REGISTRY_USER"],
-        #                 "token": os.environ["REGISTRY_TOKEN"]
-        #             }
-        #         },
-        #         "type": "repository",
-        #     }
-        # ],
+        "name": "test-deployment"
     },
     "event": {
         "commit": "This is a commit message with directives [deploy|custom_tag:custom-tagV0.1]",
