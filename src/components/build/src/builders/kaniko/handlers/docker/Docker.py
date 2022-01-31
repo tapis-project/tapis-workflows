@@ -43,11 +43,10 @@ class Docker(AbstractBuildHandler):
         # will be pulled
         context = context_resolver.resolve(build_context.deployment.context)
 
-        print(context)
-        print(type(context))
-
         # Set the image registry to which the image will be pushed after build
         destination = self.resolve_destination(build_context, directives)
+
+        print("destination", destination)
 
         # Build the entrypoint for the kaniko executor based on the deployment
         # and directives
@@ -181,7 +180,7 @@ class Docker(AbstractBuildHandler):
                 elif key == "TAG_COMMIT_SHA":
                     tag = event.commit_sha
             
-        destination = deployment.destination + f":{tag}"
+        destination = deployment.destination.url + f":{tag}"
 
         return destination
     
