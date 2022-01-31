@@ -13,15 +13,16 @@ build_context = {
                 "name": "My Github Credential",
                 "description": "Username and personal access token to pull repository code from Github", 
                 "data": {
-                    "username": os.environ["REGISTRY_USER"],
-                    "token": os.environ["REGISTRY_TOKEN"]
+                    "token": os.environ["REPO_TOKEN"]
                 }
             },
             "dockerfile_path": "src/Dockerfile",
-            "repo": "nathandf/jscicd-image-demo",
+            "repo": "nathandf/jscicd-image-demo-private",
+            # "repo": "nathandf/jscicd-image-demo",
             "sub_path": None,
             "type": "github",
-            "visibility": "public"
+            "visibility": "private",
+            # "visibility": "public",
         },
         "destination": {
             "credential": {

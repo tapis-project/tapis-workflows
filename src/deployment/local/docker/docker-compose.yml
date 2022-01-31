@@ -34,6 +34,7 @@ services:
       BROKER_PORT: 5672
       REGISTRY_USER: nathandf
       REGISTRY_TOKEN: a190f902-d418-491a-9abc-c22eff2aa335
+      REPO_TOKEN: "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"
     ports:
       - "8000:8000"
     depends_on:

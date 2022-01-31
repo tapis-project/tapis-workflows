@@ -24,8 +24,7 @@ class ContextResolver:
 
         cred_string = ""
         if self.is_visible == False:
-            scheme = "https://"
-            cred_string = f"{context.credential.data.username}:{context.credential.data.token}"
+            cred_string = f"{context.credential.data.token}@"
 
         return f"{scheme}{cred_string}{domain_name}/{context.repo}.{extension}"
 

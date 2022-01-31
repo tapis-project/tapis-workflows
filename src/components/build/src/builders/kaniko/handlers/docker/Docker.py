@@ -43,6 +43,8 @@ class Docker(AbstractBuildHandler):
         # will be pulled
         context = context_resolver.resolve(build_context.deployment.context)
 
+        print(context)
+
         # Set the image registry to which the image will be pushed after build
         destination = self.resolve_destination(build_context, directives)
 
@@ -102,7 +104,7 @@ class Docker(AbstractBuildHandler):
         container.remove()
 
         # Handle post build deployment
-        if self.can_deploy:
+        if self.can_deploy and self.build_succeeded:
             self.deploy(deployment)
 
         self.reset(delete_config=True)
