@@ -5,6 +5,7 @@ import docker
 from core.AbstractBuildHandler import AbstractBuildHandler
 from helpers.ContextResolver import context_resolver
 # from helpers.DestinationResolver import destination_resolver
+from helpers.ActionDispatcher import action_dispatcher
 from errors.credential import CredentialError
 from utils.attrs import has_one_of
 
@@ -13,22 +14,21 @@ class Docker(AbstractBuildHandler):
     def __init__(self):
         self.config_file = None
         self.can_build = False
-        self.can_deploy = False
         self.can_cache = False
         self.build_succeeded = False
 
     def handle(self, build_context):
-        deployment = build_context.deployment
+        pipeline = build_context.pipeline
         directives = build_context.directives
 
-        # Determines whether the build service can build, deploy or
+        # Determines whether the build service can build or
         # cache the image. Caching handled by kaniko
-        self._set_flags(deployment, directives)
+        self._set_flags(pipeline, directives)
 
-        # Do not build if there is no BUILD or DEPLOY directive and
-        # the auto_build and auto_deploy flags are set to False
+        # Do not build if there is no BUILD directive and
+        # the auto_build flag set to False
         if self.can_build == False:
-            print("Build cancelled. No 'build' or 'deploy' directive found.")
+            print("Build cancelled. No 'build' directive found.")
             self.reset()
             return
 
@@ -37,34 +37,32 @@ class Docker(AbstractBuildHandler):
         
         # Generate the credentials config that kaniko will use to push the
         # image to an image registry
-        self.generate_config(deployment)
+        self.generate_config(pipeline)
 
         # Set the repository from which the code containing the Dockerfile
         # will be pulled
-        context = context_resolver.resolve(build_context.deployment.context)
-
-        print(context)
+        context = context_resolver.resolve(build_context.pipeline.context)
 
         # Set the image registry to which the image will be pushed after build
         destination = self.resolve_destination(build_context, directives)
 
-        # Build the entrypoint for the kaniko executor based on the deployment
+        # Build the entrypoint for the kaniko executor based on the pipeline
         # and directives
         # TODO implement entrypoint_builder
         entrypoint = (
             "/kaniko/executor" +
             f" --cache={'true' if self.can_cache else 'false'}" +
             f" --context {context}" +
-            (f" --context-sub-path {deployment.context_sub_path}"
-                if deployment.context.sub_path is not None else "") +
-            f" --dockerfile {deployment.context.dockerfile_path}" +
+            (f" --context-sub-path {pipeline.context_sub_path}"
+                if pipeline.context.sub_path is not None else "") +
+            f" --dockerfile {pipeline.context.dockerfile_path}" +
             (f" --destination {destination}"
-                if deployment.destination is not None else f" --no-push") +
-            (f" --git branch={deployment.branch}"
-                if deployment.branch is not None else "")
+                if pipeline.destination is not None else f" --no-push") +
+            (f" --git branch={pipeline.branch}"
+                if pipeline.branch is not None else "")
         )
 
-        print(f"Build start started for deployment {deployment.name}:{deployment.id}")
+        print(f"Build action started for pipeline {pipeline.name}:{pipeline.id}")
 
         # Run the kaniko build
         container = client.containers.run(
@@ -90,35 +88,36 @@ class Docker(AbstractBuildHandler):
         for log in logs:
             print(log)
 
-        print(f"Build ended for deployment {deployment.name}:{deployment.id}")
-        if result["StatusCode"] == 0:
+        build_status = result["StatusCode"]
+        if build_status == 0:
             self.build_succeeded = True
-
-        status = "fail"
-        if self.build_succeeded:
-            status = "success"
-        
-        print(f"Build status: {status}")
 
         # Remove the container and reset the builder
         container.remove()
 
-        # Handle post build deployment
-        if self.can_deploy and self.build_succeeded:
-            self.deploy(deployment)
+        # Handle post build pipeline actions
+        if self.build_succeeded:
+            self.run_actions(pipeline)
 
         self.reset(delete_config=True)
 
-    def deploy(self, deployment):
-        print(f"Deployment started for {deployment.name}:{deployment.id}")
-        # TODO Implement post-build deployment
-        status = "success"
-        print(f"Deployment ended for {deployment.name}:{deployment.id}")
-        print(f"Deployment status: {status}")
+    def run_actions(self, pipeline):
+        print(f"Post-build actions for Pipeline {pipeline.name}:{pipeline.id}")
+        # Get post build actions
+        actions = list(filter(lambda a: a.stage == "post_build", pipeline.actions))
+
+        if len(actions) == 0:
+            return
+        
+        for action in actions:
+            print(f"Action '{action.name}' start:")
+            status = action_dispatcher.dispatch(action)
+            print(f"Action '{action.name}' {self._status_to_text(status)}")
+
  
-    def generate_config(self, deployment):
+    def generate_config(self, pipeline):
         # Get image registry credentials from config
-        credential = deployment.destination.credential
+        credential = pipeline.destination.credential
 
         if credential == None:
             raise CredentialError(
@@ -154,40 +153,34 @@ class Docker(AbstractBuildHandler):
 
         self.config_file = None
         self.can_build = False
-        self.can_deploy = False
         self.can_cache = False
         self.build_succeeded = False
         
     def resolve_destination(self, build_context, directives=None):
         # If an image tag is provided, tag the image
-        deployment = build_context.deployment
+        pipeline = build_context.pipeline
         event = build_context.event
 
         # Default to latest tag
-        tag = deployment.destination.tag
+        tag = pipeline.destination.tag
         if tag is None:
             tag = "latest"
 
         # The image tag can be overwritten by specifying directives in the 
         # commit message. Image tagging directives take precedence over the
-        # the image_property of the deployment.
+        # the image_property of the pipeline.
         if directives is not None:
             for key, value in directives.__dict__.items():
                 if key == "CUSTOM_TAG" and key is not None:
                     tag = value
                 elif key == "CUSTOM_TAG" and key is None:
-                    tag = deployment.image_tag
-                elif key == "TAG_COMMIT_SHA":
+                    tag = pipeline.image_tag
+                elif key == "COMMIT_DESTINATION":
                     tag = event.commit_sha
             
-        destination = deployment.destination.url + f":{tag}"
+        destination = pipeline.destination.url + f":{tag}"
 
         return destination
-    
-    def _cred_filter(self, credential):
-        if credential.type == "image_registry":
-            return True
-        return False
 
     def _get_container_logs(self, client, container):
         logs = []
@@ -200,21 +193,17 @@ class Docker(AbstractBuildHandler):
 
         return logs
 
-    def _set_flags(self, deployment, directives):
+    def _set_flags(self, pipeline, directives):
         # Set the can_build flag
         self.can_build = (
-            has_one_of(directives, ["BUILD", "DEPLOY"])
-            or deployment.auto_build
-            or deployment.auto_deploy
-        )
-
-        # Set the can_deploy flag
-        self.can_deploy = (
-            hasattr(directives, "DEPLOY")
-            or deployment.auto_deploy
+            hasattr(directives, "BUILD")
+            or pipeline.auto_build
         )
 
         # Set the cache flag to indicate whether kaniko should cache the image
-        self.can_cache = deployment.cache or hasattr(directives, "CACHE")
+        self.can_cache = pipeline.cache or hasattr(directives, "CACHE")
+
+    def _status_to_text(self, status):
+        return "ran successfully" if status == 0 else "failed"
 
 handler = Docker()

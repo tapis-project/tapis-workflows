@@ -1,13 +1,27 @@
 import string, random, os
 
+def random_id():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k = 15))
+
 build_context = {
-    "deployment": {
-        "id": ''.join(random.choices(string.ascii_uppercase + string.digits, k = 15)),
+    "pipeline": {
+        "id": random_id(),
+        "actions": [
+            {
+                "id": random_id(),
+                "stage": "post_build",
+                "description": "Send a webhook notification to freetail that the image was pushed successfully",
+                "http_method": "post",
+                "name": "Notify Kube Cluster",
+                "type": "webhook",
+                "url": "http://someurl.com",
+            }
+        ],
         "auto_build": False,
-        "auto_deploy": False,
-        "branch": None,
+        "branch": "develop",
         "cache": False,
         "context": {
+            "branch": "develop",
             "credential": {
                 "id": "some-credential-id",
                 "name": "My Github Credential",
@@ -38,10 +52,10 @@ build_context = {
             "url": "nathandf/jscicd-kaniko-test",
         },
         "event_type": "push",
-        "name": "test-deployment"
+        "name": "Test Pipeline"
     },
     "event": {
-        "commit": "This is a commit message with directives [deploy|custom_tag:custom-tagV0.1]",
+        "commit": "This is a commit message with directives [build|custom_tag:custom-tagV0.1]",
         "commit_sha": "37c2a4f"
     },
     "directives": {}

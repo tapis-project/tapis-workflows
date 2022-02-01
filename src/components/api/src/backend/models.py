@@ -2,9 +2,21 @@ import uuid
 
 from django.db import models
 
-ACTION_TYPE_WEBHOOK = 0
+ACTION_TYPE_CONTAINER = 0
+ACTION_TYPE_WEBHOOK = 1
 ACTION_TYPES = [
+    (ACTION_TYPE_CONTAINER, "container"),
     (ACTION_TYPE_WEBHOOK, "webhook"),
+]
+
+# ACTION_STAGE_PRE_BUILD = 0
+ACTION_STAGE_BUILD = 1
+ACTION_STAGE_POST_BUILD = 2
+ACTION_STAGE_TYPES = [
+    # TODO Support
+    # (ACTION_STAGE_PRE_BUILD, "pre_build"),
+    (ACTION_STAGE_BUILD, "build"),
+    (ACTION_STAGE_POST_BUILD, "post_build"),
 ]
 
 HTTP_METHOD_GET = 0
@@ -13,6 +25,7 @@ HTTP_METHOD_PUT = 2
 HTTP_METHOD_PATCH = 3
 HTTP_METHOD_DELETE = 4
 ACTION_HTTP_METHODS = [
+    (HTTP_METHOD_GET, "get"),
     (HTTP_METHOD_POST, "post"),
     (HTTP_METHOD_PUT, "put"),
     (HTTP_METHOD_PATCH, "patch"),
@@ -86,17 +99,21 @@ VISIBILITY_TYPES = [
 
 class Action(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    group = models.ForeignKey("backend.Group", related_name="actions", on_delete=models.CASCADE)
-    name = models.CharField(max_length=128, unique=True)
+    description = models.TextField(null=True)
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="actions", on_delete=models.CASCADE)
+    name = models.CharField(max_length=128)
     type = models.PositiveSmallIntegerField(choices=ACTION_TYPES, null=False)
     http_method = models.PositiveSmallIntegerField(choices=ACTION_HTTP_METHODS, null=True)
+    stage = models.PositiveSmallIntegerField(choices=ACTION_STAGE_TYPES, null=False)
     url = models.CharField(max_length=255, null=True)
+    class Meta:
+        unique_together = [["name", "pipeline_id"]]
 
 class Build(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     status = models.PositiveSmallIntegerField(choices=STATUSES, default=STATUS_QUEUED)
     event = models.OneToOneField("backend.Event", unique=True, on_delete=models.PROTECT)
-    deployment = models.ForeignKey("backend.Deployment", related_name="builds", on_delete=models.PROTECT)
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="builds", on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -109,20 +126,43 @@ class Credential(models.Model):
 
 class Context(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    credential = models.ForeignKey(
-        "backend.Credential", default=None, null=True, on_delete=models.PROTECT)
+    action = models.ForeignKey("backend.Action", related_name="context", on_delete=models.CASCADE)
     name = models.CharField(max_length=64, null=False)
     type = models.PositiveSmallIntegerField(choices=CONTEXT_TYPES, null=False)
     repo = models.CharField(max_length=255, null=False)
     visibility = models.PositiveSmallIntegerField(choices=VISIBILITY_TYPES, null=False)
 
-class Deployment(models.Model):
+class ContextCredential(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    auto_deploy = models.BooleanField(default=False, null=False)
-    auto_deploy = models.BooleanField(default=False, null=False)
+
+class Destination(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    action = models.ForeignKey("backend.Action", related_name="destination", on_delete=models.CASCADE)
+    name = models.CharField(max_length=64, null=False)
+    type = models.SmallIntegerField(choices=DESTINATION_TYPES, null=False)
+    url = models.CharField(max_length=255)
+    tag = models.CharField(max_length=128)
+
+class DestinationCredential(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+class ExternalIdentity(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    identity = models.CharField(max_length=128)
+    group_user = models.ForeignKey("backend.GroupUser", related_name="identities", on_delete=models.CASCADE)
+    type = models.PositiveSmallIntegerField(choices=EXTERNAL_IDENTITY_TYPES)
+    class Meta:
+        unique_together = [["group_user_id", "identity", "type"]]
+        indexes = [
+           models.Index(fields=["identity", "group_user_id"])
+        ]
+
+class Pipeline(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    auto_build = models.BooleanField(default=False, null=False)
     branch = models.CharField(max_length=255, null=False)
     context = models.ForeignKey("backend.Context", on_delete=models.PROTECT)
-    deployment_policies = models.ForeignKey("backend.DeploymentPolicy", on_delete=models.PROTECT)
+    pipeline_policies = models.ForeignKey("backend.PipelinePolicy", on_delete=models.PROTECT)
     destination = models.ForeignKey("backend.Destination", on_delete=models.PROTECT)
     dockerfile_path = models.CharField(max_length=255, default="/")
     event_type = models.CharField(max_length=1, choices=EVENT_TYPES, null=True)
@@ -131,24 +171,9 @@ class Deployment(models.Model):
     name = models.CharField(max_length=128)
     owner = models.CharField(max_length=64)
 
-class DeploymentAction(models.Model):
+class PipelinePolicy(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    deployment = models.ForeignKey("backend.Deployment", on_delete=models.PROTECT)
-    name = models.CharField(max_length=128)
-
-class Destination(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    group = models.ForeignKey("backend.Group", related_name="destinations", on_delete=models.PROTECT)
-    credential = models.ForeignKey(
-        "backend.Credential", default=None, null=True, on_delete=models.PROTECT)
-    name = models.CharField(max_length=64, null=False)
-    type = models.SmallIntegerField(choices=DESTINATION_TYPES, null=False)
-    url = models.CharField(max_length=255)
-    tag = models.CharField(max_length=128)
-
-class DeploymentPolicy(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    deployment_id = models.UUIDField(editable=False, null=False)
+    pipeline_id = models.UUIDField(editable=False, null=False)
     policy = models.ForeignKey("backend.Policy", on_delete=models.PROTECT)
     group = models.ForeignKey("backend.Group", on_delete=models.PROTECT)
 
@@ -176,7 +201,7 @@ class Event(models.Model):
     branch = models.CharField(max_length=255)
     user = models.CharField(max_length=255)
     commit_sha = models.CharField(max_length=128)
-    commit = models.TextField(max_length=1024, null=True)
+    commit = models.TextField(null=True)
     event_type = models.CharField(max_length=1, choices=EVENT_TYPES)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -193,14 +218,3 @@ class Policy(models.Model):
     no_push: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
     class Meta:
         unique_together = [["group_id", "name"]]
-
-class ExternalIdentity(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    identity = models.CharField(max_length=128)
-    group_user = models.ForeignKey("backend.GroupUser", related_name="identities", on_delete=models.CASCADE)
-    type = models.PositiveSmallIntegerField(choices=EXTERNAL_IDENTITY_TYPES)
-    class Meta:
-        unique_together = [["group_user_id", "identity", "type"]]
-        indexes = [
-           models.Index(fields=["identity", "group_user_id"])
-        ]
