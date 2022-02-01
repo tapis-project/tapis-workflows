@@ -23,7 +23,7 @@ class MessageBroker:
         )
 
         self.EXCHANGES = [
-            "builds",
+            "pipelines",
             "notifications"
         ]
 

@@ -50,13 +50,13 @@ services:
     - "5672:5672"
     - "15672:15672"
 
-  build:
-    container_name: build
+  pipelines:
+    container_name: pipelines
     tty: true
-    build: ./../../../components/build/src/
+    build: ./../../../components/pipelines/src/
     command: python3 main.py
     volumes:
-      - ./../../../components/build/src/:/cicd/
+      - ./../../../components/pipelines/src/:/cicd/
       - /var/run/docker.sock:/var/run/docker.sock
       # - kaniko-data:/kaniko-data/
       - /tmp/:/tmp/
@@ -66,7 +66,6 @@ services:
       BROKER_PASSWORD: "dev"
       BROKER_URL: "message"
       BROKER_PORT: 5672
-      BUILD_METHOD: "kaniko"
       DEPLOYMENT_TYPE: "docker"
       REGISTRY_HOST: registry
       REGISTRY_PORT: 5000

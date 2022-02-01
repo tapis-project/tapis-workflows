@@ -6,25 +6,22 @@ import pika
 
 from pika.exchange_type import ExchangeType
 
-from utils.bytes_to_json import bytes_to_json
-from core.BuilderResolver import builder_resolver as resolver
+from core.PipelineService import pipeline_service as service
 from conf.configs import MAX_CONNECTION_ATTEMPTS, RETRY_DELAY
+from utils.bytes_to_json import bytes_to_json
+from utils.json_to_object import json_to_object
 
 
 # Resolve the image builder 
 def on_message_callback(ch, method, properties, body):
     try:
-        request = bytes_to_json(body)
+        pipeline_context = json_to_object(bytes_to_json(body))
     except JSONDecodeError:
         # TODO reject the message if the body is not valid json
         return
 
-    # Returns the image builder specified in the env vars and builds the image
-    # based on the request sent from the message broker
-    builder = resolver.resolve(os.environ["BUILD_METHOD"])
-    
     try:
-        builder.build(request)
+        service.start(pipeline_context)
     except Exception as e:
         print(e)
 
@@ -59,13 +56,13 @@ print("Successfully connected to message broker")
 
 # Create a channel and declare an exchange
 channel = connection.channel()
-channel.exchange_declare("builds", exchange_type=ExchangeType.fanout)
+channel.exchange_declare("pipelines", exchange_type=ExchangeType.fanout)
 
 # Declare the queue
 queue = channel.queue_declare(queue="", exclusive=True)
 
 # Bind the queue to the channel
-channel.queue_bind(exchange="builds", queue=queue.method.queue)
+channel.queue_bind(exchange="pipelines", queue=queue.method.queue)
 
 # Start cosuming the queue
 channel.basic_consume(queue=queue.method.queue, auto_ack=True,

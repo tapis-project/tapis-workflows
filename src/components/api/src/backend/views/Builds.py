@@ -4,7 +4,7 @@ from django.views import View
 from backend.helpers.parse_commit import parse_commit as parse
 from backend.services.BuildService import build_service
 # TODO Remove
-from backend.fixtures.build_context import build_context
+from backend.fixtures.pipeline_context import pipeline_context
 import json
 
 class Builds(View):
@@ -15,15 +15,15 @@ class Builds(View):
     def post(self, request):
         # Fetch the deployment and related daata that matches incoming request
         # TODO fetch build context data
-        directives = parse(build_context["event"]["commit"])
-        build_context["directives"] = directives
+        directives = parse(pipeline_context["event"]["commit"])
+        pipeline_context["directives"] = directives
 
-        build = build_service.start(build_context)
+        build = build_service.start(pipeline_context)
 
         # Create the build object with status QUEUED
         # TODO create build object
 
-        # Respond with the build_context and build data
+        # Respond with the pipeline_context and build data
         return HttpResponse(json.dumps(build))
 
     def put(self, request):

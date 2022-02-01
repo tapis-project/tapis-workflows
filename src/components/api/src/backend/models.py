@@ -112,7 +112,7 @@ class Action(models.Model):
 class Build(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     status = models.PositiveSmallIntegerField(choices=STATUSES, default=STATUS_QUEUED)
-    event = models.OneToOneField("backend.Event", unique=True, on_delete=models.PROTECT)
+    event = models.OneToOneField("backend.Event", on_delete=models.PROTECT)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="builds", on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -126,25 +126,22 @@ class Credential(models.Model):
 
 class Context(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    credential = models.OneToOneField("backend.Credential", null=True, on_delete=models.PROTECT)
     action = models.ForeignKey("backend.Action", related_name="context", on_delete=models.CASCADE)
     name = models.CharField(max_length=64, null=False)
     type = models.PositiveSmallIntegerField(choices=CONTEXT_TYPES, null=False)
     repo = models.CharField(max_length=255, null=False)
     visibility = models.PositiveSmallIntegerField(choices=VISIBILITY_TYPES, null=False)
-
-class ContextCredential(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    branch = models.CharField(max_length=128, null=False)
 
 class Destination(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     action = models.ForeignKey("backend.Action", related_name="destination", on_delete=models.CASCADE)
+    credential = models.OneToOneField("backend.Credential", on_delete=models.PROTECT)
     name = models.CharField(max_length=64, null=False)
     type = models.SmallIntegerField(choices=DESTINATION_TYPES, null=False)
     url = models.CharField(max_length=255)
     tag = models.CharField(max_length=128)
-
-class DestinationCredential(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
 class ExternalIdentity(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

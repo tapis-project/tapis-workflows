@@ -3,11 +3,11 @@ import time, uuid, os
 import yaml
 
 from conf.configs import BASE_KANIKO_FILE, SCRATCH_DIR
-from core.AbstractBuildHandler import AbstractBuildHandler
+from builders.AbstractBuildHandler import AbstractBuildHandler
 
 
 class Kubernetes(AbstractBuildHandler):
-    def handle(self, build_context):
+    def dispatch(self, build_context):
         # Load a fresh kaniko base config
         self.load_config()
 
