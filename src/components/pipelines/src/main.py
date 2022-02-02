@@ -31,7 +31,8 @@ connection_parameters = pika.ConnectionParameters(
     os.environ["BROKER_URL"],
     os.environ["BROKER_PORT"],
     "/",
-    credentials
+    credentials,
+    heartbeat=0
 )
 
 # Attempt to connect to the message broker
