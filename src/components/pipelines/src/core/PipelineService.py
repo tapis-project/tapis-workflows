@@ -1,79 +1,69 @@
 from core.ActionDispatcher import action_dispatcher
-from core.BuildActionDispatcherResolver import resolver
-from helpers.ContextResolver import context_resolver
-from utils.status_to_text import status_to_text
+from errors.actions import InvalidActionTypeError
 
 
 class PipelineService:
+    def __init__(self):
+        self.failed_actions = []
+        self.successful_actions = []
+
     def start(self, pipeline_context):
-        
-        pipeline = pipeline_context.pipeline
-        directives = pipeline_context.directives
-        event = pipeline_context.event
+        print(f"Pipeline '{pipeline_context.pipeline.name}' started")
 
-        print(f"Pipeline '{pipeline.name}' started")
+        # Get pre-build actions
+        build_actions = self._get_actions_by_stage(
+            pipeline_context.pipeline.actions, "pre_build")
 
-        # Get the build action. There should only be one
-        build_action = self._get_actions_by_stage(pipeline.actions, "build")[0]
-        
-        # Set the repository from which the code containing the Dockerfile
-        # will be pulled
-        context = context_resolver.resolve(build_action.context)
+        # Dispatch build actions. There should only be one
+        self._dispatch_actions(build_actions, pipeline_context)
 
-        # Set the image registry to which the image will be pushed after build
-        destination = self.resolve_destination(build_action, event, directives)
+        # Run the build action if the pre-build actions succeeded
+        if len(self.failed_actions) == 0:
+            # Get build actions
+            build_actions = self._get_actions_by_stage(
+                pipeline_context.pipeline.actions, "build")
 
-        # Returns a build dispatcher for the specified image builder and
-        # deployment type
-        dispatcher = resolver.resolve(build_action)
+            # Dispatch build actions. There should only be one
+            self._dispatch_actions(build_actions, pipeline_context)
 
-        status = dispatcher.dispatch(build_action, context, destination, directives)
+        # Run the post build actions if the build action succeeded
+        if len(self.failed_actions) == 0:
+            # Get post-build actions
+            post_build_actions = self._get_actions_by_stage(
+                pipeline_context.pipeline.actions, "post_build")
 
-        # If build succeeded, run other actions
-        if status == 0:
-            self.run_actions(pipeline.actions)
+            # Dispatch post-build actions
+            self._dispatch_actions(post_build_actions, pipeline_context)
 
-        print(f"Pipeline '{pipeline.name}' ended")
+        print(f"Pipeline '{pipeline_context.pipeline.name}' finished")
 
-    def run_actions(self, actions):
-        # Get post build actions
-        actions = self._get_actions_by_stage(actions, "post_build")
+        # Reset the failed and successful actions
+        self._reset()
 
-        if len(actions) == 0:
-            return
-        
+    def _dispatch_actions(self, actions, pipeline_context):
         for action in actions:
             print(f"Action '{action.name}' start:")
-            status = action_dispatcher.dispatch(action)
-            print(f"Action '{action.name}' {status_to_text(status)}")
-        
-    def resolve_destination(self, action, event, directives=None):
-
-        if action.destination == None:
-            return None
-
-        # Default to latest tag
-        tag = action.destination.tag
-        if tag is None:
-            tag = "latest"
-
-        # The image tag can be overwritten by specifying directives in the 
-        # commit message. Image tagging directives take precedence over the
-        # the image_property of the pipeline.
-        if directives is not None:
-            for key, value in directives.__dict__.items():
-                if key == "CUSTOM_TAG" and key is not None:
-                    tag = value
-                elif key == "CUSTOM_TAG" and key is None:
-                    tag = action.destination.tag
-                elif key == "COMMIT_DESTINATION":
-                    tag = event.commit_sha
             
-        destination = action.destination.url + f":{tag}"
+            # Dispatch the action
+            try:
+                status = action_dispatcher.dispatch(action, pipeline_context)
+            except InvalidActionTypeError as e:
+                print(e)
+                status = 0
+            
+            # Set the actions_failed flag to True for all non-zero statuses
+            if status > 0:
+                self.failed_actions.append(action)
+                print(f"Action '{action.name}' failed")
+                return
 
-        return destination
+            print(f"Action '{action.name}' finished")
 
     def _get_actions_by_stage(self, actions, stage):
         return list(filter(lambda a: a.stage == stage, actions))
+
+    def _reset(self):
+        self.failed_actions = []
+        self.successful_actions = []
 
 pipeline_service = PipelineService()

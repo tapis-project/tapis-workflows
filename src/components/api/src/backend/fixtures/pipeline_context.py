@@ -10,7 +10,6 @@ pipeline_context = {
             {
                 "id": random_id(),
                 "auto_build": False,
-                "action_type": "container",
                 "cache": False, 
                 "builder": "kaniko",
                 "stage": "build",
@@ -48,17 +47,16 @@ pipeline_context = {
                 "description": "Build the specified image and push it",
                 "http_method": None,
                 "name": "Build",
-                "type": "container",
+                "type": "container_build",
                 "url": None,
             },
             {
                 "id": random_id(),
-                "action_type": "webhook",
                 "description": "Send a webhook notification to freetail that the image was pushed successfully",
                 "http_method": "post",
                 "name": "Notify Kube Cluster",
                 "stage": "post_build",
-                "type": "webhook",
+                "type": "webhook_notification",
                 "url": "http://someurl.com",
             }
         ],
@@ -97,12 +95,12 @@ pipeline_context = {
             "tag": None,
             "url": "nathandf/jscicd-kaniko-test",
         },
-        "event_type": "push",
         "name": "Test Pipeline"
     },
     "event": {
         "commit": "This is a commit message with directives [build|custom_tag:custom-tagV0.1]",
-        "commit_sha": "37c2a4f"
+        "commit_sha": "37c2a4f",
+        "type": "push",
     },
     "directives": {}
 }

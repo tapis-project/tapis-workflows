@@ -1,18 +1,28 @@
 import json, uuid, time, os, base64
+from lib2to3.pytree import Base
 
 import docker
 
+from core.BaseBuildDispatcher import BaseBuildDispatcher
 from errors.credential import CredentialError
 
 
-class Docker:
+class Docker(BaseBuildDispatcher):
     def __init__(self):
         self.config_file = None
 
-    def dispatch(self, action, context, destination, directives):
+    def dispatch(self, action, pipeline_context):
+        # Resolve the repository from which the code containing the Dockerfile
+        # will be pulled
+        context = self._resolve_context_string(action)
+        
+        # Resolve the image registry to which the image will be pushed after build
+        destination = self._resolve_destination_string(
+            action, pipeline_context.event, pipeline_context.directives)
+
         # Do not build if there is no BUILD directive and
         # the auto_build flag set to False
-        if (hasattr(directives, "BUILD") or action.auto_build) == False:
+        if (hasattr(pipeline_context.directives, "BUILD") or action.auto_build) == False:
             print("Build cancelled. No 'build' directive found.")
             self._reset()
             return
@@ -26,7 +36,7 @@ class Docker:
 
         # Build the entrypoint for the kaniko executor based on the pipeline
         # and directives
-        can_cache = action.cache or hasattr(directives, "CACHE")
+        can_cache = action.cache or hasattr(pipeline_context.directives, "CACHE")
         entrypoint = (
             "/kaniko/executor" +
             f" --cache={'true' if can_cache else 'false'}" +
@@ -122,5 +132,3 @@ class Docker:
             pass
 
         return logs
-
-handler = Docker()

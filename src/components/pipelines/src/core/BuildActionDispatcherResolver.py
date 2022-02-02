@@ -16,7 +16,7 @@ class BuildActionDispatcherResolver:
 
         if bool(find_spec(builder_ns)):
             module = import_module(f"{builder_ns}.{self.deployment_type}", "./" )
-            return getattr(module, "handler")
+            return getattr(module, self.deployment_type)()
 
         raise InvalidBuilderError(f"Build '{builder_name}' is not a valid image builder.")
 

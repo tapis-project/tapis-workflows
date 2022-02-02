@@ -2,11 +2,13 @@ import uuid
 
 from django.db import models
 
-ACTION_TYPE_CONTAINER = 0
-ACTION_TYPE_WEBHOOK = 1
+ACTION_TYPE_CONTAINER_BUILD = 0
+ACTION_TYPE_CONTAINER_EXEC = 1
+ACTION_TYPE_CONTAINER_WEBHOOK = 2
 ACTION_TYPES = [
-    (ACTION_TYPE_CONTAINER, "container"),
-    (ACTION_TYPE_WEBHOOK, "webhook"),
+    (ACTION_TYPE_CONTAINER_BUILD, "container_build"),
+    (ACTION_TYPE_CONTAINER_EXEC, "container_exec"),
+    (ACTION_TYPE_CONTAINER_WEBHOOK, "webhook_notification"),
 ]
 
 # ACTION_STAGE_PRE_BUILD = 0
