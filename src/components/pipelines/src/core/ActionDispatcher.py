@@ -1,10 +1,11 @@
 # import requests
 from core.BuildActionDispatcherResolver import resolver
+from core.ActionResult import ActionResult
 from errors.actions import InvalidActionTypeError
 
 
 class ActionDispatcher:
-    def dispatch(self, action, pipeline_context):
+    def dispatch(self, action, pipeline_context) -> ActionResult:
         try:
             fn = getattr(self, f"_{action.type}")
         except AttributeError:
@@ -14,7 +15,7 @@ class ActionDispatcher:
 
         return fn(action, pipeline_context)
 
-    def _container_build(self, action, pipeline_context):
+    def _container_build(self, action, pipeline_context) -> ActionResult:
         # Returns a build dispatcher for the specified image builder and
         # deployment type
         dispatcher = resolver.resolve(action)
@@ -22,10 +23,10 @@ class ActionDispatcher:
         # Dispatch the build action and return the status code
         return dispatcher.dispatch(action, pipeline_context)
 
-    def _container_exec(self, action, pipeline_context):
-        return 0
+    def _container_exec(self, action, pipeline_context) -> ActionResult:
+        return ActionResult(status=0)
 
-    def _webhook_notification(self, action, pipeline_context):
-        return 0
+    def _webhook_notification(self, action, pipeline_context) -> ActionResult:
+        return ActionResult(status=0)
 
 action_dispatcher = ActionDispatcher()

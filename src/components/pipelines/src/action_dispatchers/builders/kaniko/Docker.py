@@ -1,8 +1,8 @@
 import json, uuid, time, os, base64
-from lib2to3.pytree import Base
 
 import docker
 
+from core.ActionResult import ActionResult
 from core.BaseBuildDispatcher import BaseBuildDispatcher
 from errors.credential import CredentialError
 
@@ -81,7 +81,7 @@ class Docker(BaseBuildDispatcher):
 
         self._reset(delete_config=True)
 
-        return result["StatusCode"]
+        return ActionResult(result["StatusCode"], data=result)
 
  
     def _generate_config(self, action):

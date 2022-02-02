@@ -1,4 +1,5 @@
 from core.ActionDispatcher import action_dispatcher
+from core.ActionResult import ActionResult
 from errors.actions import InvalidActionTypeError
 
 
@@ -46,13 +47,14 @@ class PipelineService:
             
             # Dispatch the action
             try:
-                status = action_dispatcher.dispatch(action, pipeline_context)
+                action_result = action_dispatcher.dispatch(action, pipeline_context)
             except InvalidActionTypeError as e:
                 print(e)
-                status = 0
+                action_result = ActionResult(1)
+                
             
             # Set the actions_failed flag to True for all non-zero statuses
-            if status > 0:
+            if action_result.success == False:
                 self.failed_actions.append(action)
                 print(f"Action '{action.name}' failed")
                 return

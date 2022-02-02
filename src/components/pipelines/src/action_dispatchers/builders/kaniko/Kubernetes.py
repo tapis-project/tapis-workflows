@@ -3,13 +3,13 @@ import time, uuid, os
 import yaml
 
 from conf.configs import BASE_KANIKO_FILE, SCRATCH_DIR
-from builders.AbstractBuildHandler import AbstractBuildHandler
+from core.ActionResult import ActionResult
+from core.BaseBuildDispatcher import BaseBuildDispatcher
 
-
-class Kubernetes(AbstractBuildHandler):
-    def dispatch(self, build_context):
+class Kubernetes(BaseBuildDispatcher):
+    def dispatch(self, build_context) -> ActionResult:
         # Load a fresh kaniko base config
-        self.load_config()
+        self._load_config()
 
         # Build the config file with the data of the build request
         # and store it in the scratch dir
@@ -23,7 +23,9 @@ class Kubernetes(AbstractBuildHandler):
         os.remove(config_path)
         print(f"Kaniko config deleted: {config_path}")
 
-    def add_arg(self, arg, value):
+        return ActionResult(status=0)
+
+    def _add_arg(self, arg, value):
         if value is not None:
             value = "=" +  value
         # Add the argument(and value if it exists) to the args array of the 
@@ -35,17 +37,17 @@ class Kubernetes(AbstractBuildHandler):
         # Add the context, docerkfile, and destination(or --no-push) arguments that
         # kaniko requires
         # --context is the git repositry that kaniko pulls for the build
-        self.add_arg("--context", build_context.context)
+        self._add_arg("--context", build_context.context)
 
         # --dockerfile is the path to the Dockerfile in the repository
-        self.add_arg("--dockerfile", build_context.dockerfile_path)
+        self._add_arg("--dockerfile", build_context.dockerfile_path)
 
         # --destination is the image registry that the newly built image will be pushed to.
         # If none is specificed, the argument --no-push will be passed to kaniko
         if build_context.destination == None:
-            self.add_arg("--no-push")
+            self._add_arg("--no-push")
         else:
-            self.add_arg("--destination", build_context.destination)
+            self._add_arg("--destination", build_context.destination)
 
         # Create a unique filename for the kaniko config
         filename = self._create_config_filename()
@@ -62,7 +64,7 @@ class Kubernetes(AbstractBuildHandler):
     def _create_config_filename(self):
         return f"kaniko-{time.time() * 1000}-{str(uuid.uuid4())}.yml"
 
-    def load_config(self):
+    def _load_config(self):
         self.config = yaml.safe_load(
             open(BASE_KANIKO_FILE, "r").read()
         )
