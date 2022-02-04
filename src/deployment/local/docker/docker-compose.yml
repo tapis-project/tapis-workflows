@@ -35,6 +35,7 @@ services:
       REGISTRY_USER: nathandf
       REGISTRY_TOKEN: a190f902-d418-491a-9abc-c22eff2aa335
       REPO_TOKEN: "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"
+      TAPIS_TENANT: "tacc"
     ports:
       - "8000:8000"
     depends_on:

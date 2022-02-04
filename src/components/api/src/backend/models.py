@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.contrib.auth.models import User
 
 ACTION_TYPE_CONTAINER_BUILD = 0
 ACTION_TYPE_CONTAINER_EXEC = 1
@@ -47,15 +48,6 @@ DESTINATION_TYPES = [
     # NOTE support s3 destinations?
 ]
 
-EVENT_PUSH = "P"
-EVENT_MERGE_REQUEST_EVENT = "M"
-EVENT_TYPES = [
-    (EVENT_PUSH, "push"),
-    (EVENT_MERGE_REQUEST_EVENT, "merge_request_event"),
-]
-
-EXTERNAL_IDENTITY_TYPES = CONTEXT_TYPES
-
 GROUP_STATUS_DISABLED = 0
 GROUP_STATUS_ENABLED = 1
 GROUP_STATUSES = [
@@ -99,121 +91,109 @@ VISIBILITY_TYPES = [
     ( VISIBILITY_PRIVATE, "private" )
 ]
 
+class Account(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
 class Action(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     description = models.TextField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="actions", on_delete=models.CASCADE)
-    name = models.CharField(max_length=128)
-    type = models.PositiveSmallIntegerField(choices=ACTION_TYPES, null=False)
+    type = models.PositiveSmallIntegerField(choices=ACTION_TYPES)
     http_method = models.PositiveSmallIntegerField(choices=ACTION_HTTP_METHODS, null=True)
-    stage = models.PositiveSmallIntegerField(choices=ACTION_STAGE_TYPES, null=False)
+    name = models.CharField(max_length=128)
+    stage = models.PositiveSmallIntegerField(choices=ACTION_STAGE_TYPES)
     url = models.CharField(max_length=255, null=True)
+    uuid = models.UUIDField(default=uuid.uuid4)
     class Meta:
         unique_together = [["name", "pipeline_id"]]
 
+class Aliases(models.Model):
+    type = models.PositiveSmallIntegerField(choices=CONTEXT_TYPES)
+    account = models.ForeignKey("backend.Account", related_name="aliases", on_delete=models.CASCADE)
+    group = models.ForeignKey("backend.Group", related_name="aliases", on_delete=models.CASCADE)
+    uuid = models.UUIDField(default=uuid.uuid4)
+    value = models.CharField(max_length=128)
+    class Meta:
+        unique_together = [["account_id", "value", "type"]]
+
 class Build(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    status = models.PositiveSmallIntegerField(choices=STATUSES, default=STATUS_QUEUED)
-    event = models.OneToOneField("backend.Event", on_delete=models.PROTECT)
-    pipeline = models.ForeignKey("backend.Pipeline", related_name="builds", on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
+    event = models.OneToOneField("backend.Event", on_delete=models.PROTECT)
+    group = models.ForeignKey("backend.Group", related_name="builds", on_delete=models.PROTECT)
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="builds", on_delete=models.PROTECT)
+    status = models.PositiveSmallIntegerField(choices=STATUSES, default=STATUS_QUEUED)
     updated_at = models.DateTimeField(auto_now=True)
+    uuid = models.UUIDField(default=uuid.uuid4)
 
 class Credential(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    description = models.TextField(null=True)
-    group = models.ForeignKey("backend.Group", on_delete=models.PROTECT)
-    name = models.CharField(max_length=128, unique=True)
+    id = models.CharField(primary_key=True, max_length=128, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    description = models.TextField(null=True)
+    group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
+    uuid = models.UUIDField(default=uuid.uuid4)
+    class Meta:
+        unique_together = [["id", "group_id"]]
 
 class Context(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, max_length=64)
     credential = models.OneToOneField("backend.Credential", null=True, on_delete=models.PROTECT)
     action = models.ForeignKey("backend.Action", related_name="context", on_delete=models.CASCADE)
-    name = models.CharField(max_length=64, null=False)
-    type = models.PositiveSmallIntegerField(choices=CONTEXT_TYPES, null=False)
-    repo = models.CharField(max_length=255, null=False)
-    visibility = models.PositiveSmallIntegerField(choices=VISIBILITY_TYPES, null=False)
-    branch = models.CharField(max_length=128, null=False)
+    branch = models.CharField(max_length=128)
+    group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
+    repo = models.CharField(max_length=255)
+    type = models.PositiveSmallIntegerField(choices=CONTEXT_TYPES)
+    visibility = models.PositiveSmallIntegerField(choices=VISIBILITY_TYPES)
+    uuiid = models.UUIDField(default=uuid.uuid4)
 
 class Destination(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(primary_key=True, max_length=64)
     action = models.ForeignKey("backend.Action", related_name="destination", on_delete=models.CASCADE)
     credential = models.OneToOneField("backend.Credential", on_delete=models.PROTECT)
-    name = models.CharField(max_length=64, null=False)
-    type = models.SmallIntegerField(choices=DESTINATION_TYPES, null=False)
-    url = models.CharField(max_length=255)
+    group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
     tag = models.CharField(max_length=128)
-
-class ExternalIdentity(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    identity = models.CharField(max_length=128)
-    group_user = models.ForeignKey("backend.GroupUser", related_name="identities", on_delete=models.CASCADE)
-    type = models.PositiveSmallIntegerField(choices=EXTERNAL_IDENTITY_TYPES)
-    class Meta:
-        unique_together = [["group_user_id", "identity", "type"]]
-        indexes = [
-           models.Index(fields=["identity", "group_user_id"])
-        ]
+    type = models.SmallIntegerField(choices=DESTINATION_TYPES)
+    url = models.CharField(max_length=255)
+    uuid = models.UUIDField(default=uuid.uuid4)
 
 class Pipeline(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    auto_build = models.BooleanField(default=False, null=False)
-    branch = models.CharField(max_length=255, null=False)
-    context = models.ForeignKey("backend.Context", on_delete=models.PROTECT)
-    pipeline_policies = models.ForeignKey("backend.PipelinePolicy", on_delete=models.PROTECT)
-    destination = models.ForeignKey("backend.Destination", on_delete=models.PROTECT)
+    id = models.CharField(primary_key=True, max_length=128)
+    auto_build = models.BooleanField(default=False)
+    branch = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    source = models.PositiveSmallIntegerField(choices=CONTEXT_TYPES)
     dockerfile_path = models.CharField(max_length=255, default="/")
-    event_type = models.CharField(max_length=1, choices=EVENT_TYPES, null=True)
-    group = models.ForeignKey("backend.Group", on_delete=models.PROTECT)
+    group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
     image_tag = models.CharField(max_length=64, null=True)
-    name = models.CharField(max_length=128)
     owner = models.CharField(max_length=64)
-
-class PipelinePolicy(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    pipeline_id = models.UUIDField(editable=False, null=False)
-    policy = models.ForeignKey("backend.Policy", on_delete=models.PROTECT)
-    group = models.ForeignKey("backend.Group", on_delete=models.PROTECT)
+    uuid = models.UUIDField(default=uuid.uuid4)
 
 class Group(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=128, unique=True)
     owner = models.CharField(max_length=64)
+    uuid = models.UUIDField(default=uuid.uuid4)
     indexes = [
         models.Index(fields=["name", "owner"])
     ]
 
-class GroupUser(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    username = models.CharField(max_length=64)
-    group = models.ForeignKey("backend.Group", related_name="users", on_delete=models.PROTECT)
-    class Meta:
-        unique_together = [["username", "group_id"]]
-        indexes = [
-           models.Index(fields=["username", "group_id"])
-        ]
-
 class Event(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    source = models.CharField(max_length=255)
-    branch = models.CharField(max_length=255)
-    user = models.CharField(max_length=255)
-    commit_sha = models.CharField(max_length=128)
-    commit = models.TextField(null=True)
-    event_type = models.CharField(max_length=1, choices=EVENT_TYPES)
     created_at = models.DateTimeField(auto_now_add=True)
+    branch = models.CharField(max_length=255)
+    commit = models.TextField(null=True)
+    commit_sha = models.CharField(max_length=128)
+    source = models.CharField(max_length=255)
+    username = models.CharField(max_length=255)
+    uuid = models.UUIDField(default=uuid.uuid4)
 
-class Policy(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    context_commit: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
+class Policy(models.Model):      
+    context_commit: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
     credentials: models.CharField(choices=PERMISSIONS, null=True)
-    custom_tag: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
-    deploy: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
-    destination_commit: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
-    dry_run: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
+    custom_tag: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
+    deploy: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
+    destination_commit: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
+    dry_run: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
     group = models.ForeignKey("backend.Group", related_name="policies", on_delete=models.CASCADE)
     name = models.CharField(max_length=64, unique=True)
-    no_push: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY, null=False)
+    no_push: models.BooleanField(choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
+    uuid = models.UUIDField(default=uuid.uuid4)
     class Meta:
         unique_together = [["group_id", "name"]]

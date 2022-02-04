@@ -26,7 +26,7 @@ pipeline-event-job:
         "commit_sha": "$CI_COMMIT_SHA",
         "event": "$CI_PIPELINE_SOURCE",
         "commit": "$CI_COMMIT_MESSAGE",
-        "user": "$GITLAB_USER_LOGIN"
+        "username": "$GITLAB_USER_LOGIN"
       }'
   # Sends an HTTP POST request containing the payload to the webhook url
   script:
