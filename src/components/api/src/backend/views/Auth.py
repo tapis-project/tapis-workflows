@@ -15,7 +15,7 @@ class Auth(APIView):
 
         authenticated = authenticator.authenticate(
             body,
-            grant_type = "password"
+            auth_method = "password"
         )
 
         if not authenticated:

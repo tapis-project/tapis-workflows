@@ -4,6 +4,10 @@ def random_id():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k = 15))
 
 pipeline_context = {
+    "build": {
+        "id": random_id(),
+        "status": "queued"
+    },
     "pipeline": {
         "id": random_id(),
         "actions": [

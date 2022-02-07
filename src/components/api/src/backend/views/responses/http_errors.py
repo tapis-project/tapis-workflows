@@ -4,7 +4,8 @@ from backend.views.responses.BaseResponse import BaseResponse
 class BadRequest(BaseResponse):
     def __init__(self, message=None):
         BaseResponse.__init__(
-            status=401,
+            self,
+            status=400,
             success=False,
             message=message if message is not None else "Bad Request"
         )

@@ -92,7 +92,9 @@ VISIBILITY_TYPES = [
 ]
 
 class Account(models.Model):
+    owner = models.CharField(max_length=128, primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    uuid = models.UUIDField(default=uuid.uuid4)
 
 class Action(models.Model):
     description = models.TextField(null=True)
@@ -106,7 +108,7 @@ class Action(models.Model):
     class Meta:
         unique_together = [["name", "pipeline_id"]]
 
-class Aliases(models.Model):
+class Alias(models.Model):
     type = models.PositiveSmallIntegerField(choices=CONTEXT_TYPES)
     account = models.ForeignKey("backend.Account", related_name="aliases", on_delete=models.CASCADE)
     group = models.ForeignKey("backend.Group", related_name="aliases", on_delete=models.CASCADE)

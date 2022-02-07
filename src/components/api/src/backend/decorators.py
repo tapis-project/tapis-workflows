@@ -1,8 +1,8 @@
-from backend.services.TapisAuthenticator import authenticator
+from backend.services.Authenticator import authenticator
 
 
 def auth(fn):
     def wrapper(*args, **kwargs):
-        fn(*args, **kwargs)
+        return fn(*args, **kwargs)
 
     return wrapper
