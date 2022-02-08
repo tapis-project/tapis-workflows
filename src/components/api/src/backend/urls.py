@@ -9,7 +9,6 @@ from backend.views.Destinations import Destinations as Destinations
 from backend.views.Events import Events
 from backend.views.Aliases import Aliases
 from backend.views.Groups import Groups
-from backend.views.GroupUsers import GroupUsers
 from backend.views.Pipelines import Pipelines
 from backend.views.Policies import Policies
 
@@ -25,7 +24,7 @@ urlpatterns = [
     path("destination/", Destinations.as_view()),
     path("events/", Events.as_view()),
     path("groups/", Groups.as_view()),
-    path("groups/", GroupUsers.as_view()),
+    path("groups/<str:name>", Groups.as_view()),
     path("pipelines/", Pipelines.as_view()),
     path("policies/", Policies.as_view()),
 ]

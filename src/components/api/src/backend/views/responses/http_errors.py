@@ -40,6 +40,16 @@ class MethodNotAllowed(BaseResponse):
             message=message if message is not None else "Method not allowed"
         )
 
+# 409
+class Conflict(BaseResponse):
+    def __init__(self, message=None):
+        BaseResponse.__init__(
+            self,
+            status=409,
+            success=False,
+            message=message if message is not None else "Conflict"
+        )
+
 # 415
 class UnsupportedMediaType(BaseResponse):
     def __init__(self, message=None):

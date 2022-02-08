@@ -12,6 +12,6 @@ class BaseResponse(JsonResponse):
     ):
         self.success = success
         self.status = status
-        self.message = message
+        self.message = str(message)
         self.result = result
         JsonResponse.__init__(self, vars(self), status=status)

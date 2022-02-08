@@ -8,10 +8,11 @@ from utils.attrs import has_all_keys
 
 class Auth(APIView):
     def post(self, request):
-        body = json.loads(request.body)
+        result = self.validate_request_body(request.body, ["username", "password"])
+        if not result.success:
+            return result.failure_view
 
-        if not has_all_keys(body, ["username", "password"]):
-            return BadRequest()
+        body = result.body
 
         authenticated = authenticator.authenticate(
             body,
@@ -19,7 +20,7 @@ class Auth(APIView):
         )
 
         if not authenticated:
-            return Unauthorized(message=str(authenticator.error))
+            return Unauthorized(message=authenticator.error)
 
         return BaseResponse(
             message="successfully authenticated",

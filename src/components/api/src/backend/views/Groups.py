@@ -1,20 +1,42 @@
-from django.http import HttpResponse
-from django.views import View
-import inspect
+import json
+
+from django.forms.models import model_to_dict
+
+from backend.views.RestrictedAPIView import RestrictedAPIView
+from backend.views.responses.models import ModelResponseOr404, ModelResponse, ModelListResponse
+from backend.views.responses.http_errors import ServerError, Conflict
+from backend.models import Group
 
 
-class Groups(View):
-    def get(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+class Groups(RestrictedAPIView):
+    def get(self, _, name=None):
+        # Get a list of the groups if name is not set
+        if name is None:
+            return ModelListResponse(Group.objects.all())
 
-    def post(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        # Return the group by the name provided in the path params
+        return ModelResponseOr404(
+            Group.objects.filter(name=name).first())
 
-    def put(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+    def post(self, request, **_):
+        validation = self.validate_request_body(
+            request.body, ["name"])
 
-    def patch(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        if not validation.success:
+            return validation.failure_view
 
-    def delete(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        body = validation.body
+
+        # Check that name of the group is unique
+        if Group.objects.filter(name=body["name"]).exists():
+            return Conflict(f"A Group already exists with the name '{body['name']}'")
+
+        try:
+            group = Group.objects.create(name=body["name"], owner=request.username)
+        except Exception as e:
+            return ServerError(message=str(e))
+        
+        return ModelResponse(group)
+
+    def patch(self, request, name=None):
+        pass

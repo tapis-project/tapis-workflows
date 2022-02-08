@@ -1,20 +1,25 @@
-from django.http import HttpResponse
-from django.views import View
-import inspect
+from django.forms.models import model_to_dict
+
+from backend.views.RestrictedAPIView import RestrictedAPIView
 
 
-class Pipelines(View):
-    def get(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+class Pipelines(RestrictedAPIView):
+    def get(self, _, name):
+        pass
+        # # Get a list of the groups if name is not set
+        # if name is None:
+        #     # Geet all the objects
+        #     query_set = Group.objects.all()
 
-    def post(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        #     groups = []
+        #     for group in query_set:
+        #         groups.append(model_to_dict(group))
 
-    def put(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        #     return BaseResponse(result=groups)
 
-    def patch(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        # # Return the group by the name provided in the path params
+        # group = Group.objects.filter(name=name).first()
+        # if group is None:
+        #     return NotFound(f"Group does not exist with name '{name}'")
 
-    def delete(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        # return BaseResponse(result=model_to_dict(group))

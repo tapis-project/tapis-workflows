@@ -40,9 +40,9 @@ class TapisAuthenticator:
     def _password(self, credentials):
         try:
             self.client = Tapis(
-                base_url = self.base_url,
-                username = credentials["username"],
-                password = credentials["password"],
+                base_url=self.base_url,
+                username=credentials["username"],
+                password=credentials["password"],
             )
 
             # Throws an error if the credentials are invalid
@@ -56,8 +56,8 @@ class TapisAuthenticator:
 
     def _jwt(self, credentials):
         try:
-            self.client = Tapis(
-                base_url = self.base_url,
+            self.client=Tapis(
+                base_url=self.base_url,
                 jwt = credentials["jwt"]
             )
 

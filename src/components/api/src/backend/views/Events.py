@@ -11,7 +11,7 @@ import json
 
 class Events(View):
     def get(self, request):
-        self.post(request)
+        return self.post(request)
 
     def post(self, request):
         # Fetch the deployment and related daata that matches incoming request

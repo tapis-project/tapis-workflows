@@ -156,18 +156,6 @@ class Destination(models.Model):
     url = models.CharField(max_length=255)
     uuid = models.UUIDField(default=uuid.uuid4)
 
-class Pipeline(models.Model):
-    id = models.CharField(primary_key=True, max_length=128)
-    auto_build = models.BooleanField(default=False)
-    branch = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-    source = models.PositiveSmallIntegerField(choices=CONTEXT_TYPES)
-    dockerfile_path = models.CharField(max_length=255, default="/")
-    group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
-    image_tag = models.CharField(max_length=64, null=True)
-    owner = models.CharField(max_length=64)
-    uuid = models.UUIDField(default=uuid.uuid4)
-
 class Group(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=128, unique=True)
@@ -184,6 +172,18 @@ class Event(models.Model):
     commit_sha = models.CharField(max_length=128)
     source = models.CharField(max_length=255)
     username = models.CharField(max_length=255)
+    uuid = models.UUIDField(default=uuid.uuid4)
+
+class Pipeline(models.Model):
+    id = models.CharField(primary_key=True, max_length=128)
+    auto_build = models.BooleanField(default=False)
+    branch = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    source = models.PositiveSmallIntegerField(choices=CONTEXT_TYPES)
+    dockerfile_path = models.CharField(max_length=255, default="/")
+    group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
+    image_tag = models.CharField(max_length=64, null=True)
+    owner = models.CharField(max_length=64)
     uuid = models.UUIDField(default=uuid.uuid4)
 
 class Policy(models.Model):      
