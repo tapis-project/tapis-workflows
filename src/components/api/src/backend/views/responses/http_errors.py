@@ -20,6 +20,16 @@ class Unauthorized(BaseResponse):
             message=message if message is not None else "Unauthorized"
         )
 
+# 404
+class NotFound(BaseResponse):
+    def __init__(self, message=None):
+        BaseResponse.__init__(
+            self,
+            status=404,
+            success=False,
+            message=message if message is not None else "Not Found"
+        )
+
 # 405
 class MethodNotAllowed(BaseResponse):
     def __init__(self, message=None):

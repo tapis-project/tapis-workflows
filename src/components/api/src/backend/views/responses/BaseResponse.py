@@ -8,10 +8,10 @@ class BaseResponse(JsonResponse):
         status: int = 200,
         success: bool = True,
         message: str = "success",
-        result: Union[dict, List[dict]] = {}
+        result: Union[dict, List[dict]] = None
     ):
         self.success = success
         self.status = status
         self.message = message
         self.result = result
-        JsonResponse.__init__(self, vars(self))
+        JsonResponse.__init__(self, vars(self), status=status)

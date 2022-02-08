@@ -3,7 +3,6 @@ from django.views.decorators.csrf import csrf_exempt
 
 from backend.views.responses.http_errors import MethodNotAllowed, UnsupportedMediaType, BadRequest, Unauthorized
 from backend.services.Authenticator import authenticator
-from backend.services.UserService import user_service
 
 
 PERMITTED_HTTP_METHODS = [
@@ -14,7 +13,7 @@ PERMITTED_CONTENT_TYPES = [ "application/json" ]
 TOKEN_HEADER = "X-TAPIS-TOKEN"
 
 class RestrictedAPIView(View):
-    # All methods on the APIView do not require a CSRF token
+    # All methods on the RestrictedAPIView do not require a CSRF token
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
         if request.method not in PERMITTED_HTTP_METHODS:
@@ -39,6 +38,6 @@ class RestrictedAPIView(View):
         if not authenticated:
             return Unauthorized(authenticator.error)
 
-        request.username = authenticator.get_username()
+        request.username = str(authenticator.get_username())
 
         return super(RestrictedAPIView, self).dispatch(request, *args, **kwargs)
