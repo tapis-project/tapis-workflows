@@ -168,7 +168,7 @@ class Group(models.Model):
 class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     branch = models.CharField(max_length=255)
-    commit = models.TextField(null=True)
+    commit = models.TextField(max_length=255)
     commit_sha = models.CharField(max_length=128)
     source = models.CharField(max_length=255)
     username = models.CharField(max_length=255)

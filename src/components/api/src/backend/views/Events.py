@@ -1,37 +1,45 @@
-from django.http import HttpResponse
-from django.views import View
-import inspect
-
-from backend.helpers.parse_commit import parse_commit as parse
-from backend.services.BuildService import build_service
-# TODO Remove
-from backend.fixtures.pipeline_context import pipeline_context
 import json
 
+from backend.views.responses.BaseResponse import BaseResponse
+from backend.views.RestrictedAPIView import RestrictedAPIView
+from backend.views.responses.models import ModelListResponse, ModelResponse
+from backend.helpers.parse_commit import parse_commit as parse
+from backend.services.BuildService import build_service
+from backend.models import Event
+# TODO Remove
+from backend.fixtures.pipeline_context import pipeline_context
 
-class Events(View):
+
+class Events(RestrictedAPIView):
     def get(self, request):
-        return self.post(request)
+        return ModelListResponse(Event.objects.all())
 
     def post(self, request):
-        # Fetch the deployment and related daata that matches incoming request
-        # TODO fetch build context data
-        directives = parse(pipeline_context["event"]["commit"])
-        pipeline_context["directives"] = directives
+        # Validate the request body
+        validation = self.validate_request_body(
+            request.body,
+            ["branch", "commit", "commit_sha", "source", "username"]
+        )
 
-        build = build_service.start(pipeline_context)
+        # Return the failure view instance if validation failed
+        if not validation.success:
+            return validation.failure_view
+
+        # Get the JSON encoded body from the validation result
+        body = validation.body
+
+        # Persist the event in the database
+        event = Event.objects.create(**body)
+
+        # Find a pipeline that matches the data data
+
+        # Fetch the deployment and related data that matches incoming request
+        directives = parse(body["commit"])
+        pipeline_context["directives"] = directives
+        # build = build_service.start(pipeline_context)
 
         # Create the build object with status QUEUED
         # TODO create build object
 
         # Respond with the pipeline_context and build data
-        return HttpResponse(json.dumps(build))
-
-    def put(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
-
-    def patch(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
-
-    def delete(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        return ModelResponse(event)

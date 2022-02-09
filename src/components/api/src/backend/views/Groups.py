@@ -1,7 +1,3 @@
-import json
-
-from django.forms.models import model_to_dict
-
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.responses.models import ModelResponseOr404, ModelResponse, ModelListResponse
 from backend.views.responses.http_errors import ServerError, Conflict
@@ -19,12 +15,14 @@ class Groups(RestrictedAPIView):
             Group.objects.filter(name=name).first())
 
     def post(self, request, **_):
-        validation = self.validate_request_body(
-            request.body, ["name"])
+        # Validation the request body
+        validation = self.validate_request_body(request.body, ["name"])
 
+        # Return the failure view instance if validation failed
         if not validation.success:
             return validation.failure_view
 
+        # Get the json encoded body from the validation result
         body = validation.body
 
         # Check that name of the group is unique
@@ -32,6 +30,7 @@ class Groups(RestrictedAPIView):
             return Conflict(f"A Group already exists with the name '{body['name']}'")
 
         try:
+            # Save the Group object to the database
             group = Group.objects.create(name=body["name"], owner=request.username)
         except Exception as e:
             return ServerError(message=str(e))
