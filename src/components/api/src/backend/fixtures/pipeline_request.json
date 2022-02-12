@@ -1,0 +1,24 @@
+{
+    "id": "My First Pipeline",
+    "auto_build": false,
+    "group_id": "My First Group",
+    "context": {
+        "credential": {
+            "token": "some-token"
+        },
+        "branch": "develop",
+        "dockerfile_path": "src/Dockerfile",
+        "type": "github",
+        "url": "nathandf/jscicd-image-demo-private",
+        "visibility": "private"
+    },
+    "destination": {
+        "tag": "some-tag",
+        "type": "dockerhub",
+        "url": "nathandf/jscicd-kaniko-test",
+        "credential": {
+            "username": "some-registry-user",
+            "token": "some-token"
+        }
+    }
+}

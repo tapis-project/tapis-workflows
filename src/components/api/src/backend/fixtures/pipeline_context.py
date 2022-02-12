@@ -14,15 +14,13 @@ pipeline_context = {
             {
                 "id": random_id(),
                 "auto_build": False,
-                "cache": False, 
+                "cache": False,
                 "builder": "kaniko",
                 "stage": "build",
                 "context": {
                     "branch": "develop",
                     "credential": {
-                        "id": "some-credential-id",
-                        "name": "My Github Credential",
-                        "description": "Username and personal access token to pull repository code from Github", 
+                        "sk_id": "some-sk-id",
                         "data": {
                             "token": os.environ["REPO_TOKEN"]
                         }
@@ -37,9 +35,7 @@ pipeline_context = {
                 },
                 "destination": {
                     "credential": {
-                        "id": "some-credential-id",
-                        "name": "My Dockerhub Secret",
-                        "description": "Username and password(or access token) to push Dockerhub",
+                        "sk_id": "some-sk-id",
                         "data": {
                             "username": os.environ["REGISTRY_USER"],
                             "token": os.environ["REGISTRY_TOKEN"]
@@ -71,16 +67,16 @@ pipeline_context = {
         "context": {
             "branch": "develop",
             "credential": {
-                "id": "some-credential-id",
-                "name": "My Github Credential",
+                "sk_id": "some-sk-id",
                 "description": "Username and personal access token to pull repository code from Github", 
                 "data": {
+                    "username": None,
                     "token": os.environ["REPO_TOKEN"]
                 }
             },
             "dockerfile_path": "src/Dockerfile",
-            "repo": "nathandf/jscicd-image-demo-private",
-            # "repo": "nathandf/jscicd-image-demo",
+            "url": "nathandf/jscicd-image-demo-private",
+            # "url": "nathandf/jscicd-image-demo",
             "sub_path": None,
             "type": "github",
             "visibility": "private",
@@ -88,9 +84,6 @@ pipeline_context = {
         },
         "destination": {
             "credential": {
-                "id": "some-credential-id",
-                "name": "My Dockerhub Secret",
-                "description": "Username and password(or access token) to push Dockerhub",
                 "data": {
                     "username": os.environ["REGISTRY_USER"],
                     "token": os.environ["REGISTRY_TOKEN"]

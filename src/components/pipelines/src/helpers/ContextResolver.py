@@ -37,7 +37,7 @@ class ContextResolver:
             commit_string = f"#{commit}"
 
 
-        return f"{scheme}{cred_string}{domain_name}/{context.repo}.{extension}{branch_string}{commit_string}"
+        return f"{scheme}{cred_string}{domain_name}/{context.url}.{extension}{branch_string}{commit_string}"
 
     def gitlab(self, context):
         pass

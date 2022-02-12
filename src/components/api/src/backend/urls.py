@@ -24,7 +24,7 @@ urlpatterns = [
     path("destination/", Destinations.as_view()),
     path("events/", Events.as_view()),
     path("groups/", Groups.as_view()),
-    path("groups/<str:name>", Groups.as_view()),
+    path("groups/<str:id>", Groups.as_view()),
     path("pipelines/", Pipelines.as_view()),
     path("policies/", Policies.as_view()),
 ]

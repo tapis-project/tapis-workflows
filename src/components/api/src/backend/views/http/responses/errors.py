@@ -1,4 +1,4 @@
-from backend.views.responses.BaseResponse import BaseResponse
+from backend.views.http.responses.BaseResponse import BaseResponse
 
 # 400
 class BadRequest(BaseResponse):
@@ -18,6 +18,16 @@ class Unauthorized(BaseResponse):
             status=401,
             success=False,
             message=message if message is not None else "Unauthorized"
+        )
+
+# 403
+class Forbidden(BaseResponse):
+    def __init__(self, message=None):
+        BaseResponse.__init__(
+            self,
+            status=403,
+            success=False,
+            message=message if message is not None else "Forbidden"
         )
 
 # 404
@@ -58,6 +68,16 @@ class UnsupportedMediaType(BaseResponse):
             status=415,
             success=False,
             message=message if message is not None else "Unsupported media type",
+        )
+
+# 422
+class UnprocessableEntity(BaseResponse):
+    def __init__(self, message=None):
+        BaseResponse.__init__(
+            self,
+            status=422,
+            success=False,
+            message=message if message is not None else "Unprocessable entity",
         )
 
 # 500

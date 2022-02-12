@@ -1,6 +1,6 @@
 from django.forms.models import model_to_dict
 
-from backend.views.responses.BaseResponse import BaseResponse
+from backend.views.http.responses.BaseResponse import BaseResponse
 
 class ModelResponse(BaseResponse):
     def __init__(self, model, message=None):

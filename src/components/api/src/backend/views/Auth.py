@@ -1,21 +1,20 @@
-import json
-
 from backend.views.APIView import APIView
 from backend.services.Authenticator import authenticator
-from backend.views.responses.http_errors import BaseResponse, BadRequest, Unauthorized
-from utils.attrs import has_all_keys
+from backend.views.http.responses.errors import BaseResponse, Unauthorized
+from backend.views.http.requests import AuthRequest
 
 
 class Auth(APIView):
-    def post(self, request):
-        result = self.validate_request_body(request.body, ["username", "password"])
-        if not result.success:
-            return result.failure_view
+    def post(self, _):
+        prepared_request = self.prepare(AuthRequest)
 
-        body = result.body
+        if not prepared_request.is_valid:
+            return prepared_request.failure_view
+
+        body = prepared_request.body
 
         authenticated = authenticator.authenticate(
-            body,
+            {"username": body.username, "password": body.password},
             auth_method = "password"
         )
 
