@@ -1,0 +1,13 @@
+import os
+
+# TAPIS_TENANT = os.environ["TAPIS_TENANT"]
+TAPIS_TENANT = "dev" # TODO remove
+
+# TAPIS_SERVICE_ACCOUNT = os.environ["TAPIS_SERVICE_ACCOUNT"]
+TAPIS_SERVICE_ACCOUNT = "testuser2" # TODO remove
+
+TAPIS_BASE_URL = f"https://{TAPIS_TENANT}.tapis.io"
+
+TAPIS_TOKEN_HEADER = "X-TAPIS-TOKEN"
+
+DJANGO_TAPIS_TOKEN_HEADER = f"HTTP_{TAPIS_TOKEN_HEADER.replace('-', '_')}"

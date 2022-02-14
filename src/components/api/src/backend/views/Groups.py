@@ -65,6 +65,7 @@ class Groups(RestrictedAPIView):
         return ModelResponse(group)
 
     def patch(self, request, id):
+        # TODO Handle group.owner changes
         # Validation the request body
         prepared_request = self.prepare(GroupPutPatchRequest)
 

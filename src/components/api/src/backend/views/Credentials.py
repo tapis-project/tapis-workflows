@@ -1,20 +1,32 @@
-from django.http import HttpResponse
-from django.views import View
-import inspect
+from backend.models import Credential
+from backend.services.CredentialService import CredentialService
+
+from backend.views.RestrictedAPIView import RestrictedAPIView
+from backend.views.http.responses.BaseResponse import BaseResponse
+from backend.views.http.responses.models import ModelListResponse
+
+from backend.settings import DJANGO_TAPIS_TOKEN_HEADER
 
 
-class Credentials(View):
+class Credentials(RestrictedAPIView):
     def get(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        credentials = Credential.objects.all()
 
-    def post(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        cred_service = CredentialService(request.META[DJANGO_TAPIS_TOKEN_HEADER])
 
-    def put(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        creds = []
+        for cred in credentials:
+            creds.append(cred_service.get(cred.sk_id))
 
-    def patch(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
 
+        return BaseResponse(result=creds)
+
+    # TODO remove delete
     def delete(self, request):
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        credentials = Credential.objects.all()
+
+        cred_service = CredentialService(request.META[DJANGO_TAPIS_TOKEN_HEADER])
+        for credential in credentials:
+            cred_service.delete(credential.sk_id)
+
+        return BaseResponse()

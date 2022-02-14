@@ -1,9 +1,9 @@
 import os
 
 from tapipy.tapis import Tapis
-from tapipy.errors import BaseTapyException
 
-from backend.services.UserService import user_service
+from backend.settings import TAPIS_BASE_URL
+
 
 AUTH_METHODS = [
     "password",
@@ -12,11 +12,9 @@ AUTH_METHODS = [
 
 DEFAULT_AUTH_METHOD = "password"
 
-
 class TapisAuthenticator:
     def __init__(self):
-        tenant = os.environ["TAPIS_TENANT"]
-        self.base_url = f"https://{tenant}.tapis.io"
+        self.base_url = TAPIS_BASE_URL
         self.client = None
         self.credentials = {}
         self.error = None
@@ -56,7 +54,7 @@ class TapisAuthenticator:
 
     def _jwt(self, credentials):
         try:
-            self.client=Tapis(
+            self.client = Tapis(
                 base_url=self.base_url,
                 jwt = credentials["jwt"]
             )

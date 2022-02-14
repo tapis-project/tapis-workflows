@@ -135,6 +135,7 @@ class Build(models.Model):
 
 class Credential(models.Model):
     sk_id = models.CharField(max_length=128, unique=True)
+    group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     uuid = models.UUIDField(default=uuid.uuid4)
 

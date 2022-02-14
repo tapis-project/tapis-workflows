@@ -8,7 +8,7 @@ class ModelResponse(BaseResponse):
             self,
             status=200,
             success=True,
-            message=message if message is not None else "Success",
+            message=message if message is not None else "success",
             result=model_to_dict(model)
         )
 
@@ -21,7 +21,7 @@ class ModelListResponse(BaseResponse):
 
         BaseResponse.__init__(
             self,
-            message=message if message is not None else "Success",
+            message=message if message is not None else "success",
             result=models
         )
 
@@ -37,7 +37,7 @@ class ModelResponseOr404(BaseResponse):
         else:
             BaseResponse.__init__(
                 self,
-                message=message if message is not None else "Success",
+                message=message if message is not None else "success",
                 result=model_to_dict(model)
             )
 
