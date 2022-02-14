@@ -1,7 +1,7 @@
 from django.forms import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.requests import CreateGroupRequest, PutPatchGroupRequest
+from backend.views.http.requests import GroupCreateRequest, GroupPutPatchRequest
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.responses.errors import ServerError, Conflict, BadRequest, NotFound, Forbidden
 from backend.views.http.responses.BaseResponse import BaseResponse
@@ -35,7 +35,7 @@ class Groups(RestrictedAPIView):
         return BaseResponse(result=result)
 
     def post(self, request, **_):
-        prepared_request = self.prepare(CreateGroupRequest)
+        prepared_request = self.prepare(GroupCreateRequest)
 
         if not prepared_request.is_valid:
             return prepared_request.failure_view
@@ -66,7 +66,7 @@ class Groups(RestrictedAPIView):
 
     def patch(self, request, id):
         # Validation the request body
-        prepared_request = self.prepare(PutPatchGroupRequest)
+        prepared_request = self.prepare(GroupPutPatchRequest)
 
         # Return the failure view instance if validation failed
         if not prepared_request.is_valid:
@@ -89,20 +89,8 @@ class Groups(RestrictedAPIView):
         ):
             return Forbidden("You do not have access to this group")
 
-        # Remove old group users not found in the provided group users list and
-        # persist the new ones
-        group_users = group.users.all()
-
-        # Remove all group users that are not in the new users list
-        for group_user in group_users:
-            try:
-                if group_user.username not in body.users:
-                    group_user.delete()
-                    # TODO Remove the group_users that were deleted from the array
-            except Exception as e:
-                return ServerError(message=str(e))
-
         # Add all the users from the request that were not previously in it
+        modified_group_users = []
         for username in body.users:
             try:
                 if username not in [ group_user.username for group_user in group_users ]:
@@ -110,14 +98,26 @@ class Groups(RestrictedAPIView):
                         group_id=group.id,
                         username=username
                     )
-                    # TODO Add new user to group_user array
+                    modified_group_users.append(group_user)
+            except Exception as e:
+                return ServerError(message=str(e))
+
+        # Remove all group users that are not in the new users list
+        for group_user in group_users:
+            try:
+                if group_user.username not in body.users:
+                    group_user.delete()
+                    continue
+
+
+                modified_group_users.append(group_user)
             except Exception as e:
                 return ServerError(message=str(e))
                 
 
         # Convert model into a dict an
         result = model_to_dict(group)
-        result["users"] = [ model_to_dict(user) for user in group_users ]
+        result["users"] = [ model_to_dict(user) for user in modified_group_users ]
         
         return BaseResponse(result=result)
 

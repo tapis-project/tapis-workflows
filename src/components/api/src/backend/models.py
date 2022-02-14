@@ -139,16 +139,14 @@ class Credential(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4)
 
 class Context(models.Model):
-    id = models.CharField(primary_key=True, max_length=64)
-    credential = models.OneToOneField("backend.Credential", null=True, on_delete=models.PROTECT)
     branch = models.CharField(max_length=128)
-    url = models.CharField(max_length=255)
+    credential = models.OneToOneField("backend.Credential", null=True, on_delete=models.PROTECT)
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
-    visibility = models.CharField(max_length=32, choices=VISIBILITY_TYPES)
+    url = models.CharField(max_length=255)
     uuiid = models.UUIDField(default=uuid.uuid4)
+    visibility = models.CharField(max_length=32, choices=VISIBILITY_TYPES)
 
 class Destination(models.Model):
-    id = models.CharField(primary_key=True, max_length=64)
     credential = models.OneToOneField("backend.Credential", on_delete=models.PROTECT)
     tag = models.CharField(max_length=128)
     type = models.SmallIntegerField(choices=DESTINATION_TYPES)

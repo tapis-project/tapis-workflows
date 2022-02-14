@@ -7,13 +7,53 @@ class AuthRequest(BaseModel):
     username: str
     password: str
 
+# Contexts
+class ContextCredential(BaseModel):
+    token: str = None
+    username: str
+
+class Context(BaseModel):
+    credential: ContextCredential = None
+    branch: str
+    dockerfile_path: str
+    type: str
+    url: str
+    visibility: str
+
+# Destination
+class DestinationCredential(BaseModel):
+    token: str
+    username: str
+
+class Destination(BaseModel):
+    credential: DestinationCredential
+    tag: str
+    type: str
+    url: str
+
+# Events
+class EventCreateRequest(BaseModel):
+    branch: str
+    commit: str
+    commit_sha: str
+    source: str
+    username: str
+
 # Groups
-class CreateGroupRequest(BaseModel):
+class GroupCreateRequest(BaseModel):
     id: str
     users: List[StrictStr] = []
 
-class PutPatchGroupRequest(BaseModel):
+class GroupPutPatchRequest(BaseModel):
     users: List[StrictStr] = []
+
+class PipelineCreateRequest(BaseModel):
+    id: str
+    auto_build: bool = False
+    builder: str = "kaniko"
+    group_id: str
+    context: Context
+    destination: Destination
 
 class PreparedRequest:
     def __init__(

@@ -1,7 +1,5 @@
-import json
-
-from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.views.RestrictedAPIView import RestrictedAPIView
+from backend.views.http.requests import EventCreateRequest
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.helpers.parse_commit import parse_commit as parse
 from backend.services.PipelineService import pipeline_service
@@ -15,17 +13,11 @@ class Events(RestrictedAPIView):
         return ModelListResponse(Event.objects.all())
 
     def post(self, request):
-        # Validate the request body
-        prepared_request = self.prepare_request(
-            request,
-            ["branch", "commit", "commit_sha", "source", "username"]
-        )
+        prepared_request = self.prepare(EventCreateRequest)
 
-        # Return the failure view instance if validation failed
         if not prepared_request.is_valid:
             return prepared_request.failure_view
 
-        # Get the JSON encoded body from the validation result
         body = prepared_request.body
 
         # Persist the event in the database
