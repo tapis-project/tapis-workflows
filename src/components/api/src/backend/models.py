@@ -103,9 +103,9 @@ class Account(models.Model):
 
 class Action(models.Model):
     cache = models.BooleanField(default=False)
-    context = models.OneToOneField("backend.Context", on_delete=models.CASCADE)
+    context = models.OneToOneField("backend.Context", null=True, on_delete=models.CASCADE)
     description = models.TextField(null=True)
-    destination = models.OneToOneField("backend.Destination", on_delete=models.CASCADE)
+    destination = models.OneToOneField("backend.Destination", null=True, on_delete=models.CASCADE)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="actions", on_delete=models.CASCADE)
     type = models.CharField(max_length=32, choices=ACTION_TYPES)
     http_method = models.CharField(max_length=32, choices=ACTION_HTTP_METHODS, null=True)
@@ -127,9 +127,9 @@ class Alias(models.Model):
 
 class Build(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    event = models.OneToOneField("backend.Event", on_delete=models.PROTECT)
-    group = models.ForeignKey("backend.Group", related_name="builds", on_delete=models.PROTECT)
-    pipeline = models.ForeignKey("backend.Pipeline", related_name="builds", on_delete=models.PROTECT)
+    event = models.OneToOneField("backend.Event", on_delete=models.CASCADE)
+    group = models.ForeignKey("backend.Group", related_name="builds", on_delete=models.CASCADE)
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="builds", on_delete=models.CASCADE)
     status = models.CharField(max_length=32, choices=STATUSES, default=STATUS_QUEUED)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
@@ -142,16 +142,16 @@ class Credential(models.Model):
 
 class Context(models.Model):
     branch = models.CharField(max_length=128)
-    credential = models.OneToOneField("backend.Credential", null=True, on_delete=models.PROTECT)
+    credential = models.OneToOneField("backend.Credential", null=True, on_delete=models.CASCADE)
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
     url = models.CharField(max_length=255)
     uuiid = models.UUIDField(default=uuid.uuid4)
     visibility = models.CharField(max_length=32, choices=VISIBILITY_TYPES)
 
 class Destination(models.Model):
-    credential = models.OneToOneField("backend.Credential", on_delete=models.PROTECT)
+    credential = models.OneToOneField("backend.Credential", on_delete=models.CASCADE)
     tag = models.CharField(max_length=128)
-    type = models.SmallIntegerField(choices=DESTINATION_TYPES)
+    type = models.CharField(max_length=32, choices=DESTINATION_TYPES)
     url = models.CharField(max_length=255)
     uuid = models.UUIDField(default=uuid.uuid4)
 

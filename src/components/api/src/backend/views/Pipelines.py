@@ -1,15 +1,65 @@
 from django.db import IntegrityError
+from django.forms import model_to_dict
+
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses.errors import BaseResponse, Conflict, BadRequest, UnprocessableEntity, Forbidden, ServerError
-from backend.views.http.responses.models import ModelResponse
+from backend.views.http.responses.errors import BaseResponse, Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden, ServerError
+from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.requests import PipelineCreateRequest
-from backend.models import Pipeline, Group, Context, Destination, Action
+from backend.models import Pipeline, Group, Context, Destination, Action, Context, Destination, GroupUser
 from backend.services.PipelineService import pipeline_service
 from backend.services.CredentialService import CredentialService
 from backend.settings import DJANGO_TAPIS_TOKEN_HEADER
 
 
 class Pipelines(RestrictedAPIView):
+    def get(self, request, id=None):
+        # Get all the groups the user belongs to
+        group_users = GroupUser.objects.filter(username=request.username)
+        group_ids = [ group_user.group_id for group_user in group_users ]
+
+        # Get a list of all pipelines if id is not set
+        if id is None:
+            pipelines = Pipeline.objects.filter(group_id__in=group_ids)
+            return ModelListResponse(pipelines)
+
+        # Return the pipeline by the id provided in the path params
+        pipeline = Pipeline.objects.filter(id=id).prefetch_related(
+            "actions",
+            "actions__context",
+            "actions__context__credential",
+            "actions__destination",
+            "actions__destination__credential"
+        ).first()
+
+        if pipeline is None:
+            return NotFound(f"Pipeline not found with id '{id}'")
+
+        # Check that the user belongs to the group that is attached
+        # to this pipline
+        if pipeline.group_id not in group_ids:
+            return Forbidden(message="You do not have access to this pipeline")
+
+        # Get the pipeline actions.
+        actions = pipeline.actions.all()
+        actions_result = []
+        for action in actions:
+            action_result = model_to_dict(action)
+
+            action_result["context"] = model_to_dict(action.context)
+            if action.context.credential is not None:
+                action_result["context"]["credential"] = model_to_dict(action.context.credential)
+
+            action_result["destination"] = model_to_dict(action.destination)
+            action_result["destination"]["credential"] = model_to_dict(action.destination.credential)
+
+            actions_result.append(action_result)
+
+        # Convert model into a dict an
+        result = model_to_dict(pipeline)
+        result["actions"] = actions_result
+        
+        return BaseResponse(result=result)
+
     def post(self, request):
         # Validate the request body
         prepared_request = self.prepare(PipelineCreateRequest)
@@ -25,18 +75,21 @@ class Pipelines(RestrictedAPIView):
         if Pipeline.objects.filter(id=body.id).exists():
             return Conflict(f"A Pipeline already exists with the id '{body['id']}'")
 
+        # Get the group
+        group = Group.objects.filter(id=body.group_id).first()
+
         # Check that the group_id passed by the user is a valid group
-        if not Group.objects.filter(id=body.group_id).exists():
+        if group is None:
             return UnprocessableEntity(f"Group '{body.group_id}' does not exist'")
 
-        # Check that the user belongs to or owns this group
-        group = Group.objects.filter(id=body.group_id)[0]
-        group_users = group.users.all()
-        if (
-            request.username != group.owner
-            and request.username not in list(filter(lambda u: u.username == request.username, group_users))
-        ):
-            return Forbidden("You cannot create a pipeline for this group")
+        # Get all the groups the user belongs to
+        group_users = GroupUser.objects.filter(username=request.username)
+        group_ids = [ group_user.group_id for group_user in group_users ]
+
+        # Check that the user belongs to the group that is attached
+        # to this pipline
+        if body.group_id not in group_ids:
+            return Forbidden(message="You cannot create a pipeline for this group")
 
         # Persist the credentials for the context and destination in SK and
         # and save a ref to it in the database
@@ -53,12 +106,12 @@ class Pipelines(RestrictedAPIView):
 
         # Create the context
         try:
-            context = Context.objects.save(
-                branch=body.branch,
+            context = Context.objects.create(
+                branch=body.context.branch,
                 credential=context_cred,
-                type=body.type,
-                url=body.url,
-                visibility=body.visibility
+                type=body.context.type,
+                url=body.context.url,
+                visibility=body.context.visibility
             )
         except IntegrityError as e:
             return ServerError(message=e.__cause__)
@@ -75,11 +128,11 @@ class Pipelines(RestrictedAPIView):
 
         # Create the destination
         try:
-            destination = Destination.objects.save(
+            destination = Destination.objects.create(
                 credential=destination_cred,
-                tag=body.tag,
-                type=body.type,
-                url=body.url
+                tag=body.destination.tag,
+                type=body.destination.type,
+                url=body.destination.url
             )
         except IntegrityError as e:
             return ServerError(message=e.__cause__)
@@ -118,4 +171,4 @@ class Pipelines(RestrictedAPIView):
         except IntegrityError as e:
             return ServerError(message=e.__cause__)
 
-        return ModelResponse(result=pipeline)
+        return ModelResponse(pipeline)

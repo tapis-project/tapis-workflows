@@ -8,4 +8,4 @@ class Policies(RestrictedAPIView):
     def get(self, request):
         policies = Policy.objects.all()
 
-        return ModelListResponse(result=policies)
+        return ModelListResponse(policies)

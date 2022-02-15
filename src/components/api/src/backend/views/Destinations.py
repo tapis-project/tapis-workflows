@@ -8,4 +8,4 @@ class Destinations(RestrictedAPIView):
     def get(self, request):
         destination = Destination.objects.all()
 
-        return ModelListResponse(result=destination)
+        return ModelListResponse(destination)

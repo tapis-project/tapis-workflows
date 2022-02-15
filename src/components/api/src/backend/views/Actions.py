@@ -8,4 +8,4 @@ class Actions(RestrictedAPIView):
     def get(self, request):
         actions = Action.objects.all()
 
-        return ModelListResponse(result=actions)
+        return ModelListResponse(actions)

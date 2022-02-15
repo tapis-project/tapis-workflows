@@ -27,6 +27,7 @@ urlpatterns = [
     path("groups/", Groups.as_view()),
     path("groups/<str:id>", Groups.as_view()),
     path("pipelines/", Pipelines.as_view()),
+    path("pipelines/<str:id>", Pipelines.as_view()),
     path("policies/", Policies.as_view()),
     path("nuke/", Nuke.as_view()), # TODO Remove
 ]

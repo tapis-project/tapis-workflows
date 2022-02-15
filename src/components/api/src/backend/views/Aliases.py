@@ -8,4 +8,4 @@ class Aliases(RestrictedAPIView):
     def get(self, request):
         aliases = Alias.objects.all()
 
-        return ModelListResponse(result=aliases)
+        return ModelListResponse(aliases)

@@ -8,4 +8,4 @@ class Builds(RestrictedAPIView):
     def get(self, request):
         builds = Build.objects.all()
 
-        return ModelListResponse(result=builds)
+        return ModelListResponse(builds)

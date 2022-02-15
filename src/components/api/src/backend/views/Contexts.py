@@ -8,4 +8,4 @@ class Contexts(RestrictedAPIView):
     def get(self, request):
         contexts = Context.objects.all()
 
-        return ModelListResponse(result=contexts)
+        return ModelListResponse(contexts)

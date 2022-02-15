@@ -53,7 +53,7 @@ class CredentialService:
             secretName=sk_id,
             user=TAPIS_SERVICE_ACCOUNT,
             tenant=TAPIS_TENANT
-        ).result.secretMap.__dict__
+        ).secretMap.__dict__
 
     def _format_secret_name(self, secret_name: str):
         return secret_name.replace(" ", "-")
