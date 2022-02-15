@@ -11,6 +11,7 @@ from backend.views.Aliases import Aliases
 from backend.views.Groups import Groups
 from backend.views.Pipelines import Pipelines
 from backend.views.Policies import Policies
+from backend.views.Nuke import Nuke
 
 
 urlpatterns = [
@@ -27,4 +28,5 @@ urlpatterns = [
     path("groups/<str:id>", Groups.as_view()),
     path("pipelines/", Pipelines.as_view()),
     path("policies/", Policies.as_view()),
+    path("nuke/", Nuke.as_view()), # TODO Remove
 ]

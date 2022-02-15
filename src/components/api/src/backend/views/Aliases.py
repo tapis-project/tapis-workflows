@@ -1,11 +1,11 @@
-from django.http import HttpResponse
-
-from backend.views.APIView import APIView
 from backend.models import Alias
+from backend.views.RestrictedAPIView import RestrictedAPIView
+from backend.views.http.responses.BaseResponse import BaseResponse
+from backend.views.http.responses.models import ModelListResponse
 
 
-class Aliases(APIView):
+class Aliases(RestrictedAPIView):
+    def get(self, request):
+        aliases = Alias.objects.all()
 
-    def post(self, request):
-
-        return HttpResponse(f"{type(self).__name__}: {inspect.stack()[0][3]}")
+        return ModelListResponse(result=aliases)

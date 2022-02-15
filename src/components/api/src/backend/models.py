@@ -102,6 +102,7 @@ class Account(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4)
 
 class Action(models.Model):
+    cache = models.BooleanField(default=False)
     context = models.OneToOneField("backend.Context", on_delete=models.CASCADE)
     description = models.TextField(null=True)
     destination = models.OneToOneField("backend.Destination", on_delete=models.CASCADE)

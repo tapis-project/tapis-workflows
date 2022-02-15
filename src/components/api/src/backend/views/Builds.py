@@ -1,19 +1,11 @@
-from django.http import HttpResponse
-from django.views import View
+from backend.models import Build
+from backend.views.RestrictedAPIView import RestrictedAPIView
+from backend.views.http.responses.BaseResponse import BaseResponse
+from backend.views.http.responses.models import ModelListResponse
 
-class Builds(View):
-    
+
+class Builds(RestrictedAPIView):
     def get(self, request):
-        return HttpResponse("get")
-    
-    def post(self, request):
-        return HttpResponse(f"post")
+        builds = Build.objects.all()
 
-    def put(self, request):
-        return HttpResponse(f"put")
-
-    def patch(self, request):
-        return HttpResponse(f"patch")
-
-    def delete(self, request):
-        return HttpResponse(f"delete")
+        return ModelListResponse(result=builds)

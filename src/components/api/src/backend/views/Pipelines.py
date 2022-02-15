@@ -3,7 +3,7 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import BaseResponse, Conflict, BadRequest, UnprocessableEntity, Forbidden, ServerError
 from backend.views.http.responses.models import ModelResponse
 from backend.views.http.requests import PipelineCreateRequest
-from backend.models import Pipeline, Group
+from backend.models import Pipeline, Group, Context, Destination, Action
 from backend.services.PipelineService import pipeline_service
 from backend.services.CredentialService import CredentialService
 from backend.settings import DJANGO_TAPIS_TOKEN_HEADER
@@ -52,31 +52,68 @@ class Pipelines(RestrictedAPIView):
                 {**body.context.credential.__dict__})
 
         # Create the context
+        try:
+            context = Context.objects.save(
+                branch=body.branch,
+                credential=context_cred,
+                type=body.type,
+                url=body.url,
+                visibility=body.visibility
+            )
+        except IntegrityError as e:
+            return ServerError(message=e.__cause__)
 
         # Create the credential for the destination (should always be specified)
         cred_service = CredentialService(request.META[DJANGO_TAPIS_TOKEN_HEADER])
-        destination_cred = cred_service.save(
-            f"{group.id}+{body.id}+destination",
-            group,
-            {**body.destination.credential.__dict__})
+        try:
+            destination_cred = cred_service.save(
+                f"{group.id}+{body.id}+destination",
+                group,
+                {**body.destination.credential.__dict__})
+        except IntegrityError as e:
+            return ServerError(message=e.__cause__)
 
         # Create the destination
+        try:
+            destination = Destination.objects.save(
+                credential=destination_cred,
+                tag=body.tag,
+                type=body.type,
+                url=body.url
+            )
+        except IntegrityError as e:
+            return ServerError(message=e.__cause__)
 
         # Create the pipeline
-
-        return BaseResponse()
-
         try:
             pipeline = Pipeline.objects.create(
+                id=body.id,
                 auto_build=body.auto_build,
-                group_id=body.group_id,
                 branch=body.context.branch,
                 builder=body.builder,
                 context_type=body.context.type,
                 destination_type=body.destination.type,
                 dockerfile_path=body.context.dockerfile_path,
+                group_id=body.group_id,
                 image_tag=body.destination.tag,
                 owner=request.username
+            )
+        except IntegrityError as e:
+            return ServerError(message=e.__cause__)
+
+        # Create 'build' action
+        try:
+            build_action = Action.objects.create(
+                cache=body.cache,
+                context=context,
+                description="Build an image from a repository and push the image to some destination",
+                destination=destination,
+                http_method=None,
+                name="Build",
+                pipeline=pipeline,
+                stage="build",
+                type="container_build",
+                url=None
             )
         except IntegrityError as e:
             return ServerError(message=e.__cause__)

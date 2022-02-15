@@ -38,7 +38,7 @@ services:
       TAPIS_TENANT: "tacc"
       DJANGO_SUPERUSER_USERNAME: "nathandf"
       DJANGO_SUPERUSER_EMAIL: "nfreeman@tacc.utexas.edu"
-      DJANGO_SUPERUSER_PASSWORD: "wow123"
+      DJANGO_SUPERUSER_PASSWORD: "dev"
     ports:
       - "8000:8000"
     depends_on:

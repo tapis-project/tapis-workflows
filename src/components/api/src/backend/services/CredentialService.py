@@ -42,12 +42,18 @@ class CredentialService:
         Credential.objects.filter(sk_id=sk_id)[0].delete()
 
     def get(self, sk_id: str):
+        if Credential.objects.filter(sk_id=sk_id).exists():
+            return Credential.objects.filter(sk_id=sk_id)[0]
+        
+        return None
+
+    def get_secret(self, sk_id: str):
         return self.client.sk.readSecret(
             secretType="user",
             secretName=sk_id,
             user=TAPIS_SERVICE_ACCOUNT,
             tenant=TAPIS_TENANT
-        ).secretMap.__dict__
+        ).result.secretMap.__dict__
 
     def _format_secret_name(self, secret_name: str):
         return secret_name.replace(" ", "-")

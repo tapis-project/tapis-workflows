@@ -16,8 +16,7 @@ class Credentials(RestrictedAPIView):
 
         creds = []
         for cred in credentials:
-            creds.append(cred_service.get(cred.sk_id))
-
+            creds.append(cred_service.get_secret(cred.sk_id))
 
         return BaseResponse(result=creds)
 
@@ -29,4 +28,4 @@ class Credentials(RestrictedAPIView):
         for credential in credentials:
             cred_service.delete(credential.sk_id)
 
-        return BaseResponse()
+        return BaseResponse(message="Credentials deleted")

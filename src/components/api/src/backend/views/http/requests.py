@@ -1,6 +1,7 @@
-from typing import Optional, List
+from typing import  List
 
 from pydantic import BaseModel, StrictStr
+
 
 # Auth
 class AuthRequest(BaseModel):
@@ -50,6 +51,7 @@ class GroupPutPatchRequest(BaseModel):
 class PipelineCreateRequest(BaseModel):
     id: str
     auto_build: bool = False
+    cache: bool = False
     builder: str = "kaniko"
     group_id: str
     context: Context
