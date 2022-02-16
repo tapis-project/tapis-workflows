@@ -1,4 +1,5 @@
 from typing import Dict
+from django.db import IntegrityError
 
 from tapipy.tapis import Tapis
 from django.forms.models import model_to_dict
@@ -18,13 +19,16 @@ class CredentialService:
         # TODO change secretType from "user" to "service" after creating the
         # cicd-pipelines-svc account
         sk_id = f"cicd-pipelines+{self._format_secret_name(secret_name)}"
-        self.client.sk.writeSecret(
-            secretType="user",
-            secretName=f"cicd-pipelines+{self._format_secret_name(secret_name)}",
-            user=TAPIS_SERVICE_ACCOUNT,
-            tenant=TAPIS_TENANT,
-            data=data
-        )
+        try:
+            self.client.sk.writeSecret(
+                secretType="user",
+                secretName=f"cicd-pipelines+{self._format_secret_name(secret_name)}",
+                user=TAPIS_SERVICE_ACCOUNT,
+                tenant=TAPIS_TENANT,
+                data=data
+            )
+        except IntegrityError as e:
+            raise e
 
         credential = Credential.objects.create(sk_id=sk_id, group=group)
 
@@ -39,7 +43,9 @@ class CredentialService:
             versions=[]
         )
 
-        Credential.objects.filter(sk_id=sk_id)[0].delete()
+        credential = Credential.objects.filter(sk_id=sk_id).first()
+        if credential is not None:
+            credential.delete()
 
     def get(self, sk_id: str):
         if Credential.objects.filter(sk_id=sk_id).exists():

@@ -173,6 +173,9 @@ class Event(models.Model):
     branch = models.CharField(max_length=255)
     commit = models.TextField(max_length=255)
     commit_sha = models.CharField(max_length=128)
+    context = models.CharField(max_length=128)
+    message = models.TextField()
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="events", on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
     username = models.CharField(max_length=255)
     uuid = models.UUIDField(default=uuid.uuid4)
@@ -183,6 +186,7 @@ class Pipeline(models.Model):
     branch = models.CharField(max_length=255)
     builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, default=IMAGE_BUILDER_KANIKO)
     created_at = models.DateTimeField(auto_now_add=True)
+    context = models.CharField(max_length=255)
     destination_type = models.CharField(max_length=32, choices=DESTINATION_TYPES)
     context_type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
     dockerfile_path = models.CharField(max_length=255, default="/")
@@ -192,7 +196,7 @@ class Pipeline(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
     class Meta:
-        unique_together = [["branch", "context_type", "dockerfile_path", "destination_type", "image_tag"]]
+        unique_together = [["branch", "context", "context_type"]]
 
 class Policy(models.Model):      
     context_commit: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)

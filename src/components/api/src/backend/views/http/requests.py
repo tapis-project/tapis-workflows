@@ -10,8 +10,8 @@ class AuthRequest(BaseModel):
 
 # Contexts
 class ContextCredential(BaseModel):
-    token: str = None
-    username: str
+    token: str
+    username: str = None
 
 class Context(BaseModel):
     credential: ContextCredential = None
@@ -38,6 +38,7 @@ class EventCreateRequest(BaseModel):
     commit: str
     commit_sha: str
     source: str
+    context: str
     username: str
 
 # Groups

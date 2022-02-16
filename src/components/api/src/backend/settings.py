@@ -1,7 +1,7 @@
 import os
 
 # TAPIS_TENANT = os.environ["TAPIS_TENANT"]
-TAPIS_TENANT = "dev" # TODO remove
+TAPIS_TENANT = "dev" # TODO
 
 # TAPIS_SERVICE_ACCOUNT = os.environ["TAPIS_SERVICE_ACCOUNT"]
 TAPIS_SERVICE_ACCOUNT = "testuser2" # TODO remove

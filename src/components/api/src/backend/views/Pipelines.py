@@ -60,7 +60,7 @@ class Pipelines(RestrictedAPIView):
         
         return BaseResponse(result=result)
 
-    def post(self, request):
+    def post(self, request, **_):
         # Validate the request body
         prepared_request = self.prepare(PipelineCreateRequest)
 
@@ -73,7 +73,7 @@ class Pipelines(RestrictedAPIView):
         
         # Check that id of the pipeline is unique
         if Pipeline.objects.filter(id=body.id).exists():
-            return Conflict(f"A Pipeline already exists with the id '{body['id']}'")
+            return Conflict(f"A Pipeline already exists with the id '{body.id}'")
 
         # Get the group
         group = Group.objects.filter(id=body.group_id).first()
@@ -99,10 +99,13 @@ class Pipelines(RestrictedAPIView):
         # Create the credential for the context if one is specified
         context_cred = None
         if hasattr(body.context, "credential") and body.context.credential is not None:
-            context_cred = cred_service.save(
-                f"{group.id}+{body.id}+context",
-                group,
-                {**body.context.credential.__dict__})
+            try:
+                context_cred = cred_service.save(
+                    f"{group.id}+{body.id}+context",
+                    group,
+                    {**body.context.credential.__dict__})
+            except IntegrityError as e:
+                return BadRequest(message=e.__cause__)
 
         # Create the context
         try:
@@ -114,7 +117,8 @@ class Pipelines(RestrictedAPIView):
                 visibility=body.context.visibility
             )
         except IntegrityError as e:
-            return ServerError(message=e.__cause__)
+            cred_service.delete(context_cred.sk_id)
+            return BadRequest(message=e.__cause__)
 
         # Create the credential for the destination (should always be specified)
         cred_service = CredentialService(request.META[DJANGO_TAPIS_TOKEN_HEADER])
@@ -124,7 +128,9 @@ class Pipelines(RestrictedAPIView):
                 group,
                 {**body.destination.credential.__dict__})
         except IntegrityError as e:
-            return ServerError(message=e.__cause__)
+            cred_service.delete(context_cred.sk_id)
+            context.delete()
+            return BadRequest(message=e.__cause__)
 
         # Create the destination
         try:
@@ -135,7 +141,10 @@ class Pipelines(RestrictedAPIView):
                 url=body.destination.url
             )
         except IntegrityError as e:
-            return ServerError(message=e.__cause__)
+            cred_service.delete(context_cred.sk_id)
+            context.delete()
+            cred_service.delete(destination_cred.sk_id)
+            return BadRequest(message=e.__cause__)
 
         # Create the pipeline
         try:
@@ -144,6 +153,7 @@ class Pipelines(RestrictedAPIView):
                 auto_build=body.auto_build,
                 branch=body.context.branch,
                 builder=body.builder,
+                context=body.context.url,
                 context_type=body.context.type,
                 destination_type=body.destination.type,
                 dockerfile_path=body.context.dockerfile_path,
@@ -152,14 +162,18 @@ class Pipelines(RestrictedAPIView):
                 owner=request.username
             )
         except IntegrityError as e:
+            cred_service.delete(context_cred.sk_id)
+            context.delete()
+            cred_service.delete(destination_cred.sk_id)
+            destination.objects.delete()
             return ServerError(message=e.__cause__)
 
         # Create 'build' action
         try:
-            build_action = Action.objects.create(
+            Action.objects.create(
                 cache=body.cache,
                 context=context,
-                description="Build an image from a repository and push the image to some destination",
+                description="Build an image from a repository and push it to an image registry",
                 destination=destination,
                 http_method=None,
                 name="Build",
@@ -169,6 +183,11 @@ class Pipelines(RestrictedAPIView):
                 url=None
             )
         except IntegrityError as e:
+            cred_service.delete(context_cred.sk_id)
+            context.delete()
+            cred_service.delete(destination_cred.sk_id)
+            destination.objects.delete()
+            pipeline.delete()
             return ServerError(message=e.__cause__)
 
         return ModelResponse(pipeline)

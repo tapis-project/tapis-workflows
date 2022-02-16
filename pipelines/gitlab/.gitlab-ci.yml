@@ -21,11 +21,12 @@ pipeline-event-job:
     WEBHOOK_URL: "$WEBHOOK_URL"
     ACCESS_TOKEN: "$ACCESS_TOKEN"
     WEBHOOK_PAYLOAD: '{
-        "source": "CI_PROJECT_PATH",
         "branch": "$CI_COMMIT_BRANCH",
-        "commit_sha": "$CI_COMMIT_SHA",
-        "event": "$CI_PIPELINE_SOURCE",
         "commit": "$CI_COMMIT_MESSAGE",
+        "commit_sha": "$CI_COMMIT_SHA",
+        "context": "$CI_PROJECT_PATH",
+        "event": "$CI_PIPELINE_SOURCE",
+        "source": "gitlab",
         "username": "$GITLAB_USER_LOGIN"
       }'
   # Sends an HTTP POST request containing the payload to the webhook url

@@ -1,10 +1,10 @@
 {
-    "id": "My First Pipeline",
+    "id": "real-pipeline-test",
     "auto_build": false,
-    "group_id": "My First Group",
+    "group_id": "test",
     "context": {
         "credential": {
-            "token": "some-token"
+            "token": "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"
         },
         "branch": "develop",
         "dockerfile_path": "src/Dockerfile",
@@ -13,12 +13,12 @@
         "visibility": "private"
     },
     "destination": {
-        "tag": "some-tag",
+        "tag": "new-tag",
         "type": "dockerhub",
         "url": "nathandf/jscicd-kaniko-test",
         "credential": {
-            "username": "some-registry-user",
-            "token": "some-token"
+            "username": "nathandf",
+            "token": "a190f902-d418-491a-9abc-c22eff2aa335"
         }
     }
 }
