@@ -8,7 +8,9 @@ from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.views.http.responses.errors import ServerError
 from backend.helpers.parse_commit import parse_commit as parse
 from backend.services.PipelineService import pipeline_service
+from backend.services.CredentialService import cred_service
 from backend.models import Event, Pipeline, Group, GroupUser
+from backend.settings import DJANGO_TAPIS_TOKEN_HEADER
 # TODO Remove
 from backend.fixtures.pipeline_context import pipeline_context
 
@@ -67,7 +69,8 @@ class Events(RestrictedAPIView):
         # except IntegrityError as e:
         #     return ServerError(message=e.__cause__)
 
-        # Get the pipeline actions.
+        # Get the pipeline actions, their contexts, destinations, and respective
+        # credentials
         actions = pipeline.actions.all()
         actions_result = []
         for action in actions:
@@ -77,27 +80,30 @@ class Events(RestrictedAPIView):
             if action.context.credential is not None:
                 action_result["context"]["credential"] = model_to_dict(action.context.credential)
 
+                # Get the context credential data
+                context_cred_data = cred_service.get_secret(action.context.credential.sk_id)
+                action_result["context"]["credential"]["data"] = context_cred_data
+
             action_result["destination"] = model_to_dict(action.destination)
             action_result["destination"]["credential"] = model_to_dict(action.destination.credential)
+
+            # Get the context credential data
+            destination_cred_data = cred_service.get_secret(action.destination.credential.sk_id)
+            action_result["destination"]["credential"]["data"] = destination_cred_data
 
             actions_result.append(action_result)
 
         # Convert model into a dict an
         result = model_to_dict(pipeline)
         result["actions"] = actions_result
-        
-        return BaseResponse(result=result)
-
-        return ModelResponse(pipeline)
 
         # Fetch the deployment and related data that matches incoming request
         directives = parse(body.commit)
-        pipeline_context["directives"] = directives
+        result["directives"] = directives
         # build = pipeline_service.start(pipeline_context)
 
         # Create the build object with status QUEUED
         # TODO create build object
 
         # Respond with the pipeline_context and build data
-        # return ModelResponse(event)
-        return BaseResponse()
+        return BaseResponse(result=result)

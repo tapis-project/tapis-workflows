@@ -7,7 +7,7 @@ from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.requests import PipelineCreateRequest
 from backend.models import Pipeline, Group, Context, Destination, Action, Context, Destination, GroupUser
 from backend.services.PipelineService import pipeline_service
-from backend.services.CredentialService import CredentialService
+from backend.services.CredentialService import cred_service
 from backend.settings import DJANGO_TAPIS_TOKEN_HEADER
 
 
@@ -93,17 +93,20 @@ class Pipelines(RestrictedAPIView):
 
         # Persist the credentials for the context and destination in SK and
         # and save a ref to it in the database
-        # TODO Use cicd-pipelines-svc account instead of current user's jwt
-        cred_service = CredentialService(request.META[DJANGO_TAPIS_TOKEN_HEADER])
-
         # Create the credential for the context if one is specified
         context_cred = None
         if hasattr(body.context, "credential") and body.context.credential is not None:
+            context_cred_data = {}
+            for key, value in dict(body.context.credential).items():
+                if value is not None:
+                    context_cred_data[key] = getattr(body.context.credential, key)
+            
             try:
-                context_cred = cred_service.save(
+                (context_cred, context_secret, data) = cred_service.save(
                     f"{group.id}+{body.id}+context",
                     group,
-                    {**body.context.credential.__dict__})
+                    context_cred_data
+                )
             except IntegrityError as e:
                 return BadRequest(message=e.__cause__)
 
@@ -121,12 +124,17 @@ class Pipelines(RestrictedAPIView):
             return BadRequest(message=e.__cause__)
 
         # Create the credential for the destination (should always be specified)
-        cred_service = CredentialService(request.META[DJANGO_TAPIS_TOKEN_HEADER])
+
+        destination_cred_data = {}
+        for key, value in dict(body.destination.credential).items():
+            if value is not None:
+                destination_cred_data[key] = getattr(body.destination.credential, key)
         try:
-            destination_cred = cred_service.save(
+            (destination_cred, destination_secret, d_data) = cred_service.save(
                 f"{group.id}+{body.id}+destination",
                 group,
-                {**body.destination.credential.__dict__})
+                destination_cred_data
+            )
         except IntegrityError as e:
             cred_service.delete(context_cred.sk_id)
             context.delete()
@@ -165,8 +173,8 @@ class Pipelines(RestrictedAPIView):
             cred_service.delete(context_cred.sk_id)
             context.delete()
             cred_service.delete(destination_cred.sk_id)
-            destination.objects.delete()
-            return ServerError(message=e.__cause__)
+            destination.delete()
+            return BadRequest(message=e.__cause__)
 
         # Create 'build' action
         try:
@@ -186,8 +194,9 @@ class Pipelines(RestrictedAPIView):
             cred_service.delete(context_cred.sk_id)
             context.delete()
             cred_service.delete(destination_cred.sk_id)
-            destination.objects.delete()
+            destination.delete()
             pipeline.delete()
-            return ServerError(message=e.__cause__)
+            return BadRequest(message=e.__cause__)
 
+        return BaseResponse(result={**vars(context_secret), "cred": model_to_dict(context_cred), "data": data})
         return ModelResponse(pipeline)
