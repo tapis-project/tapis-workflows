@@ -175,7 +175,7 @@ class Event(models.Model):
     commit_sha = models.CharField(max_length=128)
     context = models.CharField(max_length=128)
     message = models.TextField()
-    pipeline = models.ForeignKey("backend.Pipeline", related_name="events", on_delete=models.CASCADE)
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
     username = models.CharField(max_length=255)
     uuid = models.UUIDField(default=uuid.uuid4)

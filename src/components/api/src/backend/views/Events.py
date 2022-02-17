@@ -9,10 +9,7 @@ from backend.views.http.responses.errors import ServerError
 from backend.helpers.parse_commit import parse_commit as parse
 from backend.services.PipelineService import pipeline_service
 from backend.services.CredentialService import cred_service
-from backend.models import Event, Pipeline, Group, GroupUser
-from backend.settings import DJANGO_TAPIS_TOKEN_HEADER
-# TODO Remove
-from backend.fixtures.pipeline_context import pipeline_context
+from backend.models import Event, Pipeline, GroupUser
 
 
 class Events(RestrictedAPIView):
@@ -40,7 +37,7 @@ class Events(RestrictedAPIView):
             "actions__destination__credential"
         ).first()
 
-        message = "Failed to trigger a pipeline: No Pipeline found with details that match this event"
+        message = "No Pipeline found with details that match this event"
         if pipeline is not None:
             # Get all the groups the user belongs to
             group_users = GroupUser.objects.filter(username=body.username)
@@ -54,23 +51,27 @@ class Events(RestrictedAPIView):
             if pipeline.group_id not in group_ids:
                 message = f"Failed to trigger pipline '{pipeline.id}': User {body.username} does not belong to the group attached to the pipline"
 
-        # # Persist the event in the database
-        # try:
-        #     event = Event.objects.create(
-        #         branch=body.branch,
-        #         commit=body.commit,
-        #         commit_sha=body.commit_sha,
-        #         context=body.context,
-        #         message=message,
-        #         pipeline=pipeline,
-        #         source=body.source,
-        #         username=body.username
-        #     )
-        # except IntegrityError as e:
-        #     return ServerError(message=e.__cause__)
+        # Persist the event in the database
+        try:
+            event = Event.objects.create(
+                branch=body.branch,
+                commit=body.commit,
+                commit_sha=body.commit_sha,
+                context=body.context,
+                message=message,
+                pipeline=pipeline,
+                source=body.source,
+                username=body.username
+            )
+        except IntegrityError as e:
+            return ServerError(message=e.__cause__)
+
+        # Return the event if there is no pipeline matching the event
+        if pipeline is None:
+            return ModelResponse(event)
 
         # Get the pipeline actions, their contexts, destinations, and respective
-        # credentials
+        # credentials and generate a piplines_service_request
         actions = pipeline.actions.all()
         actions_result = []
         for action in actions:
@@ -93,17 +94,20 @@ class Events(RestrictedAPIView):
 
             actions_result.append(action_result)
 
-        # Convert model into a dict an
-        result = model_to_dict(pipeline)
-        result["actions"] = actions_result
+        # Convert pipleline to a dict and build the pipelines_service_request
+        pipelines_service_request = model_to_dict(pipeline)
+        pipelines_service_request["actions"] = actions_result
 
-        # Fetch the deployment and related data that matches incoming request
+        # Parese the directives from the commit message
         directives = parse(body.commit)
-        result["directives"] = directives
-        # build = pipeline_service.start(pipeline_context)
+        pipelines_service_request["directives"] = directives
+
+        # Send the pipelines service a service request
+        # pipeline_service.start(pipelines_service_request)
 
         # Create the build object with status QUEUED
         # TODO create build object
 
         # Respond with the pipeline_context and build data
-        return BaseResponse(result=result)
+        # return BaseResponse(result=pipelines_service_request)
+        return ModelResponse(event)

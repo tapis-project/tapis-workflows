@@ -8,8 +8,8 @@ class PipelineService:
     def __init__(self):
         self.error = None
 
-    def start(self, pipeline_context):
-        broker.publish("pipelines", json.dumps(pipeline_context))
+    def start(self, service_request):
+        broker.publish("pipelines", json.dumps(service_request))
 
         return # TODO return build object here
 
