@@ -102,7 +102,7 @@ class Pipelines(RestrictedAPIView):
                     context_cred_data[key] = getattr(body.context.credential, key)
             
             try:
-                (context_cred, context_secret, data) = cred_service.save(
+                context_cred = cred_service.save(
                     f"{group.id}+{body.id}+context",
                     group,
                     context_cred_data
@@ -132,7 +132,7 @@ class Pipelines(RestrictedAPIView):
             if value is not None:
                 destination_cred_data[key] = getattr(body.destination.credential, key)
         try:
-            (destination_cred, destination_secret, d_data) = cred_service.save(
+            destination_cred = cred_service.save(
                 f"{group.id}+{body.id}+destination",
                 group,
                 destination_cred_data
@@ -202,5 +202,4 @@ class Pipelines(RestrictedAPIView):
             pipeline.delete()
             return BadRequest(message=e.__cause__)
 
-        return BaseResponse(result={**vars(context_secret), "cred": model_to_dict(context_cred), "data": data})
         return ModelResponse(pipeline)
