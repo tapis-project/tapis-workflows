@@ -53,6 +53,8 @@ DESTINATION_TYPES = [
     # NOTE support s3 destinations?
 ]
 
+DEFAULT_DOCKERFILE_PATH = "Dockerfile"
+
 GROUP_STATUS_DISABLED = "disabled"
 GROUP_STATUS_ENABLED = "enabled"
 GROUP_STATUSES = [
@@ -102,6 +104,7 @@ class Account(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4)
 
 class Action(models.Model):
+    builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
     cache = models.BooleanField(default=False)
     context = models.OneToOneField("backend.Context", null=True, on_delete=models.CASCADE)
     description = models.TextField(null=True)
@@ -143,8 +146,10 @@ class Credential(models.Model):
 class Context(models.Model):
     branch = models.CharField(max_length=128)
     credential = models.OneToOneField("backend.Credential", null=True, on_delete=models.CASCADE)
+    dockerfile_path = models.CharField(max_length=255, default=DEFAULT_DOCKERFILE_PATH)
+    sub_path = models.CharField(max_length=255, null=True)
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
-    url = models.CharField(max_length=255)
+    url = models.CharField(max_length=128)
     uuiid = models.UUIDField(default=uuid.uuid4)
     visibility = models.CharField(max_length=32, choices=VISIBILITY_TYPES)
 
@@ -173,7 +178,7 @@ class Event(models.Model):
     branch = models.CharField(max_length=255)
     commit = models.TextField(max_length=255)
     commit_sha = models.CharField(max_length=128)
-    context = models.CharField(max_length=128)
+    context_url = models.CharField(max_length=128)
     message = models.TextField()
     pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
@@ -186,17 +191,18 @@ class Pipeline(models.Model):
     branch = models.CharField(max_length=255)
     builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, default=IMAGE_BUILDER_KANIKO)
     created_at = models.DateTimeField(auto_now_add=True)
-    context = models.CharField(max_length=255)
-    destination_type = models.CharField(max_length=32, choices=DESTINATION_TYPES)
+    context_url = models.CharField(max_length=128)
+    context_sub_path = models.CharField(max_length=255, null=True)
     context_type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
-    dockerfile_path = models.CharField(max_length=255, default="/")
+    destination_type = models.CharField(max_length=32, choices=DESTINATION_TYPES)
+    dockerfile_path = models.CharField(max_length=255, default=DEFAULT_DOCKERFILE_PATH)
     group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
     image_tag = models.CharField(max_length=64, null=True)
     owner = models.CharField(max_length=64)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
     class Meta:
-        unique_together = [["branch", "context", "context_type"]]
+        unique_together = [["branch", "context_url", "context_type"]]
 
 class Policy(models.Model):      
     context_commit: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)

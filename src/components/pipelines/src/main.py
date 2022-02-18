@@ -16,7 +16,7 @@ from utils.json_to_object import json_to_object
 def on_message_callback(ch, method, properties, body):
     try:
         pipeline_context = json_to_object(bytes_to_json(body))
-    except JSONDecodeError:
+    except JSONDecodeError as e:
         # TODO reject the message if the body is not valid json
         return
 

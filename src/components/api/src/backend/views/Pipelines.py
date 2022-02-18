@@ -115,6 +115,8 @@ class Pipelines(RestrictedAPIView):
             context = Context.objects.create(
                 branch=body.context.branch,
                 credential=context_cred,
+                dockerfile_path=body.context.dockerfile_path,
+                sub_path=body.context.sub_path,
                 type=body.context.type,
                 url=body.context.url,
                 visibility=body.context.visibility
@@ -161,7 +163,8 @@ class Pipelines(RestrictedAPIView):
                 auto_build=body.auto_build,
                 branch=body.context.branch,
                 builder=body.builder,
-                context=body.context.url,
+                context_url=body.context.url,
+                context_sub_path=body.context.sub_path,
                 context_type=body.context.type,
                 destination_type=body.destination.type,
                 dockerfile_path=body.context.dockerfile_path,
@@ -179,6 +182,7 @@ class Pipelines(RestrictedAPIView):
         # Create 'build' action
         try:
             Action.objects.create(
+                builder=pipeline.builder,
                 cache=body.cache,
                 context=context,
                 description="Build an image from a repository and push it to an image registry",

@@ -6,4 +6,5 @@ def bytes_to_json(bytestring):
     value = bytestring.decode('utf8').replace("'", '"')
 
     data = json.loads(value)
+    
     return json.dumps(data)

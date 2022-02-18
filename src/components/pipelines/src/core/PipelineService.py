@@ -9,7 +9,7 @@ class PipelineService:
         self.successful_actions = []
 
     def start(self, pipeline_context):
-        print(f"Pipeline '{pipeline_context.pipeline.name}' started")
+        print(f"Pipeline '{pipeline_context.pipeline.id}' started")
 
         # Get pre-build actions
         build_actions = self._get_actions_by_stage(
@@ -36,7 +36,7 @@ class PipelineService:
             # Dispatch post-build actions
             self._dispatch_actions(post_build_actions, pipeline_context)
 
-        print(f"Pipeline '{pipeline_context.pipeline.name}' finished")
+        print(f"Pipeline '{pipeline_context.pipeline.id}' finished")
 
         # Reset the failed and successful actions
         self._reset()

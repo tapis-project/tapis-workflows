@@ -17,6 +17,7 @@ class Context(BaseModel):
     credential: ContextCredential = None
     branch: str
     dockerfile_path: str
+    sub_path: str = None
     type: str
     url: str
     visibility: str
@@ -38,7 +39,7 @@ class EventCreateRequest(BaseModel):
     commit: str
     commit_sha: str
     source: str
-    context: str
+    context_url: str
     username: str
 
 # Groups

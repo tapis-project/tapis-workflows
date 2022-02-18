@@ -26,9 +26,9 @@ class Events(RestrictedAPIView):
 
         # Find a pipeline that matches the request data
         pipeline = Pipeline.objects.filter(
-            context=body.context,
             branch=body.branch,
-            context_type=body.source
+            context_type=body.source,
+            context_url=body.context_url
         ).prefetch_related(
             "actions",
             "actions__context",
@@ -47,9 +47,9 @@ class Events(RestrictedAPIView):
             # TODO Resolve aliases for username
             # Check that the user belongs to the group that is attached
             # to this pipline
-            message = f"Successfully triggered pipeline '{pipeline.id}'"
+            message = f"Successfully triggered pipeline ({pipeline.id})"
             if pipeline.group_id not in group_ids:
-                message = f"Failed to trigger pipline '{pipeline.id}': User {body.username} does not belong to the group attached to the pipline"
+                message = f"Failed to trigger pipline ({pipeline.id}): User {body.username} does not belong to the group attached to the pipline"
 
         # Persist the event in the database
         try:
@@ -57,7 +57,7 @@ class Events(RestrictedAPIView):
                 branch=body.branch,
                 commit=body.commit,
                 commit_sha=body.commit_sha,
-                context=body.context,
+                context_url=body.context_url,
                 message=message,
                 pipeline=pipeline,
                 source=body.source,
@@ -95,15 +95,18 @@ class Events(RestrictedAPIView):
             actions_result.append(action_result)
 
         # Convert pipleline to a dict and build the pipelines_service_request
-        pipelines_service_request = model_to_dict(pipeline)
-        pipelines_service_request["actions"] = actions_result
+        pipelines_service_request = {}
+        pipelines_service_request["event"] = model_to_dict(event)
+        pipelines_service_request["pipeline"] = model_to_dict(pipeline)
+        pipelines_service_request["pipeline"]["actions"] = actions_result
 
-        # Parese the directives from the commit message
+        # Parse the directives from the commit message
         directives = parse(body.commit)
         pipelines_service_request["directives"] = directives
 
+        # Conver the uuid object of the event
         # Send the pipelines service a service request
-        # pipeline_service.start(pipelines_service_request)
+        pipeline_service.start(pipelines_service_request)
 
         # Create the build object with status QUEUED
         # TODO create build object
