@@ -77,7 +77,7 @@ class Docker(BaseBuildDispatcher):
             print(log)
 
         # Remove the container and reset the builder
-        # container.remove()
+        container.remove()
 
         self._reset(delete_config=True)
 

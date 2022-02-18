@@ -4,7 +4,6 @@ from django.forms import model_to_dict
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.requests import EventCreateRequest
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
-from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.views.http.responses.errors import ServerError
 from backend.helpers.parse_commit import parse_commit as parse
 from backend.services.PipelineService import pipeline_service
