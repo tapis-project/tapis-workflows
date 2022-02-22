@@ -8,7 +8,6 @@ from backend.views.http.requests import PipelineCreateRequest
 from backend.models import Pipeline, Group, Context, Destination, Action, Context, Destination, GroupUser
 from backend.services.PipelineService import pipeline_service
 from backend.services.CredentialService import cred_service
-from backend.settings import DJANGO_TAPIS_TOKEN_HEADER
 
 
 class Pipelines(RestrictedAPIView):

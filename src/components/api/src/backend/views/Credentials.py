@@ -5,7 +5,7 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.views.http.responses.models import ModelListResponse
 
-from backend.settings import DJANGO_TAPIS_TOKEN_HEADER
+from backend.conf.constants import DJANGO_TAPIS_TOKEN_HEADER
 
 
 class Credentials(RestrictedAPIView):

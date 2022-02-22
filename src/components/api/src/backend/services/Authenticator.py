@@ -2,7 +2,7 @@ import os
 
 from tapipy.tapis import Tapis
 
-from backend.settings import TAPIS_BASE_URL
+from backend.conf.constants import TAPIS_BASE_URL
 
 
 AUTH_METHODS = [

@@ -9,12 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest
 from backend.views.http.requests import PreparedRequest
-
-
-PERMITTED_HTTP_METHODS = [
-    "GET", "POST", "PUT", "PATCH", "DETETE"]
-
-PERMITTED_CONTENT_TYPES = [ "application/json" ]
+from backend.conf.constants import PERMITTED_HTTP_METHODS, PERMITTED_CONTENT_TYPES
 
 class APIView(View):
     # All methods on the APIView do not require a CSRF token

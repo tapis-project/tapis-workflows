@@ -1,19 +1,6 @@
 import re
 
-
-DIRECTIVE_DELIMITER = "|"
-SUPPORTED_DIRECTIVES = [
-    "BUILD",
-    "DEPLOY",
-    "CACHE", # TODO Document this
-    "CUSTOM_TAG",
-    "COMMIT_DESTINATION",
-    "DRY_RUN",
-    "NO_PUSH",
-    "COMMIT_CONTEXT", # TODO Document this
-]
-DIRECTIVE_SET_PATTERN = r"(?<=[\[]{1})[a-zA-Z0-9\s:|._-]+(?=[\]]{1})"
-KEY_VAL_DELIMITER = ":"
+from backend.conf.constants import DIRECTIVE_DELIMITER, DIRECTIVE_SET_PATTERN, SUPPORTED_DIRECTIVES, DIRECTIVE_KEY_VAL_DELIMITER
 
 def parse_commit(commit_message):
     # Parse the directive string from the commit message
@@ -34,7 +21,7 @@ def parse_commit(commit_message):
         if directive_str == "":
             continue
 
-        key_val = directive_str.split(":")
+        key_val = directive_str.split(DIRECTIVE_KEY_VAL_DELIMITER)
         key = key_val[0].upper()
         if key in SUPPORTED_DIRECTIVES:
             val = None if len(key_val) == 1 else key_val[1]

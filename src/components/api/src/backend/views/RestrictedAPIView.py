@@ -10,13 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest, Unauthorized
 from backend.services.Authenticator import authenticator
 from backend.views.http.requests import PreparedRequest
-from backend.settings import TAPIS_TOKEN_HEADER, DJANGO_TAPIS_TOKEN_HEADER
-
-
-PERMITTED_HTTP_METHODS = [
-    "GET", "POST", "PUT", "PATCH", "DELETE"]
-
-PERMITTED_CONTENT_TYPES = [ "application/json" ]
+from backend.conf.constants import TAPIS_TOKEN_HEADER, DJANGO_TAPIS_TOKEN_HEADER, PERMITTED_CONTENT_TYPES, PERMITTED_HTTP_METHODS
 
 class RestrictedAPIView(View):
     # All methods on the RestrictedAPIView do not require a CSRF token

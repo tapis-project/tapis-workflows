@@ -4,7 +4,7 @@ from django.db import IntegrityError
 from tapipy.tapis import Tapis
 
 from backend.models import Credential
-from backend.settings import TAPIS_BASE_URL, TAPIS_TENANT, TAPIS_SERVICE_ACCOUNT, TAPIS_SERVICE_ACCOUNT_PASSWORD
+from backend.conf.constants import TAPIS_BASE_URL, TAPIS_TENANT, TAPIS_SERVICE_ACCOUNT, TAPIS_SERVICE_ACCOUNT_PASSWORD
 
 
 class CredentialService:
