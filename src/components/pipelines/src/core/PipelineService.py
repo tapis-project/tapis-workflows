@@ -9,7 +9,7 @@ class PipelineService:
         self.successful_actions = []
 
     def start(self, pipeline_context):
-        print(f"Pipeline '{pipeline_context.pipeline.id}' started")
+        print(f"Pipeline started: {pipeline_context.pipeline.id}")
 
         # Get pre-build actions
         build_actions = self._get_actions_by_stage(
@@ -36,14 +36,14 @@ class PipelineService:
             # Dispatch post-build actions
             self._dispatch_actions(post_build_actions, pipeline_context)
 
-        print(f"Pipeline '{pipeline_context.pipeline.id}' finished")
+        print(f"Pipeline ended: {pipeline_context.pipeline.id}")
 
         # Reset the failed and successful actions
         self._reset()
 
     def _dispatch_actions(self, actions, pipeline_context):
         for action in actions:
-            print(f"Action '{action.name}' start:")
+            print(f"Action started: {action.name}")
             
             # Dispatch the action
             try:
@@ -59,7 +59,7 @@ class PipelineService:
                 print(f"Action '{action.name}' failed")
                 return
 
-            print(f"Action '{action.name}' finished")
+            print(f"Action ended: {action.name}")
 
     def _get_actions_by_stage(self, actions, stage):
         return list(filter(lambda a: a.stage == stage, actions))

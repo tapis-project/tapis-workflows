@@ -82,7 +82,6 @@ class Docker(BaseBuildDispatcher):
         self._reset(delete_config=True)
 
         return ActionResult(result["StatusCode"], data=result)
-
  
     def _generate_config(self, action):
         # Get image registry credentials from config

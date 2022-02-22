@@ -1,6 +1,7 @@
 # import requests
 from core.BuildActionDispatcherResolver import resolver
 from core.ActionResult import ActionResult
+from action_dispatchers.Webhook import dispatcher as webhook_dispatcher
 from errors.actions import InvalidActionTypeError
 
 
@@ -26,7 +27,8 @@ class ActionDispatcher:
     def _container_exec(self, action, pipeline_context) -> ActionResult:
         return ActionResult(status=0)
 
-    def _webhook_notification(self, action, pipeline_context) -> ActionResult:
-        return ActionResult(status=0)
+    def _webhook_notification(self, action, _) -> ActionResult:
+        action_result = webhook_dispatcher.dispatch(action)
+        return action_result
 
 action_dispatcher = ActionDispatcher()
