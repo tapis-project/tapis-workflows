@@ -5,11 +5,11 @@ from django.contrib.auth.models import User
 
 ACTION_TYPE_CONTAINER_BUILD = "container_build"
 ACTION_TYPE_CONTAINER_EXEC = "container_exec"
-ACTION_TYPE_CONTAINER_WEBHOOK = "webhook_notification"
+ACTION_TYPE_WEBHOOK_NOTIFICATION = "webhook_notification"
 ACTION_TYPES = [
     (ACTION_TYPE_CONTAINER_BUILD, "container_build"),
     (ACTION_TYPE_CONTAINER_EXEC, "container_exec"),
-    (ACTION_TYPE_CONTAINER_WEBHOOK, "webhook_notification"),
+    (ACTION_TYPE_WEBHOOK_NOTIFICATION, "webhook_notification"),
 ]
 
 # ACTION_STAGE_PRE_BUILD = 0
@@ -104,11 +104,15 @@ class Account(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4)
 
 class Action(models.Model):
+    auth = models.ForeignKey("backend.Credential", null=True, on_delete=models.CASCADE)
     builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
     cache = models.BooleanField(default=False)
     context = models.OneToOneField("backend.Context", null=True, on_delete=models.CASCADE)
+    data = models.JSONField(null=True)
     description = models.TextField(null=True)
     destination = models.OneToOneField("backend.Destination", null=True, on_delete=models.CASCADE)
+    headers = models.JSONField(null=True)
+    params = models.JSONField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="actions", on_delete=models.CASCADE)
     type = models.CharField(max_length=32, choices=ACTION_TYPES)
     http_method = models.CharField(max_length=32, choices=ACTION_HTTP_METHODS, null=True)

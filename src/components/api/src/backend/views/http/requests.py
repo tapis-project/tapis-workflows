@@ -50,6 +50,7 @@ class GroupCreateRequest(BaseModel):
 class GroupPutPatchRequest(BaseModel):
     users: List[StrictStr] = []
 
+# Pipelines
 class PipelineCreateRequest(BaseModel):
     id: str
     auto_build: bool = False
@@ -58,6 +59,32 @@ class PipelineCreateRequest(BaseModel):
     group_id: str
     context: Context
     destination: Destination
+
+# Actions
+class BaseActionCreateRequest(BaseModel):
+    description: str = None
+    name: str
+    pipeline_id: str
+    stage: str
+    type: str
+
+class ContainerBuildActionCreateRequest(BaseActionCreateRequest):
+    builder: str = "kaniko"
+    cache: bool = False
+    context: Context
+    description: str = None
+    destination: Destination
+
+class ContainerExecActionCreateRequest(BaseActionCreateRequest):
+    pass
+
+class WebhookActionCreateRequest(BaseActionCreateRequest):
+    auth: dict = None
+    data: dict = None
+    headers: dict = None
+    http_method: str
+    params: dict = None
+    url: str
 
 class PreparedRequest:
     def __init__(
