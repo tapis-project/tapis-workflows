@@ -1,16 +1,11 @@
-from backend.models import Action, ACTION_TYPES, ACTION_TYPE_WEBHOOK_NOTIFICATION, ACTION_TYPE_CONTAINER_BUILD, ACTION_TYPE_CONTAINER_EXEC
+from django.db import IntegrityError
+from backend.models import Action, Pipeline, Group, GroupUser
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.requests import WebhookActionCreateRequest, ContainerBuildActionCreateRequest, ContainerExecActionCreateRequest
 from backend.views.http.responses.BaseResponse import BaseResponse
-from backend.views.http.responses.errors import BadRequest
-from backend.views.http.responses.models import ModelListResponse
+from backend.views.http.responses.errors import BadRequest, UnprocessableEntity, Forbidden
+from backend.views.http.responses.models import ModelListResponse, ModelResponse
+from backend.services.ActionService import service
 
-
-ACTION_REQUEST_MAPPING = {
-    ACTION_TYPE_CONTAINER_BUILD: ContainerBuildActionCreateRequest,
-    ACTION_TYPE_WEBHOOK_NOTIFICATION: WebhookActionCreateRequest,
-    ACTION_TYPE_CONTAINER_EXEC: ContainerExecActionCreateRequest
-}
 
 class Actions(RestrictedAPIView):
     def get(self, request):
@@ -23,14 +18,14 @@ class Actions(RestrictedAPIView):
         if "type" not in self.request_body:
             return BadRequest(message="Request body missing 'type' property")
 
-        if self.request_body["type"] not in ACTION_REQUEST_MAPPING:
-            return BadRequest(message=f"Invalid action type: ({self.request_body['type']}). {ACTION_REQUEST_MAPPING.keys()}")
+        if not service.is_valid_action_type(self.request_body["type"]):
+            return BadRequest(message=f"Invalid action type: Expected one of: {service.get_action_request_types()} - Recieved: {self.request_body['type']}. ")
 
         # Resolve the the proper request for the type of action provided in the request body
-        ActionCreateRequestType = ACTION_REQUEST_MAPPING[self.request_body["type"]]
+        ActionRequest = service.resolve_request_type(self.request_body["type"])
 
         # Validate and prepare the create reqeust
-        prepared_request = self.prepare(ActionCreateRequestType)
+        prepared_request = self.prepare(ActionRequest)
 
         # Return the failure view instance if validation failed
         if not prepared_request.is_valid:
@@ -39,4 +34,34 @@ class Actions(RestrictedAPIView):
         # Get the JSON encoded body from the validation result
         body = prepared_request.body
 
-        return BaseResponse()
+        # Get the pipline for the new action
+        pipeline = Pipeline.objects.filter(id=body.pipeline_id).first()
+
+        # Return if BadRequest if no pipeline found
+        if pipeline is None:
+            return BadRequest(f"Pipline '{pipeline.id}' does not exist")
+
+        # Ensure the user belongs to the group that owns the pipeline
+        # Get the group
+        group = Group.objects.filter(id=pipeline.group_id).first()
+
+        # Check that the group_id passed by the user is a valid group
+        if group is None:
+            return UnprocessableEntity(f"Group '{pipeline.group_id}' does not exist'")
+
+        # Get all the groups the user belongs to
+        group_users = GroupUser.objects.filter(username=request.username)
+        group_ids = [ group_user.group_id for group_user in group_users ]
+
+        # Check that the user belongs to the group that is attached
+        # to this pipline
+        if pipeline.group_id not in group_ids:
+            return Forbidden(message="You cannot create a an action for this pipeline")
+
+        # Create action
+        try:
+            action = service.create(pipeline, body)
+        except IntegrityError as e:
+            return BadRequest(message=e.__cause__)
+
+        return ModelResponse(action)
