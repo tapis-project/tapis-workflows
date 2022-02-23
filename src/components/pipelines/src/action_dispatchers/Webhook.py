@@ -10,17 +10,17 @@ from core.ActionResult import ActionResult
 PERMITTED_HTTP_METHODS = [ "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD" ]
 
 class WebhookAction(BaseModel):
-    auth: dict = None,
+    auth: Union[dict, None] = None,
     data: Any = None,
     headers: Dict[str, Union[str, int,]] = None
-    method: str
+    http_method: str
     params: Dict[str, Union[str, int,]] = None
     url: str
 
 class Webhook:
     def dispatch(self, action):
         try:
-            webhook_action = WebhookAction(**action)
+            webhook_action = WebhookAction(**vars(action))
         except ValidationError as e:
             errors = [ f"{error['type']}. {error['msg']}: {'.'.join(error['loc'])}" for error in json.loads(e.json())]
             print(f"Webhook Notification Error: {errors}")
@@ -31,6 +31,8 @@ class Webhook:
             return ActionResult(status=405, errors=[f"Method Not Allowed ({webhook_action.method})"])
 
         try:
+            # Calls the get, post, patch, etc. methods on the request object and sends the request
+            # to the specified url
             response = getattr(requests, webhook_action.http_method)(
                 webhook_action.url,
                 data=webhook_action.data,
@@ -39,7 +41,7 @@ class Webhook:
             )
 
             return ActionResult(
-                status=0 if response.status in range(200, 300) else response.status,
+                status=0 if response.status_code in range(200, 300) else response.status_code,
                 data=response.json()
             )
 

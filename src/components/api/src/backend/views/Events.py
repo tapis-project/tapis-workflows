@@ -74,23 +74,8 @@ class Events(RestrictedAPIView):
         actions = pipeline.actions.all()
         actions_result = []
         for action in actions:
-            action_result = model_to_dict(action)
-
-            action_result["context"] = model_to_dict(action.context)
-            if action.context.credential is not None:
-                action_result["context"]["credential"] = model_to_dict(action.context.credential)
-
-                # Get the context credential data
-                context_cred_data = cred_service.get_secret(action.context.credential.sk_id)
-                action_result["context"]["credential"]["data"] = context_cred_data
-
-            action_result["destination"] = model_to_dict(action.destination)
-            action_result["destination"]["credential"] = model_to_dict(action.destination.credential)
-
-            # Get the context credential data
-            destination_cred_data = cred_service.get_secret(action.destination.credential.sk_id)
-            action_result["destination"]["credential"]["data"] = destination_cred_data
-
+            # Build action result
+            action_result = getattr(self, f"_{action.type}")(action)
             actions_result.append(action_result)
 
         # Convert pipleline to a dict and build the pipelines_service_request
@@ -113,3 +98,31 @@ class Events(RestrictedAPIView):
         # Respond with the pipeline_context and build data
         # return BaseResponse(result=pipelines_service_request)
         return ModelResponse(event)
+
+    def _container_build(self, action):
+        action_result = model_to_dict(action)
+
+        action_result["context"] = model_to_dict(action.context)
+        if action.context.credential is not None:
+            action_result["context"]["credential"] = model_to_dict(action.context.credential)
+
+            # Get the context credential data
+            context_cred_data = cred_service.get_secret(action.context.credential.sk_id)
+            action_result["context"]["credential"]["data"] = context_cred_data
+
+        action_result["destination"] = model_to_dict(action.destination)
+        action_result["destination"]["credential"] = model_to_dict(action.destination.credential)
+
+        # Get the context credential data
+        destination_cred_data = cred_service.get_secret(action.destination.credential.sk_id)
+        action_result["destination"]["credential"]["data"] = destination_cred_data
+
+        return action_result
+
+    def _webhook_notification(self, action):
+        action_result = model_to_dict(action)
+        return action_result
+
+    def _container_exec(self, action):
+        action_result = model_to_dict(action)
+        return action_result

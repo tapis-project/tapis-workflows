@@ -48,6 +48,7 @@ class PipelineService:
             # Dispatch the action
             try:
                 action_result = action_dispatcher.dispatch(action, pipeline_context)
+                print("ActionResult", vars(action_result))
             except InvalidActionTypeError as e:
                 print(e)
                 action_result = ActionResult(1)
