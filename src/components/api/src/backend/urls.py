@@ -1,5 +1,4 @@
 from django.urls import path
-from backend.views.Accounts import Accounts
 from backend.views.Actions import Actions
 from backend.views.Auth import Auth
 from backend.views.Builds import Builds
@@ -16,7 +15,6 @@ from backend.views.Nuke import Nuke
 
 urlpatterns = [
     path("actions/", Actions.as_view()),
-    path("accounts/", Accounts.as_view()),
     path("aliases/", Aliases.as_view()),
     path("auth/", Auth.as_view()),
     path("builds/", Builds.as_view()),

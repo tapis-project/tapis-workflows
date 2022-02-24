@@ -8,7 +8,7 @@ from backend.views.http.responses.errors import ServerError
 from backend.helpers.parse_commit import parse_commit as parse
 from backend.services.PipelineService import pipeline_service
 from backend.services.CredentialService import cred_service
-from backend.models import Event, Pipeline, GroupUser
+from backend.models import Alias, Event, Pipeline, GroupUser
 
 
 class Events(RestrictedAPIView):
@@ -38,17 +38,20 @@ class Events(RestrictedAPIView):
 
         message = "No Pipeline found with details that match this event"
         if pipeline is not None:
-            # Get all the groups the user belongs to
-            group_users = GroupUser.objects.filter(username=body.username)
-            group_ids = [ group_user.group_id for group_user in group_users ]
+            # Get the user and group info for the triggering user
+            alias = Alias.objects.filter(
+                group_id=pipeline.group_id,
+                type=body.source,
+                value=body.username
+            ).first()
 
 
             # TODO Resolve aliases for username
             # Check that the user belongs to the group that is attached
             # to this pipline
             message = f"Successfully triggered pipeline ({pipeline.id})"
-            if pipeline.group_id not in group_ids:
-                message = f"Failed to trigger pipline ({pipeline.id}): User {body.username} does not belong to the group attached to the pipline"
+            if alias is None:
+                message = f"Failed to trigger pipline ({pipeline.id}): {body.type} identity '{body.username}' does not have access to this pipeline"
 
         # Persist the event in the database
         try:
@@ -60,13 +63,14 @@ class Events(RestrictedAPIView):
                 message=message,
                 pipeline=pipeline,
                 source=body.source,
-                username=body.username
+                username=alias.username if alias is not None else None,
+                identity=alias
             )
         except IntegrityError as e:
             return ServerError(message=e.__cause__)
 
         # Return the event if there is no pipeline matching the event
-        if pipeline is None:
+        if pipeline is None and alias is not None:
             return ModelResponse(event)
 
         # Get the pipeline actions, their contexts, destinations, and respective

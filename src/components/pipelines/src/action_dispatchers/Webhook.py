@@ -17,6 +17,7 @@ class WebhookAction(BaseModel):
     params: Dict[str, Union[str, int,]] = None
     url: str
 
+# TODO Webhook Notifcation Action needs to be containerized
 class Webhook:
     def dispatch(self, action):
         try:

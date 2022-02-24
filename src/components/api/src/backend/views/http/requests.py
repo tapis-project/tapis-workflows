@@ -8,6 +8,13 @@ class AuthRequest(BaseModel):
     username: str
     password: str
 
+# Aliases
+class AliasCreateRequest(BaseModel):
+    type: str
+    username: str
+    value: str
+    group_id: str
+
 # Contexts
 class ContextCredential(BaseModel):
     token: str

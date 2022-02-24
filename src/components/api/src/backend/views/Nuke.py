@@ -1,10 +1,9 @@
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.services.CredentialService import cred_service
-from backend.models import Account, Action, Alias, Build, Credential, Context, Destination, Group, GroupUser, Event, Pipeline, Policy
+from backend.models import Action, Alias, Build, Credential, Context, Destination, Group, GroupUser, Event, Pipeline, Policy
 
 models = [
-    Account,
     Action,
     Alias,
     Build,

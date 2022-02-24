@@ -98,11 +98,6 @@ VISIBILITY_TYPES = [
     ( VISIBILITY_PRIVATE, "private" )
 ]
 
-class Account(models.Model):
-    owner = models.CharField(max_length=128, primary_key=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    uuid = models.UUIDField(default=uuid.uuid4)
-
 class Action(models.Model):
     auth = models.ForeignKey("backend.Credential", null=True, on_delete=models.CASCADE)
     builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
@@ -125,12 +120,12 @@ class Action(models.Model):
 
 class Alias(models.Model):
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
-    account = models.ForeignKey("backend.Account", related_name="aliases", on_delete=models.CASCADE)
+    username = models.CharField(max_length=255)
     group = models.ForeignKey("backend.Group", related_name="aliases", on_delete=models.CASCADE)
     uuid = models.UUIDField(default=uuid.uuid4)
     value = models.CharField(max_length=128)
     class Meta:
-        unique_together = [["account_id", "value", "type"]]
+        unique_together = [["value", "type", "group_id"]]
 
 class Build(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -187,6 +182,7 @@ class Event(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
     username = models.CharField(max_length=255)
+    identity = models.ForeignKey("backend.Alias", related_name="events", null=True, on_delete=models.CASCADE)
     uuid = models.UUIDField(default=uuid.uuid4)
 
 class Pipeline(models.Model):
@@ -200,7 +196,7 @@ class Pipeline(models.Model):
     context_type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
     destination_type = models.CharField(max_length=32, choices=DESTINATION_TYPES)
     dockerfile_path = models.CharField(max_length=255, default=DEFAULT_DOCKERFILE_PATH)
-    group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
+    group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
     image_tag = models.CharField(max_length=64, null=True)
     owner = models.CharField(max_length=64)
     updated_at = models.DateTimeField(auto_now=True)
