@@ -8,8 +8,8 @@ class AuthRequest(BaseModel):
     username: str
     password: str
 
-# Aliases
-class AliasCreateRequest(BaseModel):
+# Identities
+class IdentityCreateRequest(BaseModel):
     type: str
     username: str
     value: str

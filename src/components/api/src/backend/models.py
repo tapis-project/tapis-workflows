@@ -118,10 +118,10 @@ class Action(models.Model):
     class Meta:
         unique_together = [["name", "pipeline_id"]]
 
-class Alias(models.Model):
+class Identity(models.Model):
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
     username = models.CharField(max_length=255)
-    group = models.ForeignKey("backend.Group", related_name="aliases", on_delete=models.CASCADE)
+    group = models.ForeignKey("backend.Group", related_name="identities", on_delete=models.CASCADE)
     uuid = models.UUIDField(default=uuid.uuid4)
     value = models.CharField(max_length=128)
     class Meta:
@@ -182,7 +182,7 @@ class Event(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
     username = models.CharField(max_length=255)
-    identity = models.ForeignKey("backend.Alias", related_name="events", null=True, on_delete=models.CASCADE)
+    identity = models.ForeignKey("backend.Identity", related_name="events", null=True, on_delete=models.CASCADE)
     uuid = models.UUIDField(default=uuid.uuid4)
 
 class Pipeline(models.Model):

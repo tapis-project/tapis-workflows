@@ -8,8 +8,7 @@ from backend.views.http.responses.errors import ServerError
 from backend.helpers.parse_commit import parse_commit as parse
 from backend.services.PipelineService import pipeline_service
 from backend.services.CredentialService import cred_service
-from backend.models import Alias, Event, Pipeline, GroupUser
-
+from backend.models import Identity, Event, Pipeline
 
 class Events(RestrictedAPIView):
     def get(self, request):
@@ -39,18 +38,18 @@ class Events(RestrictedAPIView):
         message = "No Pipeline found with details that match this event"
         if pipeline is not None:
             # Get the user and group info for the triggering user
-            alias = Alias.objects.filter(
+            identity = Identity.objects.filter(
                 group_id=pipeline.group_id,
                 type=body.source,
                 value=body.username
             ).first()
 
 
-            # TODO Resolve aliases for username
+            # TODO Resolve indentities for username
             # Check that the user belongs to the group that is attached
             # to this pipline
             message = f"Successfully triggered pipeline ({pipeline.id})"
-            if alias is None:
+            if identity is None:
                 message = f"Failed to trigger pipline ({pipeline.id}): {body.type} identity '{body.username}' does not have access to this pipeline"
 
         # Persist the event in the database
@@ -63,14 +62,14 @@ class Events(RestrictedAPIView):
                 message=message,
                 pipeline=pipeline,
                 source=body.source,
-                username=alias.username if alias is not None else None,
-                identity=alias
+                username=identity.username if identity is not None else None,
+                identity=identity
             )
         except IntegrityError as e:
             return ServerError(message=e.__cause__)
 
         # Return the event if there is no pipeline matching the event
-        if pipeline is None and alias is not None:
+        if pipeline is None and identity is not None:
             return ModelResponse(event)
 
         # Get the pipeline actions, their contexts, destinations, and respective
