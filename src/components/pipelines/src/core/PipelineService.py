@@ -9,6 +9,7 @@ class PipelineService:
         self.successful_actions = []
 
     def start(self, pipeline_context):
+        print("PIPELINE_CONTEXT", pipeline_context, "\n\n\n")
         print(f"Pipeline started: {pipeline_context.pipeline.id}")
 
         # Get pre-build actions

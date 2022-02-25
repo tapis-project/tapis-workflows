@@ -3,12 +3,12 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import User
 
-ACTION_TYPE_CONTAINER_BUILD = "container_build"
-ACTION_TYPE_CONTAINER_EXEC = "container_exec"
+ACTION_TYPE_IMAGE_BUILD = "image_build"
+ACTION_TYPE_CONTAINER_RUN = "container_run"
 ACTION_TYPE_WEBHOOK_NOTIFICATION = "webhook_notification"
 ACTION_TYPES = [
-    (ACTION_TYPE_CONTAINER_BUILD, "container_build"),
-    (ACTION_TYPE_CONTAINER_EXEC, "container_exec"),
+    (ACTION_TYPE_IMAGE_BUILD, "image_build"),
+    (ACTION_TYPE_CONTAINER_RUN, "container_run"),
     (ACTION_TYPE_WEBHOOK_NOTIFICATION, "webhook_notification"),
 ]
 

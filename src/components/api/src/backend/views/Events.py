@@ -9,6 +9,7 @@ from backend.helpers.parse_commit import parse_commit as parse
 from backend.services.PipelineService import pipeline_service
 from backend.services.CredentialService import cred_service
 from backend.models import Identity, Event, Pipeline
+from backend.views.http.responses.BaseResponse import BaseResponse
 
 class Events(RestrictedAPIView):
     def get(self, request):
@@ -76,6 +77,7 @@ class Events(RestrictedAPIView):
         # credentials and generate a piplines_service_request
         actions = pipeline.actions.all()
         actions_result = []
+        
         for action in actions:
             # Build action result
             action_result = getattr(self, f"_{action.type}")(action)
@@ -95,14 +97,11 @@ class Events(RestrictedAPIView):
         # Send the pipelines service a service request
         pipeline_service.start(pipelines_service_request)
 
-        # Create the build object with status QUEUED
-        # TODO create build object
-
         # Respond with the pipeline_context and build data
         # return BaseResponse(result=pipelines_service_request)
         return ModelResponse(event)
 
-    def _container_build(self, action):
+    def _image_build(self, action):
         action_result = model_to_dict(action)
 
         action_result["context"] = model_to_dict(action.context)
@@ -126,6 +125,6 @@ class Events(RestrictedAPIView):
         action_result = model_to_dict(action)
         return action_result
 
-    def _container_exec(self, action):
+    def _container_run(self, action):
         action_result = model_to_dict(action)
         return action_result

@@ -68,24 +68,31 @@ class PipelineCreateRequest(BaseModel):
     destination: Destination
 
 # Actions
-class BaseActionCreateRequest(BaseModel):
+class ActionDependency(BaseModel):
+    name: str
+    can_fail: bool = False
+
+class BaseAction(BaseModel):
     description: str = None
     name: str
     pipeline_id: str
     stage: str
     type: str
+    depends_on: List[ActionDependency] = []
+    retries: int = 0
+    ttl: int = -1
 
-class ContainerBuildActionCreateRequest(BaseActionCreateRequest):
+class ImageBuildActionCreateRequest(BaseAction):
     builder: str = "kaniko"
     cache: bool = False
     context: Context
     description: str = None
     destination: Destination
 
-class ContainerExecActionCreateRequest(BaseActionCreateRequest):
+class ContainerRunActionCreateRequest(BaseAction):
     pass
 
-class WebhookActionCreateRequest(BaseActionCreateRequest):
+class WebhookActionCreateRequest(BaseAction):
     auth: dict = None
     data: dict = None
     headers: dict = None

@@ -190,7 +190,7 @@ class Pipelines(RestrictedAPIView):
                 name="Build",
                 pipeline=pipeline,
                 stage="build",
-                type="container_build",
+                type="image_build",
                 url=None
             )
         except IntegrityError as e:
