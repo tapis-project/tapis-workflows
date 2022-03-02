@@ -1,25 +1,21 @@
 import uuid
 
 from django.db import models
-from django.contrib.auth.models import User
+from django.core.validators import MaxValueValidator, MinValueValidator
+
+ONE_HOUR_IN_SEC = 3600
 
 ACTION_TYPE_IMAGE_BUILD = "image_build"
 ACTION_TYPE_CONTAINER_RUN = "container_run"
 ACTION_TYPE_WEBHOOK_NOTIFICATION = "webhook_notification"
+ACTION_TYPE_TAPIS_JOB = "tapis_job"
+ACTION_TYPE_TAPIS_ACTOR = "tapis_actor"
 ACTION_TYPES = [
     (ACTION_TYPE_IMAGE_BUILD, "image_build"),
     (ACTION_TYPE_CONTAINER_RUN, "container_run"),
     (ACTION_TYPE_WEBHOOK_NOTIFICATION, "webhook_notification"),
-]
-
-# ACTION_STAGE_PRE_BUILD = 0
-ACTION_STAGE_BUILD = "build"
-ACTION_STAGE_POST_BUILD = "post_build"
-ACTION_STAGE_TYPES = [
-    # TODO Support
-    # (ACTION_STAGE_PRE_BUILD, "pre_build"),
-    (ACTION_STAGE_BUILD, "build"),
-    (ACTION_STAGE_POST_BUILD, "post_build"),
+    (ACTION_TYPE_TAPIS_JOB, "tapis_job"),
+    (ACTION_TYPE_TAPIS_ACTOR, "tapis_actor"),
 ]
 
 IMAGE_BUILDER_KANIKO = "kaniko"
@@ -49,7 +45,7 @@ CONTEXT_TYPES = [
 
 DESTINATION_TYPE_REGISTRY = "dockerhub"
 DESTINATION_TYPES = [
-    ( DESTINATION_TYPE_REGISTRY, "dockerhub" )
+    (DESTINATION_TYPE_REGISTRY, "dockerhub")
     # NOTE support s3 destinations?
 ]
 
@@ -71,6 +67,13 @@ PERMISSIONS = [
     (PERMISSION_MODIFY, "modify"), # Modify implies write which implies read
 ]
 
+PIPELINE_TYPE_CI = "ci"
+PIPELINE_TYPE_WORKFLOW = "workflow"
+PIPELINE_TYPES = [
+    (PIPELINE_TYPE_CI, "ci"),
+    (PIPELINE_TYPE_WORKFLOW, "workflow"),
+]
+
 ACCESS_CONTROL_ALLOW = "allow"
 ACCESS_CONTROL_DENY = "deny"
 ACCESS_CONTROLS = [
@@ -84,18 +87,18 @@ STATUS_PUSHING = "pushing"
 STATUS_ERROR = "error"
 STATUS_SUCCESS = "success"
 STATUSES = [
-    ( STATUS_QUEUED, "queued" ),
-    ( STATUS_IN_PROGRESS, "in_progress" ),
-    ( STATUS_PUSHING, "pushing" ),
-    ( STATUS_ERROR, "error" ),
-    ( STATUS_SUCCESS, "success" ),
+    (STATUS_QUEUED, "queued"),
+    (STATUS_IN_PROGRESS, "in_progress"),
+    (STATUS_PUSHING, "pushing"),
+    (STATUS_ERROR, "error"),
+    (STATUS_SUCCESS, "success"),
 ]
 
 VISIBILITY_PUBLIC = "public"
 VISIBILITY_PRIVATE = "private"
 VISIBILITY_TYPES = [
-    ( VISIBILITY_PUBLIC, "public" ),
-    ( VISIBILITY_PRIVATE, "private" )
+    (VISIBILITY_PUBLIC, "public"),
+    (VISIBILITY_PRIVATE, "private")
 ]
 
 class Action(models.Model):
@@ -104,15 +107,22 @@ class Action(models.Model):
     cache = models.BooleanField(default=False)
     context = models.OneToOneField("backend.Context", null=True, on_delete=models.CASCADE)
     data = models.JSONField(null=True)
+    depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
     destination = models.OneToOneField("backend.Destination", null=True, on_delete=models.CASCADE)
     headers = models.JSONField(null=True)
-    params = models.JSONField(null=True)
-    pipeline = models.ForeignKey("backend.Pipeline", related_name="actions", on_delete=models.CASCADE)
-    type = models.CharField(max_length=32, choices=ACTION_TYPES)
     http_method = models.CharField(max_length=32, choices=ACTION_HTTP_METHODS, null=True)
     name = models.CharField(max_length=128)
-    stage = models.CharField(max_length=32, choices=ACTION_STAGE_TYPES)
+    params = models.JSONField(null=True)
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="actions", on_delete=models.CASCADE)
+    retries = models.IntegerField(default=0)
+    tapis_job_def = models.JSONField(null=True)
+    tapis_actor_id = models.CharField(max_length=128, null=True)
+    type = models.CharField(max_length=32, choices=ACTION_TYPES)
+    ttl = models.BigIntegerField(
+        default=ONE_HOUR_IN_SEC,
+        validators=[MaxValueValidator(ONE_HOUR_IN_SEC*3), MinValueValidator(1)]
+    )
     url = models.CharField(max_length=255, null=True)
     uuid = models.UUIDField(default=uuid.uuid4)
     class Meta:
@@ -199,6 +209,7 @@ class Pipeline(models.Model):
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
     image_tag = models.CharField(max_length=64, null=True)
     owner = models.CharField(max_length=64)
+    type = models.CharField(max_length=64, choices=PIPELINE_TYPES, default=PIPELINE_TYPE_WORKFLOW)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
     class Meta:

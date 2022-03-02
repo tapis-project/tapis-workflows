@@ -1,16 +1,18 @@
-from django.db import IntegrityError
+from django.db import IntegrityError, OperationalError
 from django.forms import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses.errors import BaseResponse, Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden, ServerError
+from backend.views.http.responses.errors import Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden, ServerError
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
-from backend.views.http.requests import PipelineCreateRequest
-from backend.models import Pipeline, Group, Context, Destination, Action, Context, Destination, GroupUser
+from backend.views.http.requests import BasePipeline, CIPipeline
+from backend.models import Pipeline, Group, Context, Destination, Action, Context, Destination, GroupUser, PIPELINE_TYPES, PIPELINE_TYPE_CI, PIPELINE_TYPE_WORKFLOW
 from backend.services.PipelineService import pipeline_service
 from backend.services.CredentialService import cred_service
+from backend.views.http.responses.BaseResponse import BaseResponse
 
 
 class Pipelines(RestrictedAPIView):
+    BaseResponse
     def get(self, request, id=None):
         # Get all the groups the user belongs to
         group_users = GroupUser.objects.filter(username=request.username)
@@ -60,7 +62,21 @@ class Pipelines(RestrictedAPIView):
         return BaseResponse(result=result)
 
     def post(self, request, **_):
-        # Validate the request body
+        # Ensure the request body has a 'type' property and it is a valid value
+        # before validating the rest of the request body
+        pipeline_types = [ptype[0] for ptype in PIPELINE_TYPES]
+        if (
+            "type" not in self.request_body
+            or self.request_body["type"] not in pipeline_types
+        ):
+            return BadRequest(f"Request body must inlcude a 'type' property with one of the following values: {pipeline_types}")
+
+        # Determine the proper request type. Default will be a BasePipeline request
+        PipelineCreateRequest = BasePipeline
+        if self.request_body["type"] == PIPELINE_TYPE_CI:
+            PipelineCreateRequest = CIPipeline
+
+        # Validate the request body based on the type of pipeline specified
         prepared_request = self.prepare(PipelineCreateRequest)
 
         # Return the failure view instance if validation failed
@@ -90,6 +106,16 @@ class Pipelines(RestrictedAPIView):
         if body.group_id not in group_ids:
             return Forbidden(message="You cannot create a pipeline for this group")
 
+        # NOTE Pipeline requests with type 'ci' are supported in order to make the 
+        # process of setting up a ci pipeline as simple as possible. Rather than
+        # specifying actions, dependencies, etc, we let user pass most the required
+        # data in the top level of the pipline request.
+        if body.type == PIPELINE_TYPE_CI:
+            return self.build_ci_pipline(body, group, request.username)
+
+        return self.build_workflow_pipeline()
+
+    def build_ci_pipline(self, body, group, owner):
         # Persist the credentials for the context and destination in SK and
         # and save a ref to it in the database
         # Create the credential for the context if one is specified
@@ -106,7 +132,7 @@ class Pipelines(RestrictedAPIView):
                     group,
                     context_cred_data
                 )
-            except IntegrityError as e:
+            except (IntegrityError, OperationalError) as e:
                 return BadRequest(message=e.__cause__)
 
         # Create the context
@@ -120,7 +146,7 @@ class Pipelines(RestrictedAPIView):
                 url=body.context.url,
                 visibility=body.context.visibility
             )
-        except IntegrityError as e:
+        except (IntegrityError, OperationalError) as e:
             cred_service.delete(context_cred.sk_id)
             return BadRequest(message=e.__cause__)
 
@@ -136,7 +162,7 @@ class Pipelines(RestrictedAPIView):
                 group,
                 destination_cred_data
             )
-        except IntegrityError as e:
+        except (IntegrityError, OperationalError) as e:
             cred_service.delete(context_cred.sk_id)
             context.delete()
             return BadRequest(message=e.__cause__)
@@ -149,7 +175,7 @@ class Pipelines(RestrictedAPIView):
                 type=body.destination.type,
                 url=body.destination.url
             )
-        except IntegrityError as e:
+        except (IntegrityError, OperationalError) as e:
             cred_service.delete(context_cred.sk_id)
             context.delete()
             cred_service.delete(destination_cred.sk_id)
@@ -169,9 +195,9 @@ class Pipelines(RestrictedAPIView):
                 dockerfile_path=body.context.dockerfile_path,
                 group_id=body.group_id,
                 image_tag=body.destination.tag,
-                owner=request.username
+                owner=owner
             )
-        except IntegrityError as e:
+        except (IntegrityError, OperationalError) as e:
             cred_service.delete(context_cred.sk_id)
             context.delete()
             cred_service.delete(destination_cred.sk_id)
@@ -189,11 +215,10 @@ class Pipelines(RestrictedAPIView):
                 http_method=None,
                 name="Build",
                 pipeline=pipeline,
-                stage="build",
                 type="image_build",
                 url=None
             )
-        except IntegrityError as e:
+        except (IntegrityError, OperationalError) as e:
             cred_service.delete(context_cred.sk_id)
             context.delete()
             cred_service.delete(destination_cred.sk_id)
@@ -202,3 +227,6 @@ class Pipelines(RestrictedAPIView):
             return BadRequest(message=e.__cause__)
 
         return ModelResponse(pipeline)
+
+    def build_workflow_pipeline(self):
+        return BaseResponse(message="workflow")

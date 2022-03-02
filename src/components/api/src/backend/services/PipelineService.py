@@ -12,11 +12,9 @@ class PipelineService:
     def start(self, service_request):
         broker.publish("pipelines", json.dumps(service_request, default=self._uuid_convert))
 
-        return # TODO return build object here
-
     def _uuid_convert(self, obj):
         if isinstance(obj, UUID):
-            return obj.hex
+            return obj.hex # TODO change from hex to string
 
 pipeline_service = PipelineService()
 

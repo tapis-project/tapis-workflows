@@ -2,13 +2,13 @@ from django.db import IntegrityError
 
 from backend.models import Action
 from backend.models import ACTION_TYPE_WEBHOOK_NOTIFICATION, ACTION_TYPE_IMAGE_BUILD, ACTION_TYPE_CONTAINER_RUN
-from backend.views.http.requests import WebhookActionCreateRequest, ImageBuildActionCreateRequest, ContainerRunActionCreateRequest
+from backend.views.http.requests import WebhookAction, ImageBuildAction, ContainerRunAction
 
 
 ACTION_REQUEST_MAPPING = {
-    ACTION_TYPE_IMAGE_BUILD: ImageBuildActionCreateRequest,
-    ACTION_TYPE_WEBHOOK_NOTIFICATION: WebhookActionCreateRequest,
-    ACTION_TYPE_CONTAINER_RUN: ContainerRunActionCreateRequest
+    ACTION_TYPE_IMAGE_BUILD: ImageBuildAction,
+    ACTION_TYPE_WEBHOOK_NOTIFICATION: WebhookAction,
+    ACTION_TYPE_CONTAINER_RUN: ContainerRunAction
 }
 
 ACTION_REQUEST_TYPES = list(ACTION_REQUEST_MAPPING.keys())

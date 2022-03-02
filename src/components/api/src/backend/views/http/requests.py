@@ -1,4 +1,4 @@
-from typing import  List
+from typing import List, Union
 
 from pydantic import BaseModel, StrictStr
 
@@ -57,16 +57,6 @@ class GroupCreateRequest(BaseModel):
 class GroupPutPatchRequest(BaseModel):
     users: List[StrictStr] = []
 
-# Pipelines
-class PipelineCreateRequest(BaseModel):
-    id: str
-    auto_build: bool = False
-    cache: bool = False
-    builder: str = "kaniko"
-    group_id: str
-    context: Context
-    destination: Destination
-
 # Actions
 class ActionDependency(BaseModel):
     name: str
@@ -82,23 +72,57 @@ class BaseAction(BaseModel):
     retries: int = 0
     ttl: int = -1
 
-class ImageBuildActionCreateRequest(BaseAction):
+class ContainerRunAction(BaseAction):
+    pass
+
+class ImageBuildAction(BaseAction):
     builder: str = "kaniko"
     cache: bool = False
     context: Context
     description: str = None
     destination: Destination
 
-class ContainerRunActionCreateRequest(BaseAction):
-    pass
+class TapisActorAction(BaseAction):
+    tapis_actor_id: str
 
-class WebhookActionCreateRequest(BaseAction):
+class TapisJobAction(BaseAction):
+    tapis_job_definition: dict
+
+class WebhookAction(BaseAction):
     auth: dict = None
     data: dict = None
     headers: dict = None
     http_method: str
     params: dict = None
     url: str
+
+# Pipelines
+class BasePipeline(BaseModel):
+    id: str
+    type: str
+    group_id: str
+    actions: List[
+        Union[
+            ContainerRunAction,
+            ImageBuildAction,
+            TapisActorAction,
+            TapisJobAction,
+            WebhookAction
+        ]
+    ] = []
+
+class CIPipeline(BasePipeline):
+    auto_build: bool = False
+    cache: bool = False
+    builder: str = "kaniko"
+    context: Context
+    destination: Destination
+    auth: dict = None
+    data: dict = None
+    headers: dict = None
+    http_method: str = None
+    params: dict = None
+    url: str = None
 
 class PreparedRequest:
     def __init__(
