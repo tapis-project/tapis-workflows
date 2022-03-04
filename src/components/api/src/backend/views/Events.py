@@ -6,7 +6,7 @@ from backend.views.http.requests import EventCreateRequest
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import ServerError
 from backend.helpers.parse_commit import parse_commit as parse
-from backend.services.PipelineService import pipeline_service
+from backend.services.PipelineDispatcher import pipeline_dispatcher
 from backend.services.CredentialService import cred_service
 from backend.models import Identity, Event, Pipeline
 from backend.views.http.responses.BaseResponse import BaseResponse
@@ -83,22 +83,22 @@ class Events(RestrictedAPIView):
             action_result = getattr(self, f"_{action.type}")(action)
             actions_result.append(action_result)
 
-        # Convert pipleline to a dict and build the pipelines_service_request
-        pipelines_service_request = {}
-        pipelines_service_request["event"] = model_to_dict(event)
-        pipelines_service_request["pipeline"] = model_to_dict(pipeline)
-        pipelines_service_request["pipeline"]["actions"] = actions_result
+        # Convert pipleline to a dict and build the pipleine_dispatch_request
+        pipleine_dispatch_request = {}
+        pipleine_dispatch_request["event"] = model_to_dict(event)
+        pipleine_dispatch_request["pipeline"] = model_to_dict(pipeline)
+        pipleine_dispatch_request["pipeline"]["actions"] = actions_result
 
         # Parse the directives from the commit message
         directives = parse(body.commit)
-        pipelines_service_request["directives"] = directives
+        pipleine_dispatch_request["directives"] = directives
 
         # Conver the uuid object of the event
         # Send the pipelines service a service request
-        pipeline_service.start(pipelines_service_request)
+        pipeline_dispatcher.dispatch(pipleine_dispatch_request)
 
         # Respond with the pipeline_context and build data
-        # return BaseResponse(result=pipelines_service_request)
+        # return BaseResponse(result=pipleine_dispatch_request)
         return ModelResponse(event)
 
     def _image_build(self, action):

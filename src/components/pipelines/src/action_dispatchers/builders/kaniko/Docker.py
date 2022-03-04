@@ -50,8 +50,6 @@ class Docker(BaseBuildDispatcher):
                 if action.context.branch is not None else "")
         )
 
-        print(f"Action '{action.name}' started")
-
         # Run the kaniko build
         container = client.containers.run(
             "gcr.io/kaniko-project/executor:debug",

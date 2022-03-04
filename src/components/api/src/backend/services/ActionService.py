@@ -19,11 +19,11 @@ class ActionService:
         try:
             action = Action.objects.create(
                 builder=pipeline.builder,
+                depends_on=[ dict(item) for item in request.depends_on ],
                 description=request.description if hasattr(request, "description") else None,
                 http_method=request.http_method,
                 name=request.name,
                 pipeline=pipeline,
-                stage=request.stage,
                 type=request.type,
                 url=request.url
             )

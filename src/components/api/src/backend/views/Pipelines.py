@@ -2,11 +2,10 @@ from django.db import IntegrityError, OperationalError
 from django.forms import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses.errors import Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden, ServerError
+from backend.views.http.responses.errors import Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.requests import BasePipeline, CIPipeline
 from backend.models import Pipeline, Group, Context, Destination, Action, Context, Destination, GroupUser, PIPELINE_TYPES, PIPELINE_TYPE_CI, PIPELINE_TYPE_WORKFLOW
-from backend.services.PipelineService import pipeline_service
 from backend.services.CredentialService import cred_service
 from backend.views.http.responses.BaseResponse import BaseResponse
 
@@ -213,7 +212,7 @@ class Pipelines(RestrictedAPIView):
                 description="Build an image from a repository and push it to an image registry",
                 destination=destination,
                 http_method=None,
-                name="Build",
+                name="image_build",
                 pipeline=pipeline,
                 type="image_build",
                 url=None

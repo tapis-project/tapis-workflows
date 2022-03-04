@@ -66,7 +66,6 @@ class BaseAction(BaseModel):
     description: str = None
     name: str
     pipeline_id: str
-    stage: str
     type: str
     depends_on: List[ActionDependency] = []
     retries: int = 0
