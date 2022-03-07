@@ -20,10 +20,10 @@ def on_message_callback(ch, method, properties, body):
         # TODO reject the message if the body is not valid json
         return
 
-    # try:
-    service.start(pipeline_context)
-    # except Exception as e:
-    #     print(e)
+    try:
+        service.start(pipeline_context)
+    except Exception as e:
+        print(e)
 
 # Initialize connection parameters
 credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])

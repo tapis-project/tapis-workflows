@@ -1,4 +1,5 @@
 class CycleDetector:
+
     def has_cycle(self, actions):
         return False
 

@@ -1,5 +1,3 @@
-from typing import List
-
 from core.ActionDispatcher import action_dispatcher
 from core.ActionResult import ActionResult
 from helpers.CycleDetector import cycle_detector
@@ -40,14 +38,18 @@ class PipelineService:
         for action in initial_actions:
             self._on_run(action, pipeline_context)
 
+        print(f"Pipeline finished: {pipeline_context.pipeline.id}")
+        print(f"Fails: ({len(self.failed)})")
+        print(f"Successes: ({len(self.succeeded)})")
+
     def _dispatch_action(self, action, pipeline_context):
         # Dispatch the action
-        try:
-            action_result = action_dispatcher.dispatch(action, pipeline_context)
-        except InvalidActionTypeError as e:
-            action_result = ActionResult(1, errors=[str(e)])
+        # try:
+        #     action_result = action_dispatcher.dispatch(action, pipeline_context)
+        # except InvalidActionTypeError as e:
+        #     action_result = ActionResult(1, errors=[str(e)])
             
-        print(action_result) # TODO remove
+        print(action_result.__dict__) # TODO remove
         
         # Mark the action as finished
         self._on_finish(action, action_result, pipeline_context)
@@ -118,11 +120,6 @@ class PipelineService:
 
             if can_run:
                 self._on_run(queued_action, pipeline_context)
-
-        if len(self.finished) == len(self.actions):
-            print(f"Pipeline finished: {pipeline_context.pipeline.id}")
-            print(f"Fails: ({len(self.failed)})")
-            print(f"Successes: ({len(self.succeeded)})")
 
     def _on_queue(self, action):
         if action.name not in self.queued:

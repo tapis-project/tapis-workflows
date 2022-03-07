@@ -14,6 +14,7 @@ class Docker(BaseBuildDispatcher):
     def dispatch(self, action, pipeline_context):
         # Resolve the repository from which the code containing the Dockerfile
         # will be pulled
+
         context = self._resolve_context_string(action)
         
         # Resolve the image registry to which the image will be pushed after build
@@ -54,8 +55,7 @@ class Docker(BaseBuildDispatcher):
         container = client.containers.run(
             "gcr.io/kaniko-project/executor:debug",
             volumes={
-                self.config_file: {"bind": "/kaniko/.docker/config.json", "mode": "ro"},
-                # "kaniko-data": {"bind": "/kaniko-data/", "mode": "rw"}
+                self.config_file: {"bind": "/kaniko/.docker/config.json", "mode": "ro"}
             },
             detach=True,
             entrypoint=entrypoint,

@@ -14,3 +14,8 @@ SCRATCH_DIR = BASE_DIR + "scratch/"
 DEPLOYMENT_TYPE = os.environ["DEPLOYMENT_TYPE"]
 
 API_BASE_URL = os.environ["API_BASE_URL"]
+
+BROKER_USER = os.environ["BROKER_USER"]
+BROKER_PASSWORD = os.environ["BROKER_PASSWORD"]
+BROKER_HOST = os.environ["BROKER_URL"]
+BROKER_PORT = os.environ["BROKER_PORT"]

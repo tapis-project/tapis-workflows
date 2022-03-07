@@ -58,11 +58,11 @@ services:
     container_name: pipelines
     tty: true
     build: ./../../../components/pipelines/src/
-    command: python3 main.py
+    command: python3 main.py && celery -A tasks worker -l info
+    restart: always
     volumes:
       - ./../../../components/pipelines/src/:/cicd/
       - /var/run/docker.sock:/var/run/docker.sock
-      # - kaniko-data:/kaniko-data/
       - /tmp/:/tmp/
     environment:
       API_BASE_URL: "localhost:8000"
