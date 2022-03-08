@@ -1,10 +1,10 @@
 FROM python:3.9
 
-RUN mkdir cicd
+RUN mkdir src
 
-COPY . /cicd
+COPY . /src
 
-WORKDIR /cicd
+WORKDIR /src
 
 RUN pip install -r requirements.txt
 

@@ -1,4 +1,4 @@
-import os, sys, time
+import os, sys, time, asyncio
 
 from json.decoder import JSONDecodeError
 
@@ -21,9 +21,9 @@ def on_message_callback(ch, method, properties, body):
         return
 
     try:
-        service.start(pipeline_context)
+        asyncio.run(service.start(pipeline_context))
     except Exception as e:
-        print(e)
+        print(e.__class__.__name__, e)
 
 # Initialize connection parameters
 credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
