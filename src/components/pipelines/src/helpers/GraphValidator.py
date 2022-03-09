@@ -1,27 +1,33 @@
 class GraphValidator:
     def __init__(self):
+        self.last_action = None
         self.traversed_edges = []
 
-    def has_cycle(self, action_dependency_map):
+    def has_cycle(self, action_dependency_map, initial_actions):
         self.action_dependency_map = action_dependency_map
-        self.initial_actions = list(
-            filter(lambda a: len(a.depends_on) == 0, self.action_dependency_map))
+        initial_action_names = [ initial_action.name for initial_action in initial_actions ]
 
-        for initial_action in self.initial_actions:
-            return self.traverse(initial_action)
+        for name in initial_action_names:
+            has_cycle = self.traverse(self.action_dependency_map[name][0], name)
+            if has_cycle:
+                return True
 
+            self.traversed_edges = [] # TODO reset traversed edges here?
 
-    def traverse(self, action_name):
-        if action_name in self.visited:
+        return False
+
+    def traverse(self, to_vertex, from_vertex):
+        edge = f"{from_vertex}:{to_vertex}"
+        if edge in self.traversed_edges:
             return True
 
-        self.visited.append(action_name)
+        self.traversed_edges.append(edge)
         
-        dependencies = self.action_dependency_map[action_name]
+        dependencies = self.action_dependency_map[to_vertex]
         for dependency in dependencies:
-            return self.has_cycle(dependency.name)
+            self.traverse(dependency, to_vertex)
 
-        self.visited = []
+        # self.traversed_edges = [] # TODO reset traversed edges here?
 
         return False
 

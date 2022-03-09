@@ -25,6 +25,8 @@ def on_message_callback(ch, method, properties, body):
     except Exception as e:
         print(e.__class__.__name__, e)
 
+    # asyncio.run(service.start(pipeline_context))
+
 # Initialize connection parameters
 credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
 connection_parameters = pika.ConnectionParameters(

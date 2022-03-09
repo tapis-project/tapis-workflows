@@ -15,6 +15,7 @@ class PipelineService:
         self.actions = []
         self.dependencies = {}
         self.event_loop = None
+        self.initial_actions = []
 
     async def start(self, pipeline_context):
         self._reset()
@@ -24,28 +25,16 @@ class PipelineService:
 
         # Validate the graph. Terminate the pipeline if it contains cycles
         # or invalid dependencies
+        terminated_message = f"\nPipeline terminated: {pipeline_context.pipeline.id}"
         try:
             self._set_actions(pipeline_context.pipeline.actions)
-        except InvalidDependenciesError as e:
-            print(str(e), f"\nPipeline terminated: {pipeline_context.pipeline.id}")
-            return
-        except CycleDetectedError as e:
-            print(str(e), f"\nPipeline terminated: {pipeline_context.pipeline.id}")
+        except (InvalidDependenciesError, CycleDetectedError, MissingInitialActionsError) as e:
+            print(str(e), terminated_message)
             return
 
-        # Fetch and dispatch the initial actions
-        try: 
-            initial_actions = self._get_initial_actions(self.actions)
-        except MissingInitialActionsError as e:
-            print(str(e), f"\nPipeline terminated: {pipeline_context.pipeline.id}")
-            return
-
-        for action in initial_actions:
+        # Dispatch the initial actions
+        for action in self.initial_actions:
             self._run(action, pipeline_context)
-
-        print(f"Pipeline finished: {pipeline_context.pipeline.id}")
-        print(f"Fails: ({len(self.failed)})")
-        print(f"Successes: ({len(self.succeeded)})")
 
     def _dispatch(self, action, pipeline_context):
         print(f"Action started: {action.name}")
@@ -89,10 +78,6 @@ class PipelineService:
 
         self.actions = actions
 
-        # Detect loops in the graph
-        if graph_validator.has_cycle(self.dependencies):
-            raise CycleDetectedError("Cyclical dependencies detected")
-
         # Build a mapping between each action and the actions that depend on them.
         # Doing this here saves us from having to perform the dependency
         # look-ups when queueing actions, improving performance
@@ -100,7 +85,17 @@ class PipelineService:
 
         for action in self.actions:
             for parent_action in action.depends_on:
-                self.dependencies[parent_action.name].append(action)
+                self.dependencies[parent_action.name].append(action.name)
+
+        print(self.dependencies)
+
+        # Detect loops in the graph
+        try:
+            self.initial_actions = self._get_initial_actions(self.actions)
+            if graph_validator.has_cycle(self.dependencies, self.initial_actions):
+                raise CycleDetectedError("Cyclical dependencies detected")
+        except (InvalidDependenciesError, MissingInitialActionsError, CycleDetectedError) as e:
+            raise e
 
     def _on_fail(self, action):
         print(f"Action '{action.name}' failed")
@@ -110,6 +105,7 @@ class PipelineService:
         # Add the action to the finished list
         self.finished.append(action.name)
         self.running.pop(self.running.index(action.name))
+        pipeline_complete = True if len(self.actions) == len(self.finished) else False
 
         # # TODO Raise FailedActionError if this action is not permitted to fail
         # self._on_succeed(action) if action_result.success else self._on_fail(action)
@@ -128,6 +124,11 @@ class PipelineService:
             if can_run:
                 self._run(queued_action, pipeline_context)
 
+        if pipeline_complete:
+            print(f"Pipeline finished: {pipeline_context.pipeline.id}")
+            print(f"Fails: ({len(self.failed)})")
+            print(f"Successes: ({len(self.succeeded)})")
+
     def _on_queue(self, action):
         if action.name not in self.queued:
             self.queued.append(action.name)
@@ -141,8 +142,8 @@ class PipelineService:
             self.queued.pop(self.queued.index(action.name))
 
         # Queue all the dependencies for this action
-        for dep in self.dependencies[action.name]:
-            self._on_queue(dep)
+        for dep_name in self.dependencies[action.name]:
+            self._on_queue(self._get_action(dep_name))
 
         self._dispatch(action, pipeline_context)
 
