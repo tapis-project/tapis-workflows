@@ -6,7 +6,7 @@ import pika
 
 from pika.exchange_type import ExchangeType
 
-from core.PipelineService import pipeline_service as service
+from core.PipelineService import PipelineService
 from conf.configs import MAX_CONNECTION_ATTEMPTS, RETRY_DELAY
 from utils.bytes_to_json import bytes_to_json
 from utils.json_to_object import json_to_object
@@ -20,12 +20,11 @@ def on_message_callback(ch, method, properties, body):
         # TODO reject the message if the body is not valid json
         return
 
-    # try:
-    #     asyncio.run(service.start(pipeline_context))
-    # except Exception as e:
-    #     print(e.__class__.__name__, e)
-
-    asyncio.run(service.start(pipeline_context))
+    try:
+        service = PipelineService()
+        asyncio.run(service.start(pipeline_context))
+    except Exception as e:
+        print(e.__class__.__name__, e)
 
 # Initialize connection parameters
 credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])

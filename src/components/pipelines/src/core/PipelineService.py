@@ -1,10 +1,8 @@
 import asyncio, time
 
-from random import randint
-
 from core.ActionDispatcher import action_dispatcher
 from core.ActionResult import ActionResult
-from helpers.GraphValidator import graph_validator
+from helpers.GraphValidator import GraphValidator
 from errors.actions import InvalidActionTypeError, MissingInitialActionsError, InvalidDependenciesError, CycleDetectedError
 
 
@@ -19,8 +17,6 @@ class PipelineService:
         self.initial_actions = []
 
     async def start(self, pipeline_context):
-        self._reset()
-
         print(f"Pipeline started: {pipeline_context.pipeline.id}")
 
         # Validate the graph. Terminate the pipeline if it contains cycles
@@ -48,6 +44,9 @@ class PipelineService:
 
     async def _dispatch(self, action, pipeline_context):
         print(f"Running action {action.name}: {time.time()}")
+
+        # The folowing line forces the async function to yield control to the event loop,
+        # allowing other async functions to run concurrently
         await asyncio.sleep(0)
         
         # Dispatch the action
@@ -102,6 +101,7 @@ class PipelineService:
         # Detect loops in the graph
         try:
             self.initial_actions = self._get_initial_actions(self.actions)
+            graph_validator = GraphValidator()
             if graph_validator.has_cycle(self.dependencies, self.initial_actions):
                 raise CycleDetectedError("Cyclical dependencies detected")
         except (InvalidDependenciesError, MissingInitialActionsError, CycleDetectedError) as e:
@@ -115,11 +115,11 @@ class PipelineService:
         # Add the action to the finished list
         self.finished.append(action.name)
         print(f"Finished action {action.name}: {time.time()}")
-        # print(vars(action_result))
-        # pipeline_complete = True if len(self.actions) == len(self.finished) else False
+        print(f"Result for {action.name}: ", vars(action_result))
+        pipeline_complete = True if len(self.actions) == len(self.finished) else False
 
-        # # TODO Raise FailedActionError if this action is not permitted to fail
-        # self._on_succeed(action) if action_result.success else self._on_fail(action)
+        # TODO Raise FailedActionError if this action is not permitted to fail
+        self._on_succeed(action) if action_result.success else self._on_fail(action)
 
         # Dispatch all the queued actions
         tasks = []
@@ -134,26 +134,15 @@ class PipelineService:
                 self._remove_from_queue(queued_action)
                 tasks.append(self._dispatch(queued_action, pipeline_context))
        
-        # if pipeline_complete:
-        #     print(f"Pipeline finished: {pipeline_context.pipeline.id}")
-        #     print(f"Fails: ({len(self.failed)})")
-        #     print(f"Successes: ({len(self.succeeded)})")
+        if pipeline_complete:
+            print(f"Pipeline finished: {pipeline_context.pipeline.id}")
+            print(f"Fails: ({len(self.failed)})")
+            print(f"Successes: ({len(self.successful)})")
 
         return tasks  
 
     def _on_succeed(self, action):
-        print(f"Action finished: {action.name}")
-        self.succeeded.append(action.name)
+        self.successful.append(action.name)
 
     def _remove_from_queue(self, action):
         self.queue.pop(self.queue.index(action))
-
-    def _reset(self):
-        self.failed = []
-        self.running = []
-        self.succeeded = []
-        self.queue = []
-        self.actions = []
-        self.dependencies = {}
-
-pipeline_service = PipelineService()

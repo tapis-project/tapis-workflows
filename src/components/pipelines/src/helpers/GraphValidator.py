@@ -12,7 +12,7 @@ class GraphValidator:
             if has_cycle:
                 return True
 
-            self.traversed_edges = [] # TODO reset traversed edges here?
+            # self.traversed_edges = [] # TODO reset traversed edges here?
 
         return False
 
@@ -25,10 +25,10 @@ class GraphValidator:
         
         dependencies = self.action_dependency_map[to_vertex]
         for dependency in dependencies:
-            self.traverse(dependency, to_vertex)
+            has_cycle = self.traverse(dependency, to_vertex)
+            if has_cycle:
+                return True
 
         # self.traversed_edges = [] # TODO reset traversed edges here?
 
         return False
-
-graph_validator = GraphValidator()
