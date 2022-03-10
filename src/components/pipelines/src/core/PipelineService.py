@@ -1,4 +1,6 @@
-import asyncio
+import asyncio, time
+
+from random import randint
 
 from core.ActionDispatcher import action_dispatcher
 from core.ActionResult import ActionResult
@@ -11,44 +13,54 @@ class PipelineService:
         self.failed = []
         self.successful = []
         self.finished = []
-        self.queued = []
+        self.queue = []
         self.actions = []
         self.dependencies = {}
-        self.event_loop = None
         self.initial_actions = []
 
     async def start(self, pipeline_context):
         self._reset()
-        self.event_loop = asyncio.get_running_loop()
 
         print(f"Pipeline started: {pipeline_context.pipeline.id}")
 
         # Validate the graph. Terminate the pipeline if it contains cycles
         # or invalid dependencies
-        terminated_message = f"\nPipeline terminated: {pipeline_context.pipeline.id}"
         try:
             self._set_actions(pipeline_context.pipeline.actions)
         except (InvalidDependenciesError, CycleDetectedError, MissingInitialActionsError) as e:
-            print(str(e), terminated_message)
+            print(str(e), f"\nPipeline terminated: {pipeline_context.pipeline.id}")
             return
 
-        # Dispatch the initial actions
-        for action in self.initial_actions:
-            self._run(action, pipeline_context)
+        # Add all of the asynchronous tasks to the queue
+        self.queue = []
+        for action in self.actions:
+            self.queue.append(action)
 
-    def _dispatch(self, action, pipeline_context):
-        print(f"Action started: {action.name}")
+
+        # Dispatch the initial actions
+        tasks = []
+        for action in self.initial_actions:
+            self._remove_from_queue(action)
+            tasks.append(self._dispatch(action, pipeline_context))
+
+        await asyncio.gather(*tasks)
+
+
+    async def _dispatch(self, action, pipeline_context):
+        print(f"Running action {action.name}: {time.time()}")
+        await asyncio.sleep(0)
         
         # Dispatch the action
         try:
             action_result = action_dispatcher.dispatch(action, pipeline_context)
         except InvalidActionTypeError as e:
             action_result = ActionResult(1, errors=[str(e)])
-            
-        print(vars(action_result)) # TODO remove
         
-        # Mark the action as finished
-        self._on_finish(action, action_result, pipeline_context)
+        # Get the next queued actions if any
+        tasks = self._on_finish(action, action_result, pipeline_context)
+
+        # Await the tasks to run them
+        await asyncio.gather(*tasks)
         
     def _get_initial_actions(self, actions):
         initial_actions = [ action for action in actions if len(action.depends_on) == 0 ]
@@ -87,8 +99,6 @@ class PipelineService:
             for parent_action in action.depends_on:
                 self.dependencies[parent_action.name].append(action.name)
 
-        print(self.dependencies)
-
         # Detect loops in the graph
         try:
             self.initial_actions = self._get_initial_actions(self.actions)
@@ -104,17 +114,16 @@ class PipelineService:
     def _on_finish(self, action, action_result, pipeline_context):
         # Add the action to the finished list
         self.finished.append(action.name)
-        self.running.pop(self.running.index(action.name))
-        pipeline_complete = True if len(self.actions) == len(self.finished) else False
+        print(f"Finished action {action.name}: {time.time()}")
+        # print(vars(action_result))
+        # pipeline_complete = True if len(self.actions) == len(self.finished) else False
 
         # # TODO Raise FailedActionError if this action is not permitted to fail
         # self._on_succeed(action) if action_result.success else self._on_fail(action)
 
         # Dispatch all the queued actions
-        for name in self.queued:
-            # Get the action from the actions list
-            queued_action = self._get_action(name)
-
+        tasks = []
+        for queued_action in self.queue:
             can_run = True
             for dep in queued_action.depends_on:
                 if dep.name not in self.finished:
@@ -122,40 +131,28 @@ class PipelineService:
                     break
 
             if can_run:
-                self._run(queued_action, pipeline_context)
+                self._remove_from_queue(queued_action)
+                tasks.append(self._dispatch(queued_action, pipeline_context))
+       
+        # if pipeline_complete:
+        #     print(f"Pipeline finished: {pipeline_context.pipeline.id}")
+        #     print(f"Fails: ({len(self.failed)})")
+        #     print(f"Successes: ({len(self.succeeded)})")
 
-        if pipeline_complete:
-            print(f"Pipeline finished: {pipeline_context.pipeline.id}")
-            print(f"Fails: ({len(self.failed)})")
-            print(f"Successes: ({len(self.succeeded)})")
-
-    def _on_queue(self, action):
-        if action.name not in self.queued:
-            self.queued.append(action.name)
-    
-    def _run(self, action, pipeline_context):
-        # Add the action to the running list
-        self.running.append(action.name)
-
-        # Remove the current running action from the queue if it is there
-        if action.name in self.queued:
-            self.queued.pop(self.queued.index(action.name))
-
-        # Queue all the dependencies for this action
-        for dep_name in self.dependencies[action.name]:
-            self._on_queue(self._get_action(dep_name))
-
-        self._dispatch(action, pipeline_context)
+        return tasks  
 
     def _on_succeed(self, action):
         print(f"Action finished: {action.name}")
         self.succeeded.append(action.name)
 
+    def _remove_from_queue(self, action):
+        self.queue.pop(self.queue.index(action))
+
     def _reset(self):
         self.failed = []
         self.running = []
         self.succeeded = []
-        self.queued = []
+        self.queue = []
         self.actions = []
         self.dependencies = {}
 

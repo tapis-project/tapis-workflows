@@ -20,12 +20,12 @@ def on_message_callback(ch, method, properties, body):
         # TODO reject the message if the body is not valid json
         return
 
-    try:
-        asyncio.run(service.start(pipeline_context))
-    except Exception as e:
-        print(e.__class__.__name__, e)
+    # try:
+    #     asyncio.run(service.start(pipeline_context))
+    # except Exception as e:
+    #     print(e.__class__.__name__, e)
 
-    # asyncio.run(service.start(pipeline_context))
+    asyncio.run(service.start(pipeline_context))
 
 # Initialize connection parameters
 credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
