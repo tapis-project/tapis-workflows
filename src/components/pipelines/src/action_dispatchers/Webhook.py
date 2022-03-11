@@ -14,7 +14,7 @@ class WebhookAction(BaseModel):
     data: Any = None,
     headers: Dict[str, Union[str, int,]] = None
     http_method: str
-    params: Dict[str, Union[str, int,]] = None
+    query_params: Dict[str, Union[str, int,]] = None
     url: str
 
 # TODO Webhook Notifcation Action needs to be containerized
@@ -38,7 +38,7 @@ class Webhook:
                 webhook_action.url,
                 data=webhook_action.data,
                 headers=webhook_action.headers,
-                params=webhook_action.params,
+                params=webhook_action.query_params,
             )
 
             return ActionResult(

@@ -33,9 +33,6 @@ services:
       BROKER_PASSWORD: "dev"
       BROKER_URL: "message"
       BROKER_PORT: 5672
-      REGISTRY_USER: nathandf
-      REGISTRY_TOKEN: a190f902-d418-491a-9abc-c22eff2aa335
-      REPO_TOKEN: "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"
       TAPIS_TENANT: "tacc"
       DJANGO_SUPERUSER_USERNAME: "nathandf"
       DJANGO_SUPERUSER_EMAIL: "nfreeman@tacc.utexas.edu"

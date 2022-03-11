@@ -1,0 +1,53 @@
+[
+    {
+        "name": "actionA",
+        "depends_on": [],
+        "output": {
+            "some_string_val": {
+                "type": "string",
+                "mode": "required",
+                "value": "some value"
+            },
+            "some_int_val": {
+                "type": "int",
+                "mode": "required",
+                "value": 42
+            }
+        }
+    },
+    {
+        "name": "actionB",
+        "depends_on": [],
+        "output": {
+            "some-file": {
+                "type": "file",
+                "mode": "required",
+                "value": "/path/to/file"
+            }
+        }
+    },
+    {
+        "name": "actionC",
+        "depends_on": [
+            { "name": "actionA", "can_fail": false },
+            { "name": "actionB", "can_fail": false }
+        ],
+        "input": {
+            "inputA": {
+                "type": "env",
+                "value": "${actionA.o1}"
+            },
+            "inputB": {
+                "type": "application",
+                "value": "${actionA.o2}"
+            },
+            "inputC": {
+                "type": "mount",
+                "value": {
+                    "source": "workflows://actionB/path/to/file",
+                    "target": "/path/to/file/in/ActionC"
+                }
+            }
+        }
+    }
+]

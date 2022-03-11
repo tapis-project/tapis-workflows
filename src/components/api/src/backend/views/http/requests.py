@@ -23,7 +23,7 @@ class ContextCredential(BaseModel):
 class Context(BaseModel):
     credential: ContextCredential = None
     branch: str
-    dockerfile_path: str
+    dockerfile_path: str = "Dockerfile"
     sub_path: str = None
     type: str
     url: str
@@ -63,12 +63,23 @@ class ActionDependency(BaseModel):
     can_fail: bool = False
 
 class BaseAction(BaseModel):
+    auth: dict = None
+    builder: str = None
+    cache: bool = None
+    context: Context = None
+    data: dict = None
     description: str = None
+    destination: Destination = None
+    headers: dict = None
+    http_method: str = None
     name: str
+    query_params: str = None
     pipeline_id: str
     type: str
     depends_on: List[ActionDependency] = []
     retries: int = 0
+    tapis_job_definition: dict = None
+    tapis_actor_id: str = None
     ttl: int = -1
 
 class ContainerRunAction(BaseAction):
@@ -78,7 +89,6 @@ class ImageBuildAction(BaseAction):
     builder: str = "kaniko"
     cache: bool = False
     context: Context
-    description: str = None
     destination: Destination
 
 class TapisActorAction(BaseAction):
@@ -88,11 +98,7 @@ class TapisJobAction(BaseAction):
     tapis_job_definition: dict
 
 class WebhookAction(BaseAction):
-    auth: dict = None
-    data: dict = None
-    headers: dict = None
     http_method: str
-    params: dict = None
     url: str
 
 # Pipelines
@@ -120,7 +126,7 @@ class CIPipeline(BasePipeline):
     data: dict = None
     headers: dict = None
     http_method: str = None
-    params: dict = None
+    query_params: dict = None
     url: str = None
 
 class PreparedRequest:
