@@ -18,14 +18,28 @@ class ActionService:
         # Create 'build' action
         try:
             action = Action.objects.create(
-                builder=pipeline.builder,
-                depends_on=[ dict(item) for item in request.depends_on ],
-                description=request.description if hasattr(request, "description") else None,
+                auth=request.auth,
+                builder=request.builder,
+                cache=request.cache,
+                context=request.context,
+                data=request.data,
+                description=request.description,
+                destination=request.destination,
+                headers=request.headers,
                 http_method=request.http_method,
+                image=request.image,
+                input=request.input,
                 name=request.name,
+                output=request.output,
+                query_params=request.query_params,
                 pipeline=pipeline,
                 type=request.type,
-                url=request.url
+                depends_on=[ dict(item) for item in request.depends_on ],
+                retries=request.retries,
+                tapis_job_def=request.tapis_job_def,
+                tapis_actor_id=request.tapis_actor_id,
+                ttl=request.ttl,
+                url=request.url,
             )
         except IntegrityError as e:
             raise e

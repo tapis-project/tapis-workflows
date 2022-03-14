@@ -2,7 +2,7 @@ from django.db import IntegrityError
 from django.forms import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.requests import EventCreateRequest
+from backend.views.http.requests import WebhookEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import ServerError
 from backend.helpers.parse_commit import parse_commit as parse
@@ -11,12 +11,12 @@ from backend.services.CredentialService import cred_service
 from backend.models import Identity, Event, Pipeline
 from backend.views.http.responses.BaseResponse import BaseResponse
 
-class Events(RestrictedAPIView):
+class ManualEvents(RestrictedAPIView):
     def get(self, request):
         return ModelListResponse(Event.objects.all())
 
     def post(self, request, **_):
-        prepared_request = self.prepare(EventCreateRequest)
+        prepared_request = self.prepare(WebhookEvent)
 
         if not prepared_request.is_valid:
             return prepared_request.failure_view

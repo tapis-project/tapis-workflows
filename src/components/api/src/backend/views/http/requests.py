@@ -1,5 +1,4 @@
-from typing import List, Union
-
+from typing import AnyStr, List, Union, Dict
 from pydantic import BaseModel, StrictStr
 
 
@@ -41,7 +40,21 @@ class Destination(BaseModel):
     url: str
 
 # Events
-class EventCreateRequest(BaseModel):
+class BaseEvent(BaseModel):
+    branch: str = None
+    directives: str = None
+    commit: str = None
+    commit_sha: str = None
+    context_url: str = None
+    pipeline_id: str = None
+    source: str = None
+    username: str = None
+
+class ManualEvent(BaseEvent):
+    pipeline_id: str
+    directives: dict = None
+
+class WebhookEvent(BaseEvent):
     branch: str
     commit: str
     commit_sha: str
@@ -62,6 +75,22 @@ class ActionDependency(BaseModel):
     name: str
     can_fail: bool = False
 
+IOValueType = Union[AnyStr, Dict, List, bool]
+
+class Input(BaseModel):
+    type: str
+    mode: str
+    value: IOValueType
+
+InputType = Dict[str, Input]
+
+class Output(BaseModel):
+    type: str
+    model: str
+    value: IOValueType
+
+OutputType = Dict[str, Output]
+
 class BaseAction(BaseModel):
     auth: dict = None
     builder: str = None
@@ -72,18 +101,22 @@ class BaseAction(BaseModel):
     destination: Destination = None
     headers: dict = None
     http_method: str = None
+    image: str = None
+    input: InputType = None
     name: str
+    output: OutputType = None
     query_params: str = None
     pipeline_id: str
     type: str
     depends_on: List[ActionDependency] = []
     retries: int = 0
-    tapis_job_definition: dict = None
     tapis_actor_id: str = None
+    tapis_job_def: dict = None
     ttl: int = -1
+    url: str = None
 
 class ContainerRunAction(BaseAction):
-    pass
+    image: str
 
 class ImageBuildAction(BaseAction):
     builder: str = "kaniko"
@@ -95,7 +128,7 @@ class TapisActorAction(BaseAction):
     tapis_actor_id: str
 
 class TapisJobAction(BaseAction):
-    tapis_job_definition: dict
+    tapis_job_def: dict
 
 class WebhookAction(BaseAction):
     http_method: str
