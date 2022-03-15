@@ -24,4 +24,4 @@ class BuildActionDispatcherResolver:
         return string.lower().capitalize()
         
 
-resolver = BuildActionDispatcherResolver()
+build_action_dispatcher_resolver = BuildActionDispatcherResolver()

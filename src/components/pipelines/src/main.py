@@ -6,7 +6,7 @@ import pika
 
 from pika.exchange_type import ExchangeType
 
-from core.PipelineService import PipelineService
+from core.PipelineCoordinator import PipelineCoordinator
 from conf.configs import MAX_CONNECTION_ATTEMPTS, RETRY_DELAY
 from utils.bytes_to_json import bytes_to_json
 from utils.json_to_object import json_to_object
@@ -15,14 +15,14 @@ from utils.json_to_object import json_to_object
 # Resolve the image builder 
 def on_message_callback(ch, method, properties, body):
     try:
-        pipeline_context = json_to_object(bytes_to_json(body))
+        message = json_to_object(bytes_to_json(body))
     except JSONDecodeError as e:
         # TODO reject the message if the body is not valid json
         return
 
     try:
-        service = PipelineService()
-        asyncio.run(service.start(pipeline_context))
+        coordinator = PipelineCoordinator()
+        asyncio.run(coordinator.start(message))
     except Exception as e:
         print(e.__class__.__name__, e)
 

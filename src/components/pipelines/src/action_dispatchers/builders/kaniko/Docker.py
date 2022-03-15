@@ -11,19 +11,18 @@ class Docker(BaseBuildDispatcher):
     def __init__(self):
         self.config_file = None
 
-    def dispatch(self, action, pipeline_context):
+    def dispatch(self, action, message):
         # Resolve the repository from which the code containing the Dockerfile
         # will be pulled
-
         context = self._resolve_context_string(action)
         
         # Resolve the image registry to which the image will be pushed after build
         destination = self._resolve_destination_string(
-            action, pipeline_context.event, pipeline_context.directives)
+            action, message.event, message.directives)
 
         # Do not build if there is no BUILD directive and
         # the auto_build flag set to False
-        if (hasattr(pipeline_context.directives, "BUILD") or action.auto_build) == False:
+        if (hasattr(message.directives, "BUILD") or action.auto_build) == False:
             print("Build cancelled. No 'build' directive found.")
             self._reset()
             return
@@ -37,7 +36,7 @@ class Docker(BaseBuildDispatcher):
 
         # Build the entrypoint for the kaniko executor based on the pipeline
         # and directives
-        can_cache = action.cache or hasattr(pipeline_context.directives, "CACHE")
+        can_cache = action.cache or hasattr(message.directives, "CACHE")
         entrypoint = (
             "/kaniko/executor" +
             f" --cache={'true' if can_cache else 'false'}" +

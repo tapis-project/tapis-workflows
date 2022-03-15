@@ -1,12 +1,12 @@
 import asyncio, time
 
-from core.ActionDispatcher import action_dispatcher
+from core.ActionDispatcherResolver import action_dispatcher_resolver as resolver
 from core.ActionResult import ActionResult
 from helpers.GraphValidator import GraphValidator
 from errors.actions import InvalidActionTypeError, MissingInitialActionsError, InvalidDependenciesError, CycleDetectedError
 
 
-class PipelineService:
+class PipelineCoordinator:
     def __init__(self):
         self.failed = []
         self.successful = []
@@ -16,15 +16,15 @@ class PipelineService:
         self.dependencies = {}
         self.initial_actions = []
 
-    async def start(self, pipeline_context):
-        print(f"Pipeline started: {pipeline_context.pipeline.id}")
+    async def start(self, message):
+        print(f"Pipeline started: {message.pipeline.id}")
 
         # Validate the graph. Terminate the pipeline if it contains cycles
         # or invalid dependencies
         try:
-            self._set_actions(pipeline_context.pipeline.actions)
+            self._set_actions(message.pipeline.actions)
         except (InvalidDependenciesError, CycleDetectedError, MissingInitialActionsError) as e:
-            print(str(e), f"\nPipeline terminated: {pipeline_context.pipeline.id}")
+            print(str(e), f"\nPipeline terminated: {message.pipeline.id}")
             return
 
         # Add all of the asynchronous tasks to the queue
@@ -37,26 +37,27 @@ class PipelineService:
         tasks = []
         for action in self.initial_actions:
             self._remove_from_queue(action)
-            tasks.append(self._dispatch(action, pipeline_context))
+            tasks.append(self._execute(action, message))
 
         await asyncio.gather(*tasks)
 
 
-    async def _dispatch(self, action, pipeline_context):
+    async def _execute(self, action, message):
         print(f"Running action {action.name}: {time.time()}")
 
         # The folowing line forces the async function to yield control to the event loop,
         # allowing other async functions to run concurrently
         await asyncio.sleep(0)
         
-        # Dispatch the action
         try:
-            action_result = action_dispatcher.dispatch(action, pipeline_context)
+            # Resolve the action dispatcher and execute the action
+            action_dispatcher = resolver.resolve(action)
+            action_result = action_dispatcher.dispatch(action, message)
         except InvalidActionTypeError as e:
             action_result = ActionResult(1, errors=[str(e)])
         
         # Get the next queued actions if any
-        tasks = self._on_finish(action, action_result, pipeline_context)
+        tasks = self._on_finish(action, action_result, message)
 
         # Await the tasks to run them
         await asyncio.gather(*tasks)
@@ -111,7 +112,7 @@ class PipelineService:
         print(f"Action '{action.name}' failed")
         self.failed.append(action.name)
 
-    def _on_finish(self, action, action_result, pipeline_context):
+    def _on_finish(self, action, action_result, message):
         # Add the action to the finished list
         self.finished.append(action.name)
         print(f"Finished action {action.name}: {time.time()}")
@@ -132,10 +133,10 @@ class PipelineService:
 
             if can_run:
                 self._remove_from_queue(queued_action)
-                tasks.append(self._dispatch(queued_action, pipeline_context))
+                tasks.append(self._dispatch(queued_action, message))
        
         if pipeline_complete:
-            print(f"Pipeline finished: {pipeline_context.pipeline.id}")
+            print(f"Pipeline finished: {message.pipeline.id}")
             print(f"Fails: ({len(self.failed)})")
             print(f"Successes: ({len(self.successful)})")
 
