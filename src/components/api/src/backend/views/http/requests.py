@@ -148,6 +148,7 @@ class BasePipeline(BaseModel):
             WebhookAction
         ]
     ] = []
+    run_on_create: bool = False
 
 class CIPipeline(BasePipeline):
     auto_build: bool = False

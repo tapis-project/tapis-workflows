@@ -8,9 +8,10 @@ class GraphValidator:
         initial_action_names = [ initial_action.name for initial_action in initial_actions ]
 
         for name in initial_action_names:
-            has_cycle = self.traverse(self.action_dependency_map[name][0], name)
-            if has_cycle:
-                return True
+            if len(self.action_dependency_map[name]) > 0:
+                has_cycle = self.traverse(self.action_dependency_map[name][0], name)
+                if has_cycle:
+                    return True
 
             # self.traversed_edges = [] # TODO reset traversed edges here?
 

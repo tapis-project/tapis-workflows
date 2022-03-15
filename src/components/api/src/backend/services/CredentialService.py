@@ -1,5 +1,4 @@
 from typing import Dict
-from django.db import IntegrityError
 
 from tapipy.tapis import Tapis
 
@@ -68,4 +67,4 @@ class CredentialService:
     def _format_secret_name(self, secret_name: str):
         return secret_name.replace(" ", "-")
 
-cred_service = CredentialService()
+service = CredentialService()

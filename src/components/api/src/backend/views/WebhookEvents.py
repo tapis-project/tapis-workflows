@@ -6,8 +6,7 @@ from backend.views.http.requests import WebhookEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import ServerError
 from backend.helpers.parse_commit import parse_commit as parse
-from backend.services.PipelineDispatcher import pipeline_dispatcher
-from backend.services.CredentialService import cred_service
+from backend.services import cred_service, pipeline_dispatcher
 from backend.models import Identity, Event, Pipeline
 from backend.views.http.responses.BaseResponse import BaseResponse
 
@@ -15,7 +14,7 @@ class WebhookEvents(RestrictedAPIView):
     def get(self, request):
         return ModelListResponse(Event.objects.all())
 
-    def post(self, request, **_):
+    def post(self, request, pipeline_id):
         prepared_request = self.prepare(WebhookEvent)
 
         if not prepared_request.is_valid:
@@ -24,11 +23,7 @@ class WebhookEvents(RestrictedAPIView):
         body = prepared_request.body
 
         # Find a pipeline that matches the request data
-        pipeline = Pipeline.objects.filter(
-            branch=body.branch,
-            context_type=body.source,
-            context_url=body.context_url
-        ).prefetch_related(
+        pipeline = Pipeline.objects.filter(id=pipeline_id).prefetch_related(
             "actions",
             "actions__context",
             "actions__context__credential",
@@ -51,7 +46,7 @@ class WebhookEvents(RestrictedAPIView):
             # to this pipline
             message = f"Successfully triggered pipeline ({pipeline.id})"
             if identity is None:
-                message = f"Failed to trigger pipline ({pipeline.id}): {body.type} identity '{body.username}' does not have access to this pipeline"
+                message = f"Failed to trigger pipeline ({pipeline.id}): {body.source} identity '{body.username}' does not have access to this pipeline"
 
         # Persist the event in the database
         try:
@@ -63,7 +58,7 @@ class WebhookEvents(RestrictedAPIView):
                 message=message,
                 pipeline=pipeline,
                 source=body.source,
-                username=identity.username if identity is not None else None,
+                username=identity.username if identity is not None else f"{body.source}:{body.username}",
                 identity=identity
             )
         except IntegrityError as e:
@@ -83,22 +78,22 @@ class WebhookEvents(RestrictedAPIView):
             action_result = getattr(self, f"_{action.type}")(action)
             actions_result.append(action_result)
 
-        # Convert pipleline to a dict and build the pipleine_dispatch_request
-        pipleine_dispatch_request = {}
-        pipleine_dispatch_request["event"] = model_to_dict(event)
-        pipleine_dispatch_request["pipeline"] = model_to_dict(pipeline)
-        pipleine_dispatch_request["pipeline"]["actions"] = actions_result
+        # Convert pipleline to a dict and build the pipeline_dispatch_request
+        pipeline_dispatch_request = {}
+        pipeline_dispatch_request["event"] = model_to_dict(event)
+        pipeline_dispatch_request["pipeline"] = model_to_dict(pipeline)
+        pipeline_dispatch_request["pipeline"]["actions"] = actions_result
 
         # Parse the directives from the commit message
         directives = parse(body.commit)
-        pipleine_dispatch_request["directives"] = directives
+        pipeline_dispatch_request["directives"] = directives
 
         # Conver the uuid object of the event
         # Send the pipelines service a service request
-        pipeline_dispatcher.dispatch(pipleine_dispatch_request)
+        pipeline_dispatcher.dispatch(pipeline_dispatch_request)
 
         # Respond with the pipeline_context and build data
-        # return BaseResponse(result=pipleine_dispatch_request)
+        # return BaseResponse(result=pipeline_dispatch_request)
         return ModelResponse(event)
 
     def _image_build(self, action):

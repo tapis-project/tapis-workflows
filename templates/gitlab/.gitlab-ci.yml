@@ -21,6 +21,7 @@ pipeline-event-job:
     WEBHOOK_URL: "$WEBHOOK_URL"
     ACCESS_TOKEN: "$ACCESS_TOKEN"
     WEBHOOK_PAYLOAD: '{
+        "pipeline": "$TAPIS_WORKFLOWS_PIPELINE_ID"
         "branch": "$CI_COMMIT_BRANCH",
         "commit": "$CI_COMMIT_MESSAGE",
         "commit_sha": "$CI_COMMIT_SHA",

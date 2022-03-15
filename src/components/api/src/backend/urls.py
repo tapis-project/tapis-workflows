@@ -16,12 +16,13 @@ from backend.views.Nuke import Nuke
 
 urlpatterns = [
     path("actions/", Actions.as_view()),
+    path("actions/<str:pipeline_id>", Actions.as_view()),
     path("auth/", Auth.as_view()),
     path("builds/", Builds.as_view()),
     path("contexts/", Contexts.as_view()),
     path("credentials/", Credentials.as_view()),
     path("destination/", Destinations.as_view()),
-    path("webhooks/", WebhookEvents.as_view()),
+    path("webhooks/pipelines/<str:pipeline_id>", WebhookEvents.as_view()),
     path("events/", ManualEvents.as_view()),
     path("groups/", Groups.as_view()),
     path("groups/<str:id>", Groups.as_view()),

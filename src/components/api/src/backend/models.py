@@ -187,10 +187,11 @@ class GroupUser(models.Model):
 
 class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    branch = models.CharField(max_length=255)
-    commit = models.TextField(max_length=255)
-    commit_sha = models.CharField(max_length=128)
-    context_url = models.CharField(max_length=128)
+    branch = models.CharField(max_length=255, null=True)
+    commit = models.TextField(max_length=255, null=True)
+    commit_sha = models.CharField(max_length=128, null=True)
+    context_url = models.CharField(max_length=128, null=True)
+    directives = models.JSONField(null=True)
     message = models.TextField()
     pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
@@ -200,23 +201,12 @@ class Event(models.Model):
 
 class Pipeline(models.Model):
     id = models.CharField(primary_key=True, max_length=128)
-    auto_build = models.BooleanField(null=True)
-    branch = models.CharField(max_length=255, null=True )
-    builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    context_url = models.CharField(max_length=128, null=True)
-    context_sub_path = models.CharField(max_length=255, null=True)
-    context_type = models.CharField(max_length=32, choices=CONTEXT_TYPES, null=True)
-    destination_type = models.CharField(max_length=32, choices=DESTINATION_TYPES, null=True)
-    dockerfile_path = models.CharField(max_length=255, null=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
-    image_tag = models.CharField(max_length=64, null=True)
     owner = models.CharField(max_length=64)
     type = models.CharField(max_length=64, choices=PIPELINE_TYPES, default=PIPELINE_TYPE_WORKFLOW)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
-    class Meta:
-        unique_together = [["branch", "context_url", "context_type"]]
 
 class Policy(models.Model):      
     context_commit: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
