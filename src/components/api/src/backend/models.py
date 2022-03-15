@@ -117,6 +117,7 @@ class Action(models.Model):
     input = models.JSONField(null=True)
     name = models.CharField(max_length=128)
     output = models.JSONField(null=True)
+    poll = models.BooleanField(null=True)
     query_params = models.JSONField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="actions", on_delete=models.CASCADE)
     retries = models.IntegerField(default=0)

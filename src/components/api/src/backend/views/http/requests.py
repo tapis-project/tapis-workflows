@@ -105,8 +105,9 @@ class BaseAction(BaseModel):
     input: InputType = None
     name: str
     output: OutputType = None
-    query_params: str = None
     pipeline_id: str
+    poll: bool = None
+    query_params: str = None
     type: str
     depends_on: List[ActionDependency] = []
     retries: int = 0
@@ -130,6 +131,7 @@ class TapisActorAction(BaseAction):
 
 class TapisJobAction(BaseAction):
     tapis_job_def: dict
+    poll: bool = True
 
 class WebhookAction(BaseAction):
     http_method: str

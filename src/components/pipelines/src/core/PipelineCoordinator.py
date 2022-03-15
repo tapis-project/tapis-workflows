@@ -88,14 +88,20 @@ class PipelineCoordinator:
 
         # Determine if there are any invalid dependencies (dependencies not 
         # included in the actions list)
-        invalid_dependencies = []
+        invalid_deps = 0
+        invalid_deps_message = ""
         for action in actions:
             for dep in action.depends_on:
+                if dep.name == action.name:
+                    invalid_deps += 1
+                    invalid_deps_message = invalid_deps_message + f"#{invalid_deps} An action cannot be dependent on itself: {action.name} | "
                 if dep.name not in action_names:
-                    invalid_dependencies.append(dep.name)
+                    invalid_deps += 1
+                    invalid_deps_message = invalid_deps_message + f"#{invalid_deps} Action '{action.name}' depends on non-existent action '{dep.name}'"
 
-        if len(invalid_dependencies) > 0:
-            raise InvalidDependenciesError(f"Found {len(invalid_dependencies)} dependencies to actions that do not exist")
+        if invalid_deps > 0:
+            raise InvalidDependenciesError(invalid_deps_message)
+
 
         self.actions = actions
 

@@ -3,15 +3,16 @@ from uuid import uuid4
 from django.db import DatabaseError, IntegrityError, OperationalError
 
 from backend.models import Action, Context, Destination
-from backend.models import ACTION_TYPE_WEBHOOK_NOTIFICATION, ACTION_TYPE_IMAGE_BUILD, ACTION_TYPE_CONTAINER_RUN
-from backend.views.http.requests import WebhookAction, ImageBuildAction, ContainerRunAction
+from backend.models import ACTION_TYPE_WEBHOOK_NOTIFICATION, ACTION_TYPE_IMAGE_BUILD, ACTION_TYPE_CONTAINER_RUN, ACTION_TYPE_TAPIS_JOB, ACTION_TYPE_TAPIS_ACTOR
+from backend.views.http.requests import WebhookAction, ImageBuildAction, ContainerRunAction, TapisJobAction
 from backend.services.CredentialService import service as cred_service
 
 
 ACTION_REQUEST_MAPPING = {
     ACTION_TYPE_IMAGE_BUILD: ImageBuildAction,
     ACTION_TYPE_WEBHOOK_NOTIFICATION: WebhookAction,
-    ACTION_TYPE_CONTAINER_RUN: ContainerRunAction
+    ACTION_TYPE_CONTAINER_RUN: ContainerRunAction,
+    ACTION_TYPE_TAPIS_JOB: TapisJobAction,
 }
 
 ACTION_REQUEST_TYPES = list(ACTION_REQUEST_MAPPING.keys())
@@ -91,6 +92,7 @@ class ActionService:
         try:
             action = Action.objects.create(
                 auth=request.auth,
+                auto_build=request.auto_build,
                 builder=request.builder,
                 cache=request.cache,
                 context=context,
@@ -103,8 +105,9 @@ class ActionService:
                 input=request.input,
                 name=request.name,
                 output=request.output,
-                query_params=request.query_params,
                 pipeline=pipeline,
+                poll=request.poll,
+                query_params=request.query_params,
                 type=request.type,
                 depends_on=[ dict(item) for item in request.depends_on ],
                 retries=request.retries,
