@@ -26,7 +26,7 @@ class BaseBuildExecutor:
                     tag = value
                 elif key == "CUSTOM_TAG" and key is None:
                     tag = action.destination.tag
-                elif key == "COMMIT_DESTINATION":
+                elif key == "TAG_COMMIT_SHA" and event.commit_sha is not None:
                     tag = event.commit_sha
             
         destination = action.destination.url + f":{tag}"

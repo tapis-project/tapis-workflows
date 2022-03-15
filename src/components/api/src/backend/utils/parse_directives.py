@@ -2,10 +2,10 @@ import re
 
 from backend.conf.constants import DIRECTIVE_DELIMITER, DIRECTIVE_SET_PATTERN, SUPPORTED_DIRECTIVES, DIRECTIVE_KEY_VAL_DELIMITER
 
-def parse_commit(commit_message):
+def parse_directives(directive_string):
     # Parse the directive string from the commit message
     pattern = re.compile(DIRECTIVE_SET_PATTERN, re.UNICODE)
-    matches = pattern.findall(commit_message)
+    matches = pattern.findall(directive_string)
     
     directives = None
     if len(matches) == 0:

@@ -6,7 +6,7 @@ from backend.views.Contexts import Contexts
 from backend.views.Credentials import Credentials
 from backend.views.Destinations import Destinations
 from backend.views.WebhookEvents import WebhookEvents
-from backend.views.ManualEvents import ManualEvents
+from backend.views.APIEvents import APIEvents
 from backend.views.Groups import Groups
 from backend.views.Identities import Identities
 from backend.views.Pipelines import Pipelines
@@ -23,7 +23,7 @@ urlpatterns = [
     path("credentials/", Credentials.as_view()),
     path("destination/", Destinations.as_view()),
     path("webhooks/pipelines/<str:pipeline_id>", WebhookEvents.as_view()),
-    path("events/", ManualEvents.as_view()),
+    path("events/<str:pipeline_id>", APIEvents.as_view()),
     path("groups/", Groups.as_view()),
     path("groups/<str:id>", Groups.as_view()),
     path("identities/", Identities.as_view()),

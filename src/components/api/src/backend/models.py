@@ -103,6 +103,7 @@ VISIBILITY_TYPES = [
 
 class Action(models.Model):
     auth = models.ForeignKey("backend.Credential", null=True, on_delete=models.CASCADE)
+    auto_build = models.BooleanField(null=True)
     builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
     cache = models.BooleanField(null=True)
     context = models.OneToOneField("backend.Context", null=True, on_delete=models.CASCADE)

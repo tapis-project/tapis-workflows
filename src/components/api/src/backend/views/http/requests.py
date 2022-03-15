@@ -50,9 +50,8 @@ class BaseEvent(BaseModel):
     source: str = None
     username: str = None
 
-class ManualEvent(BaseEvent):
-    pipeline_id: str
-    directives: dict = None
+class APIEvent(BaseEvent):
+    directives: List[str] = None
 
 class WebhookEvent(BaseEvent):
     branch: str
@@ -93,6 +92,7 @@ OutputType = Dict[str, Output]
 
 class BaseAction(BaseModel):
     auth: dict = None
+    auto_build: bool = None
     builder: str = None
     cache: bool = None
     context: Context = None
@@ -119,6 +119,7 @@ class ContainerRunAction(BaseAction):
     image: str
 
 class ImageBuildAction(BaseAction):
+    auto_build: bool = False
     builder: str = "kaniko"
     cache: bool = False
     context: Context
@@ -151,7 +152,6 @@ class BasePipeline(BaseModel):
     run_on_create: bool = False
 
 class CIPipeline(BasePipeline):
-    auto_build: bool = False
     cache: bool = False
     builder: str = "kaniko"
     context: Context

@@ -15,9 +15,15 @@ class PipelineCoordinator:
         self.actions = []
         self.dependencies = {}
         self.initial_actions = []
+        self.is_dry_run = False
 
     async def start(self, message):
-        print(f"Pipeline started: {message.pipeline.id}")
+        start_message = f"Pipeline started: {message.pipeline.id}"
+        if hasattr(message.directives, "DRY_RUN"):
+            self.is_dry_run = True
+            start_message = f"Pipline dry run: {message.pipeline.id}"
+
+        print(start_message)
 
         # Validate the graph. Terminate the pipeline if it contains cycles
         # or invalid dependencies
@@ -51,8 +57,11 @@ class PipelineCoordinator:
         
         try:
             # Resolve the action executor and execute the action
-            action_executor = resolver.resolve(action)
-            action_result = action_executor.execute(action, message)
+            if not self.is_dry_run:
+                action_executor = resolver.resolve(action)
+                action_result = action_executor.execute(action, message)
+            else:
+                action_result = ActionResult(0, data={"action": action.name})
         except InvalidActionTypeError as e:
             action_result = ActionResult(1, errors=[str(e)])
         
