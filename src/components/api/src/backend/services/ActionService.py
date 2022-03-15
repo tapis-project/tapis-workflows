@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from django.db import IntegrityError, OperationalError
+from django.db import DatabaseError, IntegrityError, OperationalError
 
 from backend.models import Action, Context, Destination
 from backend.models import ACTION_TYPE_WEBHOOK_NOTIFICATION, ACTION_TYPE_IMAGE_BUILD, ACTION_TYPE_CONTAINER_RUN
@@ -113,7 +113,7 @@ class ActionService:
                 ttl=request.ttl,
                 url=request.url,
             )
-        except IntegrityError as e:
+        except (IntegrityError, OperationalError, DatabaseError) as e:
             raise e
 
         # Validate graph here
