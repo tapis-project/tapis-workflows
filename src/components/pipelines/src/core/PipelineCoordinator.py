@@ -1,6 +1,6 @@
 import asyncio, time
 
-from core.ActionDispatcherResolver import action_dispatcher_resolver as resolver
+from core.ActionExecutorResolver import action_executor_resolver as resolver
 from core.ActionResult import ActionResult
 from helpers.GraphValidator import GraphValidator
 from errors.actions import InvalidActionTypeError, MissingInitialActionsError, InvalidDependenciesError, CycleDetectedError
@@ -33,7 +33,7 @@ class PipelineCoordinator:
             self.queue.append(action)
 
 
-        # Dispatch the initial actions
+        # Execute the initial actions
         tasks = []
         for action in self.initial_actions:
             self._remove_from_queue(action)
@@ -50,9 +50,9 @@ class PipelineCoordinator:
         await asyncio.sleep(0)
         
         try:
-            # Resolve the action dispatcher and execute the action
-            action_dispatcher = resolver.resolve(action)
-            action_result = action_dispatcher.dispatch(action, message)
+            # Resolve the action executor and execute the action
+            action_executor = resolver.resolve(action)
+            action_result = action_executor.execute(action, message)
         except InvalidActionTypeError as e:
             action_result = ActionResult(1, errors=[str(e)])
         
@@ -115,14 +115,16 @@ class PipelineCoordinator:
     def _on_finish(self, action, action_result, message):
         # Add the action to the finished list
         self.finished.append(action.name)
+
         print(f"Finished action {action.name}: {time.time()}")
         print(f"Result for {action.name}: ", vars(action_result))
+
         pipeline_complete = True if len(self.actions) == len(self.finished) else False
 
         # TODO Raise FailedActionError if this action is not permitted to fail
         self._on_succeed(action) if action_result.success else self._on_fail(action)
 
-        # Dispatch all the queued actions
+        # Execute all possible queued actions
         tasks = []
         for queued_action in self.queue:
             can_run = True
@@ -133,7 +135,7 @@ class PipelineCoordinator:
 
             if can_run:
                 self._remove_from_queue(queued_action)
-                tasks.append(self._dispatch(queued_action, message))
+                tasks.append(self._execute(queued_action, message))
        
         if pipeline_complete:
             print(f"Pipeline finished: {message.pipeline.id}")

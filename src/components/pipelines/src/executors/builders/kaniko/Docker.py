@@ -3,15 +3,15 @@ import json, uuid, time, os, base64
 import docker
 
 from core.ActionResult import ActionResult
-from core.BaseBuildDispatcher import BaseBuildDispatcher
+from core.BaseBuildExecutor import BaseBuildExecutor
 from errors.credential import CredentialError
 
 
-class Docker(BaseBuildDispatcher):
+class Docker(BaseBuildExecutor):
     def __init__(self):
         self.config_file = None
 
-    def dispatch(self, action, message):
+    def execute(self, action, message):
         # Resolve the repository from which the code containing the Dockerfile
         # will be pulled
         context = self._resolve_context_string(action)

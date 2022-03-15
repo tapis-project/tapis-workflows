@@ -4,10 +4,10 @@ import yaml
 
 from conf.configs import BASE_KANIKO_FILE, SCRATCH_DIR
 from core.ActionResult import ActionResult
-from core.BaseBuildDispatcher import BaseBuildDispatcher
+from core.BaseBuildExecutor import BaseBuildExecutor
 
-class Kubernetes(BaseBuildDispatcher):
-    def dispatch(self, build_context) -> ActionResult:
+class Kubernetes(BaseBuildExecutor):
+    def execute(self, build_context) -> ActionResult:
         # Load a fresh kaniko base config
         self._load_config()
 

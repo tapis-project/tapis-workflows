@@ -6,13 +6,13 @@ from importlib import import_module
 from errors.builder import InvalidBuilderError
 
 
-class BuildActionDispatcherResolver:
+class BuildActionExecutorResolver:
     def __init__(self):
         self.deployment_type = self._to_class_name(os.environ["DEPLOYMENT_TYPE"])
 
     def resolve(self, build_action):
         builder_name = build_action.builder
-        builder_ns = f"action_dispatchers.builders.{builder_name}"
+        builder_ns = f"executors.builders.{builder_name}"
 
         if bool(find_spec(builder_ns)):
             module = import_module(f"{builder_ns}.{self.deployment_type}", "./" )
@@ -24,4 +24,4 @@ class BuildActionDispatcherResolver:
         return string.lower().capitalize()
         
 
-build_action_dispatcher_resolver = BuildActionDispatcherResolver()
+build_action_executor_resolver = BuildActionExecutorResolver()

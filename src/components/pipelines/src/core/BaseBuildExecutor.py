@@ -1,7 +1,7 @@
 from helpers.ContextResolver import context_resolver
 
 
-class BaseBuildDispatcher:
+class BaseBuildExecutor:
     def _resolve_context_string(self, action):
         # Resolve the repository from which the code containing the Dockerfile
         # will be pulled
