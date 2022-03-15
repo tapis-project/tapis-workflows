@@ -21,10 +21,10 @@ class ActionExecutorResolver:
         executor = build_action_executor_resolver.resolve(action)
         return executor
 
-    def _webhook_notification(self, action, _) -> ActionResult:
+    def _webhook_notification(self, _) -> ActionResult:
         return webhook_executor
 
-    def _container_run(self, action) -> ActionResult:
+    def _container_run(self, _) -> ActionResult:
         return webhook_executor
 
 action_executor_resolver = ActionExecutorResolver()

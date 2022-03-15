@@ -19,7 +19,7 @@ class WebhookAction(BaseModel):
 
 # TODO Webhook Notifcation Action needs to be containerized
 class Webhook:
-    def execute(self, action):
+    def execute(self, action, _):
         try:
             webhook_action = WebhookAction(**vars(action))
         except ValidationError as e:
