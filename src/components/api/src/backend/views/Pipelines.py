@@ -1,4 +1,4 @@
-from django.db import IntegrityError, OperationalError
+from django.db import DatabaseError, IntegrityError, OperationalError
 from django.forms import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
@@ -90,7 +90,7 @@ class Pipelines(RestrictedAPIView):
         if body.type == PIPELINE_TYPE_CI:
             return self.build_ci_pipline(body, group, request.username)
 
-        return self.build_workflow_pipeline()
+        return self.build_workflow_pipeline(body, group, request.username)
 
     def build_ci_pipline(self, body, group, owner):
         # Create the pipeline
@@ -141,7 +141,13 @@ class Pipelines(RestrictedAPIView):
         
         actions = []
         for action_request in body.actions:
-            actions.append(action_service.create(pipeline, action_request))
+            try:
+                actions.append(action_service.create(pipeline, group, action_request))
+            except (IntegrityError, OperationalError, DatabaseError):
+                pipeline.delete()
+                for action in actions:
+                    action.delete()
 
 
-        return BaseResponse(message="workflow")
+
+        return ModelResponse(pipeline)
