@@ -16,7 +16,6 @@ from backend.views.Nuke import Nuke
 
 urlpatterns = [
     path("actions/", Actions.as_view()),
-    path("actions/<str:pipeline_id>", Actions.as_view()),
     path("auth/", Auth.as_view()),
     path("builds/", Builds.as_view()),
     path("contexts/", Contexts.as_view()),
@@ -28,6 +27,8 @@ urlpatterns = [
     path("groups/<str:id>", Groups.as_view()),
     path("identities/", Identities.as_view()),
     path("pipelines/", Pipelines.as_view()),
+    path("pipelines/<str:pipeline_id>/actions", Actions.as_view()),
+    path("pipelines/<str:pipeline_id>/actions/<str:action_name>", Actions.as_view()),
     path("pipelines/<str:id>", Pipelines.as_view()),
     path("policies/", Policies.as_view()),
     path("nuke/", Nuke.as_view()), # TODO Remove

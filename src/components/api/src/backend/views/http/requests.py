@@ -105,7 +105,6 @@ class BaseAction(BaseModel):
     input: InputType = None
     name: str
     output: OutputType = None
-    pipeline_id: str
     poll: bool = None
     query_params: str = None
     type: str
