@@ -139,7 +139,7 @@ class WebhookAction(BaseAction):
 # Pipelines
 class BasePipeline(BaseModel):
     id: str
-    type: str
+    type: str = "workflow"
     group_id: str
     actions: List[
         Union[

@@ -2,26 +2,26 @@ from django.db import DatabaseError, IntegrityError, OperationalError
 from django.forms import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses.errors import Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden, ServerError
+from backend.views.http.responses.errors import Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden, ServerError, MethodNotAllowed
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.requests import BasePipeline, CIPipeline, ImageBuildAction
-from backend.models import Pipeline, Group, GroupUser, PIPELINE_TYPES, PIPELINE_TYPE_CI, ACTION_TYPE_IMAGE_BUILD
+from backend.models import Pipeline, Group, GroupUser, ACTION_TYPE_IMAGE_BUILD
 from backend.services import action_service, group_service
 from backend.views.http.responses.BaseResponse import BaseResponse
 
 
+PIPELINE_TYPE_CI = "ci"
+PIPELINE_TYPE_WORKFLOW = "workflow"
+PIPELINE_TYPES = [ PIPELINE_TYPE_CI, PIPELINE_TYPE_WORKFLOW ]
+
 class Pipelines(RestrictedAPIView):
     def get(self, request, id=None):
-        # Get all the groups the user belongs to
-        group_users = GroupUser.objects.filter(username=request.username)
-        group_ids = [ group_user.group_id for group_user in group_users ]
-
-        # Get a list of all pipelines if id is not set
+        # Get a list of all pipelines that belong to the user's groups
+        # if no id is provided
         if id is None:
-            pipelines = Pipeline.objects.filter(group_id__in=group_ids)
-            return ModelListResponse(pipelines)
+            return self.list(request)
 
-        # Return the pipeline by the id provided in the path params
+        # Get the pipeline by the id provided in the path params
         pipeline = Pipeline.objects.filter(id=id).prefetch_related("actions").first()
 
         if pipeline is None:
@@ -29,7 +29,7 @@ class Pipelines(RestrictedAPIView):
 
         # Check that the user belongs to the group that is attached
         # to this pipline
-        if pipeline.group_id not in group_ids:
+        if not group_service.user_in_group(request.username, pipeline.group_id):
             return Forbidden(message="You do not have access to this pipeline")
 
         # Get the pipeline actions.
@@ -42,15 +42,22 @@ class Pipelines(RestrictedAPIView):
         
         return BaseResponse(result=result)
 
-    def post(self, request, **_):
+    def list(self, request):
+        # Get all the groups the user belongs to
+        group_users = GroupUser.objects.filter(username=request.username)
+        group_ids = [ group_user.group_id for group_user in group_users ]
+
+        pipelines = Pipeline.objects.filter(group_id__in=group_ids)
+        return ModelListResponse(pipelines)
+
+    def post(self, request, *args, **kwargs):
         # Ensure the request body has a 'type' property and it is a valid value
         # before validating the rest of the request body
-        pipeline_types = [ptype[0] for ptype in PIPELINE_TYPES]
         if (
             "type" not in self.request_body
-            or self.request_body["type"] not in pipeline_types
+            or self.request_body["type"] not in PIPELINE_TYPES
         ):
-            return BadRequest(f"Request body must inlcude a 'type' property with one of the following values: {pipeline_types}")
+            return BadRequest(f"Request body must inlcude a 'type' property with one of the following values: {PIPELINE_TYPES}")
 
         # Determine the proper request type. Default will be a BasePipeline request
         PipelineCreateRequest = BasePipeline
@@ -91,6 +98,31 @@ class Pipelines(RestrictedAPIView):
             return self.build_ci_pipline(body, group, request.username)
 
         return self.build_workflow_pipeline(body, group, request.username)
+
+    def put(self, *args, **kwargs):
+        return MethodNotAllowed(message="Events cannot be updated")
+
+    def patch(self, *args, **kwargs):
+        return MethodNotAllowed(message="Events cannot be updated")
+
+    def delete(self, request, id, *args, **kwargs):
+        # Get the pipeline by the id provided in the path params
+        pipeline = Pipeline.objects.filter(id=id).prefetch_related("actions").first()
+
+        if pipeline is None:
+            return NotFound(f"Pipeline not found with id '{id}'")
+
+        # Delete operation only allowed by owner
+        if request.username != pipeline.owner:
+            return Forbidden(message="Only the owner of this pipeline can delete it")
+
+        pipeline.delete()
+
+        actions = pipeline.actions.all()
+        for action in actions:
+            action.delete()
+
+        return BaseResponse(message=f"Pipeline '{id}' and {len(actions)} action(s) deleted by '{request.username}'")
 
     def build_ci_pipline(self, body, group, owner):
         # Create the pipeline

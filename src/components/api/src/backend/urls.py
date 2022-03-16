@@ -6,12 +6,13 @@ from backend.views.Contexts import Contexts
 from backend.views.Credentials import Credentials
 from backend.views.Destinations import Destinations
 from backend.views.WebhookEvents import WebhookEvents
-from backend.views.APIEvents import APIEvents
+from backend.views.Events import Events
 from backend.views.Groups import Groups
 from backend.views.Identities import Identities
 from backend.views.Pipelines import Pipelines
 from backend.views.Policies import Policies
 from backend.views.Nuke import Nuke
+from backend.views.ChangePipelineOwner import ChangePipelineOwner
 
 
 urlpatterns = [
@@ -22,7 +23,6 @@ urlpatterns = [
     path("credentials/", Credentials.as_view()),
     path("destination/", Destinations.as_view()),
     path("webhooks/pipelines/<str:pipeline_id>", WebhookEvents.as_view()),
-    path("events/<str:pipeline_id>", APIEvents.as_view()),
     path("groups/", Groups.as_view()),
     path("groups/<str:id>", Groups.as_view()),
     path("identities/", Identities.as_view()),
@@ -30,6 +30,9 @@ urlpatterns = [
     path("pipelines/<str:pipeline_id>/actions", Actions.as_view()),
     path("pipelines/<str:pipeline_id>/actions/<str:action_name>", Actions.as_view()),
     path("pipelines/<str:id>", Pipelines.as_view()),
+    path("pipelines/<str:pipeline_id>/events", Events.as_view()),
+    path("pipelines/<str:pipeline_id>/events/<str:event_uuid>", Events.as_view()),
+    path("pipelines/<str:pipeline_id>/changeOwner/<str:username>", ChangePipelineOwner.as_view()),
     path("policies/", Policies.as_view()),
     path("nuke/", Nuke.as_view()), # TODO Remove
 ]

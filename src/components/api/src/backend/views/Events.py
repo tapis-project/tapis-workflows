@@ -4,17 +4,14 @@ from django.forms import model_to_dict
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.requests import APIEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
-from backend.views.http.responses.errors import ServerError
+from backend.views.http.responses.errors import ServerError, MethodNotAllowed, Forbidden, NotFound, BadRequest
 from backend.utils.parse_directives import parse_directives as parse
 from backend.services import cred_service, pipeline_dispatcher, group_service
-from backend.models import Identity, Event, Pipeline
+from backend.models import Event, Pipeline
 from backend.views.http.responses.BaseResponse import BaseResponse
 
-class APIEvents(RestrictedAPIView):
-    def get(self, request):
-        return ModelListResponse(Event.objects.all())
-
-    def post(self, request, pipeline_id):
+class Events(RestrictedAPIView):
+    def post(self, request, pipeline_id, *args, **kwargs):
         prepared_request = self.prepare(APIEvent)
 
         if not prepared_request.is_valid:
@@ -86,6 +83,43 @@ class APIEvents(RestrictedAPIView):
         # Respond with the pipeline_context and build data
         # return BaseResponse(result=pipeline_dispatch_request)
         return ModelResponse(event)
+
+    def get(self, request, pipeline_id, event_uuid=None):
+        # Get the pipline
+        pipeline = Pipeline.objects.filter(id=pipeline_id).first()
+
+        # Return if BadRequest if no pipeline found
+        if pipeline is None:
+            return BadRequest(f"Pipline '{pipeline_id}' does not exist")
+
+        # Check that the user belongs to the group that is attached
+        # to this pipline
+        if not group_service.user_in_group(request.username, pipeline.group_id):
+            return Forbidden(message="You cannot view events for this pipeline")
+
+        # Return a list of events if uuid is not specified
+        if event_uuid is None:
+            return self.list(request, pipeline, event_uuid)
+
+        event = Event.objects.filter(uuid=event_uuid).first()
+
+        if event is None:
+            return NotFound(f"Event with uuid '{event_uuid}' not found in pipeline '{pipeline_id}'")
+
+        return ModelResponse(event)
+
+    def list(self, pipeline_id):    
+        events = Event.objects.filter(pipeline=pipeline_id)
+        return ModelListResponse(events)
+
+    def put(self, *args, **kwargs):
+        return MethodNotAllowed(message="Events cannot be updated")
+
+    def patch(self, *args, **kwargs):
+        return MethodNotAllowed(message="Events cannot be updated")
+
+    def delete(self, *args, **kwargs):
+        return MethodNotAllowed(message="Events cannot be deleted")
 
     def _image_build(self, action):
         action_request = model_to_dict(action)

@@ -67,13 +67,6 @@ PERMISSIONS = [
     (PERMISSION_MODIFY, "modify"), # Modify implies write which implies read
 ]
 
-PIPELINE_TYPE_CI = "ci"
-PIPELINE_TYPE_WORKFLOW = "workflow"
-PIPELINE_TYPES = [
-    (PIPELINE_TYPE_CI, "ci"),
-    (PIPELINE_TYPE_WORKFLOW, "workflow"),
-]
-
 ACCESS_CONTROL_ALLOW = "allow"
 ACCESS_CONTROL_DENY = "deny"
 ACCESS_CONTROLS = [
@@ -206,7 +199,6 @@ class Pipeline(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
     owner = models.CharField(max_length=64)
-    type = models.CharField(max_length=64, choices=PIPELINE_TYPES, default=PIPELINE_TYPE_WORKFLOW)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
 

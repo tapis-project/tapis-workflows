@@ -160,7 +160,6 @@ class Actions(RestrictedAPIView):
 
         return ModelResponse(Action.objects.filter(name=body.name, pipeline_id=pipeline_id).first())
 
-
     def patch(self, *args, **kwargs):
         return MethodNotAllowed("Method 'PATCH' not allowed for 'Action' objects")
 
