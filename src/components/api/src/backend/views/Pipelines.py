@@ -130,8 +130,7 @@ class Pipelines(RestrictedAPIView):
             pipeline = Pipeline.objects.create(
                 id=body.id,
                 group_id=body.group_id,
-                owner=owner,
-                type=body.type
+                owner=owner
             )
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
@@ -165,8 +164,7 @@ class Pipelines(RestrictedAPIView):
             pipeline = Pipeline.objects.create(
                 id=body.id,
                 group=group,
-                owner=owner,
-                type=body.type
+                owner=owner
             )
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)

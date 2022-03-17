@@ -32,6 +32,7 @@ class WebhookEvents(RestrictedAPIView):
         ).first()
 
         message = "No Pipeline found with details that match this event"
+        identity = None
         if pipeline is not None:
             # Get the user and group info for the triggering user
             identity = Identity.objects.filter(
@@ -65,7 +66,7 @@ class WebhookEvents(RestrictedAPIView):
             return ServerError(message=e.__cause__)
 
         # Return the event if there is no pipeline matching the event
-        if pipeline is None and identity is not None:
+        if pipeline is None:
             return ModelResponse(event)
 
         # Get the pipeline actions, their contexts, destinations, and respective
