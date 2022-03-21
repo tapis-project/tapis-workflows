@@ -1,3 +1,4 @@
+from asyncio.events import BaseDefaultEventLoopPolicy
 import os
 
 from pathlib import Path
@@ -10,6 +11,8 @@ RETRY_DELAY = 5
 
 BASE_KANIKO_FILE = BASE_DIR + "conf/kaniko-base.yml"
 SCRATCH_DIR = BASE_DIR + "scratch/"
+
+LOG_FILE = BASE_DIR + "logs/action-logs.txt"
 
 DEPLOYMENT_TYPE = os.environ["DEPLOYMENT_TYPE"]
 

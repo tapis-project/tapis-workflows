@@ -5,6 +5,7 @@ import docker
 from core.ActionResult import ActionResult
 from core.BaseBuildExecutor import BaseBuildExecutor
 from errors.credential import CredentialError
+from conf.configs import LOG_FILE
 
 
 class Docker(BaseBuildExecutor):
@@ -41,6 +42,7 @@ class Docker(BaseBuildExecutor):
             "/kaniko/executor" +
             f" --cache={'true' if can_cache else 'false'}" +
             f" --context {context}" +
+            f" --force" +
             (f" --context-sub-path {action.context.sub_path}"
                 if action.context.sub_path is not None else "") +
             f" --dockerfile {action.context.dockerfile_path}" +
@@ -64,21 +66,23 @@ class Docker(BaseBuildExecutor):
 
         # TODO Update the build status to "in_progress"
 
-        # Waits until the container is finished running to return the
-        # result that contains the status code and the error
-        result = dict(container.wait().items())
+        logs = []
+        for line in container.logs(stream=True):
+            line = line.decode('utf8').replace("'", '"')
+            logs.append(line)
+            file = open(LOG_FILE, "a")
+            file.write(line)
+            file.close()
+            print(line)
 
-        logs = self._get_container_logs(client, container)
-
-        for log in logs:
-            print(log)
 
         # Remove the container and reset the builder
-        container.remove()
+        # container.remove()
 
         self._reset(delete_config=True)
-
-        return ActionResult(result["StatusCode"], data=result)
+        
+        return ActionResult(0, data={})
+        # return ActionResult(result["StatusCode"], data=result)
  
     def _generate_config(self, action):
         # Get image registry credentials from config

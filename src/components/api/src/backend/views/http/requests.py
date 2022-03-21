@@ -34,7 +34,7 @@ class DestinationCredential(BaseModel):
     username: str
 
 class Destination(BaseModel):
-    credential: DestinationCredential
+    credential: DestinationCredential = None
     tag: str
     type: str
     url: str

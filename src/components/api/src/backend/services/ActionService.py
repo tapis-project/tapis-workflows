@@ -65,7 +65,7 @@ class ActionService:
                     destination_cred_data[key] = getattr(request.destination.credential, key)
             try:
                 destination_cred = cred_service.save(
-                    f"{group.id}+{pipeline.id}+destination-{uuid4}",
+                    f"{group.id}+{pipeline.id}+destination-{uuid4()}",
                     group,
                     destination_cred_data
                 )

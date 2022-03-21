@@ -156,7 +156,13 @@ class Actions(RestrictedAPIView):
         Action.objects.filter(
             pipeline_id=pipeline_id,
             name=action_name
-        ).update(**{**json.loads(body.json()), "type": action.type, "pipeline_id": pipeline_id})
+        ).update(**{
+            **json.loads(body.json()),
+            "type": action.type,
+            "pipeline_id": pipeline_id,
+            "context": action.context,
+            "destination": action.destination
+        })
 
         return ModelResponse(Action.objects.filter(name=body.name, pipeline_id=pipeline_id).first())
 
