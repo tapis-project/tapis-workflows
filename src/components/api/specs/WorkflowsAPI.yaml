@@ -1,0 +1,977 @@
+openapi: 3.0.3
+info:
+  title: Tapis Workflows API
+  description: Create and manage pipelines
+  version: '0.1'
+  termsOfService: "https://tapis-project.org"
+  contact:
+    name: "Workflows API - CICSupport"
+    url: "https://tapis-project.org"
+    email: "cicsupport@tacc.utexas.edu"
+  license:
+    name: 3-Clause BSD License
+    url: 'https://opensource.org/licenses/BSD-3-Clause'
+externalDocs:
+  description: Tapis Project
+  url: 'https://tapis-project.org'
+servers:
+  - url: 'http://localhost:8000/'
+    description: Local test environment
+    variables: {}
+  - url: 'https://dev.tapis.io/'
+    description: Development environment
+    variables: {}
+security:
+  - TapisJWT: []
+tags:
+  - name: Workflows
+    description: Manage Pipeline and Action resources. Create, retrieve, update, etc.
+
+# ------------------------------------------------------------------------------
+# --- Paths -------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+# -- Paths for groups ---
+paths:
+  '/v3/groups/':
+    get:
+      tags:
+        - Groups
+      summary: Retrieve groups
+      description: |
+        Retrieve all groups to which the user belongs
+      operationId: listGroups
+      responses:
+        '200':
+          description: List groups successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+
+  '/v3/groups/{group_id}':
+    get:
+      tags:
+        - Groups
+      summary: Retrieve group details
+      description: |
+        Retrieve details for a given group id
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: getGroup
+      responses:
+        '200':
+          description: Get group successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetailResp'
+
+  # --- Paths for identities ---
+  '/v3/groups/{group_id}/identities':
+    get:
+      tags:
+        - Identities
+      summary: List
+      description: |
+        Retrieve details for a given group id
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: List Identities
+      responses:
+        '200':
+          description: List groups successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResp'
+
+  # --- Paths for ci pipelines -----------------------------------------------------
+  '/v3/ci/':
+    post:
+      tags:
+        - CI/CD
+      summary: Create a CI/CD pipeline
+      description: |
+        Create a CI/CD pipeline using a request body. Pipeline id must be unique within a group and can be composed of
+        alphanumeric characters and the following special characters [-_.].
+
+        Note: When creating pipelines the CI/CD use case, use this endpoint. It offers a simplified interface
+        for those who want to avoid the complexities of creating a standard workflow. You made modfiy this
+        pipeline's actions later.
+      operationId: createCIPipeline
+      requestBody:
+        required: true
+        description: A JSON object specifying information for the pipeline to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CIPipelinePostReq'
+      responses:
+        '200':
+          description: Pipeline created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespPipeline'
+        '400':
+          description: Bad request. Invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot create a pipeline for specified group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '405':
+          description: Method not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '409':
+          description: Conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '415':
+          description: Unsupported media type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '422':
+          description: Unprocessable entity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
+  # --- Paths for pipelines -----------------------------------------------------
+  '/v3/pipelines/':
+    get:
+      tags:
+        - Pipelines
+      summary: Retrieve pipelines
+      description: Retrieve a list of pipelines for all groups that the requesting user belongs to.
+      operationId: listPipelines
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespPipelineList'
+                  
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '404':
+          description: Not Found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '405':
+          description: Method not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '409':
+          description: Conflict. Pipeline already exists with provided id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '415':
+          description: Unsupported media type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '422':
+          description: Unprocessable entity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+    post:
+      tags:
+        - Pipelines
+      summary: Create a pipeline
+      description: |
+        Create a pipeline using a request body. Pipeline id must be unique within a group and can be composed of
+        alphanumeric characters and the following special characters [-_.].
+      operationId: createPipeline
+      requestBody:
+        required: true
+        description: A JSON object specifying information for the pipeline to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelinePostReq'
+      responses:
+        '200':
+          description: Pipeline created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespPipeline'
+        '400':
+          description: Bad request. Invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot create a pipeline for specified group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '405':
+          description: Method not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '409':
+          description: Conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '415':
+          description: Unsupported media type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '422':
+          description: Unprocessable entity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
+  '/v3/pipelines/{pipeline_id}':
+    get:
+      tags:
+        - Pipelines
+      summary: Retrieve pipeline details
+      description: |
+        Retrieve information for a pipeline given the pipeline id
+      operationId: getPipeline
+      parameters:
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '200':
+          description: System found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespPipeline'
+        '400':
+          description: Input error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '404':
+          description: System not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
+  '/v3/pipelines/{pipeline_id}/changeOwner/{username}':
+    patch:
+      tags:
+        - Pipelines
+      summary: Change pipeline owner
+      description: |
+        Change the owner of a pipeline. Requesting user must be the current owner
+      operationId: changePipelineOwner
+      parameters:
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: username
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Username'
+      responses:
+        '200':
+          description: Check successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespBasic'
+
+
+  '/v3/pipelines/{pipeline_id}/actions':
+    get:
+      tags:
+        - Actions
+      summary: List actions
+      description: |
+        Retrieve all actions for a given pipeline
+      operationId: listActions
+      parameters:
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '200':
+          description: System found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResp'
+
+  '/v3/pipelines/{pipeline_id}/actions/{action_name}':
+    get:
+      tags:
+        - Actions
+      summary: Retrieve action details
+      description: |
+        Retrieve all actions details for given pipeline id and action name
+      operationId: getAction
+      parameters:
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: action_name
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '200':
+          description: System found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResp'
+
+  '/v3/pipelines/{pipeline_id}/events':
+    get:
+      tags:
+        - Events
+      summary: Retrieve Event details
+      description: |
+        Retrieve all events for a given pipeline
+      operationId: listEvents
+      parameters:
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: action_name
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '200':
+          description: System found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResp'
+
+# ------------------------------------------------------------------------------
+# --- Components ---------------------------------------------------------------
+components:
+  securitySchemes:
+    TapisJWT:
+      type: apiKey
+      description: Tapis signed JWT token authentication
+      name: X-TAPIS-TOKEN
+      in: header
+  schemas:
+    # ------------------------------------------------------------------------------
+    # --- Model objects ------------------------------------------------------------
+    # ------------------------------------------------------------------------------
+    # --- Pipelines ---
+    Pipeline:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        description:
+          $ref: '#/components/schemas/DescriptionString'
+        type:
+          $ref: '#/components/schemas/PipelineTypeEnum'
+        group_id:
+          $ref: '#/components/schemas/ID'
+        actions:
+          type: array
+          $ref: '#/components/schemas/ActionReq'
+        uuid:
+          type: string
+          format: uuid
+        owner:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+
+    PipelineDetails:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        group:
+          $ref: '#/components/schemas/ID'
+        owner:
+          $ref: '#/components/schemas/Username'
+        uuid:
+          type: string
+          format: uuid
+
+    # --- Action ---
+    ActionReq:
+      type: object
+      properties:
+        name:
+          type: string
+        auth:
+          type: object
+        auto_build:
+          type: object
+        builder:
+          $ref: '#/components/schemas/BuilderEnum'
+        cache:
+          type: boolean
+        context:
+          $ref: '#/components/schemas/ContextReq'
+        data:
+          type: object
+        description:
+          type: string
+        destination: 
+          $ref: '#/components/schemas/DestinationReq'
+        headers:
+          type: object
+        http_method:
+          type: string
+        image:
+          type: string
+        input:
+          type: object
+        output:
+          type: string
+        poll:
+          type: boolean
+        query_params:
+          type: object
+        type:
+          $ref: '#/components/schemas/ActionTypeEnum'
+        depends_on:
+          type: array
+          $ref: '#/components/schemas/ActionDependency'
+        retries:
+          type: integer
+        tapis_actor_id:
+          type: string
+        tapis_job_def:
+          type: object
+        ttl:
+          type: integer
+        url:
+          type: string
+
+    ActionResp:
+      type: object
+      properties:
+        name:
+          type: string
+        auth:
+          type: object
+        auto_build:
+          type: object
+        builder:
+          $ref: '#/components/schemas/BuilderEnum'
+        cache:
+          type: boolean
+        context:
+          type: integer
+        data:
+          type: object
+        description:
+          type: string
+        destination: 
+          type: integer
+        headers:
+          type: object
+        http_method:
+          type: string
+        image:
+          type: string
+        input:
+          type: object
+        output:
+          type: string
+        poll:
+          type: boolean
+        query_params:
+          type: object
+        type:
+          $ref: '#/components/schemas/ActionTypeEnum'
+        depends_on:
+          type: array
+          $ref: '#/components/schemas/ActionDependency'
+        retries:
+          type: integer
+        tapis_actor_id:
+          type: string
+        tapis_job_def:
+          type: object
+        ttl:
+          type: integer
+        url:
+          type: string
+
+    ActionDetails:
+      type: object
+      properties:
+        name:
+          type: string
+        auth:
+          type: object
+        auto_build:
+          type: object
+        builder:
+          $ref: '#/components/schemas/BuilderEnum'
+        cache:
+          type: boolean
+        context:
+          $ref: '#/components/schemas/ContextReq'
+        data:
+          type: object
+        description:
+          type: string
+        destination: 
+          $ref: '#/components/schemas/DestinationReq'
+        headers:
+          type: object
+        http_method:
+          type: string
+        image:
+          type: string
+        input:
+          type: object
+        output:
+          type: string
+        poll:
+          type: boolean
+        query_params:
+          type: object
+        type:
+          $ref: '#/components/schemas/ActionTypeEnum'
+        depends_on:
+          type: array
+          $ref: '#/components/schemas/ActionDependency'
+        retries:
+          type: integer
+        tapis_actor_id:
+          type: string
+        tapis_job_def:
+          type: object
+        ttl:
+          type: integer
+        url:
+          type: string
+
+    # --- Action Dependency ---
+    ActionDependency:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/ID"
+        can_fail:
+          type: boolean
+        
+    # --- Context ---
+    ContextReq:
+      type: object
+      properties:
+        branch:
+          type: string
+        credential:
+          $ref: "#/components/schemas/ContextCredentialReq"
+        dockerfile_path:
+          type: string
+        sub_path:
+          type: string
+        type:
+          $ref: "#/components/schemas/ContextTypeEnum"
+        url:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/ContextVisibilityEnum"
+
+    # --- Credentials ---
+    ContextCredentialReq:
+      type: object
+      properties:
+        token:
+          type: string
+        username:
+          type: string 
+
+    DestinationCredentialReq:
+      type: object
+      properties:
+        token:
+          type: string
+        username:
+          type: string
+    
+    # --- Destination ---
+    DestinationReq:
+      type: object
+      properties:
+        credential:
+          $ref: '#/components/schemas/DestinationCredentialReq'
+        tag: 
+          type: string
+        type:
+          $ref: '#/components/schemas/DestinationTypeEnum'
+        url:
+          type: string
+
+    # --- Group and GroupUser ---
+    GroupDetail:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        owner:
+          $ref: "#/components/schemas/Username"
+        uuid:
+          type: string
+          format: uuid
+        users:
+          type: array
+          $ref: "#/components/schemas/GroupUser"
+
+    Group:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        owner:
+          $ref: "#/components/schemas/Username"
+        uuid:
+          type: string
+          format: uuid
+
+    GroupUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        group:
+          $ref: "#/components/schemas/ID"
+        username:
+          $ref: "#/components/schemas/Username"
+        is_admin:
+          type: boolean
+
+    # --- String types with constraints ------------------------------------
+    ID:
+      type: string
+      minLength: 1
+      maxLength: 128
+    Username:
+      type: string
+      minLength: 1
+      maxLength: 64
+    DescriptionString:
+      type: string
+      maxLength: 2048
+
+    # -------------------------------------------------------------------------
+    # --- Request objects -----------------------------------------------------
+    # -------------------------------------------------------------------------
+    GroupPostReq:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/Username'
+
+    PipelinePostReq:
+      type: object
+      required:
+        - id
+        - type
+        - group_id
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        description:
+          $ref: '#/components/schemas/DescriptionString'
+        type:
+          $ref: '#/components/schemas/PipelineTypeEnum'
+        actions:
+          type: array
+          $ref: '#/components/schemas/ActionReq'
+        run_on_create:
+          type: boolean
+          default: false
+
+    CIPipelinePostReq:
+      type: object
+      required:
+        - id
+        - type
+        - group_id
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        description:
+          $ref: '#/components/schemas/DescriptionString'
+        type:
+          $ref: '#/components/schemas/PipelineTypeEnum'
+        context:
+          $ref: '#/components/schemas/ContextReq'
+        destination:
+          $ref: '#/components/schemas/DestinationReq'
+        run_on_create:
+          type: boolean
+          default: false
+
+    # -------------------------------------------------------------------------
+    # --- Response objects ----------------------------------------------------
+    # -------------------------------------------------------------------------
+    RespBasic:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: integer
+        message:
+          type: string
+        result:
+          type: object
+
+    RespError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: false
+        status:
+          type: integer
+        message:
+          type: string
+        result:
+          type: object
+
+    GroupDetailResp:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: integer
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/GroupDetail'
+
+    GroupResp:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: integer
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/Group'
+
+    RespPipeline:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: integer
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PipelineDetails'
+
+    RespPipelineList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: integer
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineDetails'
+
+    RespAction:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: integer
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/PipelineDetails'
+
+    RespActionList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: integer
+        message:
+          type: string
+        result:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDetails'
+
+    # -------------------------------------------------------------------------
+    # --- Enums ---------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    PipelineTypeEnum:
+      type: string
+      enum:
+        - workflow
+        - ci
+
+    ActionTypeEnum:
+      type: string
+      enum:
+        - image_build
+        - container_run
+        - webhook_notification
+        - tapis_job
+        - tapis_actor
+
+    BuilderEnum:
+      type: string
+      enum:
+        - kaniko
+
+    ContextVisibilityEnum:
+      type: string
+      enum:
+        - private
+        - public
+
+    ContextTypeEnum:
+      type: string
+      enum:
+        - github
+        - gitlab
+
+    DestinationTypeEnum:
+      type: string
+      enum:
+        - dockerhub

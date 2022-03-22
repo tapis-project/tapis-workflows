@@ -95,6 +95,7 @@ VISIBILITY_TYPES = [
 ]
 
 class Action(models.Model):
+    id = models.CharField(max_length=128)
     auth = models.ForeignKey("backend.Credential", null=True, on_delete=models.CASCADE)
     auto_build = models.BooleanField(null=True)
     builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
@@ -108,7 +109,6 @@ class Action(models.Model):
     http_method = models.CharField(max_length=32, choices=ACTION_HTTP_METHODS, null=True)
     image = models.CharField(max_length=128, null=True)
     input = models.JSONField(null=True)
-    name = models.CharField(max_length=128)
     output = models.JSONField(null=True)
     poll = models.BooleanField(null=True)
     query_params = models.JSONField(null=True)
@@ -122,15 +122,18 @@ class Action(models.Model):
         validators=[MaxValueValidator(ONE_HOUR_IN_SEC*3), MinValueValidator(1)]
     )
     url = models.CharField(max_length=255, null=True)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     class Meta:
-        unique_together = [["name", "pipeline_id"]]
+        unique_together = [["id", "pipeline_id"]]
+        indexes = [
+            models.Index(fields=["id", "pipeline_id"])
+        ]
 
 class Identity(models.Model):
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
-    username = models.CharField(max_length=255)
+    username = models.CharField(max_length=64)
     group = models.ForeignKey("backend.Group", related_name="identities", on_delete=models.CASCADE)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     value = models.CharField(max_length=128)
     class Meta:
         unique_together = [["value", "type", "group_id"]]
@@ -142,10 +145,14 @@ class Build(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="builds", on_delete=models.CASCADE)
     status = models.CharField(max_length=32, choices=STATUSES, default=STATUS_QUEUED)
     updated_at = models.DateTimeField(auto_now=True)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    class Meta:
+        indexes = [
+            models.Index(fields=["pipeline_id"])
+        ]
 
 class Credential(models.Model):
-    sk_id = models.CharField(max_length=128, unique=True)
+    sk_id = models.CharField(primary_key=True, max_length=128, unique=True)
     group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     uuid = models.UUIDField(default=uuid.uuid4)
@@ -157,7 +164,7 @@ class Context(models.Model):
     sub_path = models.CharField(max_length=255, null=True)
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
     url = models.CharField(max_length=128)
-    uuiid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     visibility = models.CharField(max_length=32, choices=VISIBILITY_TYPES)
 
 class Destination(models.Model):
@@ -165,20 +172,28 @@ class Destination(models.Model):
     tag = models.CharField(max_length=128)
     type = models.CharField(max_length=32, choices=DESTINATION_TYPES)
     url = models.CharField(max_length=255)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
 
 class Group(models.Model):
     id = models.CharField(primary_key=True, max_length=128, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.CharField(max_length=64)
+    updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
-    indexes = [
-        models.Index(fields=["owner"])
-    ]
+    class Meta:
+        indexes = [
+            models.Index(fields=["owner"])
+        ]
 
 class GroupUser(models.Model):
     group = models.ForeignKey("backend.Group", related_name="users", on_delete=models.CASCADE)
-    username = models.CharField(max_length=255)
+    username = models.CharField(max_length=64)
+    is_admin = models.BooleanField(default=False)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    class Meta:
+        indexes = [
+            models.Index(fields=["username"])
+        ]
 
 class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -190,9 +205,13 @@ class Event(models.Model):
     message = models.TextField()
     pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
-    username = models.CharField(max_length=255)
+    username = models.CharField(max_length=64)
     identity = models.ForeignKey("backend.Identity", related_name="events", null=True, on_delete=models.CASCADE)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    class Meta:
+        indexes = [
+            models.Index(fields=["pipeline_id"])
+        ]
 
 class Pipeline(models.Model):
     id = models.CharField(primary_key=True, max_length=128)
@@ -210,8 +229,8 @@ class Policy(models.Model):
     destination_commit: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
     dry_run: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
     group = models.ForeignKey("backend.Group", related_name="policies", on_delete=models.CASCADE)
-    name = models.CharField(max_length=64, unique=True)
+    name = models.CharField(max_length=64)
     no_push: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     class Meta:
         unique_together = [["group_id", "name"]]

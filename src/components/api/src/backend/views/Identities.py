@@ -11,12 +11,24 @@ from backend.services.GroupService import service
 IDENTITY_TYPES = [ identity_type[0] for identity_type in CONTEXT_TYPES ]
 
 class Identities(RestrictedAPIView):
-    def get(self, request):
-        identities = Identity.objects.all()
+    def get(self, request, group_id):
+
+        # Fetch the group
+        group = service.get(group_id)
+
+        # Return bad request if group does not exist
+        if group is None:
+            return BadRequest(f"Group with id '{group_id}' does not exist")
+
+        # Return bad request is user is not in group
+        if not service.user_in_group(request.username, group.id):
+            return BadRequest(message=f"You cannot view identities for group '{group_id}'")
+
+        identities = Identity.objects.filter(group_id=group_id)
 
         return ModelListResponse(identities)
 
-    def post(self, request):
+    def post(self, request, group_id, *args, **kwargs):
         # Validate the request body
         self.prepare(IdentityCreateRequest)
 
@@ -32,11 +44,11 @@ class Identities(RestrictedAPIView):
         on_behalf_of = body.username == request.username
 
         # Fetch the group
-        group = service.get(body.group_id)
+        group = service.get(group_id)
 
         # Return bad request if group does not exist
         if group is None:
-            return BadRequest(f"Group with id '{body.group_id}' does not exist")
+            return BadRequest(f"Group with id '{group_id}' does not exist")
 
         # Return bad request if invalid identity type
         if body.type not in IDENTITY_TYPES:
@@ -46,9 +58,9 @@ class Identities(RestrictedAPIView):
         # or for another user if they are not the group owner
         if (
             not service.user_in_group(body.username, group.id)
-            or (on_behalf_of and not service.user_owns_group(request.username, body.group_id))
+            or (on_behalf_of and not service.user_owns_group(request.username, group_id))
         ):
-            return BadRequest(message=f"You cannot create an identity for user '{body.username}' for group '{body.group_id}'")
+            return BadRequest(message=f"You cannot create an identity for user '{body.username}' for group '{group_id}'")
 
         try:
             identity = Identity.objects.create(

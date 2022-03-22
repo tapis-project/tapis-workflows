@@ -12,7 +12,6 @@ class IdentityCreateRequest(BaseModel):
     type: str
     username: str
     value: str
-    group_id: str
 
 # Contexts
 class ContextCredential(BaseModel):
@@ -71,7 +70,7 @@ class GroupPutPatchRequest(BaseModel):
 
 # Actions
 class ActionDependency(BaseModel):
-    name: str
+    id: str
     can_fail: bool = False
 
 IOValueType = Union[AnyStr, Dict, List, bool]
@@ -103,7 +102,7 @@ class BaseAction(BaseModel):
     http_method: str = None
     image: str = None
     input: InputType = None
-    name: str
+    id: str
     output: OutputType = None
     poll: bool = None
     query_params: str = None

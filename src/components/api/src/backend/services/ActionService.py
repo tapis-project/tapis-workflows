@@ -103,7 +103,7 @@ class ActionService:
                 http_method=request.http_method,
                 image=request.image,
                 input=request.input,
-                name=request.name,
+                id=request.id,
                 output=request.output,
                 pipeline=pipeline,
                 poll=request.poll,

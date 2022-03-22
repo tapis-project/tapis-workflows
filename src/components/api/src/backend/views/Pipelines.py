@@ -137,7 +137,7 @@ class Pipelines(RestrictedAPIView):
 
         # Build an action_request from the pipeline request body
         action_request = ImageBuildAction(
-            name="build",
+            id="build",
             build=body.builder,
             cache=body.cache,
             description="Build an image from a repository and push it to an image registry",

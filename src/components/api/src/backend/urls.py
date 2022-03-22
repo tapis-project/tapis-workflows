@@ -13,16 +13,16 @@ from backend.views.ChangePipelineOwner import ChangePipelineOwner
 
 
 urlpatterns = [
-    path("actions/", Actions.as_view()),
     path("auth/", Auth.as_view()),
     path("builds/", Builds.as_view()),
     path("webhooks/pipelines/<str:pipeline_id>", WebhookEvents.as_view()),
     path("groups/", Groups.as_view()),
     path("groups/<str:id>", Groups.as_view()),
-    path("identities/", Identities.as_view()),
+    path("identities/<str:group_id>", Identities.as_view()),
     path("pipelines/", Pipelines.as_view()),
+    path("ci/", Pipelines.as_view()),
     path("pipelines/<str:pipeline_id>/actions", Actions.as_view()),
-    path("pipelines/<str:pipeline_id>/actions/<str:action_name>", Actions.as_view()),
+    path("pipelines/<str:pipeline_id>/actions/<str:action_id>", Actions.as_view()),
     path("pipelines/<str:id>", Pipelines.as_view()),
     path("pipelines/<str:pipeline_id>/events", Events.as_view()),
     path("pipelines/<str:pipeline_id>/events/<str:event_uuid>", Events.as_view()),
