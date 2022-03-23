@@ -80,29 +80,29 @@ services:
         resources:
             limits:
               cpus: 1
-              memory: 1024M
+              memory: 5G
     ports:
       - "9000:9000"
     depends_on:
       - message
 
-  registry:
-    container_name: registry
-    image: registry:2
-    restart: always
-    volumes:
-      - ./../../../deployment/local/.volumes/docker/docker-registry:/var/lib/registry
-    ports:
-      - "5000:5000"
+  # registry:
+  #   container_name: registry
+  #   image: registry:2
+  #   restart: always
+  #   volumes:
+  #     - ./../../../deployment/local/.volumes/docker/docker-registry:/var/lib/registry
+  #   ports:
+  #     - "5000:5000"
 
-  registry-ui:
-    container_name: registry-ui
-    image: konradkleine/docker-registry-frontend:v2
-    ports:
-      - "8080:80"
-    environment:
-      ENV_DOCKER_REGISTRY_HOST: registry
-      ENV_DOCKER_REGISTRY_PORT: 5000
+  # registry-ui:
+  #   container_name: registry-ui
+  #   image: konradkleine/docker-registry-frontend:v2
+  #   ports:
+  #     - "8080:80"
+  #   environment:
+  #     ENV_DOCKER_REGISTRY_HOST: registry
+  #     ENV_DOCKER_REGISTRY_PORT: 5000
 
 volumes:
   mysql-db:

@@ -55,9 +55,14 @@ class Groups(RestrictedAPIView):
         # Create group users for each username passed in the request
         for username in body.users:
             try:
+                is_admin = False
+                if username == request.username:
+                    is_admin = True
+
                 GroupUser.objects.create(
                     group_id=group.id,
-                    username=username
+                    username=username,
+                    is_admin=is_admin
                 )
             except Exception as e:
                 return BadRequest(message=str(e))

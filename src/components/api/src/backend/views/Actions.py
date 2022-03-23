@@ -27,10 +27,10 @@ class Actions(RestrictedAPIView):
         if not group_service.user_in_group(request.username, pipeline.group_id):
             return Forbidden(message="You cannot view actions for this pipeline")
 
-        action = Action.objects.filter(pipeline=pipeline_id, name=action_id).first()
+        action = Action.objects.filter(pipeline=pipeline_id, id=action_id).first()
 
         if action is None:
-            return NotFound(f"Action with name '{action_id}' not found in pipeline '{pipeline_id}'")
+            return NotFound(f"Action with id '{action_id}' not found in pipeline '{pipeline_id}'")
 
         return ModelResponse(action)
 
@@ -122,10 +122,10 @@ class Actions(RestrictedAPIView):
         if not group_service.user_in_group(request.username, pipeline.group_id):
             return Forbidden(message="You cannot update actions for this pipeline")
 
-        action = Action.objects.filter(pipeline=pipeline_id, name=action_id).first()
+        action = Action.objects.filter(pipeline=pipeline_id, id=action_id).first()
 
         if action is None:
-            return NotFound(f"Action with name '{action_id}' not found in pipeline '{pipeline_id}'")
+            return NotFound(f"Action with id '{action_id}' not found in pipeline '{pipeline_id}'")
 
         # Validate the request body
         if "type" not in self.request_body:
@@ -155,7 +155,7 @@ class Actions(RestrictedAPIView):
         # allow that property to be updated
         Action.objects.filter(
             pipeline_id=pipeline_id,
-            name=action_id
+            id=action_id
         ).update(**{
             **json.loads(body.json()),
             "type": action.type,
@@ -164,7 +164,7 @@ class Actions(RestrictedAPIView):
             "destination": action.destination
         })
 
-        return ModelResponse(Action.objects.filter(name=body.name, pipeline_id=pipeline_id).first())
+        return ModelResponse(Action.objects.filter(id=body.id, pipeline_id=pipeline_id).first())
 
     def patch(self, *args, **kwargs):
         return MethodNotAllowed("Method 'PATCH' not allowed for 'Action' objects")
@@ -182,10 +182,10 @@ class Actions(RestrictedAPIView):
         if not group_service.user_in_group(request.username, pipeline.group_id):
             return Forbidden(message="You cannot update actions for this pipeline")
 
-        action = Action.objects.filter(pipeline=pipeline_id, name=action_id).first()
+        action = Action.objects.filter(pipeline=pipeline_id, id=action_id).first()
 
         if action is None:
-            return NotFound(f"Action with name '{action_id}' not found in pipeline '{pipeline_id}'")
+            return NotFound(f"Action with id '{action_id}' not found in pipeline '{pipeline_id}'")
 
         try:
             action.delete()

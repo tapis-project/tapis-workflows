@@ -42,7 +42,7 @@ class Docker(BaseBuildExecutor):
             "/kaniko/executor" +
             f" --cache={'true' if can_cache else 'false'}" +
             f" --context {context}" +
-            f" --force" +
+            # f" --force" +
             (f" --context-sub-path {action.context.sub_path}"
                 if action.context.sub_path is not None else "") +
             f" --dockerfile {action.context.dockerfile_path}" +
@@ -62,6 +62,8 @@ class Docker(BaseBuildExecutor):
             entrypoint=entrypoint,
             stderr=True,
             stdout=True,
+            mem_limit="5g",
+            memswap_limit="5g"
         )
 
         # TODO Update the build status to "in_progress"

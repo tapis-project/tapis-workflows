@@ -49,7 +49,7 @@ class PipelineCoordinator:
 
 
     async def _execute(self, action, message):
-        print(f"Running action {action.name}: {time.time()}")
+        print(f"Running action {action.id}: {time.time()}")
 
         # The folowing line forces the async function to yield control to the event loop,
         # allowing other async functions to run concurrently
@@ -61,7 +61,7 @@ class PipelineCoordinator:
                 action_executor = resolver.resolve(action)
                 action_result = action_executor.execute(action, message)
             else:
-                action_result = ActionResult(0, data={"action": action.name})
+                action_result = ActionResult(0, data={"action": action.id})
         except InvalidActionTypeError as e:
             action_result = ActionResult(1, errors=[str(e)])
         
@@ -84,7 +84,7 @@ class PipelineCoordinator:
 
     def _set_actions(self, actions):
         # Create a list of the names of actions
-        action_names = [ action.name for action in actions ]
+        action_names = [ action.id for action in actions ]
 
         # Determine if there are any invalid dependencies (dependencies not 
         # included in the actions list)
@@ -92,12 +92,12 @@ class PipelineCoordinator:
         invalid_deps_message = ""
         for action in actions:
             for dep in action.depends_on:
-                if dep.name == action.name:
+                if dep.id == action.id:
                     invalid_deps += 1
-                    invalid_deps_message = invalid_deps_message + f"#{invalid_deps} An action cannot be dependent on itself: {action.name} | "
-                if dep.name not in action_names:
+                    invalid_deps_message = invalid_deps_message + f"#{invalid_deps} An action cannot be dependent on itself: {action.id} | "
+                if dep.id not in action_names:
                     invalid_deps += 1
-                    invalid_deps_message = invalid_deps_message + f"#{invalid_deps} Action '{action.name}' depends on non-existent action '{dep.name}'"
+                    invalid_deps_message = invalid_deps_message + f"#{invalid_deps} Action '{action.id}' depends on non-existent action '{dep.id}'"
 
         if invalid_deps > 0:
             raise InvalidDependenciesError(invalid_deps_message)
@@ -108,11 +108,11 @@ class PipelineCoordinator:
         # Build a mapping between each action and the actions that depend on them.
         # Doing this here saves us from having to perform the dependency
         # look-ups when queueing actions, improving performance
-        self.dependencies = { action.name:[] for action in self.actions }
+        self.dependencies = { action.id:[] for action in self.actions }
 
         for action in self.actions:
             for parent_action in action.depends_on:
-                self.dependencies[parent_action.name].append(action.name)
+                self.dependencies[parent_action.id].append(action.id)
 
         # Detect loops in the graph
         try:
@@ -124,15 +124,15 @@ class PipelineCoordinator:
             raise e
 
     def _on_fail(self, action):
-        print(f"Action '{action.name}' failed")
-        self.failed.append(action.name)
+        print(f"Action '{action.id}' failed")
+        self.failed.append(action.id)
 
     def _on_finish(self, action, action_result, message):
         # Add the action to the finished list
-        self.finished.append(action.name)
+        self.finished.append(action.id)
 
-        print(f"Finished action {action.name}: {time.time()}")
-        print(f"Result for {action.name}: ", vars(action_result))
+        print(f"Finished action {action.id}: {time.time()}")
+        print(f"Result for {action.id}: ", vars(action_result))
 
         pipeline_complete = True if len(self.actions) == len(self.finished) else False
 
@@ -144,7 +144,7 @@ class PipelineCoordinator:
         for queued_action in self.queue:
             can_run = True
             for dep in queued_action.depends_on:
-                if dep.name not in self.finished:
+                if dep.id not in self.finished:
                     can_run = False
                     break
 
@@ -160,7 +160,7 @@ class PipelineCoordinator:
         return tasks  
 
     def _on_succeed(self, action):
-        self.successful.append(action.name)
+        self.successful.append(action.id)
 
     def _remove_from_queue(self, action):
         self.queue.pop(self.queue.index(action))
