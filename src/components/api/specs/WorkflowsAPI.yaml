@@ -61,7 +61,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespBasic'
+                $ref: '#/components/schemas/ObjectResp'
         '500':
           description: Server error.
   '/v3/workflows/groups/':
@@ -456,9 +456,9 @@ paths:
     get:
       tags:
         - Identities
-      summary: List
+      summary: List user identities for a given group
       description: |
-        Retrieve details for a given group id
+        Retrieve user identities for a given group id
       parameters:
         - name: group_id
           in: path
@@ -472,9 +472,66 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionResp'
+                $ref: '#/components/schemas/IdentityListResp'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
         '403':
           description: Cannot access resources for this Group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '404':
+          description: Group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
+  '/v3/workflows/identities/{group_id}/{username}':
+    get:
+      tags:
+        - Identities
+      summary: Get identity for a given group user
+      description: |
+        Get identity for a given group user
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: username
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: getIdentity
+      responses:
+        '200':
+          description: Get identity successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityResp'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot access resources for this Group or User.
           content:
             application/json:
               schema:
@@ -782,7 +839,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespBasic'
+                $ref: '#/components/schemas/ObjectResp'
 
 
   '/v3/workflows/pipelines/{pipeline_id}/actions':
@@ -1172,6 +1229,21 @@ components:
           type: string
           format: uuid
 
+    Identity:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/ID"
+        username:
+          $ref: "#/components/schemas/Username"
+        group:
+          type: string
+        uuid:
+          type: string
+          format: uuid
+        value:
+          type: string
+
     # --- String types with constraints ------------------------------------
     ID:
       type: string
@@ -1215,6 +1287,20 @@ components:
       properties:
         is_admin:
           type: boolean
+
+    IdentityPostReq:
+      type: object
+      required:
+        - type
+        - username
+        - value
+      properties:
+        type:
+          $ref: '#/components/schemas/IdentityTypeEnum'
+        username:
+          $ref: '#/components/schemas/Username'
+        value:
+          type: string
 
     PipelinePostReq:
       type: object
@@ -1261,7 +1347,7 @@ components:
     # -------------------------------------------------------------------------
     # --- Response objects ----------------------------------------------------
     # -------------------------------------------------------------------------
-    RespBasic:
+    ObjectResp:
       type: object
       properties:
         success:
@@ -1275,7 +1361,7 @@ components:
         result:
           type: object
 
-    RespBasicList:
+    ListResp:
       type: object
       properties:
         success:
@@ -1307,7 +1393,7 @@ components:
 
     GroupDetailResp:
       allOf:
-        - $ref: '#/components/schemas/RespBasic'
+        - $ref: '#/components/schemas/ObjectResp'
         - type: object
           properties:
             success:
@@ -1321,7 +1407,7 @@ components:
 
     GroupUserResp:
       allOf:
-        - $ref: '#/components/schemas/RespBasic'
+        - $ref: '#/components/schemas/ObjectResp'
         - type: object
           properties:
             success:
@@ -1335,7 +1421,7 @@ components:
     
     GroupUserListResp:
       allOf:
-        - $ref: '#/components/schemas/RespBasicList'
+        - $ref: '#/components/schemas/ListResp'
         - type: object
           properties:
             success:
@@ -1350,26 +1436,40 @@ components:
                 $ref: '#/components/schemas/GroupUser'
 
     GroupResp:
-      type: object
-      properties:
-        success:
-          type: boolean
-        status:
-          type: integer
-        message:
-          type: string
-        result:
-          $ref: '#/components/schemas/Group'
+      allOf:
+        - $ref: '#/components/schemas/ObjectResp'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/Group'
 
     GroupListResp:
       allOf:
-        - $ref: '#/components/schemas/RespBasicList'
+        - $ref: '#/components/schemas/ListResp'
         - type: object
           properties:
             result:
               type: array
               items:
                 $ref: '#/components/schemas/Group'
+    
+    IdentityResp:
+      allOf:
+        - $ref: '#/components/schemas/ObjectResp'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/Identity'
+    
+    IdentityListResp:
+      allOf:
+        - $ref: '#/components/schemas/ListResp'
+        - type: object
+          properties:
+            result:
+              type: array
+              items:
+                $ref: '#/components/schemas/Identity'
 
     RespPipeline:
       type: object
@@ -1385,7 +1485,7 @@ components:
 
     RespPipelineList:
       allOf:
-        - $ref: '#/components/schemas/RespBasicList'
+        - $ref: '#/components/schemas/ListResp'
         - type: object
           properties:
             result:
@@ -1393,17 +1493,9 @@ components:
               items:
                 $ref: '#/components/schemas/PipelineDetails'
 
-    RespAction:
+    ActionRespList:
       allOf:
-        - $ref: '#/components/schemas/RespBasic'
-        - type: object
-          properties:
-            result:
-              $ref: '#/components/schemas/PipelineDetails'
-
-    RespActionList:
-      allOf:
-        - $ref: '#/components/schemas/RespBasicList' 
+        - $ref: '#/components/schemas/ListResp' 
         - type: object
           properties:
             result:
@@ -1450,3 +1542,9 @@ components:
       type: string
       enum:
         - dockerhub
+
+    IdentityTypeEnum:
+      type: string
+      enum:
+        - github
+        - gitlab
