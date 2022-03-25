@@ -21,6 +21,7 @@ servers:
   - url: 'https://dev.tapis.io/'
     description: Development environment
     variables: {}
+  - url: 'https://raw.githubusercontent.com'
 security:
   - TapisJWT: []
 tags:
@@ -84,13 +85,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
     post:
       tags:
         - Groups
@@ -120,31 +121,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '401':
           description: Not authorized. Invalid or Expired Token.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '409':
           description: Conflict. Group with provided id already exists.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '415':
           description: Unsupported media type.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
 
   '/v3/workflows/groups/{group_id}':
     get:
@@ -172,18 +173,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
 
   '/v3/workflows/groups/{group_id}/users/':
     get:
       tags:
-        - Groups Users
+        - Group Users
       summary: List group users
       description: |
         List group users.
@@ -206,34 +207,34 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '401':
           description: Not authorized. Invalid or Expired Token.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Cannot access resources for this Group.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '404':
           description: Group does not exist.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
     post:
       tags:
-        - Groups Users
+        - Group Users
       summary: Add a user to a group
       description: |
         Add a user to a group.
@@ -263,36 +264,36 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '401':
           description: Not authorized. Invalid or Expired Token.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Cannot add a user to this group.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '404':
           description: Group does not exist.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
 
   '/v3/workflows/groups/{group_id}/users/{username}':
     get:
       tags:
-        - Groups Users
+        - Group Users
       summary: Get group user
       description: |
         Get a user from a group
@@ -320,34 +321,34 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '401':
           description: Not authorized. Invalid or Expired Token.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Cannot access resources for this Group.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '404':
           description: Group does not exist.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
     patch:
       tags:
-        - Groups Users
+        - Group Users
       summary: Update group user
       description: |
         Update a user for a specified group
@@ -382,28 +383,28 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '401':
           description: Not authorized. Invalid or Expired Token.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Cannot update user permissions.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '404':
           description: Group or user does not exist.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
     delete:
       tags:
-        - Groups Users
+        - Group Users
       summary: Remove user from group
       description: |
         Remove a user from a group.
@@ -426,33 +427,87 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GroupUserResp'
-        '400':
-          description: Bad request. Invalid JSON.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RespError'
         '401':
           description: Not authorized. Invalid or Expired Token.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Cannot remove a user to this group.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '404':
           description: Group does not exist.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
 
   # --- Paths for identities ---
   '/v3/workflows/identities/{group_id}':
+    post:
+      tags:
+        - Identities
+      summary: Create an identity
+      description: |
+        Create a mapping between a group user and an external identity.
+
+        This operation can only be performed by group owners, group admins, and users
+        creating identities for themselves.
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: createIdentity
+      requestBody:
+        required: true
+        description: A JSON object specifying information for the pipeline to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityPostReq'
+      responses:
+        '200':
+          description: Identity created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResp'
+        '400':
+          description: Bad request. Invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '409':
+          description: Conflict. An identity already exists for this group and type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '415':
+          description: Unsupported media type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
     get:
       tags:
         - Identities
@@ -478,31 +533,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Cannot access resources for this Group.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '404':
           description: Group does not exist.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server Error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
 
   '/v3/workflows/identities/{group_id}/{username}':
     get:
       tags:
         - Identities
-      summary: Get identity for a given group user
+      summary: Get identities for a given group user
       description: |
         Get identity for a given group user
       parameters:
@@ -516,10 +571,57 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/ID'
-      operationId: getIdentity
+      operationId: listUserIdentities
       responses:
         '200':
           description: Get identity successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityListResp'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '403':
+          description: Cannot access resources for this Group or User.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '404':
+          description: Group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '500':
+          description: Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+
+  '/v3/workflows/identities/{identity_uuid}':
+    delete:
+      tags:
+        - Identities
+      summary: Remove an identity
+      description: |
+        Remove an identitiy
+      parameters:
+        - name: identity_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      operationId: removeIdentity
+      responses:
+        '200':
+          description: Identity removed.
           content:
             application/json:
               schema:
@@ -529,25 +631,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '403':
-          description: Cannot access resources for this Group or User.
+          description: Cannot remove identities for users for this group.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '404':
           description: Group does not exist.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
-        '500':
-          description: Server Error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         
 
   # --- Paths for ci pipelines -----------------------------------------------------
@@ -561,8 +657,8 @@ paths:
         alphanumeric characters and the following special characters [-_.].
 
         Note: When creating pipelines for the CI/CD use case(primarily building images), use this endpoint. It offers a simplified interface
-        for those who want to avoid the complexities of creating a standard workflow. You made modfiy this
-        pipeline's actions later.
+        for those who want to avoid the complexities of creating a standard workflow. This pipeline's
+        actions may be modified later.
       operationId: createCIPipeline
       requestBody:
         required: true
@@ -577,55 +673,55 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespPipeline'
+                $ref: '#/components/schemas/PipelineResp'
         '400':
           description: Bad request. Invalid JSON.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '401':
           description: Not authorized. Invalid or Expired Token.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Cannot create a pipeline for specified group.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '405':
           description: Method not allowed.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '409':
           description: Conflict.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '415':
           description: Unsupported media type.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '422':
           description: Unprocessable entity.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
 
   # --- Paths for pipelines -----------------------------------------------------
   '/v3/workflows/pipelines/':
@@ -641,62 +737,62 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespPipelineList'
+                $ref: '#/components/schemas/PipelineListResp'
                   
         '400':
           description: Bad request.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '401':
           description: Not authorized.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Forbidden.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '404':
           description: Not Found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '405':
           description: Method not allowed.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '409':
           description: Conflict. Pipeline already exists with provided id.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '415':
           description: Unsupported media type.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '422':
           description: Unprocessable entity.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
     post:
       tags:
         - Pipelines
@@ -718,55 +814,55 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespPipeline'
+                $ref: '#/components/schemas/CIPipelineResp'
         '400':
           description: Bad request. Invalid JSON.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '401':
           description: Not authorized. Invalid or Expired Token.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Cannot create a pipeline for specified group.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '405':
           description: Method not allowed.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '409':
           description: Conflict.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '415':
           description: Unsupported media type.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '422':
           description: Unprocessable entity.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
 
   '/v3/workflows/pipelines/{pipeline_id}':
     get:
@@ -784,35 +880,35 @@ paths:
             $ref: '#/components/schemas/ID'
       responses:
         '200':
-          description: System found.
+          description: Pipeline found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespPipeline'
+                $ref: '#/components/schemas/PipelineResp'
         '400':
           description: Input error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '401':
           description: Not authorized.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '404':
-          description: System not found.
+          description: Pipeline not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
         '500':
           description: Server error.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/ErrorResp'
 
   '/v3/workflows/pipelines/{pipeline_id}/changeOwner/{username}':
     patch:
@@ -858,11 +954,11 @@ paths:
             $ref: '#/components/schemas/ID'
       responses:
         '200':
-          description: System found.
+          description: Actions found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionResp'
+                $ref: '#/components/schemas/ActionListResp'
 
   '/v3/workflows/pipelines/{pipeline_id}/actions/{action_id}':
     get:
@@ -870,7 +966,7 @@ paths:
         - Actions
       summary: Retrieve action details
       description: |
-        Retrieve all actions details for given pipeline id and action name
+        Retrieve action details for given pipeline id and action id
       operationId: getAction
       parameters:
         - name: pipeline_id
@@ -885,7 +981,7 @@ paths:
             $ref: '#/components/schemas/ID'
       responses:
         '200':
-          description: System found.
+          description: Action found.
           content:
             application/json:
               schema:
@@ -912,11 +1008,11 @@ paths:
             $ref: '#/components/schemas/ID'
       responses:
         '200':
-          description: System found.
+          description: Events found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionResp'
+                $ref: '#/components/schemas/EventResp'
 
 # ------------------------------------------------------------------------------
 # --- Components ---------------------------------------------------------------
@@ -931,33 +1027,26 @@ components:
     # ------------------------------------------------------------------------------
     # --- Model objects ------------------------------------------------------------
     # ------------------------------------------------------------------------------
+    
     # --- Pipelines ---
-    Pipeline:
+    CIPipeline:
       type: object
       properties:
         id:
           $ref: '#/components/schemas/ID'
-        description:
-          $ref: '#/components/schemas/DescriptionString'
-        type:
-          $ref: '#/components/schemas/PipelineTypeEnum'
-        group_id:
+        group:
           $ref: '#/components/schemas/ID'
-        actions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Action'
+        owner:
+          $ref: '#/components/schemas/Username'
         uuid:
           type: string
           format: uuid
-        owner:
-          type: string
-        created_at:
-          type: string
-        updated_at:
-          type: string
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageBuildAction'
 
-    PipelineDetails:
+    Pipeline:
       type: object
       properties:
         id:
@@ -980,156 +1069,127 @@ components:
       properties:
         id:
           type: string
-        auth:
-          type: object
-        auto_build:
-          type: object
-        builder:
-          $ref: '#/components/schemas/BuilderEnum'
-        cache:
-          type: boolean
-        context:
-          $ref: '#/components/schemas/Context'
-        data:
-          type: object
-        description:
-          type: string
-        destination: 
-          $ref: '#/components/schemas/Destination'
-        headers:
-          type: object
-        http_method:
-          type: string
-        image:
-          type: string
-        input:
-          type: object
-        output:
-          type: string
-        poll:
-          type: boolean
-        query_params:
-          type: object
-        type:
-          $ref: '#/components/schemas/ActionTypeEnum'
-        depends_on:
-          type: array
-          items:
-            $ref: '#/components/schemas/ActionDependency'
-        retries:
-          type: integer
-        tapis_actor_id:
-          type: string
-        tapis_job_def:
-          type: object
-        ttl:
-          type: integer
-        url:
-          type: string
-
-    ActionResp:
+      anyOf:
+        - $ref: '#/components/schemas/ImageBuildAction'
+        - $ref: '#/components/schemas/WebhookNotificationAction'
+        - $ref: '#/components/schemas/ContainerRunAction'
+        - $ref: '#/components/schemas/TapisJobAction'
+        - $ref: '#/components/schemas/TapisActorAction'
+    
+    BaseAction:
       type: object
+      required:
+        - id
+        - type
       properties:
         id:
           type: string
-        auth:
-          type: object
-        auto_build:
-          type: object
-        builder:
-          $ref: '#/components/schemas/BuilderEnum'
-        cache:
-          type: boolean
-        context:
-          type: integer
-        data:
-          type: object
-        description:
-          type: string
-        destination: 
-          type: integer
-        headers:
-          type: object
-        http_method:
-          type: string
-        image:
-          type: string
-        input:
-          type: object
-        output:
-          type: string
-        poll:
-          type: boolean
-        query_params:
-          type: object
         type:
           $ref: '#/components/schemas/ActionTypeEnum'
         depends_on:
           type: array
           items:
             $ref: '#/components/schemas/ActionDependency'
-        retries:
-          type: integer
-        tapis_actor_id:
+        description:
           type: string
-        tapis_job_def:
+          default: null
+        input:
           type: object
+          default: null
+        output:
+          type: object
+          default: null
+        retries:
+              type: integer
+              default: 0
         ttl:
           type: integer
-        url:
-          type: string
+          default: -1
 
-    ActionDetails:
-      type: object
-      properties:
-        id:
-          type: string
-        auth:
-          type: object
-        auto_build:
-          type: object
-        builder:
-          $ref: '#/components/schemas/BuilderEnum'
-        cache:
-          type: boolean
-        context:
-          $ref: '#/components/schemas/Context'
-        data:
-          type: object
-        description:
-          type: string
-        destination: 
-          $ref: '#/components/schemas/Destination'
-        headers:
-          type: object
-        http_method:
-          type: string
-        image:
-          type: string
-        input:
-          type: object
-        output:
-          type: string
-        poll:
-          type: boolean
-        query_params:
-          type: object
-        type:
-          $ref: '#/components/schemas/ActionTypeEnum'
-        depends_on:
-          type: array
-          items:
-            $ref: '#/components/schemas/ActionDependency'
-        retries:
-          type: integer
-        tapis_actor_id:
-          type: string
-        tapis_job_def:
-          type: object
-        ttl:
-          type: integer
-        url:
-          type: string
+    ImageBuildAction:
+      allOf:
+        - $ref: '#/components/schemas/BaseAction'
+        - type: object
+          properties:
+            auto_build:
+              type: object
+              default: false
+            builder:
+              $ref: '#/components/schemas/BuilderEnum'
+              default: "kaniko"
+            cache:
+              type: boolean
+              default: true
+            context:
+              $ref: '#/components/schemas/Context'
+            destination: 
+              $ref: '#/components/schemas/Destination'
+            type:
+              default: "image_build"
+
+    WebhookNotificationAction:
+      allOf:
+        - $ref: '#/components/schemas/BaseAction'
+        - type: object
+          properties:
+            auth:
+              type: object
+              default: null
+            data:
+              type: object
+              default: null
+            headers:
+              type: object
+              default: null
+            http_method:
+              $ref: '#/components/schemas/HTTPMethodEnum'
+              default: null
+            query_params:
+              type: object
+              default: null
+            type:
+              default: "webhook_notification"
+            url:
+              type: string
+              default: null
+
+    ContainerRunAction:
+      allOf:
+        - $ref: '#/components/schemas/BaseAction'
+        - type: object
+          properties:
+            image:
+              type: string
+            type:
+              default: "container_run"
+
+    TapisJobAction:
+      allOf:
+        - $ref: '#/components/schemas/BaseAction'
+        - type: object
+          properties:
+            poll:
+              type: boolean
+              default: true
+            tapis_job_def:
+              $ref: '#/components/schemas/TapisJobDef'
+            type:
+              default: "tapis_job_action"
+
+    TapisActorAction:
+      allOf:
+        - $ref: '#/components/schemas/BaseActionReq'
+        - type: object
+          properties:
+            poll:
+              type: boolean
+              default: true
+            tapis_actor_id:
+              type: string
+              default: null
+            type:
+              default: "tapis_actor_action"
+
 
     # --- Action Dependency ---
     ActionDependency:
@@ -1147,7 +1207,7 @@ components:
         branch:
           type: string
         credential:
-          $ref: "#/components/schemas/ContextCredential"
+          default: null
         dockerfile_path:
           type: string
         sub_path:
@@ -1158,30 +1218,13 @@ components:
           type: string
         visibility:
           $ref: "#/components/schemas/ContextVisibilityEnum"
-
-    # --- Credentials ---
-    ContextCredential:
-      type: object
-      properties:
-        token:
-          type: string
-        username:
-          type: string 
-
-    DestinationCredential:
-      type: object
-      properties:
-        token:
-          type: string
-        username:
-          type: string
     
     # --- Destination ---
     Destination:
       type: object
       properties:
         credential:
-          $ref: '#/components/schemas/DestinationCredential'
+          default: null
         tag: 
           type: string
         type:
@@ -1243,6 +1286,38 @@ components:
           format: uuid
         value:
           type: string
+
+    Event:
+      type: object
+      properties:
+        branch:
+          type: string
+          default: null
+        commit:
+          type: string
+          default: null
+        commit_sha:
+          type: string
+          default: null
+        context_url:
+          type: string
+          default: null
+        directives:
+          type: string
+        message:
+          type: string
+        pipeline:
+          type: string
+        source:
+          type: string
+        username:
+          $ref: '#/components/schemas/Username'
+        identity:
+          type: string
+          default: null
+        uuid:
+          type: string
+          format: uuid
 
     # --- String types with constraints ------------------------------------
     ID:
@@ -1318,11 +1393,130 @@ components:
         actions:
           type: array
           items:
-            $ref: '#/components/schemas/Action'
+            anyOf:
+              - $ref: '#/components/schemas/ImageBuildActionReq'
+              - $ref: '#/components/schemas/WebhookNotificationActionReq'
+              - $ref: '#/components/schemas/ContainerRunActionReq'
+              - $ref: '#/components/schemas/TapisJobActionReq'
+              - $ref: '#/components/schemas/TapisActorActionReq'
         run_on_create:
           type: boolean
           default: false
 
+    BaseActionReq:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/ActionTypeEnum'
+        depends_on:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionDependency'
+        description:
+          type: string
+          default: null
+        input:
+          type: object
+          default: null
+        output:
+          type: object
+          default: null
+        retries:
+              type: integer
+              default: 0
+        ttl:
+          type: integer
+          default: -1
+
+    ImageBuildActionReq:
+      allOf:
+        - $ref: '#/components/schemas/BaseActionReq'
+        - type: object
+          properties:
+            auto_build:
+              type: object
+              default: false
+            builder:
+              $ref: '#/components/schemas/BuilderEnum'
+              default: "kaniko"
+            cache:
+              type: boolean
+              default: true
+            context:
+              $ref: '#/components/schemas/ContextReq'
+            destination: 
+              $ref: '#/components/schemas/DestinationReq'
+            type:
+              default: "image_build"
+
+    WebhookNotificationActionReq:
+      allOf:
+        - $ref: '#/components/schemas/BaseActionReq'
+        - type: object
+          properties:
+            auth:
+              type: object
+              default: null
+            data:
+              type: object
+              default: null
+            headers:
+              type: object
+              default: null
+            http_method:
+              $ref: '#/components/schemas/HTTPMethodEnum'
+              default: null
+            query_params:
+              type: object
+              default: null
+            type:
+              default: "webhook_notification"
+            url:
+              type: string
+              default: null
+
+    ContainerRunActionReq:
+      allOf:
+        - $ref: '#/components/schemas/BaseActionReq'
+        - type: object
+          properties:
+            image:
+              type: string
+            type:
+              default: "container_run"
+
+    TapisJobActionReq:
+      allOf:
+        - $ref: '#/components/schemas/BaseActionReq'
+        - type: object
+          properties:
+            poll:
+              type: boolean
+              default: true
+            tapis_job_def:
+              $ref: '#/components/schemas/TapisJobDefReq'
+            type:
+              default: "tapis_job_action"
+
+    TapisActorActionReq:
+      allOf:
+        - $ref: '#/components/schemas/BaseActionReq'
+        - type: object
+          properties:
+            poll:
+              type: boolean
+              default: true
+            tapis_actor_id:
+              type: string
+              default: null
+            type:
+              default: "tapis_actor_action"
+        
     CIPipelinePostReq:
       type: object
       required:
@@ -1337,12 +1531,88 @@ components:
         type:
           $ref: '#/components/schemas/PipelineTypeEnum'
         context:
-          $ref: '#/components/schemas/Context'
+          $ref: '#/components/schemas/ContextReq'
         destination:
-          $ref: '#/components/schemas/Destination'
+          $ref: '#/components/schemas/DestinationReq'
         run_on_create:
           type: boolean
           default: false
+
+    # --- Context ---
+    ContextReq:
+      type: object
+      properties:
+        branch:
+          type: string
+        credential:
+          $ref: "#/components/schemas/ContextCredentialReq"
+        dockerfile_path:
+          type: string
+        sub_path:
+          type: string
+        type:
+          $ref: "#/components/schemas/ContextTypeEnum"
+        url:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/ContextVisibilityEnum"
+
+    # --- Credentials ---
+    ContextCredentialReq:
+      type: object
+      properties:
+        token:
+          type: string
+        username:
+          type: string 
+    
+    # --- Destination ---
+    DestinationReq:
+      type: object
+      properties:
+        credential:
+          $ref: '#/components/schemas/DestinationCredentialReq'
+        tag: 
+          type: string
+        type:
+          $ref: '#/components/schemas/DestinationTypeEnum'
+        url:
+          type: string
+
+    DestinationCredentialReq:
+      type: object
+      properties:
+        token:
+          type: string
+        username:
+          type: string
+
+    TapisJobDefReq:
+      $ref: "https://raw.githubusercontent.com/tapis-project/tapis-client-java/prod/jobs-client/src/main/resources/JobsAPI.yaml#components/schemas/ReqSubmitJob"
+
+    EventPostReq:
+      type: object
+      properties:
+        directives:
+          type: array
+          items:
+            type: string
+
+    WebhookEventPostReq:
+      type: object
+      properties:
+        branch:
+          type: string
+        commit:
+          type: string
+        commit_sha:
+          type: string
+        source:
+          $ref: '#/components/schemas/ContextTypeEnum'
+        context_url:
+          type: string
+        username:
+          type: string
 
     # -------------------------------------------------------------------------
     # --- Response objects ----------------------------------------------------
@@ -1377,7 +1647,7 @@ components:
           items:
             type: object
 
-    RespError:
+    ErrorResp:
       type: object
       properties:
         success:
@@ -1471,7 +1741,7 @@ components:
               items:
                 $ref: '#/components/schemas/Identity'
 
-    RespPipeline:
+    PipelineResp:
       type: object
       properties:
         success:
@@ -1481,9 +1751,21 @@ components:
         message:
           type: string
         result:
-          $ref: '#/components/schemas/PipelineDetails'
+          $ref: '#/components/schemas/Pipeline'
 
-    RespPipelineList:
+    CIPipelineResp:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: integer
+        message:
+          type: string
+        result:
+          $ref: '#/components/schemas/CIPipeline'
+
+    PipelineListResp:
       allOf:
         - $ref: '#/components/schemas/ListResp'
         - type: object
@@ -1491,9 +1773,17 @@ components:
             result:
               type: array
               items:
-                $ref: '#/components/schemas/PipelineDetails'
+                $ref: '#/components/schemas/Pipeline'
+    
+    ActionResp:
+      allOf:
+        - $ref: '#/components/schemas/ObjectResp'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/Action'
 
-    ActionRespList:
+    ActionListResp:
       allOf:
         - $ref: '#/components/schemas/ListResp' 
         - type: object
@@ -1501,7 +1791,25 @@ components:
             result:
               type: array
               items:
-                $ref: '#/components/schemas/ActionDetails'
+                $ref: '#/components/schemas/Action'
+
+    EventResp:
+      allOf:
+        - $ref: '#/components/schemas/ObjectResp'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/Event'
+
+    EventListResp:
+      allOf:
+        - $ref: '#/components/schemas/ListResp' 
+        - type: object
+          properties:
+            result:
+              type: array
+              items:
+                $ref: '#/components/schemas/Event'
 
     # -------------------------------------------------------------------------
     # --- Enums ---------------------------------------------------------------
@@ -1542,6 +1850,15 @@ components:
       type: string
       enum:
         - dockerhub
+    
+    HTTPMethodEnum:
+      type: string
+      enum:
+        - get
+        - post
+        - put
+        - patch
+        - delete
 
     IdentityTypeEnum:
       type: string
