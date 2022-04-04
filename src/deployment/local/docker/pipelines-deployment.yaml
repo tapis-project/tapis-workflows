@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.26.1 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: pipelines
+  name: pipelines
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: pipelines
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.26.1 (HEAD)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: pipelines
+    spec:
+      containers:
+        - args:
+            - python3
+            - main.py
+          env:
+            - name: API_BASE_URL
+              value: localhost:8000
+            - name: BROKER_PASSWORD
+              value: dev
+            - name: BROKER_PORT
+              value: "5672"
+            - name: BROKER_URL
+              value: message
+            - name: BROKER_USER
+              value: dev
+            - name: DB_HOST
+              value: database
+            - name: DB_NAME
+              value: tasks
+            - name: DB_PASSWORD
+              value: dev
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USER
+              value: root
+            - name: DEPLOYMENT_TYPE
+              value: docker
+            - name: REGISTRY_HOST
+              value: registry
+            - name: REGISTRY_PORT
+              value: "5000"
+          image: pipelines
+          name: pipelines
+          ports:
+            - containerPort: 9000
+          resources:
+            limits:
+              cpu: "1"
+              memory: "5368709120"
+          tty: true
+          volumeMounts:
+            - mountPath: /src/
+              name: pipelines-claim0
+            - mountPath: /var/run/docker.sock
+              name: pipelines-claim1
+            - mountPath: /tmp/
+              name: pipelines-claim2
+      restartPolicy: Always
+      volumes:
+        - name: pipelines-claim0
+          persistentVolumeClaim:
+            claimName: pipelines-claim0
+        - name: pipelines-claim1
+          persistentVolumeClaim:
+            claimName: pipelines-claim1
+        - name: pipelines-claim2
+          persistentVolumeClaim:
+            claimName: pipelines-claim2
+status: {}

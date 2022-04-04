@@ -31,7 +31,7 @@ tags:
     description: General service health and readiness
   - name: Groups
     description: Manage groups that have access to specific workflow resources. Create, retrieve, update, etc.
-  - name: Group Users
+  - name: Users
     description: Manage users that belong to groups. Create, update, remove, etc.
   - name: Identities
     description: Manage external identities . Create, retrieve, delete.
@@ -184,10 +184,10 @@ paths:
   '/v3/workflows/groups/{group_id}/users/':
     get:
       tags:
-        - Group Users
-      summary: List group users
+        - Users
+      summary: List users
       description: |
-        List group users.
+        List users.
       parameters:
         - name: group_id
           in: path
@@ -197,7 +197,7 @@ paths:
       operationId: listGroupUsers
       responses:
         '200':
-          description: List Group Users successful.
+          description: List Users successful.
           content:
             application/json:
               schema:
@@ -234,7 +234,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResp'
     post:
       tags:
-        - Group Users
+        - Users
       summary: Add a user to a group
       description: |
         Add a user to a group.
@@ -254,7 +254,7 @@ paths:
               $ref: '#/components/schemas/GroupUserPostReq'
       responses:
         '200':
-          description: Group users successfully retried.
+          description: Users successfully added.
           content:
             application/json:
               schema:
@@ -293,7 +293,7 @@ paths:
   '/v3/workflows/groups/{group_id}/users/{username}':
     get:
       tags:
-        - Group Users
+        - Users
       summary: Get group user
       description: |
         Get a user from a group
@@ -348,7 +348,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResp'
     patch:
       tags:
-        - Group Users
+        - Users
       summary: Update group user
       description: |
         Update a user for a specified group
@@ -404,7 +404,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResp'
     delete:
       tags:
-        - Group Users
+        - Users
       summary: Remove user from group
       description: |
         Remove a user from a group.
