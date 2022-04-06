@@ -1,13 +1,19 @@
-import subprocess
+import subprocess, json
 
-from conf.configs import BASE_DIR
+from types import SimpleNamespace
 
-from deployment.deployers.BaseDeployer import BaseDeployer
+from configs import BASE_DIR,STACK_FILE
+    
 
 
-class Kubernetes(BaseDeployer):
+class Kubernetes:
     def __init__(self):
-        BaseDeployer.__init__(self)
+        # Load JSON object and convert to a python object
+        # so we can access properties using dot notation
+        self.components = json.loads(
+            open(STACK_FILE, "r").read(),
+            object_hook=lambda d: SimpleNamespace(**d)
+        ).Components
 
     def handle(self, action_name, component_names):
         if len(component_names) == 0:

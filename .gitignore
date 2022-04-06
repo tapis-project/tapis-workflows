@@ -1,8 +1,9 @@
 __pycache__/
 *.py[cod]
 
-src/deployment/local/.volumes/
 
 */**/logs
 
-.kube/*/secret
+envs/local/.volumes/
+envs/*/secrets/*
+!envs/*/secrets/.gitkeep

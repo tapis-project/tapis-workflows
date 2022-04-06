@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: message
+  name: workflows-rabbitmq-deployment
 spec:
   selector:
     matchLabels:
-      app: message
+      app: workflows-rabbitmq-deployment
   template:
     metadata:
       labels:
-        app: message
+        app: workflows-rabbitmq-deployment
     spec:
-      hostname: message
+      hostname: workflows-rabbitmq-deployment
       containers:
-      - name: message
+      - name: workflows-rabbitmq
         image: rabbitmq:3.9.11-management
         ports:
         - name: rabbitmq
@@ -21,18 +21,15 @@ spec:
         - name: http
           containerPort: 15672
         env:
-        - name: HOSTNAME
-          value: "message"
-        - name: RABBITMQ_HOSTNAME
-          value: "message"
         - name: RABBITMQ_DEFAULT_USER
-          value: "jscicd-svc"
+          value: "dev"
         - name: RABBITMQ_DEFAULT_PASS
-          value: "jscicd-svc-password"
+          value: "dev"
         volumeMounts:
-        - name: message-storage
+        - name: workflows-rabbitmq-storage
           mountPath: "/var/lib/rabbitmq/mnesia"
+        resources: {}
       volumes:
-      - name: message-storage
+      - name: workflows-rabbitmq-storage
         persistentVolumeClaim:
-          claimName: message-pvc
+          claimName: workflows-message-pvc

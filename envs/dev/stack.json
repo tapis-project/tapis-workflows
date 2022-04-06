@@ -7,15 +7,15 @@
         "resources": [
           {
             "kind": "PersistentVolumeClaim",
-            "configPath": "src/components/database/.kube/pvc.yml"
+            "configPath": "mysql/pvc.yml"
           },
           {
             "kind": "Service",
-            "configPath": "src/components/database/.kube/service.yml"
+            "configPath": "mysql/service.yml"
           },
           {
             "kind": "Deployment",
-            "configPath": "src/components/database/.kube/deployment.yml",
+            "configPath": "mysql/deployment.yml",
             "onBurndown": "delete"
           }
         ]

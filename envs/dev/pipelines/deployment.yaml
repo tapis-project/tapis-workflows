@@ -1,28 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  annotations:
-    kompose.cmd: kompose convert
-    kompose.version: 1.26.1 (HEAD)
-  creationTimestamp: null
   labels:
-    io.kompose.service: pipelines
-  name: pipelines
+    app: workflows-pipelines-deployment
+  name: workflows-pipelines-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: pipelines
+      app: workflows-pipelines-deployment
   strategy:
     type: Recreate
   template:
     metadata:
-      annotations:
-        kompose.cmd: kompose convert
-        kompose.version: 1.26.1 (HEAD)
-      creationTimestamp: null
       labels:
-        io.kompose.service: pipelines
+        app: workflows-pipelines-deployment
     spec:
       containers:
         - args:
@@ -30,7 +22,7 @@ spec:
             - main.py
           env:
             - name: API_BASE_URL
-              value: localhost:8000
+              value: workflows-api-service:8000
             - name: BROKER_PASSWORD
               value: dev
             - name: BROKER_PORT
@@ -55,31 +47,13 @@ spec:
               value: registry
             - name: REGISTRY_PORT
               value: "5000"
-          image: pipelines
-          name: pipelines
+          image: tapis/workflows-pipelines
+          name: workflows-pipelines
           ports:
             - containerPort: 9000
           resources:
             limits:
-              cpu: "1"
-              memory: "5368709120"
+              cpu: "8"
+              memory: "5G"
           tty: true
-          volumeMounts:
-            - mountPath: /src/
-              name: pipelines-claim0
-            - mountPath: /var/run/docker.sock
-              name: pipelines-claim1
-            - mountPath: /tmp/
-              name: pipelines-claim2
       restartPolicy: Always
-      volumes:
-        - name: pipelines-claim0
-          persistentVolumeClaim:
-            claimName: pipelines-claim0
-        - name: pipelines-claim1
-          persistentVolumeClaim:
-            claimName: pipelines-claim1
-        - name: pipelines-claim2
-          persistentVolumeClaim:
-            claimName: pipelines-claim2
-status: {}

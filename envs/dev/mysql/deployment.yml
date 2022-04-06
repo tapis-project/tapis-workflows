@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mysql
+  name: workflows-mysql-deployment
 spec:
   selector:
     matchLabels:
-      app: mysql
+      app: workflows-mysql-deployment
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: mysql
+        app: workflows-mysql-deployment
     spec:
       containers:
       - image: mysql:8
@@ -20,27 +20,19 @@ spec:
         name: mysql
         env:
         - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql
-              key: password
+          value: dev
         - name: MYSQL_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: mysql
-              key: username
+          value: dev
         - name: MYSQL_DATABASE
-          valueFrom:
-            secretKeyRef:
-              name: mysql
-              key: database
+          value: workflows
         ports:
         - containerPort: 3306
           name: mysql
+        resources: {}
         volumeMounts:
         - name: mysql-persistent-storage
           mountPath: /var/lib/mysql
       volumes:
       - name: mysql-persistent-storage
         persistentVolumeClaim:
-          claimName: mysql-pvc
+          claimName: workflows-mysql-pvc

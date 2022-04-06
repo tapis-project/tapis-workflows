@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: message-service
+  name: workflows-rabbitmq-service
 spec:
   selector:
-    app: message
+    app: workflows-rabbitmq-deployment
   ports:
-  - name: message
+  - name: workflows-rabbitmq
     port: 5672
     targetPort: 5672
   - name: http
@@ -16,7 +16,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: message-mgmt-service
+  name: workflows-message-mgmt-service
 spec:
   type: NodePort
   selector:

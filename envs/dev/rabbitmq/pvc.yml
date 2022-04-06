@@ -1,7 +1,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: message-pvc
+  name: workflows-rabbitmq-pvc
 spec:
   accessModes:
     - ReadWriteOnce
