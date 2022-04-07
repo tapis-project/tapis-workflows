@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: workflows-api-service
 spec:
+  type: NodePort
   selector:
     app: workflows-api-deployment
   ports:
