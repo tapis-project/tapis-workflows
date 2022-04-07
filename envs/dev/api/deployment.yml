@@ -42,7 +42,7 @@ spec:
             value: nathandf
           - name: TAPIS_TENANT
             value: tacc
-        image: tapis/workflows-api
+        image: tapis/workflows-api:dev
         name: workflows-api
         ports:
           - containerPort: 8000
