@@ -33,7 +33,7 @@ spec:
           resources: {}
           volumeMounts:
             - mountPath: /var/lib/mysql
-              name: mysql-db
+              name: workflows-mysql-pvc
       restartPolicy: Always
       volumes:
         - name: workflows-mysql-pvc
