@@ -1,8 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    app: workflows-mysql-deployment
   name: workflows-mysql-deployment
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: workflows-mysql-deployment
@@ -14,25 +17,26 @@ spec:
         app: workflows-mysql-deployment
     spec:
       containers:
-      - image: mysql:8
-        # imagePullPolicy: Always
-        imagePullPolicy: IfNotPresent
-        name: mysql
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: dev
-        - name: MYSQL_USERNAME
-          value: dev
-        - name: MYSQL_DATABASE
-          value: workflows
-        ports:
-        - containerPort: 3306
-          name: mysql
-        resources: {}
-        volumeMounts:
-        - name: mysql-persistent-storage
-          mountPath: /var/lib/mysql
+        - env:
+            - name: MYSQL_DATABASE
+              value: workflows
+            - name: MYSQL_PASSWORD
+              value: dev
+            - name: MYSQL_ROOT_PASSWORD
+              value: dev
+            - name: MYSQL_USERNAME
+              value: root
+          image: mysql:8
+          name: workflows-mysql
+          ports:
+            - containerPort: 3306
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: mysql-db
+      restartPolicy: Always
       volumes:
-      - name: mysql-persistent-storage
-        persistentVolumeClaim:
-          claimName: workflows-mysql-pvc
+        - name: workflows-mysql-pvc
+          persistentVolumeClaim:
+            claimName: workflows-mysql-pvc
+status: {}
