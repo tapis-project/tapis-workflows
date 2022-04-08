@@ -28,7 +28,7 @@ spec:
             - name: BROKER_PORT
               value: "5672"
             - name: BROKER_URL
-              value: message
+              value: workflows-rabbitmq-service
             - name: BROKER_USER
               value: dev
             - name: DB_HOST
