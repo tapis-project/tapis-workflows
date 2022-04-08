@@ -12,6 +12,7 @@ spec:
         app: workflows-rabbitmq-deployment
     spec:
       hostname: workflows-rabbitmq-deployment
+      restartPolicy: Always
       containers:
       - name: workflows-rabbitmq
         image: rabbitmq:3.9.11-management
