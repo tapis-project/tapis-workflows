@@ -33,4 +33,4 @@ spec:
       volumes:
       - name: workflows-rabbitmq-storage
         persistentVolumeClaim:
-          claimName: workflows-message-pvc
+          claimName: workflows-rabbitmq-pvc
