@@ -47,7 +47,7 @@ spec:
               value: registry
             - name: REGISTRY_PORT
               value: "5000"
-          image: tapis/workflows-pipelines
+          image: tapis/workflows-pipelines:dev
           name: workflows-pipelines
           ports:
             - containerPort: 9000
