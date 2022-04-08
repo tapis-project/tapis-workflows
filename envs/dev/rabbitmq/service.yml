@@ -16,7 +16,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: workflows-message-mgmt-service
+  name: workflows-rabbitmq-mgmt-service
 spec:
   type: NodePort
   selector:
