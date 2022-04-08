@@ -43,6 +43,7 @@ spec:
           - name: TAPIS_TENANT
             value: tacc
         image: tapis/workflows-api:dev
+        imagePullPolicy: Always
         name: workflows-api
         ports:
           - containerPort: 8000
