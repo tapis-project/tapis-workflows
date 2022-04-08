@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-_!+8ppjzrs!$8l5n2k)^ry2=c&jkrxcx+w_a%!gcm4)u2@=_b2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [ "c006.rodeo.tacc.utexas.edu", ".tapis.io",  ]
+ALLOWED_HOSTS = [ "c006.rodeo.tacc.utexas.edu", ".tapis.io", "localhost" ]
 
 
 # Application definition

@@ -20,10 +20,10 @@ services:
     container_name: api
     tty: true
     restart: always
-    build: ./../../../components/api/src/
+    build: ./../../../src/components/api/src/
     command: python3 manage.py runserver 0.0.0.0:8000
     volumes:
-      - ./../../../components/api/src/:/src/
+      - ./../../../src/components/api/src/:/src/
     environment:
       DB_HOST: "database"
       DB_NAME: "cicd"
@@ -55,11 +55,11 @@ services:
   pipelines:
     container_name: pipelines
     tty: true
-    build: ./../../../components/pipelines/src/
+    build: ./../../../src/components/pipelines/src/
     command: python3 main.py
     restart: always
     volumes:
-      - ./../../../components/pipelines/src/:/src/
+      - ./../../../src/components/pipelines/src/:/src/
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/:/tmp/
     environment:
