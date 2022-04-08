@@ -21,6 +21,7 @@ spec:
         - name: local-config
           mountPath: /etc/docker/registry/config.yml
           subPath: config.yml
+        resources: {}
       restartPolicy: Always
       volumes:
       - name: local-config
