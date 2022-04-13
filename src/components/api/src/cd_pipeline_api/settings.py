@@ -28,9 +28,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-_!+8ppjzrs!$8l5n2k)^ry2=c&jkrxcx+w_a%!gcm4)u2@=_b2'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True if (os.environ["DEBUG"] == True or os.environ["DEBUG"].lower() == "true") else False
 
-ALLOWED_HOSTS = [ "c006.rodeo.tacc.utexas.edu", ".tapis.io", "localhost" ]
+ALLOWED_HOSTS = [
+    "c006.rodeo.tacc.utexas.edu", # dev
+    ".tapis.io", # dev, staging, prod
+    "localhost", # local
+    "127.0.0.1", # local
+]
 
 
 # Application definition

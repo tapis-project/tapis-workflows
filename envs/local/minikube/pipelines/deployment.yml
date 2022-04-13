@@ -51,9 +51,6 @@ spec:
           name: workflows-pipelines
           ports:
             - containerPort: 9000
-          resources:
-            limits:
-              cpu: "8"
-              memory: "5G"
+          resources: {}
           tty: true
       restartPolicy: Always

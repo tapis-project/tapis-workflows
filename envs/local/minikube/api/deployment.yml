@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflows-api-deployment
+spec:
+  selector:
+    matchLabels:
+      app: workflows-api-deployment
+  template:
+    metadata:
+      labels:
+        app: workflows-api-deployment
+    spec:
+      containers:
+      - args:
+          - python3
+          - manage.py
+          - runserver
+          - 0.0.0.0:8000
+        env:
+          - name: BROKER_PASSWORD
+            value: dev
+          - name: BROKER_PORT
+            value: "5672"
+          - name: BROKER_URL
+            value: workflows-rabbitmq-service
+          - name: BROKER_USER
+            value: dev
+          - name: DB_HOST
+            value: workflows-mysql-service
+          - name: DB_NAME
+            value: workflows
+          - name: DB_PASSWORD
+            value: dev
+          - name: DB_USER
+            value: root
+          - name: DEBUG
+            value: 'true'
+          - name: DJANGO_SUPERUSER_EMAIL
+            value: nfreeman@tacc.utexas.edu
+          - name: DJANGO_SUPERUSER_PASSWORD
+            value: dev
+          - name: DJANGO_SUPERUSER_USERNAME
+            value: nathandf
+          - name: TAPIS_TENANT
+            value: tacc
+        image: tapis/workflows-api:dev
+        imagePullPolicy: Always
+        name: workflows-api
+        ports:
+          - containerPort: 8000
+        resources: {}
+        tty: true

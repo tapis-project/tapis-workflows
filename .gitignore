@@ -7,3 +7,5 @@ __pycache__/
 envs/local/.volumes/
 envs/*/secrets/*
 !envs/*/secrets/.gitkeep
+envs/*/**/secrets/*
+!envs/*/**/secrets/.gitkeep

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#kubectl apply -f storageclass.yml
+
+# mysql
+chmod +x ./mysql/burnup
+./mysql/burnup
+
+# rabbitmq
+chmod +x ./rabbitmq/burnup
+./rabbitmq/burnup
+
+# api
+chmod +x ./api/burnup
+./api/burnup
+
+# pipelines
+chmod +x ./pipelines/burnup
+./pipelines/burnup
+
