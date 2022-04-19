@@ -2,5 +2,7 @@
 
 here=$(dirname $0)
 
+kubectl apply -f "$here/crbs.yml"
 kubectl apply -f "$here/service.yml"
+kubectl apply -f "$here/pvc.yml"
 kubectl apply -f "$here/deployment.yml"

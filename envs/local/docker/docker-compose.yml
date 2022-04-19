@@ -29,7 +29,7 @@ services:
       DB_NAME: "cicd"
       DB_USER: "root"
       DB_PASSWORD: "dev"
-      DEBUG: true
+      DEBUG: "true"
       BROKER_USER: "dev"
       BROKER_PASSWORD: "dev"
       BROKER_URL: "message"
@@ -74,7 +74,7 @@ services:
       DB_USER: "root"
       DB_PASSWORD: "dev"
       DB_PORT: 3306
-      DEPLOYMENT_TYPE: "docker"
+      DEPLOYMENT_TYPE: "kubernetes"
       REGISTRY_HOST: registry
       REGISTRY_PORT: 5000
     deploy:

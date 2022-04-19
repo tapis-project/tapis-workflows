@@ -1,16 +1,15 @@
-import json, uuid, time, os, base64
+import os
 
 import docker
 
 from core.ActionResult import ActionResult
 from core.BaseBuildExecutor import BaseBuildExecutor
-from errors.credential import CredentialError
 from conf.configs import LOG_FILE
 
 
 class Docker(BaseBuildExecutor):
     def __init__(self):
-        self.config_file = None
+        self.dockerhub_config_file = None
 
     def execute(self, action, message):
         # Resolve the repository from which the code containing the Dockerfile
@@ -33,7 +32,7 @@ class Docker(BaseBuildExecutor):
 
         # Generate the credentials config that kaniko will use to push the
         # image to an image registry
-        self._generate_config(action)
+        self._create_dockerhub_config(action, message.pipeline)
 
         # Build the entrypoint for the kaniko executor based on the pipeline
         # and directives
@@ -56,7 +55,7 @@ class Docker(BaseBuildExecutor):
         container = client.containers.run(
             "gcr.io/kaniko-project/executor:debug",
             volumes={
-                self.config_file: {"bind": "/kaniko/.docker/config.json", "mode": "ro"}
+                self.dockerhub_config_file: {"bind": "/kaniko/.docker/config.json", "mode": "ro"}
             },
             detach=True,
             entrypoint=entrypoint,
@@ -79,50 +78,19 @@ class Docker(BaseBuildExecutor):
 
 
         # Remove the container and reset the builder
-        # container.remove()
+        container.remove()
 
         self._reset(delete_config=True)
         
         return ActionResult(0, data={})
         # return ActionResult(result["StatusCode"], data=result)
- 
-    def _generate_config(self, action):
-        # Get image registry credentials from config
-        credential = action.destination.credential
-
-        if credential == None:
-            raise CredentialError(
-                "No credentials for the destination")
-
-        # Create the config file to store the credentials temporarily
-        self.config_file = f"/tmp/docker-config-{time.time() * 1000}-{str(uuid.uuid4())}.json"
-
-        # Base64 encode credentials
-        encoded_creds = base64.b64encode(
-            f"{credential.data.username}:{credential.data.token}"
-                .encode("utf-8")
-        )
-
-        # Add the credentials to the config file
-        registry_creds = {
-            "auths": {
-                "https://index.docker.io/v1/": {
-                    "auth": encoded_creds.decode("utf-8")
-                }
-            }
-        }
-
-        # Create the .docker/config.json file that will be mounted to the
-        # kaniko container and write the registry credentials to it
-        with open(self.config_file, "w") as file:
-            file.write(json.dumps(registry_creds))
 
     def _reset(self, delete_config=False):
         # Delete the config file
         if delete_config:
-            os.remove(self.config_file)
+            os.remove(self.dockerhub_config_file)
 
-        self.config_file = None
+        self.dockerhub_config_file = None
 
     def _get_container_logs(self, client, container):
         logs = []

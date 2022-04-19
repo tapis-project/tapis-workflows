@@ -2,6 +2,9 @@
 
 #kubectl apply -f storageclass.yml
 
+# Apply cluster roles
+kubectl apply -f ./roles/clusterroles.yml
+
 # mysql
 chmod +x ./mysql/burnup
 ./mysql/burnup

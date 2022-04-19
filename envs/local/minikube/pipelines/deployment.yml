@@ -22,7 +22,7 @@ spec:
             - main.py
           env:
             - name: API_BASE_URL
-              value: workflows-api-service:8000
+              value: workflows-api-service
             - name: BROKER_PASSWORD
               value: dev
             - name: BROKER_PORT
@@ -48,9 +48,17 @@ spec:
             - name: REGISTRY_PORT
               value: "5000"
           image: tapis/workflows-pipelines:dev
+          imagePullPolicy: Always
           name: workflows-pipelines
           ports:
             - containerPort: 9000
           resources: {}
           tty: true
+          volumeMounts:
+            - name: pipelines-mount
+              mountPath: /mnt/pipelines/
+      volumes:
+        - name: pipelines-mount
+          persistentVolumeClaim:
+            claimName: workflows-pipelines-pvc      
       restartPolicy: Always

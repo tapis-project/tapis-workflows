@@ -11,9 +11,10 @@ spec:
         image: gcr.io/kaniko-project/executor:debug
         args: []
         volumeMounts:
-        - name: docker-config
-          mountPath: /kaniko/.docker
+        - name: regcred
+          mountPath: /kaniko/.docker/config.json
+          subPath: config.json
       volumes:
-      - name: docker-config
+      - name: regcred
         configMap:
-          name: docker-config
+          name: regcred.<pipeline_id>.<action_id>

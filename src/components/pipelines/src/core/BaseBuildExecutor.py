@@ -1,4 +1,8 @@
+import json, time, uuid, base64, os
+
 from helpers.ContextResolver import context_resolver
+from errors.credential import CredentialError
+from conf.configs import SCRATCH_DIR
 
 
 class BaseBuildExecutor:
@@ -32,3 +36,35 @@ class BaseBuildExecutor:
         destination = action.destination.url + f":{tag}"
 
         return destination
+
+    def _create_dockerhub_config(self, action, pipeline):
+        # Get image registry credentials from config
+        credential = action.destination.credential
+
+        if credential == None:
+            raise CredentialError(
+                "No credentials for the destination")
+
+        # Create the config dir to store the credentials
+        self.dockerhub_config_dir = f"{SCRATCH_DIR}/dockerhub-config-{pipeline.id}-{action.id}-{str(uuid.uuid4())}"
+        os.mkdir(self.dockerhub_config_dir)
+
+        # Base64 encode credentials
+        encoded_creds = base64.b64encode(
+            f"{credential.data.username}:{credential.data.token}"
+                .encode("utf-8")
+        )
+
+        # Add the credentials to the config file
+        registry_creds = {
+            "auths": {
+                "https://index.docker.io/v1/": {
+                    "auth": encoded_creds.decode("utf-8")
+                }
+            }
+        }
+
+        # Create the .docker/config.json file that will be mounted to the
+        # kaniko container and write the registry credentials to it
+        with open(f"{self.dockerhub_config_dir}/config.json", "w") as file:
+            file.write(json.dumps(registry_creds))
