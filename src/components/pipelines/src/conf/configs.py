@@ -10,7 +10,7 @@ MAX_CONNECTION_ATTEMPTS = 24
 RETRY_DELAY = 5
 
 BASE_KANIKO_FILE = BASE_DIR + "conf/kaniko-base.yml"
-SCRATCH_DIR = "/mnt/pipelines/"
+BASE_WORK_DIR = "/mnt/pipelines/"
 
 LOG_FILE = BASE_DIR + "logs/action-logs.txt"
 

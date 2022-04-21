@@ -7,7 +7,7 @@ from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import ServerError
 from backend.utils.parse_directives import parse_directives as parse
 from backend.services import cred_service, pipeline_dispatcher
-from backend.models import Identity, Event, Pipeline
+from backend.models import Identity, Event, Pipeline, Group
 from backend.views.http.responses.BaseResponse import BaseResponse
 
 class WebhookEvents(RestrictedAPIView):
@@ -24,6 +24,7 @@ class WebhookEvents(RestrictedAPIView):
 
         # Find a pipeline that matches the request data
         pipeline = Pipeline.objects.filter(id=pipeline_id).prefetch_related(
+            "group",
             "actions",
             "actions__context",
             "actions__context__credential",
@@ -69,6 +70,9 @@ class WebhookEvents(RestrictedAPIView):
         if pipeline is None:
             return ModelResponse(event)
 
+        # Get the group for this pipelines
+        group = pipeline.group
+
         # Get the pipeline actions, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
         actions = pipeline.actions.all()
@@ -81,6 +85,7 @@ class WebhookEvents(RestrictedAPIView):
 
         # Convert pipleline to a dict and build the pipeline_dispatch_request
         pipeline_dispatch_request = {}
+        pipeline_dispatch_request["group"] = model_to_dict(group)
         pipeline_dispatch_request["event"] = model_to_dict(event)
         pipeline_dispatch_request["pipeline"] = model_to_dict(pipeline)
         pipeline_dispatch_request["pipeline"]["actions"] = actions_result

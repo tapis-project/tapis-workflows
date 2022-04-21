@@ -1,10 +1,10 @@
-import asyncio, time
+import asyncio, time, uuid, os
 
-from core.ActionExecutorResolver import action_executor_resolver as resolver
+from core.ActionExecutorFactory import action_executor_factory as factory
 from core.ActionResult import ActionResult
 from helpers.GraphValidator import GraphValidator
 from errors.actions import InvalidActionTypeError, MissingInitialActionsError, InvalidDependenciesError, CycleDetectedError
-
+from conf.configs import BASE_WORK_DIR
 
 class PipelineCoordinator:
     def __init__(self):
@@ -18,6 +18,20 @@ class PipelineCoordinator:
         self.is_dry_run = False
 
     async def start(self, message):
+        # TODO lock the pipeline
+        
+        # Generate a unique id for this pipeline run
+        run_id = uuid.uuid4()
+
+        # Create the directory in which all files generated during this pipeline's execution
+        # will be stored
+        work_dir = f"{BASE_WORK_DIR}{message.group.id}/{message.pipeline.id}/{run_id}/"
+        os.makedirs(work_dir, exist_ok=True)
+
+        # Set the run id and scratch dir on the pipeline
+        message.pipeline.run_id = run_id
+        message.pipeline.work_dir = work_dir
+
         start_message = f"Pipeline started: {message.pipeline.id}"
         if hasattr(message.directives, "DRY_RUN"):
             self.is_dry_run = True
@@ -28,7 +42,7 @@ class PipelineCoordinator:
         # Validate the graph. Terminate the pipeline if it contains cycles
         # or invalid dependencies
         try:
-            self._set_actions(message.pipeline.actions)
+            self._set_actions(message.pipeline.actions, message)
         except (InvalidDependenciesError, CycleDetectedError, MissingInitialActionsError) as e:
             print(str(e), f"\nPipeline terminated: {message.pipeline.id}")
             return
@@ -58,8 +72,8 @@ class PipelineCoordinator:
         try:
             # Resolve the action executor and execute the action
             if not self.is_dry_run:
-                action_executor = resolver.resolve(action)
-                action_result = action_executor.execute(action, message)
+                action_executor = factory.build(action, message)
+                action_result = action_executor.execute(self._on_finish)
             else:
                 action_result = ActionResult(0, data={"action": action.id})
         except InvalidActionTypeError as e:
@@ -82,9 +96,9 @@ class PipelineCoordinator:
     def _get_action(self, name):
         return next(filter(lambda a: a.name == name, self.actions), None)
 
-    def _set_actions(self, actions):
-        # Create a list of the names of actions
-        action_names = [ action.id for action in actions ]
+    def _set_actions(self, actions, message):
+        # Create a list of the ids of the actions
+        action_ids = [ action.id for action in actions ]
 
         # Determine if there are any invalid dependencies (dependencies not 
         # included in the actions list)
@@ -95,13 +109,12 @@ class PipelineCoordinator:
                 if dep.id == action.id:
                     invalid_deps += 1
                     invalid_deps_message = invalid_deps_message + f"#{invalid_deps} An action cannot be dependent on itself: {action.id} | "
-                if dep.id not in action_names:
+                if dep.id not in action_ids:
                     invalid_deps += 1
                     invalid_deps_message = invalid_deps_message + f"#{invalid_deps} Action '{action.id}' depends on non-existent action '{dep.id}'"
 
         if invalid_deps > 0:
             raise InvalidDependenciesError(invalid_deps_message)
-
 
         self.actions = actions
 

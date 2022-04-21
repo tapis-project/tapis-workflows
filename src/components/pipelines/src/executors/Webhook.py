@@ -5,11 +5,12 @@ from typing import Any, Dict, Union
 from pydantic import BaseModel, ValidationError
 
 from core.ActionResult import ActionResult
+from core.ActionExecutor import ActionExecutor
 
 
 PERMITTED_HTTP_METHODS = [ "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD" ]
 
-class WebhookAction(BaseModel):
+class Webhook(BaseModel):
     auth: Union[dict, None] = None,
     data: Any = None,
     headers: Dict[str, Union[str, int,]] = None
@@ -18,10 +19,13 @@ class WebhookAction(BaseModel):
     url: str
 
 # TODO Webhook Notifcation Action needs to be containerized
-class Webhook:
-    def execute(self, action, _):
+class Webhook(ActionExecutor):
+    def __init__(self, action, message):
+        ActionExecutor.__init__(action, message)
+
+    def execute(self, on_finish_callback):
         try:
-            webhook_action = WebhookAction(**vars(action))
+            webhook_action = Webhook(**vars(self.action))
         except ValidationError as e:
             errors = [ f"{error['type']}. {error['msg']}: {'.'.join(error['loc'])}" for error in json.loads(e.json())]
             print(f"Webhook Notification Error: {errors}")
@@ -48,5 +52,3 @@ class Webhook:
 
         except Exception as e:
             return ActionResult(1, errors=[str(e)])
-
-executor = Webhook()

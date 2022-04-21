@@ -12,6 +12,8 @@ from utils.bytes_to_json import bytes_to_json
 from utils.json_to_object import json_to_object
 
 
+coordinator = PipelineCoordinator()
+
 # Resolve the image builder 
 def on_message_callback(ch, method, properties, body):
     try:
@@ -21,12 +23,10 @@ def on_message_callback(ch, method, properties, body):
         return
 
     # try:
-    #     coordinator = PipelineCoordinator()
     #     asyncio.run(coordinator.start(message))
     # except Exception as e:
     #     print(e.__class__.__name__, e)
 
-    coordinator = PipelineCoordinator()
     asyncio.run(coordinator.start(message))
 
 # Initialize connection parameters

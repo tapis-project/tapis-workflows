@@ -1,52 +1,56 @@
-import json, time, uuid, base64, os
+import json, uuid, base64, os
 
 from helpers.ContextResolver import context_resolver
 from errors.credential import CredentialError
-from conf.configs import SCRATCH_DIR
+from core.ActionExecutor import ActionExecutor
+from core.resources import FileResource
 
 
-class BaseBuildExecutor:
-    def _resolve_context_string(self, action):
+class BaseBuildExecutor(ActionExecutor):
+    def __init__(self, action, message):
+        ActionExecutor.__init__(self, action, message)
+
+    def _resolve_context_string(self):
         # Resolve the repository from which the code containing the Dockerfile
         # will be pulled
-        return context_resolver.resolve(action.context)
+        return context_resolver.resolve(self.action.context)
 
-    def _resolve_destination_string(self, action, event, directives=None):
+    def _resolve_destination_string(self):
 
-        if action.destination == None:
+        if self.action.destination == None:
             return None
 
         # Default to latest tag
-        tag = action.destination.tag
+        tag = self.action.destination.tag
         if tag is None:
             tag = "latest"
 
         # The image tag can be overwritten by specifying directives in the 
         # commit message. Image tagging directives take precedence over the
         # the image_property of the pipeline.
-        if directives is not None:
-            for key, value in directives.__dict__.items():
+        if self.directives is not None:
+            for key, value in self.directives.__dict__.items():
                 if key == "CUSTOM_TAG" and key is not None:
                     tag = value
                 elif key == "CUSTOM_TAG" and key is None:
-                    tag = action.destination.tag
-                elif key == "TAG_COMMIT_SHA" and event.commit_sha is not None:
-                    tag = event.commit_sha
+                    tag = self.action.destination.tag
+                elif key == "TAG_COMMIT_SHA" and self.event.commit_sha is not None:
+                    tag = self.event.commit_sha
             
-        destination = action.destination.url + f":{tag}"
+        destination = self.action.destination.url + f":{tag}"
 
         return destination
 
-    def _create_dockerhub_config(self, action, pipeline):
+    def _create_dockerhub_config(self):
         # Get image registry credentials from config
-        credential = action.destination.credential
+        credential = self.action.destination.credential
 
         if credential == None:
             raise CredentialError(
                 "No credentials for the destination")
 
         # Create the config dir to store the credentials
-        self.dockerhub_config_dir = f"{SCRATCH_DIR}/dockerhub-config-{pipeline.id}-{action.id}-{str(uuid.uuid4())}"
+        self.dockerhub_config_dir = f"{self.action.scratch_dir}dockerhub/"
         os.mkdir(self.dockerhub_config_dir)
 
         # Base64 encode credentials
@@ -66,5 +70,11 @@ class BaseBuildExecutor:
 
         # Create the .docker/config.json file that will be mounted to the
         # kaniko container and write the registry credentials to it
-        with open(f"{self.dockerhub_config_dir}/config.json", "w") as file:
+        dockerhub_config_file = f"{self.dockerhub_config_dir}config.json"
+        with open(dockerhub_config_file, "w") as file:
             file.write(json.dumps(registry_creds))
+        
+        # Register the dockerhub config file to be cleaned up after execution
+        self._register_resource(FileResource(path=dockerhub_config_file))
+
+        

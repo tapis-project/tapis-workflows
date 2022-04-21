@@ -10,13 +10,13 @@ class BuildActionExecutorResolver:
     def __init__(self):
         self.deployment_type = self._to_class_name(os.environ["DEPLOYMENT_TYPE"])
 
-    def resolve(self, build_action):
-        builder_name = build_action.builder
+    def resolve(self, action):
+        builder_name = action.builder
         builder_ns = f"executors.builders.{builder_name}"
 
         if bool(find_spec(builder_ns)):
             module = import_module(f"{builder_ns}.{self.deployment_type}", "./" )
-            return getattr(module, self.deployment_type)()
+            return getattr(module, self.deployment_type)
 
         raise InvalidBuilderError(f"Build '{builder_name}' is not a valid image builder.")
 
