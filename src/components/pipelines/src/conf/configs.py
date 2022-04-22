@@ -9,7 +9,6 @@ BASE_DIR = str(Path(__file__).resolve().parent.parent) + "/"
 MAX_CONNECTION_ATTEMPTS = 24
 RETRY_DELAY = 5
 
-BASE_KANIKO_FILE = BASE_DIR + "conf/kaniko-base.yml"
 BASE_WORK_DIR = "/mnt/pipelines/"
 
 LOG_FILE = BASE_DIR + "logs/action-logs.txt"
@@ -31,6 +30,8 @@ DB_NAME = os.environ["DB_NAME"]
 
 BROKER_URL = f"amqp://{BROKER_USER}:{BROKER_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}"
 BACKEND_URL = f"db+mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+KUBERNETES_NAMESPACE = os.environ["KUBERNETES_NAMESPACE"]
 
 # TAPIS_TENANT = os.environ["TAPIS_TENANT"]
 TAPIS_TENANT = "dev" # TODO

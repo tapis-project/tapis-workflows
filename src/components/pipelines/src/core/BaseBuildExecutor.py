@@ -1,4 +1,4 @@
-import json, uuid, base64, os
+import json, base64, os
 
 from helpers.ContextResolver import context_resolver
 from errors.credential import CredentialError

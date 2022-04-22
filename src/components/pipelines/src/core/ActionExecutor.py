@@ -29,6 +29,10 @@ class ActionExecutor:
         os.mkdir(output_dir)
         self.action.output_dir = output_dir
 
+        config.load_incluster_config()
+        self.core_v1_api = client.CoreV1Api()
+        self.batch_v1_api = client.BatchV1Api()
+
     def _register_resource(self, resource: Resource):
         self._resources.append(resource)
 
@@ -38,4 +42,5 @@ class ActionExecutor:
             resources = self._resources
 
         for resource in resources:
+            print(resource)
             pass

@@ -17,8 +17,8 @@ class FileResource(Resource):
 
 class ConfigMapResource(Resource):
     type = ResourceType.config_map
-    name: str
+    configmap: object
 
 class JobResource(Resource):
     type = ResourceType.job
-    name: str
+    job: object

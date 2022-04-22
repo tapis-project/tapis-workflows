@@ -43,6 +43,8 @@ spec:
               value: root
             - name: DEPLOYMENT_TYPE
               value: kubernetes
+            - name: KUBERNETES_NAMESPACE
+              value: default
             - name: REGISTRY_HOST
               value: registry
             - name: REGISTRY_PORT
