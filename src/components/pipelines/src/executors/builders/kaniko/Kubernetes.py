@@ -1,4 +1,4 @@
-import yaml
+import time
 
 from kubernetes import client
 
@@ -16,23 +16,20 @@ class Kubernetes(BaseBuildExecutor):
 
     def execute(self, on_finish_callback) -> ActionResult:
         # Create the kaniko job
-        job_name = self._create_kaniko_job()
+        # TODO try block
+        job = self._create_kaniko_job()
 
-        try:
-            pod_log_response = self.core_v1_api.read_namespaced_pod_log(
-                name=job_name,
-                namespace=KUBERNETES_NAMESPACE,
-                _return_http_data_only=True,
-                _preload_content=False
+        while not self._job_in_terminal_state(job):
+            # Set the job status and wait the polling interval
+            job = self.batch_v1_api.read_namespaced_job(
+                job.metadata.name,
+                KUBERNETES_NAMESPACE
             )
-            pod_log = pod_log_response.data.decode("utf-8")
-            print(pod_log)
-        except Exception as e:
-            print("Pipelines Error: ", e)
+            time.sleep(self.polling_interval)
 
         # TODO implement on_finish_callback
 
-        return ActionResult(status=0)
+        return ActionResult(status=0 if self._job_succeeded(job) else 1)
 
     def _create_kaniko_job(self):
         """Create a job in the Kubernetes cluster"""
@@ -98,20 +95,20 @@ class Kubernetes(BaseBuildExecutor):
         )
 
         # Job body
-        job = client.V1Job(
+        body = client.V1Job(
             metadata=metadata,
             spec=job_spec
         )
 
-        self.batch_v1_api.create_namespaced_job(
+        job = self.batch_v1_api.create_namespaced_job(
             namespace=KUBERNETES_NAMESPACE,
-            body=job
+            body=body
         )
 
         # Register the job to be deleted after execution
         self._register_resource(JobResource(job=job))
 
-        return job_name
+        return job
 
     def _resolve_container_args(self, job_name):
         """Add the context, docerkfile, and destination(or --no-push) arguments that
@@ -172,16 +169,16 @@ class Kubernetes(BaseBuildExecutor):
             data = file.read()
 
         # Instantiate the configmap object
-        configmap = client.V1ConfigMap( 
+        body = client.V1ConfigMap( 
             api_version="v1",
             kind="ConfigMap",
             data={"config.json": data},
             metadata=metadata
         )
 
-        self.core_v1_api.create_namespaced_config_map(
+        configmap = self.core_v1_api.create_namespaced_config_map(
             namespace=KUBERNETES_NAMESPACE,
-            body=configmap
+            body=body
         )
 
         self._register_resource(ConfigMapResource(configmap=configmap))

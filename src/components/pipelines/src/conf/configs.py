@@ -33,6 +33,9 @@ BACKEND_URL = f"db+mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}
 
 KUBERNETES_NAMESPACE = os.environ["KUBERNETES_NAMESPACE"]
 
+# Default polling interval in seconds
+DEFAULT_POLLING_INTERVAL = 1
+
 # TAPIS_TENANT = os.environ["TAPIS_TENANT"]
 TAPIS_TENANT = "dev" # TODO
 

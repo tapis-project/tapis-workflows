@@ -3,7 +3,6 @@ import json, base64, os
 from helpers.ContextResolver import context_resolver
 from errors.credential import CredentialError
 from core.ActionExecutor import ActionExecutor
-from core.resources import FileResource
 
 
 class BaseBuildExecutor(ActionExecutor):
@@ -73,8 +72,5 @@ class BaseBuildExecutor(ActionExecutor):
         dockerhub_config_file = f"{self.dockerhub_config_dir}config.json"
         with open(dockerhub_config_file, "w") as file:
             file.write(json.dumps(registry_creds))
-        
-        # Register the dockerhub config file to be cleaned up after execution
-        self._register_resource(FileResource(path=dockerhub_config_file))
 
         

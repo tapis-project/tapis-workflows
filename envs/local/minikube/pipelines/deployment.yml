@@ -16,6 +16,7 @@ spec:
       labels:
         app: workflows-pipelines-deployment
     spec:
+      serviceAccountName: action-executors
       containers:
         - args:
             - python3

@@ -13,6 +13,7 @@ class PipelineCoordinator:
         self.finished = []
         self.queue = []
         self.actions = []
+        self.executors = {}
         self.dependencies = {}
         self.initial_actions = []
         self.is_dry_run = False
@@ -72,8 +73,12 @@ class PipelineCoordinator:
         try:
             # Resolve the action executor and execute the action
             if not self.is_dry_run:
-                action_executor = factory.build(action, message)
-                action_result = action_executor.execute(self._on_finish)
+                executor = factory.build(action, message)
+                
+                # Register the action executor
+                self._register_executor(message.pipeline.run_id, action, executor)
+
+                action_result = executor.execute(self._on_finish)
             else:
                 action_result = ActionResult(0, data={"action": action.id})
         except InvalidActionTypeError as e:
@@ -152,6 +157,13 @@ class PipelineCoordinator:
         # TODO Raise FailedActionError if this action is not permitted to fail
         self._on_succeed(action) if action_result.success else self._on_fail(action)
 
+        # Clean up the resources created by the action executor
+        executor = self._get_executor(message.pipeline.run_id, action)
+        executor.cleanup()
+
+        # Deregister the action executor
+        self._deregister_executor(message.pipeline.run_id, action)
+
         # Execute all possible queued actions
         tasks = []
         for queued_action in self.queue:
@@ -166,6 +178,7 @@ class PipelineCoordinator:
                 tasks.append(self._execute(queued_action, message))
        
         if pipeline_complete:
+            self._cleanup_run(message.pipeline)
             print(f"Pipeline finished: {message.pipeline.id}")
             print(f"Fails: ({len(self.failed)})")
             print(f"Successes: ({len(self.successful)})")
@@ -177,3 +190,17 @@ class PipelineCoordinator:
 
     def _remove_from_queue(self, action):
         self.queue.pop(self.queue.index(action))
+
+    def _register_executor(self, run_id, action, executor):
+        self.executors[f"{run_id}.{action.id}"] = executor
+
+    def _deregister_executor(self, run_id, action):
+        del self.executors[f"{run_id}.{action.id}"]
+
+    def _get_executor(self, run_id, action):
+        return self.executors[f"{run_id}.{action.id}"]
+
+    def _cleanup_run(self, pipeline):
+        print("Cleaning up pipeline resources")
+        # TODO delete workfir or pipeline run
+        pass
