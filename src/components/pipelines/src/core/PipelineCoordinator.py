@@ -1,4 +1,4 @@
-import asyncio, time, uuid, os
+import asyncio, uuid, os, logging
 
 from core.ActionExecutorFactory import action_executor_factory as factory
 from core.ActionResult import ActionResult
@@ -38,14 +38,14 @@ class PipelineCoordinator:
             self.is_dry_run = True
             start_message = f"Pipline dry run: {message.pipeline.id}"
 
-        print(start_message)
+        logging.info(start_message)
 
         # Validate the graph. Terminate the pipeline if it contains cycles
         # or invalid dependencies
         try:
             self._set_actions(message.pipeline.actions, message)
         except (InvalidDependenciesError, CycleDetectedError, MissingInitialActionsError) as e:
-            print(str(e), f"\nPipeline terminated: {message.pipeline.id}")
+            logging.error(str(e), f"\nPipeline terminated: {message.pipeline.id}")
             return
 
         # Add all of the asynchronous tasks to the queue
@@ -64,15 +64,15 @@ class PipelineCoordinator:
 
 
     async def _execute(self, action, message):
-        print(f"Running action {action.id}: {time.time()}")
+        logging.info(f"Starting action '{action.id}'")
 
         # The folowing line forces the async function to yield control to the event loop,
         # allowing other async functions to run concurrently
         await asyncio.sleep(0)
         
         try:
-            # Resolve the action executor and execute the action
             if not self.is_dry_run:
+                # Resolve the action executor and execute the action
                 executor = factory.build(action, message)
                 
                 # Register the action executor
@@ -142,24 +142,20 @@ class PipelineCoordinator:
             raise e
 
     def _on_fail(self, action):
-        print(f"Action '{action.id}' failed")
+        logging.info(f"Action '{action.id}' failed")
         self.failed.append(action.id)
 
     def _on_finish(self, action, action_result, message):
         # Add the action to the finished list
         self.finished.append(action.id)
 
-        print(f"Finished action {action.id}: {time.time()}")
-        print(f"Result for {action.id}: ", vars(action_result))
+        logging.info(f"Finished action '{action.id}'")
+        logging.debug(f"Result for '{action.id}': {vars(action_result)}")
 
         pipeline_complete = True if len(self.actions) == len(self.finished) else False
 
         # TODO Raise FailedActionError if this action is not permitted to fail
         self._on_succeed(action) if action_result.success else self._on_fail(action)
-
-        # Clean up the resources created by the action executor
-        executor = self._get_executor(message.pipeline.run_id, action)
-        executor.cleanup()
 
         # Deregister the action executor
         self._deregister_executor(message.pipeline.run_id, action)
@@ -179,9 +175,9 @@ class PipelineCoordinator:
        
         if pipeline_complete:
             self._cleanup_run(message.pipeline)
-            print(f"Pipeline finished: {message.pipeline.id}")
-            print(f"Fails: ({len(self.failed)})")
-            print(f"Successes: ({len(self.successful)})")
+            logging.info(f"Pipeline finished: {message.pipeline.id}")
+            logging.info(f"Fails: ({len(self.failed)})")
+            logging.info(f"Successes: ({len(self.successful)})")
 
         return tasks  
 
@@ -195,12 +191,14 @@ class PipelineCoordinator:
         self.executors[f"{run_id}.{action.id}"] = executor
 
     def _deregister_executor(self, run_id, action):
+        # Clean up the resources created by the action executor
+        executor = self._get_executor(run_id, action)
+        executor.cleanup()
         del self.executors[f"{run_id}.{action.id}"]
 
     def _get_executor(self, run_id, action):
         return self.executors[f"{run_id}.{action.id}"]
 
     def _cleanup_run(self, pipeline):
-        print("Cleaning up pipeline resources")
-        # TODO delete workfir or pipeline run
-        pass
+        logging.info("Cleaning up pipeline resources")
+        os.system(f"rm -rf {pipeline.work_dir}")

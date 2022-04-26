@@ -1,4 +1,4 @@
-import requests, json
+import requests, json, logging
 
 from typing import Any, Dict, Union
 
@@ -28,11 +28,11 @@ class Webhook(ActionExecutor):
             webhook_action = Webhook(**vars(self.action))
         except ValidationError as e:
             errors = [ f"{error['type']}. {error['msg']}: {'.'.join(error['loc'])}" for error in json.loads(e.json())]
-            print(f"Webhook Notification Error: {errors}")
+            logging.info(f"Webhook Notification Error: {errors}")
             return ActionResult(status=400, errors=errors)
 
         if webhook_action.http_method.upper() not in PERMITTED_HTTP_METHODS:
-            print(f"Webhook Notification Error: Method Not Allowed ({webhook_action.http_method})")
+            logging.info(f"Webhook Notification Error: Method Not Allowed ({webhook_action.http_method})")
             return ActionResult(status=405, errors=[f"Method Not Allowed ({webhook_action.method})"])
 
         try:

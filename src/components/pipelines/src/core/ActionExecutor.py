@@ -75,4 +75,4 @@ class ActionExecutor:
                     namespace=KUBERNETES_NAMESPACE
                 )
             else:
-                print("Something went wrong")
+                pass

@@ -11,7 +11,7 @@ RETRY_DELAY = 5
 
 BASE_WORK_DIR = "/mnt/pipelines/"
 
-LOG_FILE = BASE_DIR + "logs/action-logs.txt"
+LOG_FILE = BASE_DIR + "logs/service.log"
 
 DEPLOYMENT_TYPE = os.environ["DEPLOYMENT_TYPE"]
 

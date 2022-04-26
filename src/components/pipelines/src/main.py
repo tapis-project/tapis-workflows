@@ -1,4 +1,4 @@
-import os, sys, time, asyncio
+import os, sys, time, asyncio, logging
 
 from json.decoder import JSONDecodeError
 
@@ -7,10 +7,20 @@ import pika
 from pika.exchange_type import ExchangeType
 
 from core.PipelineCoordinator import PipelineCoordinator
-from conf.configs import MAX_CONNECTION_ATTEMPTS, RETRY_DELAY
+from conf.configs import MAX_CONNECTION_ATTEMPTS, RETRY_DELAY, LOG_FILE
 from utils.bytes_to_json import bytes_to_json
 from utils.json_to_object import json_to_object
 
+
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.DEBUG,
+    format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s"
+)
+
+# Set all lib loggers to critical
+for name in logging.root.manager.loggerDict:
+    logging.getLogger(name).setLevel(logging.CRITICAL)
 
 coordinator = PipelineCoordinator()
 
@@ -25,7 +35,7 @@ def on_message_callback(ch, method, properties, body):
     # try:
     #     asyncio.run(coordinator.start(message))
     # except Exception as e:
-    #     print(e.__class__.__name__, e)
+    #     logging.error(e.__class__.__name__, e)
 
     asyncio.run(coordinator.start(message))
 
@@ -42,22 +52,22 @@ connection_parameters = pika.ConnectionParameters(
 # Attempt to connect to the message broker
 connected = False
 connection_attempts = 0
-print("Starting connection with message broker...")
+logging.info("Starting connection with message broker...")
 while connected == False and connection_attempts <= MAX_CONNECTION_ATTEMPTS:
     try:
         connection_attempts = connection_attempts + 1
         connection = pika.BlockingConnection(connection_parameters)
         connected = True
     except Exception:
-        print(f"Attempting to connect to message broker... Attempts({connection_attempts})")
+        logging.info(f"Attempting to connect to message broker... Attempts({connection_attempts})")
         time.sleep(RETRY_DELAY)
 
 # Kill the build service if unable to connect
 if connected == False:
-    print(f"Error: Maximum connection attempts reached({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker.")
+    logging.critical(f"Error: Maximum connection attempts reached({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker.")
     sys.exit(1)
 
-print("Successfully connected to message broker")
+logging.info("Successfully connected to message broker")
 
 # Create a channel and declare an exchange
 channel = connection.channel()

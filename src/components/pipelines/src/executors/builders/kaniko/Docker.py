@@ -1,4 +1,4 @@
-import os
+import os, logging
 
 import docker
 
@@ -23,7 +23,7 @@ class Docker(BaseBuildExecutor):
         # Do not build if there is no BUILD directive and
         # the auto_build flag set to False
         if (hasattr(message.directives, "BUILD") or action.auto_build) == False:
-            print("Build cancelled. No 'build' directive found.")
+            logging.info("Build cancelled. No 'build' directive found.")
             self._reset()
             return
         
@@ -74,7 +74,7 @@ class Docker(BaseBuildExecutor):
             file = open(LOG_FILE, "a")
             file.write(line)
             file.close()
-            print(line)
+            logging.info(line)
 
 
         # Remove the container and reset the builder
