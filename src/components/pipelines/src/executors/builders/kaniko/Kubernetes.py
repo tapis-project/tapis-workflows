@@ -1,4 +1,4 @@
-import time
+import time, logging
 
 from kubernetes import client
 
@@ -19,13 +19,39 @@ class Kubernetes(BaseBuildExecutor):
         # TODO try block
         job = self._create_kaniko_job()
 
+        # Poll the job status until the job is in a terminal state
         while not self._job_in_terminal_state(job):
-            # Set the job status and wait the polling interval
             job = self.batch_v1_api.read_namespaced_job(
                 job.metadata.name,
                 KUBERNETES_NAMESPACE
             )
+            
             time.sleep(self.polling_interval)
+
+        # Get the logs(stdout) from this job's pod
+        pod_list = self.core_v1_api.list_namespaced_pod(
+            namespace=KUBERNETES_NAMESPACE,
+            label_selector=f"job-name={job.metadata.name}",
+            # timeout_seconds=10 # TODO Consider timout
+        )
+
+        stdout = None
+        try:
+            stdout = self.core_v1_api.read_namespaced_pod_log(
+                name=pod_list.items[0].metadata.name,
+                namespace=KUBERNETES_NAMESPACE,
+                _return_http_data_only=True,
+                _preload_content=False
+            ).data.decode("utf-8")
+
+            with open(f"{self.action.output_dir}.stdout", "w") as file:
+                file.write(stdout)
+
+        except client.rest.ApiException as e:
+            logging.error(f"Exception reading pod log: {e}")
+
+        # TODO Validate the jobs outputs based against outputs
+        # in the action definition
 
         # TODO implement on_finish_callback
 
