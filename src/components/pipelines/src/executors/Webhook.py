@@ -51,10 +51,11 @@ class Webhook(ActionExecutor):
                 headers=webhook_action.headers,
                 params=webhook_action.query_params,
             )
+            
+            self._write_stdout(response.content)
 
             return ActionResult(
-                status=0 if response.status_code in range(200, 300) else response.status_code,
-                data=response.json()
+                status=0 if response.status_code in range(200, 300) else response.status_code
             )
 
         except Exception as e:

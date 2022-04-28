@@ -55,6 +55,10 @@ class ActionExecutor:
     def _register_resource(self, resource: Resource):
         self._resources.append(resource)
 
+    def _write_stdout(self, value, flag="wb"):
+        with open(f"{self.action.output_dir}.stdout", flag) as file:
+            file.write(value)
+
     def cleanup(self):
         logging.debug(f"Total resources to clean: ({len(self._resources)})")
         for resource in self._resources:

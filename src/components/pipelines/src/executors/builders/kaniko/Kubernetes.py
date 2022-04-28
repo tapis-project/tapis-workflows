@@ -35,23 +35,21 @@ class Kubernetes(BaseBuildExecutor):
             # timeout_seconds=10 # TODO Consider timout
         )
 
-        stdout = None
+        logs = None
         try:
-            stdout = self.core_v1_api.read_namespaced_pod_log(
+            logs = self.core_v1_api.read_namespaced_pod_log(
                 name=pod_list.items[0].metadata.name,
                 namespace=KUBERNETES_NAMESPACE,
                 _return_http_data_only=True,
                 _preload_content=False
-            ).data.decode("utf-8")
+            ).data #.decode("utf-8")
 
-            with open(f"{self.action.output_dir}.stdout", "w") as file:
-                file.write(stdout)
+            self._write_stdout(logs)
 
         except client.rest.ApiException as e:
             logging.error(f"Exception reading pod log: {e}")
 
-        # TODO Validate the jobs outputs based against outputs
-        # in the action definition
+        # TODO Validate the jobs outputs against outputs in the action definition
 
         # TODO implement on_finish_callback
 
