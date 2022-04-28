@@ -191,6 +191,7 @@ class PipelineCoordinator:
         self.executors[f"{run_id}.{action.id}"] = executor
 
     def _deregister_executor(self, run_id, action):
+        logging.debug(f"Cleaning up executor for action '{action.id}'")
         # Clean up the resources created by the action executor
         executor = self._get_executor(run_id, action)
         executor.cleanup()
@@ -201,4 +202,4 @@ class PipelineCoordinator:
 
     def _cleanup_run(self, pipeline):
         logging.info("Cleaning up pipeline resources")
-        os.system(f"rm -rf {pipeline.work_dir}")
+        # os.system(f"rm -rf {pipeline.work_dir}")

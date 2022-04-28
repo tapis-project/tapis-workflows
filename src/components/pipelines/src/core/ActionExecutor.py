@@ -1,4 +1,4 @@
-import os
+import os, logging
 
 from kubernetes import config, client
 
@@ -6,8 +6,6 @@ from core.resources import Resource, ResourceType
 from conf.configs import DEFAULT_POLLING_INTERVAL, KUBERNETES_NAMESPACE
 
 class ActionExecutor:
-    _resources: list[Resource] = []
-
     def __init__(self, action, message):
         self.action = action
         self.pipeline = message.pipeline
@@ -16,6 +14,7 @@ class ActionExecutor:
         self.directives = message.directives
         self.message = message
         self.polling_interval = DEFAULT_POLLING_INTERVAL
+        self._resources: list[Resource] = []
 
         # Create the base directory for all files and output created during this action execution
         work_dir = f"{self.message.pipeline.work_dir}{action.id}/"
@@ -56,12 +55,18 @@ class ActionExecutor:
     def _register_resource(self, resource: Resource):
         self._resources.append(resource)
 
-    def cleanup(self, resources: list[Resource]=[]):
-        # If no resources passed, cleanup all resources
-        if len(resources) == 0:
-            resources = self._resources
-
-        for resource in resources:
+    def cleanup(self):
+        logging.debug(f"Total resources to clean: ({len(self._resources)})")
+        for resource in self._resources:
+            # ConfigMaps
+            if resource.type == ResourceType.configmap:
+                self.core_v1_api.delete_namespaced_config_map(
+                    name=resource.configmap.metadata.name,
+                    namespace=KUBERNETES_NAMESPACE
+                )
+                continue
+            
+            # Jobs and Job Pods
             if resource.type == ResourceType.job:
                 body = client.V1DeleteOptions(propagation_policy="Background")
                 self.batch_v1_api.delete_namespaced_job(
@@ -69,10 +74,4 @@ class ActionExecutor:
                     namespace=KUBERNETES_NAMESPACE,
                     body=body
                 )
-            elif resource.type == ResourceType.configmap:
-                self.core_v1_api.delete_namespaced_config_map(
-                    name=resource.configmap.metadata.name,
-                    namespace=KUBERNETES_NAMESPACE
-                )
-            else:
-                pass
+                continue

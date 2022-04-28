@@ -10,7 +10,7 @@ from core.ActionExecutor import ActionExecutor
 
 PERMITTED_HTTP_METHODS = [ "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD" ]
 
-class Webhook(BaseModel):
+class WebhookModel(BaseModel):
     auth: Union[dict, None] = None,
     data: Any = None,
     headers: Dict[str, Union[str, int,]] = None
@@ -21,11 +21,18 @@ class Webhook(BaseModel):
 # TODO Webhook Notifcation Action needs to be containerized
 class Webhook(ActionExecutor):
     def __init__(self, action, message):
-        ActionExecutor.__init__(action, message)
+        ActionExecutor.__init__(self, action, message)
 
     def execute(self, on_finish_callback):
         try:
-            webhook_action = Webhook(**vars(self.action))
+            webhook_action = WebhookModel(
+                auth=self.action.auth,
+                data=self.action.data,
+                headers=self.action.headers,
+                http_method=self.action.http_method,
+                query_params=self.action.query_params,
+                url=self.action.url
+            )
         except ValidationError as e:
             errors = [ f"{error['type']}. {error['msg']}: {'.'.join(error['loc'])}" for error in json.loads(e.json())]
             logging.info(f"Webhook Notification Error: {errors}")

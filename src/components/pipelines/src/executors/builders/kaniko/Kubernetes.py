@@ -207,6 +207,8 @@ class Kubernetes(BaseBuildExecutor):
             body=body
         )
 
+        # Because the configmap is mounted to the job, when the job is deleted during resource
+        # cleanup, the config gets deleted as well
         self._register_resource(ConfigMapResource(configmap=configmap))
 
         return configmap

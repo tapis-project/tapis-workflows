@@ -13,9 +13,10 @@ from utils.json_to_object import json_to_object
 
 
 logging.basicConfig(
-    filename=LOG_FILE,
+    # filename=LOG_FILE,
+    stream=sys.stdout,
     level=logging.DEBUG,
-    format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s"
+    format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s",
 )
 
 # Set all lib loggers to critical
