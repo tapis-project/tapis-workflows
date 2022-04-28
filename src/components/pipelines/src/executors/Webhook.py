@@ -52,7 +52,7 @@ class Webhook(ActionExecutor):
                 params=webhook_action.query_params,
             )
             
-            self._write_stdout(response.content)
+            self._store_result(".stdout", response.content)
 
             return ActionResult(
                 status=0 if response.status_code in range(200, 300) else response.status_code

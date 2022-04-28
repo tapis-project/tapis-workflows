@@ -44,7 +44,7 @@ class Kubernetes(BaseBuildExecutor):
                 _preload_content=False
             ).data #.decode("utf-8")
 
-            self._write_stdout(logs)
+            self._store_result(".stdout", logs)
 
         except client.rest.ApiException as e:
             logging.error(f"Exception reading pod log: {e}")

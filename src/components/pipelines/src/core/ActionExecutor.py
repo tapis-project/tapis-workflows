@@ -55,8 +55,8 @@ class ActionExecutor:
     def _register_resource(self, resource: Resource):
         self._resources.append(resource)
 
-    def _write_stdout(self, value, flag="wb"):
-        with open(f"{self.action.output_dir}.stdout", flag) as file:
+    def _store_result(self, filename, value, flag="wb"):
+        with open(f"{self.action.output_dir}{filename.lstrip('/')}", flag) as file:
             file.write(value)
 
     def cleanup(self):
