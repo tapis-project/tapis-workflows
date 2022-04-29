@@ -3,15 +3,15 @@ from typing import Dict
 from tapipy.tapis import Tapis
 
 from backend.models import Credential
-from backend.conf.constants import TAPIS_BASE_URL, TAPIS_TENANT, TAPIS_SERVICE_ACCOUNT, TAPIS_SERVICE_ACCOUNT_PASSWORD
+from backend.conf.constants import TAPIS_BASE_URL, TAPIS_TENANT, WORKFLOWS_SERVICE_ACCOUNT, WORKFLOWS_SERVICE_PASSWORD
 
 
 class CredentialService:
     def __init__(self):
         self.client = Tapis(
             base_url=TAPIS_BASE_URL,
-            username=TAPIS_SERVICE_ACCOUNT,
-            password=TAPIS_SERVICE_ACCOUNT_PASSWORD
+            username=WORKFLOWS_SERVICE_ACCOUNT,
+            password=WORKFLOWS_SERVICE_PASSWORD
         )
         
         # TODO Cache the jwt
@@ -25,7 +25,7 @@ class CredentialService:
             self.client.sk.writeSecret(
                 secretType="user",
                 secretName=sk_id,
-                user=TAPIS_SERVICE_ACCOUNT,
+                user=WORKFLOWS_SERVICE_ACCOUNT,
                 tenant=TAPIS_TENANT,
                 data=data
             )
@@ -40,7 +40,7 @@ class CredentialService:
         self.client.sk.deleteSecret(
             secretType="user",
             secretName=sk_id,
-            user=TAPIS_SERVICE_ACCOUNT,
+            user=WORKFLOWS_SERVICE_ACCOUNT,
             tenant=TAPIS_TENANT,
             versions=[]
         )
@@ -59,7 +59,7 @@ class CredentialService:
         return self.client.sk.readSecret(
             secretType="user",
             secretName=sk_id,
-            user=TAPIS_SERVICE_ACCOUNT,
+            user=WORKFLOWS_SERVICE_ACCOUNT,
             tenant=TAPIS_TENANT,
             version=0
         ).secretMap.__dict__
