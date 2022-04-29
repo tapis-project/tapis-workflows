@@ -39,10 +39,6 @@ class Identities(RestrictedAPIView):
         # Get the JSON encoded body from the validation result
         body = self.prepared_request.body
 
-        # Determine if a user is creating an identity for themselves, or
-        # on behalf of another user as a group owner
-        on_behalf_of = body.username == request.username
-
         # Fetch the group
         group = service.get(group_id)
 
@@ -54,19 +50,15 @@ class Identities(RestrictedAPIView):
         if body.type not in IDENTITY_TYPES:
             return BadRequest(f"Invalid type for identity. Recieved: {body.type} - Expected one of the following: {IDENTITY_TYPES}")
 
-        # Return bad request is user is unable to create an identity themselves in this group
-        # or for another user if they are not the group owner
-        if (
-            not service.user_in_group(body.username, group.id)
-            or (on_behalf_of and not service.user_owns_group(request.username, group_id))
-        ):
-            return BadRequest(message=f"You cannot create an identity for user '{body.username}' for group '{group_id}'")
+        # Return bad request is user does not belong to group
+        if service.user_in_group(request.username, group.id) == False:
+            return BadRequest(message=f"You cannot create an identity for user '{request.username}' for group '{group_id}'")
 
         try:
             identity = Identity.objects.create(
                 group=group,
                 type=body.type,
-                username=body.username,
+                owner=request.username,
                 value=body.value
             )
         except IntegrityError as e:

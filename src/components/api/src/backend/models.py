@@ -131,7 +131,7 @@ class Action(models.Model):
 
 class Identity(models.Model):
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
-    username = models.CharField(max_length=64)
+    owner = models.CharField(max_length=64)
     group = models.ForeignKey("backend.Group", related_name="identities", on_delete=models.CASCADE)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     value = models.CharField(max_length=128)

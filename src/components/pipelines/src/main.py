@@ -23,7 +23,6 @@ logging.basicConfig(
 for name in logging.root.manager.loggerDict:
     logging.getLogger(name).setLevel(logging.CRITICAL)
 
-
 # Resolve the image builder 
 def on_message_callback(ch, method, properties, body):
     logging.info("Message recieved")

@@ -10,7 +10,6 @@ class AuthRequest(BaseModel):
 # Identities
 class IdentityCreateRequest(BaseModel):
     type: str
-    username: str
     value: str
 
 # Contexts
@@ -149,7 +148,6 @@ class BasePipeline(BaseModel):
             WebhookAction
         ]
     ] = []
-    run_on_create: bool = False
 
 class CIPipeline(BasePipeline):
     cache: bool = False

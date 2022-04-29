@@ -19,8 +19,8 @@ class CredentialService:
 
     def save(self, secret_name: str, group, data: Dict[str, str]):
         # TODO change secretType from "user" to "service" after creating the
-        # cicd-pipelines-svc account
-        sk_id = f"cicd-pipelines+{self._format_secret_name(secret_name)}"
+        # workflows-svc account
+        sk_id = f"workflows+{self._format_secret_name(secret_name)}"
         try:
             self.client.sk.writeSecret(
                 secretType="user",

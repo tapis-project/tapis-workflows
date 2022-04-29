@@ -65,6 +65,7 @@ paths:
                 $ref: '#/components/schemas/ObjectResp'
         '500':
           description: Server error.
+          
   '/v3/workflows/groups/':
     get:
       tags:
@@ -1367,13 +1368,10 @@ components:
       type: object
       required:
         - type
-        - username
         - value
       properties:
         type:
           $ref: '#/components/schemas/IdentityTypeEnum'
-        username:
-          $ref: '#/components/schemas/Username'
         value:
           type: string
 
@@ -1399,9 +1397,6 @@ components:
               - $ref: '#/components/schemas/ContainerRunActionReq'
               - $ref: '#/components/schemas/TapisJobActionReq'
               - $ref: '#/components/schemas/TapisActorActionReq'
-        run_on_create:
-          type: boolean
-          default: false
 
     BaseActionReq:
       type: object
@@ -1523,6 +1518,7 @@ components:
         - id
         - type
         - group_id
+        - context
       properties:
         id:
           $ref: '#/components/schemas/ID'
@@ -1534,9 +1530,6 @@ components:
           $ref: '#/components/schemas/ContextReq'
         destination:
           $ref: '#/components/schemas/DestinationReq'
-        run_on_create:
-          type: boolean
-          default: false
 
     # --- Context ---
     ContextReq:
@@ -1569,6 +1562,10 @@ components:
     # --- Destination ---
     DestinationReq:
       type: object
+      required:
+        - credential
+        - url
+        - type
       properties:
         credential:
           $ref: '#/components/schemas/DestinationCredentialReq'
