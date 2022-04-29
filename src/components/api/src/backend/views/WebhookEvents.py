@@ -6,7 +6,8 @@ from backend.views.http.requests import WebhookEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import ServerError
 from backend.utils.parse_directives import parse_directives as parse
-from backend.services import cred_service, pipeline_dispatcher
+from backend.services.CredentialService import CredentialService
+from backend.services import pipeline_dispatcher
 from backend.models import Identity, Event, Pipeline, Group
 from backend.views.http.responses.BaseResponse import BaseResponse
 
@@ -60,7 +61,7 @@ class WebhookEvents(RestrictedAPIView):
                 message=message,
                 pipeline=pipeline,
                 source=body.source,
-                username=identity.username if identity is not None else f"{body.source}:{body.username}",
+                username=identity.owner if identity is not None else f"{body.source}:{body.username}",
                 identity=identity
             )
         except IntegrityError as e:
@@ -103,6 +104,8 @@ class WebhookEvents(RestrictedAPIView):
 
     def _image_build(self, action):
         action_result = model_to_dict(action)
+
+        cred_service = CredentialService()
 
         action_result["context"] = model_to_dict(action.context)
         if action.context.credential is not None:

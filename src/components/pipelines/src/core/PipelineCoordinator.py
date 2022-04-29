@@ -18,9 +18,7 @@ class PipelineCoordinator:
         self.initial_actions = []
         self.is_dry_run = False
 
-    async def start(self, message):
-        # TODO lock the pipeline
-        
+    async def start(self, message): 
         # Generate a unique id for this pipeline run
         run_id = uuid.uuid4()
 

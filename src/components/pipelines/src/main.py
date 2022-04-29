@@ -23,10 +23,9 @@ logging.basicConfig(
 for name in logging.root.manager.loggerDict:
     logging.getLogger(name).setLevel(logging.CRITICAL)
 
-coordinator = PipelineCoordinator()
-
 # Resolve the image builder 
 def on_message_callback(ch, method, properties, body):
+    logging.info("Message recieved")
     try:
         message = json_to_object(bytes_to_json(body))
     except JSONDecodeError as e:
@@ -38,6 +37,7 @@ def on_message_callback(ch, method, properties, body):
     # except Exception as e:
     #     logging.error(e.__class__.__name__, e)
 
+    coordinator = PipelineCoordinator()
     asyncio.run(coordinator.start(message))
 
 # Initialize connection parameters

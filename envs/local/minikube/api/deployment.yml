@@ -43,7 +43,17 @@ spec:
           - name: DJANGO_SUPERUSER_USERNAME
             value: nathandf
           - name: TAPIS_TENANT
-            value: tacc
+            value: dev
+          - name: WORKFLOWS_SERVICE_ACCOUNT
+            valueFrom:
+              secretKeyRef:
+                name: workflows-secrets
+                key: service-account
+          - name: WORKFLOWS_SERVICE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: workflows-secrets
+                key: service-password
         image: tapis/workflows-api:dev
         imagePullPolicy: Always
         name: workflows-api
