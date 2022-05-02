@@ -6,12 +6,12 @@ env:
     WEBHOOK_URL: "dev.tapis.io/v3/workflows/webhooks/pipelines/<pipeline_id>"
     WEBHOOK_PAYLOAD: |
         '{
-            "branch": "${{ GITHUB_REF_NAME }}" ,
+            "branch": "${{ github.ref_name }}" ,
             "commit": "${{ github.event.head_commit.message }}",
-            "commit_sha": "$GITHUB_SHA",
-            "context_url": "$GITHUB_REPOSITORY",
+            "commit_sha": "${{ github.sha }}",
+            "context_url": "${{ github.repository }}",
             "source": "github",
-            "username": "$GITHUB_ACTOR"
+            "username": "${{ github.actor }}"
         }'
 
 jobs:
