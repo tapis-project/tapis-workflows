@@ -5,14 +5,14 @@ on: [push]
 env:
     WEBHOOK_URL: "https://c67d-70-123-54-66.ngrok.io/webhooks/pipelines/p1"
     WEBHOOK_PAYLOAD: |
-        '{
+        {
             "branch": "${{ github.ref_name }}" ,
             "commit": "${{ github.event.head_commit.message }}",
             "commit_sha": "${{ github.sha }}",
             "context_url": "${{ github.repository }}",
             "source": "github",
             "username": "${{ github.actor }}"
-        }'
+        }
 
 jobs:
     trigger_workflow:
