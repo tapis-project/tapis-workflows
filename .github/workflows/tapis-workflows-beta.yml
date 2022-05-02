@@ -20,6 +20,6 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - run: |
-                curl -X POST -H "Content-Type: application/json" \
-                -d $WEBHOOK_PAYLOAD \
-                $WEBHOOK_URL
+                curl -X POST $WEBHOOK_URL \
+                -H "Content-Type: application/json" \
+                -d $WEBHOOK_PAYLOAD
