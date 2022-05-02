@@ -3,7 +3,7 @@ name: TapisWorkflowsBeta
 on: [push]
 
 env:
-    WEBHOOK_URL: "dev.tapis.io/v3/workflows/webhooks/pipelines/<pipeline_id>"
+    WEBHOOK_URL: "https://c67d-70-123-54-66.ngrok.io/webhooks/pipelines/p1"
     WEBHOOK_PAYLOAD: |
         '{
             "branch": "${{ github.ref_name }}" ,
