@@ -1002,11 +1002,6 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/ID'
-        - name: action_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
       responses:
         '200':
           description: Events found.
@@ -1116,8 +1111,9 @@ components:
               type: object
               default: false
             builder:
-              $ref: '#/components/schemas/BuilderEnum'
-              default: "kaniko"
+              allOf:
+                - $ref: '#/components/schemas/BuilderEnum'
+                - default: "kaniko"
             cache:
               type: boolean
               default: true
@@ -1143,8 +1139,9 @@ components:
               type: object
               default: null
             http_method:
-              $ref: '#/components/schemas/HTTPMethodEnum'
-              default: null
+              allOf:
+                - $ref: '#/components/schemas/HTTPMethodEnum'
+                - default: null
             query_params:
               type: object
               default: null
@@ -1173,7 +1170,7 @@ components:
               type: boolean
               default: true
             tapis_job_def:
-              $ref: '#/components/schemas/TapisJobDef'
+              type: object
             type:
               default: "tapis_job_action"
 
@@ -1190,7 +1187,6 @@ components:
               default: null
             type:
               default: "tapis_actor_action"
-
 
     # --- Action Dependency ---
     ActionDependency:
@@ -1346,7 +1342,13 @@ components:
         users:
           type: array
           items:
-            $ref: '#/components/schemas/Username'
+            type: object
+            properties:
+              username:
+                $ref: '#/components/schemas/Username'
+              is_admin:
+                default: false
+                type: boolean
 
     GroupUserPostReq:
       type: object
@@ -1374,6 +1376,9 @@ components:
           $ref: '#/components/schemas/IdentityTypeEnum'
         value:
           type: string
+        is_admin:
+          type: boolean
+          default: false
 
     PipelinePostReq:
       type: object
@@ -1534,6 +1539,11 @@ components:
     # --- Context ---
     ContextReq:
       type: object
+      required:
+        - visibility
+        - url
+        - type
+        - dockerfile_path
       properties:
         branch:
           type: string

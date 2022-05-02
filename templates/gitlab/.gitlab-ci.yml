@@ -24,7 +24,6 @@ pipeline-event-job:
         "commit": "$CI_COMMIT_MESSAGE",
         "commit_sha": "$CI_COMMIT_SHA",
         "context_url": "$CI_PROJECT_PATH",
-        "event": "$CI_PIPELINE_SOURCE",
         "source": "gitlab",
         "username": "$GITLAB_USER_LOGIN"
       }'
