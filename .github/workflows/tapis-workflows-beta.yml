@@ -6,7 +6,7 @@ env:
     WEBHOOK_URL: "dev.tapis.io/v3/workflows/webhooks/pipelines/<pipeline_id>"
     WEBHOOK_PAYLOAD: |
         '{
-            "branch": $GITHUB_REF_NAME,
+            "branch": "${{ GITHUB_REF_NAME }}" ,
             "commit": "${{ github.event.head_commit.message }}",
             "commit_sha": "$GITHUB_SHA",
             "context_url": "$GITHUB_REPOSITORY",
