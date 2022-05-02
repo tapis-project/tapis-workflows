@@ -5,6 +5,9 @@ from tapipy.tapis import Tapis
 from backend.models import Credential
 from backend.conf.constants import TAPIS_BASE_URL, TAPIS_TENANT, WORKFLOWS_SERVICE_ACCOUNT, WORKFLOWS_SERVICE_PASSWORD
 
+# TODO update where the is an actual service account
+WORKFLOWS_SERVICE_ACCOUNT = "testuser2"
+WORKFLOWS_SERVICE_PASSWORD = "testuser2"
 
 class CredentialService:
     def __init__(self):
