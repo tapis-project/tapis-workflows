@@ -19,8 +19,7 @@ jobs:
         name: Trigger Workflow
         runs-on: ubuntu-latest
         steps:
-            - run: 'echo $WEBHOOK_PAYLOAD'
-            # - run: |
-            #     curl -X POST -H "Content-Type: application/json" \
-            #     -d $WEBHOOK_PAYLOAD \
-            #     $WEBHOOK_URL
+            - run: |
+                curl -X POST -H "Content-Type: application/json" \
+                -d $WEBHOOK_PAYLOAD \
+                $WEBHOOK_URL
