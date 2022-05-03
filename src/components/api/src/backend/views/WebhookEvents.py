@@ -1,7 +1,7 @@
 from django.db import IntegrityError
 from django.forms import model_to_dict
 
-from backend.views.RestrictedAPIView import RestrictedAPIView
+from backend.views.APIView import APIView
 from backend.views.http.requests import WebhookEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import ServerError
@@ -11,10 +11,7 @@ from backend.services import pipeline_dispatcher
 from backend.models import Identity, Event, Pipeline, Group
 from backend.views.http.responses.BaseResponse import BaseResponse
 
-class WebhookEvents(RestrictedAPIView):
-    def get(self, request):
-        return ModelListResponse(Event.objects.all())
-
+class WebhookEvents(APIView):
     def post(self, request, pipeline_id):
         prepared_request = self.prepare(WebhookEvent)
 

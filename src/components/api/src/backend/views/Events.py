@@ -6,9 +6,10 @@ from backend.views.http.requests import APIEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import ServerError, MethodNotAllowed, Forbidden, NotFound, BadRequest
 from backend.utils.parse_directives import parse_directives as parse
-from backend.services import cred_service, pipeline_dispatcher, group_service
+from backend.services import pipeline_dispatcher, group_service
+from backend.services.CredentialService import CredentialService
 from backend.models import Event, Pipeline
-from backend.views.http.responses.BaseResponse import BaseResponse
+
 
 class Events(RestrictedAPIView):
     def post(self, request, pipeline_id, *args, **kwargs):
@@ -99,7 +100,7 @@ class Events(RestrictedAPIView):
 
         # Return a list of events if uuid is not specified
         if event_uuid is None:
-            return self.list(request, pipeline, event_uuid)
+            return self.list(pipeline_id)
 
         event = Event.objects.filter(uuid=event_uuid).first()
 
@@ -123,6 +124,9 @@ class Events(RestrictedAPIView):
 
     def _image_build(self, action):
         action_request = model_to_dict(action)
+
+        # Initialized the credential service
+        cred_service = CredentialService()
 
         action_request["context"] = model_to_dict(action.context)
         if action.context.credential is not None:
