@@ -1,23 +1,26 @@
-name: Tapis Workflows Beta
+name: TapisWorkflowsBeta
 
-on: push
+on: [push]
 
 env:
-    WEBHOOK_URL: "dev.tapis.io/v3/workflows/webhooks/pipelines/<pipeline_id>"
+    WEBHOOK_URL: "https://c67d-70-123-54-66.ngrok.io/webhooks/pipelines/p1"
     WEBHOOK_PAYLOAD: '{
-        "branch": "$GITHUB_REF_NAME",
-        "commit": "${{ github.event.head_commit.message }}",
-        "commit_sha": "$GITHUB_SHA",
-        "context_url": "$GITHUB_REPOSITORY",
-        "source": "github",
-        "username": "$GITHUB_ACTOR"
-    }'
+            "branch": "${{ github.ref_name }}",
+            "commit": "${{ github.event.head_commit.message }}",
+            "commit_sha": "${{ github.sha }}",
+            "context_url": "${{ github.repository }}",
+            "source": "github",
+            "username": "${{ github.actor }}"
+        }'
 
 jobs:
     trigger_workflow:
         name: Trigger Workflow
-        run: 'echo $WEBHOOK_PAYLOAD'
-        # run: 'curl -X POST -H "Content-Type: application/json" \
-        #     -d $WEBHOOK_PAYLOAD \
-        #     $WEBHOOK_URL'
-        shell: bash 
+        runs-on: ubuntu-latest
+        steps:
+            - run: "echo $WEBHOOK_PAYLOAD"
+            - run: "echo $WEBHOOK_URL"
+            - run: |
+                curl -X POST $WEBHOOK_URL \
+                    -H 'Content-Type: application/json' \
+                    -d "${WEBHOOK_PAYLOAD}"
