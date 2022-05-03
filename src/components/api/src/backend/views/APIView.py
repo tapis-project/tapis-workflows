@@ -27,7 +27,7 @@ class APIView(View):
             try:
                 self.request_body = json.loads(request.body)
             except json.JSONDecodeError:
-                return BadRequest(message="Could not decode request body")
+                return BadRequest(message=f"Could not decode request body: {request.body}")
 
         return super(APIView, self).dispatch(request, *args, **kwargs)
 

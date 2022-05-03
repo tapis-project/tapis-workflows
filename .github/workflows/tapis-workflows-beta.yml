@@ -23,4 +23,4 @@ jobs:
             - run: |
                 curl -X POST $WEBHOOK_URL \
                     -H 'Content-Type: application/json' \
-                    -d $WEBHOOK_PAYLOAD
+                    -d "${WEBHOOK_PAYLOAD}"
