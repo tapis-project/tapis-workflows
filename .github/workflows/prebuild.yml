@@ -12,7 +12,7 @@ jobs:
         steps:
             - run: "echo 'runing tests'"
     linting:
-        name: Run Tests
+        name: Linting
         runs-on: ubuntu-latest
         steps:
             - run: "echo 'linting'"
