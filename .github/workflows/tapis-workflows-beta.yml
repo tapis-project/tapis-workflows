@@ -19,4 +19,4 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - run: "echo $WEBHOOK_PAYLOAD"
-            - run: "curl -X POST $WEBHOOK_URL -H 'Content-Type: application/json' -d ${WEBHOOK_PAYLOAD}"
+            - run: "curl -X POST $WEBHOOK_URL -H 'Content-Type: application/json' -d '$WEBHOOK_PAYLOAD'"
