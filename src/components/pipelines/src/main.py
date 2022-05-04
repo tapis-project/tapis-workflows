@@ -23,7 +23,7 @@ logging.basicConfig(
 for name in logging.root.manager.loggerDict:
     logging.getLogger(name).setLevel(logging.CRITICAL)
 
-# Resolve the image builder 
+# Resolve the image builder
 def on_message_callback(ch, method, properties, body):
     logging.info("Message recieved")
     try:
@@ -40,14 +40,13 @@ def on_message_callback(ch, method, properties, body):
     coordinator = PipelineCoordinator()
     asyncio.run(coordinator.start(message))
 
+
 # Initialize connection parameters
-credentials = pika.PlainCredentials(os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
+credentials = pika.PlainCredentials(
+    os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"]
+)
 connection_parameters = pika.ConnectionParameters(
-    os.environ["BROKER_URL"],
-    os.environ["BROKER_PORT"],
-    "/",
-    credentials,
-    heartbeat=0
+    os.environ["BROKER_URL"], os.environ["BROKER_PORT"], "/", credentials, heartbeat=0
 )
 
 # Attempt to connect to the message broker
@@ -60,12 +59,16 @@ while connected == False and connection_attempts <= MAX_CONNECTION_ATTEMPTS:
         connection = pika.BlockingConnection(connection_parameters)
         connected = True
     except Exception:
-        logging.info(f"Attempting to connect to message broker... Attempts({connection_attempts})")
+        logging.info(
+            f"Attempting to connect to message broker... Attempts({connection_attempts})"
+        )
         time.sleep(RETRY_DELAY)
 
 # Kill the build service if unable to connect
 if connected == False:
-    logging.critical(f"Error: Maximum connection attempts reached({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker.")
+    logging.critical(
+        f"Error: Maximum connection attempts reached({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker."
+    )
     sys.exit(1)
 
 logging.info("Successfully connected to message broker")
@@ -81,7 +84,8 @@ queue = channel.queue_declare(queue="", exclusive=True)
 channel.queue_bind(exchange="pipelines", queue=queue.method.queue)
 
 # Start cosuming the queue
-channel.basic_consume(queue=queue.method.queue, auto_ack=True,
-    on_message_callback=on_message_callback)
+channel.basic_consume(
+    queue=queue.method.queue, auto_ack=True, on_message_callback=on_message_callback
+)
 
 channel.start_consuming()

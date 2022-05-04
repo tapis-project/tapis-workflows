@@ -3,7 +3,12 @@ from time import time
 from tapipy.tapis import Tapis
 
 from core.ActionResult import ActionResult
-from conf.configs import TAPIS_SERVICE_ACCOUNT, TAPIS_SERVICE_ACCOUNT_PASSWORD, TAPIS_BASE_URL, TAPIS_JOB_POLLING_FREQUENCY
+from conf.configs import (
+    TAPIS_SERVICE_ACCOUNT,
+    TAPIS_SERVICE_ACCOUNT_PASSWORD,
+    TAPIS_BASE_URL,
+    TAPIS_JOB_POLLING_FREQUENCY,
+)
 
 
 class TapisJob:
@@ -12,9 +17,9 @@ class TapisJob:
             client = Tapis(
                 base_url=TAPIS_BASE_URL,
                 username=TAPIS_SERVICE_ACCOUNT,
-                password=TAPIS_SERVICE_ACCOUNT_PASSWORD
+                password=TAPIS_SERVICE_ACCOUNT_PASSWORD,
             )
-            
+
             # TODO Cache the jwt
             client.get_tokens()
 
@@ -26,7 +31,7 @@ class TapisJob:
 
             if action.poll:
                 # Keep polling until the job is complete
-                while job_status not in [ "FINISHED", "CANCELLED", "FAILED" ]:
+                while job_status not in ["FINISHED", "CANCELLED", "FAILED"]:
                     # Wait the polling frequency time then try poll again
                     time.sleep(TAPIS_JOB_POLLING_FREQUENCY)
                     job_status = client.jobs.getJobStatus(jobUuid=job.uuid).status
@@ -43,5 +48,6 @@ class TapisJob:
 
         except Exception as e:
             return ActionResult(1, errors=[str(e)])
+
 
 executor = TapisJob()

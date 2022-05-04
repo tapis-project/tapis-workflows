@@ -5,7 +5,7 @@ class GraphValidator:
 
     def has_cycle(self, action_dependency_map, initial_actions):
         self.action_dependency_map = action_dependency_map
-        initial_action_ids = [ initial_action.id for initial_action in initial_actions ]
+        initial_action_ids = [initial_action.id for initial_action in initial_actions]
 
         for id in initial_action_ids:
             if len(self.action_dependency_map[id]) > 0:
@@ -23,7 +23,7 @@ class GraphValidator:
             return True
 
         self.traversed_edges.append(edge)
-        
+
         dependencies = self.action_dependency_map[to_vertex]
         for dependency in dependencies:
             has_cycle = self.traverse(dependency, to_vertex)

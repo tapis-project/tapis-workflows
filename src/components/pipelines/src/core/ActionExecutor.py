@@ -5,6 +5,7 @@ from kubernetes import config, client
 from core.resources import Resource, ResourceType
 from conf.configs import DEFAULT_POLLING_INTERVAL, KUBERNETES_NAMESPACE
 
+
 class ActionExecutor:
     def __init__(self, action, message):
         self.action = action
@@ -29,7 +30,7 @@ class ActionExecutor:
         output_dir = f"{work_dir}output/"
         os.mkdir(output_dir)
         self.action.output_dir = output_dir
-        
+
         # Connect to the kubernetes cluster and instatiate the api instances
         config.load_incluster_config()
         self.core_v1_api = client.CoreV1Api()
@@ -66,16 +67,16 @@ class ActionExecutor:
             if resource.type == ResourceType.configmap:
                 self.core_v1_api.delete_namespaced_config_map(
                     name=resource.configmap.metadata.name,
-                    namespace=KUBERNETES_NAMESPACE
+                    namespace=KUBERNETES_NAMESPACE,
                 )
                 continue
-            
+
             # Jobs and Job Pods
             if resource.type == ResourceType.job:
                 body = client.V1DeleteOptions(propagation_policy="Background")
                 self.batch_v1_api.delete_namespaced_job(
                     name=resource.job.metadata.name,
                     namespace=KUBERNETES_NAMESPACE,
-                    body=body
+                    body=body,
                 )
                 continue

@@ -22,10 +22,9 @@ class Kubernetes(BaseBuildExecutor):
         # Poll the job status until the job is in a terminal state
         while not self._job_in_terminal_state(job):
             job = self.batch_v1_api.read_namespaced_job(
-                job.metadata.name,
-                KUBERNETES_NAMESPACE
+                job.metadata.name, KUBERNETES_NAMESPACE
             )
-            
+
             time.sleep(self.polling_interval)
 
         # Get the logs(stdout) from this job's pod
@@ -41,8 +40,8 @@ class Kubernetes(BaseBuildExecutor):
                 name=pod_list.items[0].metadata.name,
                 namespace=KUBERNETES_NAMESPACE,
                 _return_http_data_only=True,
-                _preload_content=False
-            ).data #.decode("utf-8")
+                _preload_content=False,
+            ).data  # .decode("utf-8")
 
             self._store_result(".stdout", logs)
 
@@ -72,7 +71,7 @@ class Kubernetes(BaseBuildExecutor):
                 client.V1VolumeMount(
                     name="regcred",
                     mount_path="/kaniko/.docker/config.json",
-                    sub_path="config.json"
+                    sub_path="config.json",
                 )
             ]
 
@@ -81,34 +80,31 @@ class Kubernetes(BaseBuildExecutor):
             name="kaniko",
             image="gcr.io/kaniko-project/executor:debug",
             args=container_args,
-            volume_mounts=volume_mounts
+            volume_mounts=volume_mounts,
         )
 
         # List of volume objects
         volumes = []
         if self.configmap is not None:
-            volumes=[
+            volumes = [
                 client.V1Volume(
                     name="regcred",
                     config_map=client.V1ConfigMapVolumeSource(
                         name=self.configmap.metadata.name
-                    )
+                    ),
                 )
             ]
 
         # Pod template and pod template spec
         template = client.V1PodTemplateSpec(
             spec=client.V1PodSpec(
-                containers=[container],
-                restart_policy="Never",
-                volumes=volumes
+                containers=[container], restart_policy="Never", volumes=volumes
             )
         )
 
         # Job spec
         job_spec = client.V1JobSpec(
-            backoff_limit=(self.action.retries + 1),
-            template=template
+            backoff_limit=(self.action.retries + 1), template=template
         )
 
         # Job metadata
@@ -119,14 +115,10 @@ class Kubernetes(BaseBuildExecutor):
         )
 
         # Job body
-        body = client.V1Job(
-            metadata=metadata,
-            spec=job_spec
-        )
+        body = client.V1Job(metadata=metadata, spec=job_spec)
 
         job = self.batch_v1_api.create_namespaced_job(
-            namespace=KUBERNETES_NAMESPACE,
-            body=body
+            namespace=KUBERNETES_NAMESPACE, body=body
         )
 
         # Register the job to be deleted after execution
@@ -155,7 +147,7 @@ class Kubernetes(BaseBuildExecutor):
             container_args.append(f"--context-sub-path={self.action.context.sub_path}")
 
         # The branch to be pulled
-        container_args.append(f"--git=\"branch={self.action.context.branch}\"")
+        container_args.append(f'--git="branch={self.action.context.branch}"')
 
         # path to the Dockerfile in the repository
         container_args.append(f"--dockerfile={self.action.context.dockerfile_path}")
@@ -193,16 +185,15 @@ class Kubernetes(BaseBuildExecutor):
             data = file.read()
 
         # Instantiate the configmap object
-        body = client.V1ConfigMap( 
+        body = client.V1ConfigMap(
             api_version="v1",
             kind="ConfigMap",
             data={"config.json": data},
-            metadata=metadata
+            metadata=metadata,
         )
 
         configmap = self.core_v1_api.create_namespaced_config_map(
-            namespace=KUBERNETES_NAMESPACE,
-            body=body
+            namespace=KUBERNETES_NAMESPACE, body=body
         )
 
         # Because the configmap is mounted to the job, when the job is deleted during resource
@@ -210,4 +201,3 @@ class Kubernetes(BaseBuildExecutor):
         self._register_resource(ConfigMapResource(configmap=configmap))
 
         return configmap
-        

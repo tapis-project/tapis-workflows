@@ -11,7 +11,8 @@ class ActionExecutorFactory:
         except AttributeError:
             raise InvalidActionTypeError(
                 f"Action '{action.name}' uses action type '{action.type}' which does not exist.",
-                hint=f"Update Action with id=={action.id} to have one of the following types: [image_build, container_run, webhook_notification]")
+                hint=f"Update Action with id=={action.id} to have one of the following types: [image_build, container_run, webhook_notification]",
+            )
 
         return fn(action, message)
 
@@ -26,5 +27,6 @@ class ActionExecutorFactory:
 
     def _container_run(self, action, message) -> ActionExecutor:
         return Webhook(action, message)
+
 
 action_executor_factory = ActionExecutorFactory()
