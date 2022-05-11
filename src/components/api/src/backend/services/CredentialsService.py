@@ -1,15 +1,18 @@
+import uuid
+
 from typing import Dict
 
 from tapipy.tapis import Tapis
 
-from backend.models import Credential
+from backend.models import Credentials
 from backend.conf.constants import TAPIS_BASE_URL, TAPIS_TENANT, WORKFLOWS_SERVICE_ACCOUNT, WORKFLOWS_SERVICE_PASSWORD
+
 
 # TODO update where the is an actual service account
 WORKFLOWS_SERVICE_ACCOUNT = "testuser2"
 WORKFLOWS_SERVICE_PASSWORD = "testuser2"
 
-class CredentialService:
+class CredentialsService:
     def __init__(self):
         self.client = Tapis(
             base_url=TAPIS_BASE_URL,
@@ -20,10 +23,10 @@ class CredentialService:
         # TODO Cache the jwt
         self.client.get_tokens()
 
-    def save(self, secret_name: str, group, data: Dict[str, str]):
+    def save(self, owner: str, data: Dict[str, str]):
         # TODO change secretType from "user" to "service" after creating the
         # workflows-svc account
-        sk_id = f"workflows+{self._format_secret_name(secret_name)}"
+        sk_id = f"workflows+{owner}+{uuid.uuid4()}"
         try:
             self.client.sk.writeSecret(
                 secretType="user",
@@ -35,9 +38,9 @@ class CredentialService:
         except Exception as e:
             raise e
 
-        credential = Credential.objects.create(sk_id=sk_id, group=group)
+        credentials = Credentials.objects.create(sk_id=sk_id, owner=owner)
     
-        return credential
+        return credentials
 
     def delete(self, sk_id: str):
         self.client.sk.deleteSecret(
@@ -48,13 +51,13 @@ class CredentialService:
             versions=[]
         )
 
-        credential = Credential.objects.filter(sk_id=sk_id).first()
-        if credential is not None:
-            credential.delete()
+        credentials = Credentials.objects.filter(sk_id=sk_id).first()
+        if credentials is not None:
+            credentials.delete()
 
     def get(self, sk_id: str):
-        if Credential.objects.filter(sk_id=sk_id).exists():
-            return Credential.objects.filter(sk_id=sk_id)[0]
+        if Credentials.objects.filter(sk_id=sk_id).exists():
+            return Credentials.objects.filter(sk_id=sk_id)[0]
         
         return None
 
@@ -69,5 +72,3 @@ class CredentialService:
 
     def _format_secret_name(self, secret_name: str):
         return secret_name.replace(" ", "-")
-
-service = CredentialService()

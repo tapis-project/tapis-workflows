@@ -1,7 +1,7 @@
 import json, base64, os
 
 from helpers.ContextResolver import context_resolver
-from errors.credential import CredentialError
+from errors.credentials import CredentialsError
 from core.ActionExecutor import ActionExecutor
 
 
@@ -15,7 +15,6 @@ class BaseBuildExecutor(ActionExecutor):
         return context_resolver.resolve(self.action.context)
 
     def _resolve_destination_string(self):
-
         if self.action.destination == None:
             return None
 
@@ -41,11 +40,13 @@ class BaseBuildExecutor(ActionExecutor):
         return destination
 
     def _create_dockerhub_config(self):
-        # Get image registry credentials from config
-        credential = self.action.destination.credential
+        # Get image registry credentials from the provided identity.
+        # If no identity provided use the credentials provided
+        identity = getattr(self.action.destination, "identity", None)
+        credentials = identity.credentials if identity != None else self.action.destination.credentials
 
-        if credential == None:
-            raise CredentialError("No credentials for the destination")
+        if credentials == None:
+            raise CredentialsError("No credentials for the destination")
 
         # Create the config dir to store the credentials
         self.dockerhub_config_dir = f"{self.action.scratch_dir}dockerhub/"
@@ -53,7 +54,7 @@ class BaseBuildExecutor(ActionExecutor):
 
         # Base64 encode credentials
         encoded_creds = base64.b64encode(
-            f"{credential.data.username}:{credential.data.token}".encode("utf-8")
+            f"{credentials.data.username}:{credentials.data.token}".encode("utf-8")
         )
 
         # Add the credentials to the config file

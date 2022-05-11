@@ -1,19 +1,18 @@
 from django.contrib import admin
 
-from backend.models import Action, Identity, Build, Credential, Context, Destination, Group, GroupUser, Event, Pipeline, Policy
+from backend.models import Action, Identity, Build, Credentials, Context, Destination, Group, GroupUser, Event, Pipeline
 
 models = [
     Action,
     Identity,
     Build,
-    Credential,
+    Credentials,
     Context,
     Destination,
     Group,
     GroupUser,
     Event,
     Pipeline,
-    Policy
 ]
 
 # Register your models here.

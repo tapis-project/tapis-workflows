@@ -96,7 +96,7 @@ VISIBILITY_TYPES = [
 
 class Action(models.Model):
     id = models.CharField(max_length=128)
-    auth = models.ForeignKey("backend.Credential", null=True, on_delete=models.CASCADE)
+    auth = models.ForeignKey("backend.Credentials", null=True, on_delete=models.CASCADE)
     auto_build = models.BooleanField(null=True)
     builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
     cache = models.BooleanField(null=True)
@@ -132,11 +132,10 @@ class Action(models.Model):
 class Identity(models.Model):
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
     owner = models.CharField(max_length=64)
-    group = models.ForeignKey("backend.Group", related_name="identities", on_delete=models.CASCADE)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    value = models.CharField(max_length=128)
+    credentials = models.OneToOneField("backend.Credentials", on_delete=models.CASCADE)
     class Meta:
-        unique_together = [["value", "type", "group_id"]]
+        unique_together = [["owner", "type"]]
 
 class Build(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -151,28 +150,30 @@ class Build(models.Model):
             models.Index(fields=["pipeline_id"])
         ]
 
-class Credential(models.Model):
+class Credentials(models.Model):
     sk_id = models.CharField(primary_key=True, max_length=128, unique=True)
-    group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
+    owner = models.CharField(max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
     uuid = models.UUIDField(default=uuid.uuid4)
 
 class Context(models.Model):
     branch = models.CharField(max_length=128)
-    credential = models.OneToOneField("backend.Credential", null=True, on_delete=models.CASCADE)
+    credentials = models.OneToOneField("backend.Credentials", null=True, on_delete=models.CASCADE)
     dockerfile_path = models.CharField(max_length=255, default=DEFAULT_DOCKERFILE_PATH)
     sub_path = models.CharField(max_length=255, null=True)
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
     url = models.CharField(max_length=128)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     visibility = models.CharField(max_length=32, choices=VISIBILITY_TYPES)
+    identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.DO_NOTHING)
 
 class Destination(models.Model):
-    credential = models.OneToOneField("backend.Credential", on_delete=models.CASCADE)
+    credentials = models.OneToOneField("backend.Credentials", on_delete=models.CASCADE)
     tag = models.CharField(max_length=128)
     type = models.CharField(max_length=32, choices=DESTINATION_TYPES)
     url = models.CharField(max_length=255)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.DO_NOTHING)
 
 class Group(models.Model):
     id = models.CharField(primary_key=True, max_length=128, unique=True)
@@ -221,16 +222,5 @@ class Pipeline(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
 
-class Policy(models.Model):      
-    context_commit: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    credentials: models.CharField(choices=PERMISSIONS, null=True)
-    custom_tag: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    deploy: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    destination_commit: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    dry_run: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    group = models.ForeignKey("backend.Group", related_name="policies", on_delete=models.CASCADE)
-    name = models.CharField(max_length=64)
-    no_push: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    class Meta:
-        unique_together = [["group_id", "name"]]
+# class Policy(models.Model):      
+#     pass

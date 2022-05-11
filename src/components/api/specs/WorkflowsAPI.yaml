@@ -65,6 +65,21 @@ paths:
                 $ref: '#/components/schemas/ObjectResp'
         '500':
           description: Server error.
+  '/v3/workflows/readycheck':
+    get:
+      tags:
+        - General
+      description: Health check.
+      operationId: readyCheck
+      responses:
+        '200':
+          description: Message received.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectResp'
+        '500':
+          description: Server error.
           
   '/v3/workflows/groups/':
     get:
@@ -352,7 +367,7 @@ paths:
         - Users
       summary: Update group user
       description: |
-        Update a user for a specified group
+        Update a user for a specified group. Only group admins can perform this operation.
       parameters:
         - name: group_id
           in: path
@@ -366,15 +381,15 @@ paths:
             $ref: '#/components/schemas/Username'
       requestBody:
         required: true
-        description: A JSON object specifying.
+        description: A JSON object
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GroupUserPatchReq'
+              $ref: '#/components/schemas/GroupUserPutPatchReq'
       operationId: updateGroupUser
       responses:
         '200':
-          description: User perms updated.
+          description: User updated.
           content:
             application/json:
               schema:
@@ -448,7 +463,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResp'
 
   # --- Paths for identities ---
-  '/v3/workflows/identities/{group_id}':
+  '/v3/workflows/identities/':
     post:
       tags:
         - Identities
@@ -458,12 +473,6 @@ paths:
 
         This operation can only be performed by group owners, group admins, and users
         creating identities for themselves.
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
       operationId: createIdentity
       requestBody:
         required: true
@@ -514,13 +523,7 @@ paths:
         - Identities
       summary: List user identities for a given group
       description: |
-        Retrieve user identities for a given group id
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
+        Retrieve user identities for the requesting user
       operationId: listIdentities
       responses:
         '200':
@@ -1065,7 +1068,7 @@ components:
       properties:
         id:
           type: string
-      anyOf:
+      oneOf:
         - $ref: '#/components/schemas/ImageBuildAction'
         - $ref: '#/components/schemas/WebhookNotificationAction'
         - $ref: '#/components/schemas/ContainerRunAction'
@@ -1203,7 +1206,7 @@ components:
       properties:
         branch:
           type: string
-        credential:
+        credentials:
           default: null
         dockerfile_path:
           type: string
@@ -1220,7 +1223,7 @@ components:
     Destination:
       type: object
       properties:
-        credential:
+        credentials:
           default: null
         tag: 
           type: string
@@ -1274,7 +1277,7 @@ components:
       properties:
         type:
           $ref: "#/components/schemas/ID"
-        username:
+        owner:
           $ref: "#/components/schemas/Username"
         group:
           type: string
@@ -1359,9 +1362,12 @@ components:
           $ref: '#/components/schemas/Username'
         is_admin:
           type: boolean
+          default: false
 
-    GroupUserPatchReq:
+    GroupUserPutPatchReq:
       type: object
+      required:
+        - is_admin
       properties:
         is_admin:
           type: boolean
@@ -1370,15 +1376,31 @@ components:
       type: object
       required:
         - type
-        - value
       properties:
+        name:
+          type: string
         type:
           $ref: '#/components/schemas/IdentityTypeEnum'
-        value:
+        credentials:
+          oneOf:
+            - $ref: "#/components/schemas/GithubAuthReq"
+            - $ref: "#/components/schemas/DockerhubAuthReq"
+          
+    GithubAuthReq:
+      type: object
+      properties:
+        username:
+          $ref: '#/components/schemas/Username'
+        personal_access_token:
           type: string
-        is_admin:
-          type: boolean
-          default: false
+
+    DockerhubAuthReq:
+      type: object
+      properties:
+        username:
+          $ref: '#/components/schemas/Username'
+        token:
+          type: string
 
     PipelinePostReq:
       type: object
@@ -1547,8 +1569,8 @@ components:
       properties:
         branch:
           type: string
-        credential:
-          $ref: "#/components/schemas/ContextCredentialReq"
+        credentials:
+          $ref: "#/components/schemas/ContextCredentialsReq"
         dockerfile_path:
           type: string
         sub_path:
@@ -1561,24 +1583,24 @@ components:
           $ref: "#/components/schemas/ContextVisibilityEnum"
 
     # --- Credentials ---
-    ContextCredentialReq:
+    ContextCredentialsReq:
       type: object
       properties:
         token:
           type: string
         username:
-          type: string 
-    
+          type: string
+      
     # --- Destination ---
     DestinationReq:
       type: object
       required:
-        - credential
+        - credentials
         - url
         - type
       properties:
-        credential:
-          $ref: '#/components/schemas/DestinationCredentialReq'
+        credentials:
+          $ref: '#/components/schemas/DestinationCredentialsReq'
         tag: 
           type: string
         type:
@@ -1586,7 +1608,7 @@ components:
         url:
           type: string
 
-    DestinationCredentialReq:
+    DestinationCredentialsReq:
       type: object
       properties:
         token:
