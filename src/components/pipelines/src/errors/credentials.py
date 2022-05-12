@@ -1,5 +1,5 @@
 from errors.base import CICDBaseException
 
 
-class CredentialError(CICDBaseException):
+class CredentialsError(CICDBaseException):
     pass

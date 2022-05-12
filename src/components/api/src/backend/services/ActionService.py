@@ -3,7 +3,7 @@ from django.db import DatabaseError, IntegrityError, OperationalError
 from backend.models import Action, Context, Destination, Identity
 from backend.models import ACTION_TYPE_WEBHOOK_NOTIFICATION, ACTION_TYPE_IMAGE_BUILD, ACTION_TYPE_CONTAINER_RUN, ACTION_TYPE_TAPIS_JOB, ACTION_TYPE_TAPIS_ACTOR
 from backend.views.http.requests import WebhookAction, ImageBuildAction, ContainerRunAction, TapisJobAction
-from backend.services.CredentialService import CredentialService
+from backend.services.CredentialsService import CredentialsService
 from backend.services.Service import Service
 
 
@@ -19,7 +19,7 @@ ACTION_REQUEST_TYPES = list(ACTION_REQUEST_MAPPING.keys())
 class ActionService(Service):
     def __init__(self):
         Service.__init__(self)
-        self._register_service("cred_service", CredentialService)
+        self._register_service("cred_service", CredentialsService)
 
     def create(self, pipeline, request):
         # Create the context

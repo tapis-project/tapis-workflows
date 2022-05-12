@@ -2,9 +2,6 @@ import sys, subprocess, os
 
 # Args passed from the command line
 args = sys.argv[1:]
-if len(args) < 2:
-    print("No service provided. 1 or more required.")
-    sys.exit(1)
 
 # A list of services to validate the args against
 valid_services = ["api", "mysql", "pipelines", "rabbitmq"]
@@ -19,7 +16,7 @@ startable_services = [ "dashboard", "rabbitmq", "api" ]
 action = args[0]
 
 # List of services upon which the action will be taken
-services = args[1:]
+services = args[1:] if len(args) > 2 else []
 
 def _validate(services):
     for service in services:
@@ -57,7 +54,7 @@ def down(services):
 def up(services):
     _validate(services)
     if len(services) == 0:
-        subprocess.run("./burndown")
+        subprocess.run("./burnup")
         return
 
     for service in services:

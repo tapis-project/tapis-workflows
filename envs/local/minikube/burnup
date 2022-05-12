@@ -2,8 +2,13 @@
 
 #kubectl apply -f storageclass.yml
 
+here=$(dirname $0)
+
 # Apply cluster roles
-kubectl apply -f ./roles/clusterroles.yml
+kubectl apply -f "$here/roles/clusterroles.yml"
+
+# Apply secrets
+kubectl apply -f "$here/secrets/workflows-secrets.yml"
 
 # mysql
 chmod +x ./mysql/burnup
