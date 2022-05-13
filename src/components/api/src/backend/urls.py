@@ -21,6 +21,7 @@ urlpatterns = [
     path("groups/<str:group_id>/users/", Users.as_view()),
     path("groups/<str:group_id>/users/<str:username>", Users.as_view()),
     path("identities/", Identities.as_view()),
+    path("identities/<str:identity_uuid>", Identities.as_view()),
     path("pipelines/", Pipelines.as_view()),
     path("ci/", Pipelines.as_view()),
     path("pipelines/<str:pipeline_id>/actions/", Actions.as_view()),

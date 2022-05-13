@@ -6,7 +6,7 @@ from backend.views.http.requests import WebhookEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import ServerError
 from backend.utils.parse_directives import parse_directives as parse
-from backend.services.CredentialService import CredentialService
+from backend.services.CredentialsService import CredentialsService
 from backend.services import pipeline_dispatcher
 from backend.models import Identity, Event, Pipeline, Group
 from backend.views.http.responses.BaseResponse import BaseResponse
@@ -25,9 +25,9 @@ class WebhookEvents(APIView):
             "group",
             "actions",
             "actions__context",
-            "actions__context__credential",
+            "actions__context__credentials",
             "actions__destination",
-            "actions__destination__credential"
+            "actions__destination__credentials"
         ).first()
 
         message = "No Pipeline found with details that match this event"
@@ -102,22 +102,22 @@ class WebhookEvents(APIView):
     def _image_build(self, action):
         action_result = model_to_dict(action)
 
-        cred_service = CredentialService()
+        cred_service = CredentialsService()
 
         action_result["context"] = model_to_dict(action.context)
-        if action.context.credential is not None:
-            action_result["context"]["credential"] = model_to_dict(action.context.credential)
+        if action.context.credentials is not None:
+            action_result["context"]["credentials"] = model_to_dict(action.context.credentials)
 
-            # Get the context credential data
-            context_cred_data = cred_service.get_secret(action.context.credential.sk_id)
-            action_result["context"]["credential"]["data"] = context_cred_data
+            # Get the context credentials data
+            context_cred_data = cred_service.get_secret(action.context.credentials.sk_id)
+            action_result["context"]["credentials"]["data"] = context_cred_data
 
         action_result["destination"] = model_to_dict(action.destination)
-        action_result["destination"]["credential"] = model_to_dict(action.destination.credential)
+        action_result["destination"]["credentials"] = model_to_dict(action.destination.credentials)
 
-        # Get the context credential data
-        destination_cred_data = cred_service.get_secret(action.destination.credential.sk_id)
-        action_result["destination"]["credential"]["data"] = destination_cred_data
+        # Get the context credentials data
+        destination_cred_data = cred_service.get_secret(action.destination.credentials.sk_id)
+        action_result["destination"]["credentials"]["data"] = destination_cred_data
 
         return action_result
 

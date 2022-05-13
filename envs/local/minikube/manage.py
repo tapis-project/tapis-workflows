@@ -2,6 +2,8 @@ import sys, subprocess, os
 
 # Args passed from the command line
 args = sys.argv[1:]
+if len(args) < 2:
+    args.append("--all")
 
 # A list of services to validate the args against
 valid_services = ["api", "mysql", "pipelines", "rabbitmq"]
@@ -16,7 +18,7 @@ startable_services = [ "dashboard", "rabbitmq", "api" ]
 action = args[0]
 
 # List of services upon which the action will be taken
-services = args[1:] if len(args) > 2 else []
+services = args[1:]
 
 def _validate(services):
     for service in services:
@@ -62,6 +64,11 @@ def up(services):
 
 # Burndown then burnup services
 def restart(services):
+    if "--all" in services:
+        subprocess.run("./burndown")
+        subprocess.run("./burnup")
+        return
+        
     down(services)
     up(services)
 

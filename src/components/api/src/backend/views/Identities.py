@@ -2,20 +2,29 @@ from django.db import IntegrityError
 
 from backend.models import Identity, CONTEXT_TYPES
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses.models import ModelListResponse, ModelResponse
-from backend.views.http.responses.errors import BadRequest
+from backend.views.http.responses.models import ModelListResponse, ModelResponse, BaseResponse
+from backend.views.http.responses.errors import BadRequest, NotFound, Forbidden
 from backend.views.http.requests import IdentityCreateRequest
-from backend.services.CredentialService import CredentialService
+from backend.services import CredentialsService
 
 
 IDENTITY_TYPES = [ identity_type[0] for identity_type in CONTEXT_TYPES ]
 
 class Identities(RestrictedAPIView):
-    def get(self, request):
+    def get(self, request, identity_uuid=None):
 
-        identities = Identity.objects.filter(owner=request.username)
+        if identity_uuid is None:
+            identities = Identity.objects.filter(owner=request.username)
+            return ModelListResponse(identities)
 
-        return ModelListResponse(identities)
+        identity = Identity.objects.filter(pk=identity_uuid).first()
+        if identity == None:
+            return NotFound("Identity not found")
+
+        if identity.owner != request.owner:
+            return Forbidden("You do not have access to this identity")
+
+        return ModelResponse(identity)
 
     def post(self, request, *args, **kwargs):
         # Validate the request body
@@ -34,13 +43,15 @@ class Identities(RestrictedAPIView):
 
         # Persist the credentials in sk
         try:
-            cred_service = CredentialService()
+            cred_service = CredentialsService()
             credentials = cred_service.save(request.username, body.credentials)
         except Exception as e:
             return BadRequest(message=e)
 
         try:
             identity = Identity.objects.create(
+                name=body.name,
+                description=body.description,
                 type=body.type,
                 owner=request.username,
                 credentials=credentials
@@ -50,3 +61,17 @@ class Identities(RestrictedAPIView):
             return BadRequest(message=e.__cause__)
 
         return ModelResponse(identity)
+
+    def delete(self, request, identity_uuid):
+        identity = Identity.objects.filter(pk=identity_uuid).first()
+
+        if identity == None:
+            return NotFound("Identity does not exist")
+
+        # Requesting user can only delete their own identities
+        if identity.owner != request.username:
+            return Forbidden("You do not have access to this identity")
+
+        identity.delete()
+
+        return BaseResponse(message="Identity deleted successfully")

@@ -471,8 +471,8 @@ paths:
       description: |
         Create a mapping between a group user and an external identity.
 
-        This operation can only be performed by group owners, group admins, and users
-        creating identities for themselves.
+        Users can only create identities for themselves. i.e., group admins and owners cannot
+        create identities for any user but themselves.
       operationId: createIdentity
       requestBody:
         required: true
@@ -487,7 +487,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupResp'
+                $ref: '#/components/schemas/IdentityResp'
         '400':
           description: Bad request. Invalid JSON.
           content:
@@ -521,9 +521,9 @@ paths:
     get:
       tags:
         - Identities
-      summary: List user identities for a given group
+      summary: List user identities for a given user
       description: |
-        Retrieve user identities for the requesting user
+        Retrieve identities for the requesting user
       operationId: listIdentities
       responses:
         '200':
@@ -540,57 +540,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Cannot access resources for this Group.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResp'
-        '404':
-          description: Group does not exist.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResp'
-        '500':
-          description: Server Error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResp'
-
-  '/v3/workflows/identities/{group_id}/{username}':
-    get:
-      tags:
-        - Identities
-      summary: Get identities for a given group user
-      description: |
-        Get identity for a given group user
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-        - name: username
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-      operationId: listUserIdentities
-      responses:
-        '200':
-          description: Get identity successful.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IdentityListResp'
-        '401':
-          description: Not authorized. Invalid or Expired Token.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResp'
-        '403':
-          description: Cannot access resources for this Group or User.
           content:
             application/json:
               schema:
@@ -649,6 +598,44 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResp'
         
+    get:
+      tags:
+        - Identities
+      summary: Get identity
+      description: |
+        Get a specific identity by its UUID
+      operationId: getIdentity
+      responses:
+        '200':
+          description: List identities successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityResp'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '403':
+          description: Cannot access resources for this Group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '404':
+          description: Group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '500':
+          description: Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
 
   # --- Paths for ci pipelines -----------------------------------------------------
   '/v3/workflows/ci/':
@@ -1277,14 +1264,16 @@ components:
       properties:
         type:
           $ref: "#/components/schemas/ID"
+        name:
+          type: string
+        description:
+          type: string
         owner:
           $ref: "#/components/schemas/Username"
-        group:
-          type: string
         uuid:
           type: string
           format: uuid
-        value:
+        credentials:
           type: string
 
     Event:
@@ -1378,6 +1367,8 @@ components:
         - type
       properties:
         name:
+          type: string
+        description:
           type: string
         type:
           $ref: '#/components/schemas/IdentityTypeEnum'

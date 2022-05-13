@@ -1,4 +1,4 @@
-from typing import AnyStr, List, Union, Dict
+from typing import AnyStr, List, Union, Dict, TypedDict
 from pydantic import BaseModel
 
 # Auth
@@ -7,16 +7,18 @@ class AuthRequest(BaseModel):
     password: str
 
 # Identities
-class GithubCredentials(BaseModel):
+class GithubCredentials(TypedDict):
     username: str
     personal_access_token: str
 
-class DockerhubCredentials(BaseModel):
+class DockerhubCredentials(TypedDict):
     username: str
     token: str
 
 class IdentityCreateRequest(BaseModel):
     type: str
+    name: str
+    description: str = None
     credentials: Union[
         GithubCredentials,
         DockerhubCredentials
