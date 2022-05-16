@@ -1,5 +1,5 @@
-from backend.models import Credential
-from backend.services.CredentialService import CredentialService
+from backend.models import Credentials
+from backend.services.CredentialsService import CredentialService
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.BaseResponse import BaseResponse
@@ -10,7 +10,7 @@ from backend.conf.constants import DJANGO_TAPIS_TOKEN_HEADER
 
 class Credentials(RestrictedAPIView):
     def get(self, request):
-        credentials = Credential.objects.all()
+        credentials = Credentials.objects.all()
 
         cred_service = CredentialService(request.META[DJANGO_TAPIS_TOKEN_HEADER])
 
@@ -22,10 +22,10 @@ class Credentials(RestrictedAPIView):
 
     # TODO remove delete
     def delete(self, request):
-        credentials = Credential.objects.all()
+        credentials_list = Credentials.objects.all()
 
         cred_service = CredentialService(request.META[DJANGO_TAPIS_TOKEN_HEADER])
-        for credential in credentials:
-            cred_service.delete(credential.sk_id)
+        for credentials in credentials_list:
+            cred_service.delete(credentials.sk_id)
 
         return BaseResponse(message="Credentials deleted")

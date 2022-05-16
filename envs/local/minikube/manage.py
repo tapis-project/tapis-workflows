@@ -3,8 +3,7 @@ import sys, subprocess, os
 # Args passed from the command line
 args = sys.argv[1:]
 if len(args) < 2:
-    print("No service provided. 1 or more required.")
-    sys.exit(1)
+    args.append("--all")
 
 # A list of services to validate the args against
 valid_services = ["api", "mysql", "pipelines", "rabbitmq"]
@@ -57,7 +56,7 @@ def down(services):
 def up(services):
     _validate(services)
     if len(services) == 0:
-        subprocess.run("./burndown")
+        subprocess.run("./burnup")
         return
 
     for service in services:
@@ -65,6 +64,11 @@ def up(services):
 
 # Burndown then burnup services
 def restart(services):
+    if "--all" in services:
+        subprocess.run("./burndown")
+        subprocess.run("./burnup")
+        return
+        
     down(services)
     up(services)
 

@@ -8,7 +8,7 @@ class CICDBaseException(Exception):
 
     def __str__(self):
         message = self.message
-        if self.hint is not "":
+        if self.hint != "":
             hint = f"{styler.warn('HINT')}: {self.hint}"
             message = f"{message}\n{hint})"
         return f"{styler.danger(self.__class__.__name__)}: {message}"

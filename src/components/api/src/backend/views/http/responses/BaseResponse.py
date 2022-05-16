@@ -7,7 +7,7 @@ class BaseResponse(JsonResponse):
     def __init__(self,
         status: int = 200,
         success: bool = True,
-        message: str = "success",
+        message: str = "Success",
         result: Union[dict, List[dict]] = None
     ):
         self.success = success

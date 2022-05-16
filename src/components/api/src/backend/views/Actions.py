@@ -102,7 +102,7 @@ class Actions(RestrictedAPIView):
 
         # Create action
         try:
-            action = action_service.create(pipeline, group, body)
+            action = action_service.create(pipeline, body)
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
 
