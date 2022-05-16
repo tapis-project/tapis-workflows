@@ -1,6 +1,6 @@
 from django.db import IntegrityError
 
-from backend.models import Identity, CONTEXT_TYPES
+from backend.models import Identity, IDENTITY_TYPES
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.models import ModelListResponse, ModelResponse, BaseResponse
 from backend.views.http.responses.errors import BadRequest, NotFound, Forbidden
@@ -8,7 +8,7 @@ from backend.views.http.requests import IdentityCreateRequest
 from backend.services import CredentialsService
 
 
-IDENTITY_TYPES = [ identity_type[0] for identity_type in CONTEXT_TYPES ]
+IDENTITY_TYPES = [ identity_type[0] for identity_type in IDENTITY_TYPES ]
 
 class Identities(RestrictedAPIView):
     def get(self, request, identity_uuid=None):

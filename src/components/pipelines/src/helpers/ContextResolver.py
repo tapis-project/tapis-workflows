@@ -45,13 +45,8 @@ class ContextResolver:
     def _get_cred_string(self, context):
         # Return empty string if context repo is visible
         if self.is_visible: return ""
-
-        identity = getattr(context, "identity", None)
-        if identity != None:
-            return f"{context.identity.credentials.data[self.credential_accessor]}@"
         
-        
-        return f"{context.credentials.data[self.credential_accessor]}@"
+        return f"{getattr(context.credentials.data, self.credential_accessor)}@"
         
 
 

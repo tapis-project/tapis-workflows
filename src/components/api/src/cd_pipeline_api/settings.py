@@ -30,6 +30,25 @@ SECRET_KEY = 'django-insecure-_!+8ppjzrs!$8l5n2k)^ry2=c&jkrxcx+w_a%!gcm4)u2@=_b2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True if (os.environ["DEBUG"] == True or os.environ["DEBUG"].lower() == "true") else False
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': './logs/debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
 ALLOWED_HOSTS = [
     "c006.rodeo.tacc.utexas.edu", # dev
     ".tapis.io", # dev, staging, prod

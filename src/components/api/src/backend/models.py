@@ -49,6 +49,8 @@ DESTINATION_TYPES = [
     # NOTE support s3 destinations?
 ]
 
+IDENTITY_TYPES = CONTEXT_TYPES + DESTINATION_TYPES
+
 DEFAULT_DOCKERFILE_PATH = "Dockerfile"
 
 GROUP_STATUS_DISABLED = "disabled"
@@ -157,15 +159,15 @@ class Context(models.Model):
     url = models.CharField(max_length=128)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     visibility = models.CharField(max_length=32, choices=VISIBILITY_TYPES)
-    identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.DO_NOTHING)
+    identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.CASCADE)
 
 class Destination(models.Model):
-    credentials = models.OneToOneField("backend.Credentials", on_delete=models.CASCADE)
+    credentials = models.OneToOneField("backend.Credentials", null=True, on_delete=models.CASCADE)
     tag = models.CharField(max_length=128)
     type = models.CharField(max_length=32, choices=DESTINATION_TYPES)
     url = models.CharField(max_length=255)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.DO_NOTHING)
+    identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.CASCADE)
 
 class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -177,12 +179,12 @@ class Event(models.Model):
     message = models.TextField()
     pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
-    username = models.CharField(max_length=64)
-    identity = models.ForeignKey("backend.Identity", related_name="events", null=True, on_delete=models.CASCADE)
+    username = models.CharField(max_length=64, null=True)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     class Meta:
         indexes = [
-            models.Index(fields=["pipeline_id"])
+            models.Index(fields=["pipeline_id"]),
+            models.Index(fields=["username"])
         ]
 
 class Group(models.Model):
@@ -209,7 +211,7 @@ class GroupUser(models.Model):
 class Identity(models.Model):
     name = models.CharField(max_length=64)
     description = models.TextField(null=True)
-    type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
+    type = models.CharField(max_length=32, choices=IDENTITY_TYPES)
     owner = models.CharField(max_length=64)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     credentials = models.OneToOneField("backend.Credentials", on_delete=models.CASCADE)

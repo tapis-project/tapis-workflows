@@ -40,11 +40,8 @@ class BaseBuildExecutor(ActionExecutor):
         return destination
 
     def _create_dockerhub_config(self):
-        # Get image registry credentials from the provided identity.
-        # If no identity provided use the credentials provided
-        identity = getattr(self.action.destination, "identity", None)
-        credentials = identity.credentials if identity != None else self.action.destination.credentials
-
+        # Get image registry credentials
+        credentials = self.action.destination.credentials
         if credentials == None:
             raise CredentialsError("No credentials for the destination")
 

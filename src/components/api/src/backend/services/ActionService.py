@@ -1,3 +1,5 @@
+import logging
+
 from django.db import DatabaseError, IntegrityError, OperationalError
 
 from backend.models import Action, Context, Destination, Identity
@@ -75,24 +77,31 @@ class ActionService(Service):
 
         return action
 
-    def _resolve_authn_souce(self, request, pipeline, prop):
-        # If an identity was provided to authorize some operation on a restricted
-        # external resource, it will take presidence over any raw authn creds
-        # provided in this request
+    def _resolve_authn_source(self, request, pipeline, accessor):
+        """Determines whether the authn source will come and identity
+        or credentials directly"""
+
+        # Accessor is either "context" or "destination", and "target" is
+        # the context or destination object of the action
+        target = getattr(request, accessor)
+
+        # Return the identity if one is provided
+        identity_uuid = getattr(target, "identity_uuid", None)
         identity = None
-        if hasattr(request[prop], "identity_uuid") and request[prop].identity_uuid is not None:
-            identity = Identity.object.filter(pk=request[prop].identity_uuid)
+        if identity_uuid != None:
+            identity = Identity.objects.filter(pk=identity_uuid).first()
 
             return (identity, None)
         
         # Create the credentials for the context or destination if one is specified 
         # and no identity was provided
+        credentials = getattr(target, "credentials", None)
         cred = None
-        if hasattr(request[prop], "credentials") and request[prop].credentials is not None:
+        if credentials != None:
             cred_data = {}
-            for key, value in dict(request[prop].credentials).items():
+            for key, value in dict(credentials).items():
                 if value is not None:
-                    cred_data[key] = getattr(request[prop].credentials, key)
+                    cred_data[key] = getattr(credentials, key)
             
             try:
                 cred_service = self._get_service("cred_service")
@@ -151,6 +160,8 @@ class ActionService(Service):
             self._add_rollback(destination.delete)
         except (IntegrityError, OperationalError) as e:
             raise e
+
+        return destination
 
     def resolve_request_type(self, action_type):
         return ACTION_REQUEST_MAPPING[action_type]

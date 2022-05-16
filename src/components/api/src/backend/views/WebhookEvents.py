@@ -26,28 +26,16 @@ class WebhookEvents(APIView):
             "actions",
             "actions__context",
             "actions__context__credentials",
+            "actions__context__identity",
             "actions__destination",
-            "actions__destination__credentials"
+            "actions__destination__credentials",
+            "actions__destination__identity",
         ).first()
 
         message = "No Pipeline found with details that match this event"
-        identity = None
-        if pipeline is not None:
-            # Get the user and group info for the triggering user
-            identity = Identity.objects.filter(
-                group_id=pipeline.group_id,
-                type=body.source,
-                value=body.username
-            ).first()
-
-
-            # TODO Resolve indentities for username
-            # Check that the user belongs to the group that is attached
-            # to this pipline
+        if pipeline != None:
             message = f"Successfully triggered pipeline ({pipeline.id})"
-            if identity is None:
-                message = f"Failed to trigger pipeline ({pipeline.id}): {body.source} identity '{body.username}' does not have access to this pipeline"
-
+            
         # Persist the event in the database
         try:
             event = Event.objects.create(
@@ -58,8 +46,7 @@ class WebhookEvents(APIView):
                 message=message,
                 pipeline=pipeline,
                 source=body.source,
-                username=identity.owner if identity is not None else f"{body.source}:{body.username}",
-                identity=identity
+                username=body.username
             )
         except IntegrityError as e:
             return ServerError(message=e.__cause__)
@@ -105,18 +92,39 @@ class WebhookEvents(APIView):
         cred_service = CredentialsService()
 
         action_result["context"] = model_to_dict(action.context)
-        if action.context.credentials is not None:
-            action_result["context"]["credentials"] = model_to_dict(action.context.credentials)
+
+        # Resolve which context credentials to use if any provided
+        context_creds = None
+        if action.context.credentials != None:
+            context_creds = action.context.credentials
+        
+        # Identity takes precedence over credentials placed directly in
+        # the context
+        if action.context.identity != None:
+            context_creds = action.context.identity.credentials
+
+        action_result["context"]["credentials"] = None
+        if context_creds != None:
+            action_result["context"]["credentials"] = model_to_dict(context_creds)
 
             # Get the context credentials data
-            context_cred_data = cred_service.get_secret(action.context.credentials.sk_id)
+            context_cred_data = cred_service.get_secret(context_creds.sk_id)
             action_result["context"]["credentials"]["data"] = context_cred_data
 
+        # Destination credentials
         action_result["destination"] = model_to_dict(action.destination)
-        action_result["destination"]["credentials"] = model_to_dict(action.destination.credentials)
+
+        destination_creds = None
+        if action.destination.credentials != None:
+            destination_creds = action.destination.credentials
+
+        if action.destination.identity != None:
+            destination_creds = action.destination.identity.credentials
+        
+        action_result["destination"]["credentials"] = model_to_dict(destination_creds)
 
         # Get the context credentials data
-        destination_cred_data = cred_service.get_secret(action.destination.credentials.sk_id)
+        destination_cred_data = cred_service.get_secret(destination_creds.sk_id)
         action_result["destination"]["credentials"]["data"] = destination_cred_data
 
         return action_result

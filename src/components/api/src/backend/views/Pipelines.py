@@ -129,7 +129,7 @@ class Pipelines(RestrictedAPIView):
         try:
             pipeline = Pipeline.objects.create(
                 id=body.id,
-                group_id=body.group_id,
+                group=group,
                 owner=owner
             )
         except (IntegrityError, OperationalError) as e:
@@ -149,7 +149,7 @@ class Pipelines(RestrictedAPIView):
 
         # Create 'build' action
         try:
-            action_service.create(pipeline, group, action_request)
+            action_service.create(pipeline, action_request)
         except (IntegrityError, OperationalError) as e:
             pipeline.delete()
             return BadRequest(message=e.__cause__)
@@ -172,7 +172,7 @@ class Pipelines(RestrictedAPIView):
         actions = []
         for action_request in body.actions:
             try:
-                actions.append(action_service.create(pipeline, group, action_request))
+                actions.append(action_service.create(pipeline, action_request))
             except (IntegrityError, OperationalError, DatabaseError):
                 pipeline.delete()
                 for action in actions:
