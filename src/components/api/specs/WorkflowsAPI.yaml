@@ -31,7 +31,7 @@ tags:
     description: General service health and readiness
   - name: Groups
     description: Manage groups that have access to specific workflow resources. Create, retrieve, update, etc.
-  - name: Group Users
+  - name: Users
     description: Manage users that belong to groups. Create, update, remove, etc.
   - name: Identities
     description: Manage external identities . Create, retrieve, delete.
@@ -65,6 +65,22 @@ paths:
                 $ref: '#/components/schemas/ObjectResp'
         '500':
           description: Server error.
+  '/v3/workflows/readycheck':
+    get:
+      tags:
+        - General
+      description: Health check.
+      operationId: readyCheck
+      responses:
+        '200':
+          description: Message received.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectResp'
+        '500':
+          description: Server error.
+          
   '/v3/workflows/groups/':
     get:
       tags:
@@ -184,10 +200,10 @@ paths:
   '/v3/workflows/groups/{group_id}/users/':
     get:
       tags:
-        - Group Users
-      summary: List group users
+        - Users
+      summary: List users
       description: |
-        List group users.
+        List users.
       parameters:
         - name: group_id
           in: path
@@ -197,7 +213,7 @@ paths:
       operationId: listGroupUsers
       responses:
         '200':
-          description: List Group Users successful.
+          description: List Users successful.
           content:
             application/json:
               schema:
@@ -234,7 +250,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResp'
     post:
       tags:
-        - Group Users
+        - Users
       summary: Add a user to a group
       description: |
         Add a user to a group.
@@ -254,7 +270,7 @@ paths:
               $ref: '#/components/schemas/GroupUserPostReq'
       responses:
         '200':
-          description: Group users successfully retried.
+          description: Users successfully added.
           content:
             application/json:
               schema:
@@ -293,7 +309,7 @@ paths:
   '/v3/workflows/groups/{group_id}/users/{username}':
     get:
       tags:
-        - Group Users
+        - Users
       summary: Get group user
       description: |
         Get a user from a group
@@ -348,10 +364,10 @@ paths:
                 $ref: '#/components/schemas/ErrorResp'
     patch:
       tags:
-        - Group Users
+        - Users
       summary: Update group user
       description: |
-        Update a user for a specified group
+        Update a user for a specified group. Only group admins can perform this operation.
       parameters:
         - name: group_id
           in: path
@@ -365,15 +381,15 @@ paths:
             $ref: '#/components/schemas/Username'
       requestBody:
         required: true
-        description: A JSON object specifying.
+        description: A JSON object
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GroupUserPatchReq'
+              $ref: '#/components/schemas/GroupUserPutPatchReq'
       operationId: updateGroupUser
       responses:
         '200':
-          description: User perms updated.
+          description: User updated.
           content:
             application/json:
               schema:
@@ -404,7 +420,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResp'
     delete:
       tags:
-        - Group Users
+        - Users
       summary: Remove user from group
       description: |
         Remove a user from a group.
@@ -447,7 +463,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResp'
 
   # --- Paths for identities ---
-  '/v3/workflows/identities/{group_id}':
+  '/v3/workflows/identities/':
     post:
       tags:
         - Identities
@@ -455,14 +471,8 @@ paths:
       description: |
         Create a mapping between a group user and an external identity.
 
-        This operation can only be performed by group owners, group admins, and users
-        creating identities for themselves.
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
+        Users can only create identities for themselves. i.e., group admins and owners cannot
+        create identities for any user but themselves.
       operationId: createIdentity
       requestBody:
         required: true
@@ -477,7 +487,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupResp'
+                $ref: '#/components/schemas/IdentityResp'
         '400':
           description: Bad request. Invalid JSON.
           content:
@@ -511,15 +521,9 @@ paths:
     get:
       tags:
         - Identities
-      summary: List user identities for a given group
+      summary: List user identities for a given user
       description: |
-        Retrieve user identities for a given group id
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
+        Retrieve identities for the requesting user
       operationId: listIdentities
       responses:
         '200':
@@ -536,57 +540,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResp'
         '403':
           description: Cannot access resources for this Group.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResp'
-        '404':
-          description: Group does not exist.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResp'
-        '500':
-          description: Server Error.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResp'
-
-  '/v3/workflows/identities/{group_id}/{username}':
-    get:
-      tags:
-        - Identities
-      summary: Get identities for a given group user
-      description: |
-        Get identity for a given group user
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-        - name: username
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-      operationId: listUserIdentities
-      responses:
-        '200':
-          description: Get identity successful.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IdentityListResp'
-        '401':
-          description: Not authorized. Invalid or Expired Token.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResp'
-        '403':
-          description: Cannot access resources for this Group or User.
           content:
             application/json:
               schema:
@@ -645,6 +598,44 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResp'
         
+    get:
+      tags:
+        - Identities
+      summary: Get identity
+      description: |
+        Get a specific identity by its UUID
+      operationId: getIdentity
+      responses:
+        '200':
+          description: List identities successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityResp'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '403':
+          description: Cannot access resources for this Group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '404':
+          description: Group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
+        '500':
+          description: Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResp'
 
   # --- Paths for ci pipelines -----------------------------------------------------
   '/v3/workflows/ci/':
@@ -1001,11 +992,6 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/ID'
-        - name: action_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
       responses:
         '200':
           description: Events found.
@@ -1069,7 +1055,7 @@ components:
       properties:
         id:
           type: string
-      anyOf:
+      oneOf:
         - $ref: '#/components/schemas/ImageBuildAction'
         - $ref: '#/components/schemas/WebhookNotificationAction'
         - $ref: '#/components/schemas/ContainerRunAction'
@@ -1115,8 +1101,9 @@ components:
               type: object
               default: false
             builder:
-              $ref: '#/components/schemas/BuilderEnum'
-              default: "kaniko"
+              allOf:
+                - $ref: '#/components/schemas/BuilderEnum'
+                - default: "kaniko"
             cache:
               type: boolean
               default: true
@@ -1142,8 +1129,9 @@ components:
               type: object
               default: null
             http_method:
-              $ref: '#/components/schemas/HTTPMethodEnum'
-              default: null
+              allOf:
+                - $ref: '#/components/schemas/HTTPMethodEnum'
+                - default: null
             query_params:
               type: object
               default: null
@@ -1172,7 +1160,7 @@ components:
               type: boolean
               default: true
             tapis_job_def:
-              $ref: '#/components/schemas/TapisJobDef'
+              type: object
             type:
               default: "tapis_job_action"
 
@@ -1190,7 +1178,6 @@ components:
             type:
               default: "tapis_actor_action"
 
-
     # --- Action Dependency ---
     ActionDependency:
       type: object
@@ -1206,7 +1193,7 @@ components:
       properties:
         branch:
           type: string
-        credential:
+        credentials:
           default: null
         dockerfile_path:
           type: string
@@ -1223,7 +1210,7 @@ components:
     Destination:
       type: object
       properties:
-        credential:
+        credentials:
           default: null
         tag: 
           type: string
@@ -1277,14 +1264,16 @@ components:
       properties:
         type:
           $ref: "#/components/schemas/ID"
-        username:
-          $ref: "#/components/schemas/Username"
-        group:
+        name:
           type: string
+        description:
+          type: string
+        owner:
+          $ref: "#/components/schemas/Username"
         uuid:
           type: string
           format: uuid
-        value:
+        credentials:
           type: string
 
     Event:
@@ -1345,7 +1334,13 @@ components:
         users:
           type: array
           items:
-            $ref: '#/components/schemas/Username'
+            type: object
+            properties:
+              username:
+                $ref: '#/components/schemas/Username'
+              is_admin:
+                default: false
+                type: boolean
 
     GroupUserPostReq:
       type: object
@@ -1356,9 +1351,12 @@ components:
           $ref: '#/components/schemas/Username'
         is_admin:
           type: boolean
+          default: false
 
-    GroupUserPatchReq:
+    GroupUserPutPatchReq:
       type: object
+      required:
+        - is_admin
       properties:
         is_admin:
           type: boolean
@@ -1367,14 +1365,32 @@ components:
       type: object
       required:
         - type
-        - username
-        - value
       properties:
+        name:
+          type: string
+        description:
+          type: string
         type:
           $ref: '#/components/schemas/IdentityTypeEnum'
+        credentials:
+          oneOf:
+            - $ref: "#/components/schemas/GithubAuthReq"
+            - $ref: "#/components/schemas/DockerhubAuthReq"
+          
+    GithubAuthReq:
+      type: object
+      properties:
         username:
           $ref: '#/components/schemas/Username'
-        value:
+        personal_access_token:
+          type: string
+
+    DockerhubAuthReq:
+      type: object
+      properties:
+        username:
+          $ref: '#/components/schemas/Username'
+        token:
           type: string
 
     PipelinePostReq:
@@ -1399,9 +1415,6 @@ components:
               - $ref: '#/components/schemas/ContainerRunActionReq'
               - $ref: '#/components/schemas/TapisJobActionReq'
               - $ref: '#/components/schemas/TapisActorActionReq'
-        run_on_create:
-          type: boolean
-          default: false
 
     BaseActionReq:
       type: object
@@ -1523,6 +1536,7 @@ components:
         - id
         - type
         - group_id
+        - context
       properties:
         id:
           $ref: '#/components/schemas/ID'
@@ -1534,18 +1548,20 @@ components:
           $ref: '#/components/schemas/ContextReq'
         destination:
           $ref: '#/components/schemas/DestinationReq'
-        run_on_create:
-          type: boolean
-          default: false
 
     # --- Context ---
     ContextReq:
       type: object
+      required:
+        - visibility
+        - url
+        - type
+        - dockerfile_path
       properties:
         branch:
           type: string
-        credential:
-          $ref: "#/components/schemas/ContextCredentialReq"
+        credentials:
+          $ref: "#/components/schemas/ContextCredentialsReq"
         dockerfile_path:
           type: string
         sub_path:
@@ -1558,20 +1574,24 @@ components:
           $ref: "#/components/schemas/ContextVisibilityEnum"
 
     # --- Credentials ---
-    ContextCredentialReq:
+    ContextCredentialsReq:
       type: object
       properties:
         token:
           type: string
         username:
-          type: string 
-    
+          type: string
+      
     # --- Destination ---
     DestinationReq:
       type: object
+      required:
+        - credentials
+        - url
+        - type
       properties:
-        credential:
-          $ref: '#/components/schemas/DestinationCredentialReq'
+        credentials:
+          $ref: '#/components/schemas/DestinationCredentialsReq'
         tag: 
           type: string
         type:
@@ -1579,7 +1599,7 @@ components:
         url:
           type: string
 
-    DestinationCredentialReq:
+    DestinationCredentialsReq:
       type: object
       properties:
         token:

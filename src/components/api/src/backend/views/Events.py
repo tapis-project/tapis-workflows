@@ -6,9 +6,10 @@ from backend.views.http.requests import APIEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import ServerError, MethodNotAllowed, Forbidden, NotFound, BadRequest
 from backend.utils.parse_directives import parse_directives as parse
-from backend.services import cred_service, pipeline_dispatcher, group_service
+from backend.services import pipeline_dispatcher, group_service
+from backend.services.CredentialsService import CredentialsService
 from backend.models import Event, Pipeline
-from backend.views.http.responses.BaseResponse import BaseResponse
+
 
 class Events(RestrictedAPIView):
     def post(self, request, pipeline_id, *args, **kwargs):
@@ -23,9 +24,9 @@ class Events(RestrictedAPIView):
         pipeline = Pipeline.objects.filter(id=pipeline_id).prefetch_related(
             "actions",
             "actions__context",
-            "actions__context__credential",
+            "actions__context__credentials",
             "actions__destination",
-            "actions__destination__credential"
+            "actions__destination__credentials"
         ).first()
 
         message = "No Pipeline found with details that match this event"
@@ -99,7 +100,7 @@ class Events(RestrictedAPIView):
 
         # Return a list of events if uuid is not specified
         if event_uuid is None:
-            return self.list(request, pipeline, event_uuid)
+            return self.list(pipeline_id)
 
         event = Event.objects.filter(uuid=event_uuid).first()
 
@@ -124,20 +125,23 @@ class Events(RestrictedAPIView):
     def _image_build(self, action):
         action_request = model_to_dict(action)
 
-        action_request["context"] = model_to_dict(action.context)
-        if action.context.credential is not None:
-            action_request["context"]["credential"] = model_to_dict(action.context.credential)
+        # Initialized the credentials service
+        cred_service = CredentialsService()
 
-            # Get the context credential data
-            context_cred_data = cred_service.get_secret(action.context.credential.sk_id)
-            action_request["context"]["credential"]["data"] = context_cred_data
+        action_request["context"] = model_to_dict(action.context)
+        if action.context.credentials is not None:
+            action_request["context"]["credentials"] = model_to_dict(action.context.credentials)
+
+            # Get the context credentials data
+            context_cred_data = cred_service.get_secret(action.context.credentials.sk_id)
+            action_request["context"]["credentials"]["data"] = context_cred_data
 
         action_request["destination"] = model_to_dict(action.destination)
-        action_request["destination"]["credential"] = model_to_dict(action.destination.credential)
+        action_request["destination"]["credentials"] = model_to_dict(action.destination.credentials)
 
-        # Get the context credential data
-        destination_cred_data = cred_service.get_secret(action.destination.credential.sk_id)
-        action_request["destination"]["credential"]["data"] = destination_cred_data
+        # Get the context credentials data
+        destination_cred_data = cred_service.get_secret(action.destination.credentials.sk_id)
+        action_request["destination"]["credentials"]["data"] = destination_cred_data
 
         return action_request
 

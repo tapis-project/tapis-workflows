@@ -7,7 +7,7 @@ from backend.views.Events import Events
 from backend.views.Groups import Groups
 from backend.views.Identities import Identities
 from backend.views.Pipelines import Pipelines
-from backend.views.Policies import Policies
+from backend.views.Users import Users
 from backend.views.Nuke import Nuke
 from backend.views.ChangePipelineOwner import ChangePipelineOwner
 
@@ -18,7 +18,10 @@ urlpatterns = [
     path("webhooks/pipelines/<str:pipeline_id>", WebhookEvents.as_view()),
     path("groups/", Groups.as_view()),
     path("groups/<str:id>", Groups.as_view()),
-    path("identities/<str:group_id>", Identities.as_view()),
+    path("groups/<str:group_id>/users/", Users.as_view()),
+    path("groups/<str:group_id>/users/<str:username>", Users.as_view()),
+    path("identities/", Identities.as_view()),
+    path("identities/<str:identity_uuid>", Identities.as_view()),
     path("pipelines/", Pipelines.as_view()),
     path("ci/", Pipelines.as_view()),
     path("pipelines/<str:pipeline_id>/actions/", Actions.as_view()),
@@ -27,6 +30,5 @@ urlpatterns = [
     path("pipelines/<str:pipeline_id>/events/", Events.as_view()),
     path("pipelines/<str:pipeline_id>/events/<str:event_uuid>", Events.as_view()),
     path("pipelines/<str:pipeline_id>/changeOwner/<str:username>", ChangePipelineOwner.as_view()),
-    path("policies/", Policies.as_view()),
     path("nuke/", Nuke.as_view()), # TODO Remove
 ]

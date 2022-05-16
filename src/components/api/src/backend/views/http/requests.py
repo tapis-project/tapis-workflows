@@ -1,6 +1,5 @@
-from typing import AnyStr, List, Union, Dict
-from pydantic import BaseModel, StrictStr
-
+from typing import AnyStr, List, Union, Dict, TypedDict
+from pydantic import BaseModel
 
 # Auth
 class AuthRequest(BaseModel):
@@ -8,32 +7,45 @@ class AuthRequest(BaseModel):
     password: str
 
 # Identities
+class GithubCredentials(TypedDict):
+    username: str
+    personal_access_token: str
+
+class DockerhubCredentials(TypedDict):
+    username: str
+    token: str
+
 class IdentityCreateRequest(BaseModel):
     type: str
-    username: str
-    value: str
+    name: str
+    description: str = None
+    credentials: Union[
+        GithubCredentials,
+        DockerhubCredentials
+    ]
 
 # Contexts
-class ContextCredential(BaseModel):
-    token: str
-    username: str = None
+
+# TODO add more types to the context credential types as they become supported
+ContextCredentialTypes = GithubCredentials
 
 class Context(BaseModel):
-    credential: ContextCredential = None
+    credentials: ContextCredentialTypes = None
     branch: str
     dockerfile_path: str = "Dockerfile"
+    identity_uuid: str = None
     sub_path: str = None
     type: str
     url: str
     visibility: str
 
 # Destination
-class DestinationCredential(BaseModel):
-    token: str
-    username: str
+# TODO add more types to the destination credential types as they become supported
+DestinationCredentialTypes = DockerhubCredentials
 
 class Destination(BaseModel):
-    credential: DestinationCredential = None
+    credentials: DestinationCredentialTypes = None
+    identity_uuid: str = None
     tag: str
     type: str
     url: str
@@ -60,13 +72,19 @@ class WebhookEvent(BaseEvent):
     context_url: str
     username: str
 
-# Groups
+# Groups and Users
+class GroupUserReq(BaseModel):
+    username: str
+    is_admin: bool = False
+
+GroupUserCreateRequest = GroupUserReq
+
+class GroupUserPutPatchRequest(BaseModel):
+    is_admin: bool
+
 class GroupCreateRequest(BaseModel):
     id: str
-    users: List[StrictStr] = []
-
-class GroupPutPatchRequest(BaseModel):
-    users: List[StrictStr] = []
+    users: List[GroupUserReq] = []
 
 # Actions
 class ActionDependency(BaseModel):
@@ -149,7 +167,6 @@ class BasePipeline(BaseModel):
             WebhookAction
         ]
     ] = []
-    run_on_create: bool = False
 
 class CIPipeline(BasePipeline):
     cache: bool = False
@@ -175,3 +192,5 @@ class PreparedRequest:
         self.body = body
         self.message = message
         self.failure_view = failure_view
+
+

@@ -1,19 +1,17 @@
 from django.db import IntegrityError
 from django.forms import model_to_dict
 
-from backend.views.RestrictedAPIView import RestrictedAPIView
+from backend.views.APIView import APIView
 from backend.views.http.requests import WebhookEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import ServerError
 from backend.utils.parse_directives import parse_directives as parse
-from backend.services import cred_service, pipeline_dispatcher
-from backend.models import Identity, Event, Pipeline
+from backend.services.CredentialsService import CredentialsService
+from backend.services import pipeline_dispatcher
+from backend.models import Identity, Event, Pipeline, Group
 from backend.views.http.responses.BaseResponse import BaseResponse
 
-class WebhookEvents(RestrictedAPIView):
-    def get(self, request):
-        return ModelListResponse(Event.objects.all())
-
+class WebhookEvents(APIView):
     def post(self, request, pipeline_id):
         prepared_request = self.prepare(WebhookEvent)
 
@@ -24,31 +22,20 @@ class WebhookEvents(RestrictedAPIView):
 
         # Find a pipeline that matches the request data
         pipeline = Pipeline.objects.filter(id=pipeline_id).prefetch_related(
+            "group",
             "actions",
             "actions__context",
-            "actions__context__credential",
+            "actions__context__credentials",
+            "actions__context__identity",
             "actions__destination",
-            "actions__destination__credential"
+            "actions__destination__credentials",
+            "actions__destination__identity",
         ).first()
 
         message = "No Pipeline found with details that match this event"
-        identity = None
-        if pipeline is not None:
-            # Get the user and group info for the triggering user
-            identity = Identity.objects.filter(
-                group_id=pipeline.group_id,
-                type=body.source,
-                value=body.username
-            ).first()
-
-
-            # TODO Resolve indentities for username
-            # Check that the user belongs to the group that is attached
-            # to this pipline
+        if pipeline != None:
             message = f"Successfully triggered pipeline ({pipeline.id})"
-            if identity is None:
-                message = f"Failed to trigger pipeline ({pipeline.id}): {body.source} identity '{body.username}' does not have access to this pipeline"
-
+            
         # Persist the event in the database
         try:
             event = Event.objects.create(
@@ -59,8 +46,7 @@ class WebhookEvents(RestrictedAPIView):
                 message=message,
                 pipeline=pipeline,
                 source=body.source,
-                username=identity.username if identity is not None else f"{body.source}:{body.username}",
-                identity=identity
+                username=body.username
             )
         except IntegrityError as e:
             return ServerError(message=e.__cause__)
@@ -68,6 +54,9 @@ class WebhookEvents(RestrictedAPIView):
         # Return the event if there is no pipeline matching the event
         if pipeline is None:
             return ModelResponse(event)
+
+        # Get the group for this pipelines
+        group = pipeline.group
 
         # Get the pipeline actions, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
@@ -81,6 +70,7 @@ class WebhookEvents(RestrictedAPIView):
 
         # Convert pipleline to a dict and build the pipeline_dispatch_request
         pipeline_dispatch_request = {}
+        pipeline_dispatch_request["group"] = model_to_dict(group)
         pipeline_dispatch_request["event"] = model_to_dict(event)
         pipeline_dispatch_request["pipeline"] = model_to_dict(pipeline)
         pipeline_dispatch_request["pipeline"]["actions"] = actions_result
@@ -99,20 +89,43 @@ class WebhookEvents(RestrictedAPIView):
     def _image_build(self, action):
         action_result = model_to_dict(action)
 
+        cred_service = CredentialsService()
+
         action_result["context"] = model_to_dict(action.context)
-        if action.context.credential is not None:
-            action_result["context"]["credential"] = model_to_dict(action.context.credential)
 
-            # Get the context credential data
-            context_cred_data = cred_service.get_secret(action.context.credential.sk_id)
-            action_result["context"]["credential"]["data"] = context_cred_data
+        # Resolve which context credentials to use if any provided
+        context_creds = None
+        if action.context.credentials != None:
+            context_creds = action.context.credentials
+        
+        # Identity takes precedence over credentials placed directly in
+        # the context
+        if action.context.identity != None:
+            context_creds = action.context.identity.credentials
 
+        action_result["context"]["credentials"] = None
+        if context_creds != None:
+            action_result["context"]["credentials"] = model_to_dict(context_creds)
+
+            # Get the context credentials data
+            context_cred_data = cred_service.get_secret(context_creds.sk_id)
+            action_result["context"]["credentials"]["data"] = context_cred_data
+
+        # Destination credentials
         action_result["destination"] = model_to_dict(action.destination)
-        action_result["destination"]["credential"] = model_to_dict(action.destination.credential)
 
-        # Get the context credential data
-        destination_cred_data = cred_service.get_secret(action.destination.credential.sk_id)
-        action_result["destination"]["credential"]["data"] = destination_cred_data
+        destination_creds = None
+        if action.destination.credentials != None:
+            destination_creds = action.destination.credentials
+
+        if action.destination.identity != None:
+            destination_creds = action.destination.identity.credentials
+        
+        action_result["destination"]["credentials"] = model_to_dict(destination_creds)
+
+        # Get the context credentials data
+        destination_cred_data = cred_service.get_secret(destination_creds.sk_id)
+        action_result["destination"]["credentials"]["data"] = destination_cred_data
 
         return action_result
 
