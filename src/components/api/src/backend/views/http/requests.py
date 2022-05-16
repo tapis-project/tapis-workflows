@@ -1,6 +1,5 @@
-from typing import AnyStr, List, Union, Dict
-from pydantic import BaseModel, StrictStr
-
+from typing import AnyStr, List, Union, Dict, TypedDict
+from pydantic import BaseModel
 
 # Auth
 class AuthRequest(BaseModel):
@@ -8,33 +7,45 @@ class AuthRequest(BaseModel):
     password: str
 
 # Identities
+class GithubCredentials(TypedDict):
+    username: str
+    personal_access_token: str
+
+class DockerhubCredentials(TypedDict):
+    username: str
+    token: str
+
 class IdentityCreateRequest(BaseModel):
     type: str
-    username: str
-    value: str
-    group_id: str
+    name: str
+    description: str = None
+    credentials: Union[
+        GithubCredentials,
+        DockerhubCredentials
+    ]
 
 # Contexts
-class ContextCredential(BaseModel):
-    token: str
-    username: str = None
+
+# TODO add more types to the context credential types as they become supported
+ContextCredentialTypes = GithubCredentials
 
 class Context(BaseModel):
-    credential: ContextCredential = None
+    credentials: ContextCredentialTypes = None
     branch: str
     dockerfile_path: str = "Dockerfile"
+    identity_uuid: str = None
     sub_path: str = None
     type: str
     url: str
     visibility: str
 
 # Destination
-class DestinationCredential(BaseModel):
-    token: str
-    username: str
+# TODO add more types to the destination credential types as they become supported
+DestinationCredentialTypes = DockerhubCredentials
 
 class Destination(BaseModel):
-    credential: DestinationCredential
+    credentials: DestinationCredentialTypes = None
+    identity_uuid: str = None
     tag: str
     type: str
     url: str
@@ -50,9 +61,8 @@ class BaseEvent(BaseModel):
     source: str = None
     username: str = None
 
-class ManualEvent(BaseEvent):
-    pipeline_id: str
-    directives: dict = None
+class APIEvent(BaseEvent):
+    directives: List[str] = None
 
 class WebhookEvent(BaseEvent):
     branch: str
@@ -62,17 +72,23 @@ class WebhookEvent(BaseEvent):
     context_url: str
     username: str
 
-# Groups
+# Groups and Users
+class GroupUserReq(BaseModel):
+    username: str
+    is_admin: bool = False
+
+GroupUserCreateRequest = GroupUserReq
+
+class GroupUserPutPatchRequest(BaseModel):
+    is_admin: bool
+
 class GroupCreateRequest(BaseModel):
     id: str
-    users: List[StrictStr] = []
-
-class GroupPutPatchRequest(BaseModel):
-    users: List[StrictStr] = []
+    users: List[GroupUserReq] = []
 
 # Actions
 class ActionDependency(BaseModel):
-    name: str
+    id: str
     can_fail: bool = False
 
 IOValueType = Union[AnyStr, Dict, List, bool]
@@ -93,6 +109,7 @@ OutputType = Dict[str, Output]
 
 class BaseAction(BaseModel):
     auth: dict = None
+    auto_build: bool = None
     builder: str = None
     cache: bool = None
     context: Context = None
@@ -103,10 +120,10 @@ class BaseAction(BaseModel):
     http_method: str = None
     image: str = None
     input: InputType = None
-    name: str
+    id: str
     output: OutputType = None
+    poll: bool = None
     query_params: str = None
-    pipeline_id: str
     type: str
     depends_on: List[ActionDependency] = []
     retries: int = 0
@@ -119,6 +136,7 @@ class ContainerRunAction(BaseAction):
     image: str
 
 class ImageBuildAction(BaseAction):
+    auto_build: bool = False
     builder: str = "kaniko"
     cache: bool = False
     context: Context
@@ -129,6 +147,7 @@ class TapisActorAction(BaseAction):
 
 class TapisJobAction(BaseAction):
     tapis_job_def: dict
+    poll: bool = True
 
 class WebhookAction(BaseAction):
     http_method: str
@@ -137,7 +156,7 @@ class WebhookAction(BaseAction):
 # Pipelines
 class BasePipeline(BaseModel):
     id: str
-    type: str
+    type: str = "workflow"
     group_id: str
     actions: List[
         Union[
@@ -150,7 +169,6 @@ class BasePipeline(BaseModel):
     ] = []
 
 class CIPipeline(BasePipeline):
-    auto_build: bool = False
     cache: bool = False
     builder: str = "kaniko"
     context: Context
@@ -174,3 +192,5 @@ class PreparedRequest:
         self.body = body
         self.message = message
         self.failure_view = failure_view
+
+

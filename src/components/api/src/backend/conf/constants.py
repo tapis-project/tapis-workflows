@@ -1,9 +1,11 @@
-# TAPIS_TENANT = os.environ["TAPIS_TENANT"]
-TAPIS_TENANT = "dev" # TODO
+import os
+
+
+TAPIS_TENANT = os.environ["TAPIS_TENANT"]
 
 # TAPIS_SERVICE_ACCOUNT = os.environ["TAPIS_SERVICE_ACCOUNT"]
-TAPIS_SERVICE_ACCOUNT = "testuser2" # TODO remove
-TAPIS_SERVICE_ACCOUNT_PASSWORD = "testuser2"
+WORKFLOWS_SERVICE_ACCOUNT = os.environ["WORKFLOWS_SERVICE_ACCOUNT"] # TODO remove
+WORKFLOWS_SERVICE_PASSWORD = os.environ["WORKFLOWS_SERVICE_PASSWORD"]
 
 TAPIS_BASE_URL = f"https://{TAPIS_TENANT}.tapis.io"
 
@@ -16,10 +18,9 @@ SUPPORTED_DIRECTIVES = [
     "BUILD", # Tells the Pipelines Service to run the build action if auto_build is False
     "DEPLOY", # Implies the BUILD directive. Tells the Pipelines Service to run any post_build actions
     "CACHE", # Tells the image builder whether or not the image layers should be cached.
-    "CUSTOM_TAG", # A key-value pair. Uses the value specified in the directive as the image tage
-    "COMMIT_CONTEXT", # TODO Document this
-    "COMMIT_DESTINATION",
-    "DRY_RUN", # Prevents an image and the subsequent actions from running
+    "CUSTOM_TAG", # A key-value pair. Uses the value specified in the directive as the image tag
+    "TAG_COMMIT_SHA", # Tells the image builder to tag the image with the commit_sha if one exists
+    "DRY_RUN", # Simulates a pipeline run without triggering action executors
     "NO_PUSH", # Prevents the image builder from pushing the new image to the registry
 ]
 

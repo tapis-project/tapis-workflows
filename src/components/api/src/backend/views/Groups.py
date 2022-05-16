@@ -1,7 +1,7 @@
 from django.forms import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.requests import GroupCreateRequest, GroupPutPatchRequest
+from backend.views.http.requests import GroupCreateRequest
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.responses.errors import ServerError, Conflict, BadRequest, NotFound, Forbidden
 from backend.views.http.responses.BaseResponse import BaseResponse
@@ -10,22 +10,20 @@ from backend.models import Group, GroupUser
 
 class Groups(RestrictedAPIView):
     def get(self, request, id=None):
-        # Get a list of all groups if id is not set
+        # Get a list of all groups the user belongs to
         if id is None:
-            return ModelListResponse(Group.objects.all())
+            group_users = GroupUser.objects.filter(username=request.username)
+            group_ids = [ user.group_id for user in group_users ]
+            return ModelListResponse(Group.objects.filter(id__in=group_ids))
 
         # Return the group by the id provided in the path params
         group = Group.objects.filter(id=id).first()
         if group is None:
             return NotFound(f"Group not found with id '{id}'")
 
-        # Get the group users. Return a 403 if user neither owns the group or
-        # belongs to it.
+        # Get the group users. Return a 403 if user doesn't belong to the group
         group_users = group.users.all()
-        if (
-            request.username != group.owner
-            and request.username not in list(filter(lambda u: u.username == request.username, group_users))
-        ):
+        if request.username != [ user.name for user in group_users ]:
             return Forbidden("You do not have access to this group")
 
         # Convert model into a dict an
@@ -52,77 +50,28 @@ class Groups(RestrictedAPIView):
         except Exception as e:
             return ServerError(message=str(e))
 
+        # Create an admin group user for the requesting user
+        try:
+            GroupUser.objects.create(
+                group_id=group.id,
+                username=request.username,
+                is_admin=True
+            )
+        except Exception as e:
+            return ServerError(message=str(e))
+
         # Create group users for each username passed in the request
-        for username in body.users:
+        for user in body.users:
             try:
-                GroupUser.objects.create(
-                    group_id=group.id,
-                    username=username
-                )
+                # Do not create a group user for the requesting user
+                if user.username != request.username:
+                    GroupUser.objects.create(
+                        group_id=group.id,
+                        username=user.username,
+                        is_admin=user.is_admin
+                    )
             except Exception as e:
                 return BadRequest(message=str(e))
         
         return ModelResponse(group)
-
-    def patch(self, request, id):
-        # TODO Handle group.owner changes
-        # Validation the request body
-        prepared_request = self.prepare(GroupPutPatchRequest)
-
-        # Return the failure view instance if validation failed
-        if not prepared_request.is_valid:
-            return prepared_request.failure_view
-
-        # Get the json encoded body from the validation result
-        body = prepared_request.body
-
-        # Return the group by the id provided in the path params
-        group = Group.objects.filter(id=id).first()
-        if group is None:
-            return NotFound(f"Group not found with id '{id}'")
-
-        # Get the group users. Return a 403 if user neither owns the group or
-        # belongs to it.
-        group_users = group.users.all()
-        if (
-            request.username != group.owner
-            and request.username not in list(filter(lambda u: u.username == request.username, group_users))
-        ):
-            return Forbidden("You do not have access to this group")
-
-        # Add all the users from the request that were not previously in it
-        modified_group_users = []
-        for username in body.users:
-            try:
-                if username not in [ group_user.username for group_user in group_users ]:
-                    group_user = GroupUser.objects.create(
-                        group_id=group.id,
-                        username=username
-                    )
-                    modified_group_users.append(group_user)
-            except Exception as e:
-                return ServerError(message=str(e))
-
-        # Remove all group users that are not in the new users list
-        for group_user in group_users:
-            try:
-                if group_user.username not in body.users:
-                    group_user.delete()
-                    continue
-
-
-                modified_group_users.append(group_user)
-            except Exception as e:
-                return ServerError(message=str(e))
-                
-
-        # Convert model into a dict an
-        result = model_to_dict(group)
-        result["users"] = [ model_to_dict(user) for user in modified_group_users ]
         
-        return BaseResponse(result=result)
-
-    def put(self, request, id):
-        self.patch(request, id)
-        
-

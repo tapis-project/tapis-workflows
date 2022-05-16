@@ -1,3 +1,6 @@
+from webbrowser import get
+
+
 def has_all_keys(obj, keys: list):
     for item in keys:
         if item not in obj:

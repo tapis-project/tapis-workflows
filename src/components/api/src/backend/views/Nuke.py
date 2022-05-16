@@ -1,32 +1,32 @@
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.BaseResponse import BaseResponse
-from backend.services.CredentialService import cred_service
-from backend.models import Action, Identity, Build, Credential, Context, Destination, Group, GroupUser, Event, Pipeline, Policy
+from backend.services import CredentialsService
+from backend.models import Action, Identity, Build, Credentials, Context, Destination, Group, GroupUser, Event, Pipeline
 
 models = [
     Action,
     Identity,
     Build,
-    Credential,
+    Credentials,
     Context,
     Destination,
     Group,
     GroupUser,
     Event,
-    Pipeline,
-    Policy
+    Pipeline
 ]
 
 class Nuke(RestrictedAPIView):
     def delete(self, request):
+        cred_service = CredentialsService()
         for model in models:
-            if model.__class__.__name__ != "Credential":
+            if model.__class__.__name__ != "Credentials":
                 model.objects.all().delete()
                 continue
             
-            credentials = Credential.objects.all()
+            credentials_list = Credentials.objects.all()
 
-            for credential in credentials:
-                cred_service.delete(credential.sk_id)
+            for credentials in credentials_list:
+                cred_service.delete(credentials.sk_id)
 
         return BaseResponse(message="Boom")

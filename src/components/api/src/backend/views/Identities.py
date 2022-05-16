@@ -1,22 +1,32 @@
 from django.db import IntegrityError
 
-from backend.models import Identity, CONTEXT_TYPES
+from backend.models import Identity, IDENTITY_TYPES
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses.models import ModelListResponse, ModelResponse
-from backend.views.http.responses.errors import BadRequest
+from backend.views.http.responses.models import ModelListResponse, ModelResponse, BaseResponse
+from backend.views.http.responses.errors import BadRequest, NotFound, Forbidden
 from backend.views.http.requests import IdentityCreateRequest
-from backend.services.GroupService import service
+from backend.services import CredentialsService
 
 
-IDENTITY_TYPES = [ identity_type[0] for identity_type in CONTEXT_TYPES ]
+IDENTITY_TYPES = [ identity_type[0] for identity_type in IDENTITY_TYPES ]
 
 class Identities(RestrictedAPIView):
-    def get(self, request):
-        identities = Identity.objects.all()
+    def get(self, request, identity_uuid=None):
 
-        return ModelListResponse(identities)
+        if identity_uuid is None:
+            identities = Identity.objects.filter(owner=request.username)
+            return ModelListResponse(identities)
 
-    def post(self, request):
+        identity = Identity.objects.filter(pk=identity_uuid).first()
+        if identity == None:
+            return NotFound("Identity not found")
+
+        if identity.owner != request.owner:
+            return Forbidden("You do not have access to this identity")
+
+        return ModelResponse(identity)
+
+    def post(self, request, *args, **kwargs):
         # Validate the request body
         self.prepare(IdentityCreateRequest)
 
@@ -27,37 +37,41 @@ class Identities(RestrictedAPIView):
         # Get the JSON encoded body from the validation result
         body = self.prepared_request.body
 
-        # Determine if a user is creating an identity for themselves, or
-        # on behalf of another user as a group owner
-        on_behalf_of = body.username == request.username
-
-        # Fetch the group
-        group = service.get(body.group_id)
-
-        # Return bad request if group does not exist
-        if group is None:
-            return BadRequest(f"Group with id '{body.group_id}' does not exist")
-
         # Return bad request if invalid identity type
         if body.type not in IDENTITY_TYPES:
             return BadRequest(f"Invalid type for identity. Recieved: {body.type} - Expected one of the following: {IDENTITY_TYPES}")
 
-        # Return bad request is user is unable to create an identity themselves in this group
-        # or for another user if they are not the group owner
-        if (
-            not service.user_in_group(body.username, group.id)
-            or (on_behalf_of and not service.user_owns_group(request.username, body.group_id))
-        ):
-            return BadRequest(message=f"You cannot create an identity for user '{body.username}' for group '{body.group_id}'")
+        # Persist the credentials in sk
+        try:
+            cred_service = CredentialsService()
+            credentials = cred_service.save(request.username, body.credentials)
+        except Exception as e:
+            return BadRequest(message=e)
 
         try:
             identity = Identity.objects.create(
-                group=group,
+                name=body.name,
+                description=body.description,
                 type=body.type,
-                username=body.username,
-                value=body.value
+                owner=request.username,
+                credentials=credentials
             )
         except IntegrityError as e:
+            cred_service.delete(credentials.sk_id)
             return BadRequest(message=e.__cause__)
 
         return ModelResponse(identity)
+
+    def delete(self, request, identity_uuid):
+        identity = Identity.objects.filter(pk=identity_uuid).first()
+
+        if identity == None:
+            return NotFound("Identity does not exist")
+
+        # Requesting user can only delete their own identities
+        if identity.owner != request.username:
+            return Forbidden("You do not have access to this identity")
+
+        identity.delete()
+
+        return BaseResponse(message="Identity deleted successfully")

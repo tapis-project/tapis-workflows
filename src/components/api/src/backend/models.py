@@ -49,6 +49,8 @@ DESTINATION_TYPES = [
     # NOTE support s3 destinations?
 ]
 
+IDENTITY_TYPES = CONTEXT_TYPES + DESTINATION_TYPES
+
 DEFAULT_DOCKERFILE_PATH = "Dockerfile"
 
 GROUP_STATUS_DISABLED = "disabled"
@@ -65,13 +67,6 @@ PERMISSIONS = [
     (PERMISSION_READ, "read"),
     (PERMISSION_WRITE, "write"), # Write implies read
     (PERMISSION_MODIFY, "modify"), # Modify implies write which implies read
-]
-
-PIPELINE_TYPE_CI = "ci"
-PIPELINE_TYPE_WORKFLOW = "workflow"
-PIPELINE_TYPES = [
-    (PIPELINE_TYPE_CI, "ci"),
-    (PIPELINE_TYPE_WORKFLOW, "workflow"),
 ]
 
 ACCESS_CONTROL_ALLOW = "allow"
@@ -102,7 +97,9 @@ VISIBILITY_TYPES = [
 ]
 
 class Action(models.Model):
-    auth = models.ForeignKey("backend.Credential", null=True, on_delete=models.CASCADE)
+    id = models.CharField(max_length=128)
+    auth = models.ForeignKey("backend.Credentials", null=True, on_delete=models.CASCADE)
+    auto_build = models.BooleanField(null=True)
     builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
     cache = models.BooleanField(null=True)
     context = models.OneToOneField("backend.Context", null=True, on_delete=models.CASCADE)
@@ -114,8 +111,8 @@ class Action(models.Model):
     http_method = models.CharField(max_length=32, choices=ACTION_HTTP_METHODS, null=True)
     image = models.CharField(max_length=128, null=True)
     input = models.JSONField(null=True)
-    name = models.CharField(max_length=128)
     output = models.JSONField(null=True)
+    poll = models.BooleanField(null=True)
     query_params = models.JSONField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="actions", on_delete=models.CASCADE)
     retries = models.IntegerField(default=0)
@@ -127,18 +124,12 @@ class Action(models.Model):
         validators=[MaxValueValidator(ONE_HOUR_IN_SEC*3), MinValueValidator(1)]
     )
     url = models.CharField(max_length=255, null=True)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     class Meta:
-        unique_together = [["name", "pipeline_id"]]
-
-class Identity(models.Model):
-    type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
-    username = models.CharField(max_length=255)
-    group = models.ForeignKey("backend.Group", related_name="identities", on_delete=models.CASCADE)
-    uuid = models.UUIDField(default=uuid.uuid4)
-    value = models.CharField(max_length=128)
-    class Meta:
-        unique_together = [["value", "type", "group_id"]]
+        unique_together = [["id", "pipeline_id"]]
+        indexes = [
+            models.Index(fields=["id", "pipeline_id"])
+        ]
 
 class Build(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -147,87 +138,93 @@ class Build(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="builds", on_delete=models.CASCADE)
     status = models.CharField(max_length=32, choices=STATUSES, default=STATUS_QUEUED)
     updated_at = models.DateTimeField(auto_now=True)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    class Meta:
+        indexes = [
+            models.Index(fields=["pipeline_id"])
+        ]
 
-class Credential(models.Model):
-    sk_id = models.CharField(max_length=128, unique=True)
-    group = models.ForeignKey("backend.Group", on_delete=models.CASCADE)
+class Credentials(models.Model):
+    sk_id = models.CharField(primary_key=True, max_length=128, unique=True)
+    owner = models.CharField(max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
     uuid = models.UUIDField(default=uuid.uuid4)
 
 class Context(models.Model):
     branch = models.CharField(max_length=128)
-    credential = models.OneToOneField("backend.Credential", null=True, on_delete=models.CASCADE)
+    credentials = models.OneToOneField("backend.Credentials", null=True, on_delete=models.CASCADE)
     dockerfile_path = models.CharField(max_length=255, default=DEFAULT_DOCKERFILE_PATH)
     sub_path = models.CharField(max_length=255, null=True)
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
     url = models.CharField(max_length=128)
-    uuiid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     visibility = models.CharField(max_length=32, choices=VISIBILITY_TYPES)
+    identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.CASCADE)
 
 class Destination(models.Model):
-    credential = models.OneToOneField("backend.Credential", on_delete=models.CASCADE)
+    credentials = models.OneToOneField("backend.Credentials", null=True, on_delete=models.CASCADE)
     tag = models.CharField(max_length=128)
     type = models.CharField(max_length=32, choices=DESTINATION_TYPES)
     url = models.CharField(max_length=255)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.CASCADE)
+
+class Event(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    branch = models.CharField(max_length=255, null=True)
+    commit = models.TextField(max_length=255, null=True)
+    commit_sha = models.CharField(max_length=128, null=True)
+    context_url = models.CharField(max_length=128, null=True)
+    directives = models.JSONField(null=True)
+    message = models.TextField()
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
+    source = models.CharField(max_length=255)
+    username = models.CharField(max_length=64, null=True)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    class Meta:
+        indexes = [
+            models.Index(fields=["pipeline_id"]),
+            models.Index(fields=["username"])
+        ]
 
 class Group(models.Model):
     id = models.CharField(primary_key=True, max_length=128, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.CharField(max_length=64)
-    uuid = models.UUIDField(default=uuid.uuid4)
-    indexes = [
-        models.Index(fields=["owner"])
-    ]
-
-class GroupUser(models.Model):
-    group = models.ForeignKey("backend.Group", related_name="users", on_delete=models.CASCADE)
-    username = models.CharField(max_length=255)
-
-class Event(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    branch = models.CharField(max_length=255)
-    commit = models.TextField(max_length=255)
-    commit_sha = models.CharField(max_length=128)
-    context_url = models.CharField(max_length=128)
-    message = models.TextField()
-    pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
-    source = models.CharField(max_length=255)
-    username = models.CharField(max_length=255)
-    identity = models.ForeignKey("backend.Identity", related_name="events", null=True, on_delete=models.CASCADE)
-    uuid = models.UUIDField(default=uuid.uuid4)
-
-class Pipeline(models.Model):
-    id = models.CharField(primary_key=True, max_length=128)
-    auto_build = models.BooleanField(null=True)
-    branch = models.CharField(max_length=255, null=True )
-    builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    context_url = models.CharField(max_length=128, null=True)
-    context_sub_path = models.CharField(max_length=255, null=True)
-    context_type = models.CharField(max_length=32, choices=CONTEXT_TYPES, null=True)
-    destination_type = models.CharField(max_length=32, choices=DESTINATION_TYPES, null=True)
-    dockerfile_path = models.CharField(max_length=255, null=True)
-    group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
-    image_tag = models.CharField(max_length=64, null=True)
-    owner = models.CharField(max_length=64)
-    type = models.CharField(max_length=64, choices=PIPELINE_TYPES, default=PIPELINE_TYPE_WORKFLOW)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
     class Meta:
-        unique_together = [["branch", "context_url", "context_type"]]
+        indexes = [
+            models.Index(fields=["owner"])
+        ]
 
-class Policy(models.Model):      
-    context_commit: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    credentials: models.CharField(choices=PERMISSIONS, null=True)
-    custom_tag: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    deploy: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    destination_commit: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    dry_run: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    group = models.ForeignKey("backend.Group", related_name="policies", on_delete=models.CASCADE)
-    name = models.CharField(max_length=64, unique=True)
-    no_push: models.CharField(max_length=32, choices=ACCESS_CONTROLS, default=ACCESS_CONTROL_DENY)
-    uuid = models.UUIDField(default=uuid.uuid4)
+class GroupUser(models.Model):
+    group = models.ForeignKey("backend.Group", related_name="users", on_delete=models.CASCADE)
+    username = models.CharField(max_length=64)
+    is_admin = models.BooleanField(default=False)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     class Meta:
-        unique_together = [["group_id", "name"]]
+        indexes = [
+            models.Index(fields=["username"])
+        ]
+
+class Identity(models.Model):
+    name = models.CharField(max_length=64)
+    description = models.TextField(null=True)
+    type = models.CharField(max_length=32, choices=IDENTITY_TYPES)
+    owner = models.CharField(max_length=64)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    credentials = models.OneToOneField("backend.Credentials", on_delete=models.CASCADE)
+    class Meta:
+        unique_together = [["owner", "name"]]
+
+class Pipeline(models.Model):
+    id = models.CharField(primary_key=True, max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
+    owner = models.CharField(max_length=64)
+    updated_at = models.DateTimeField(auto_now=True)
+    uuid = models.UUIDField(default=uuid.uuid4)
+
+# class Policy(models.Model):      
+#     pass

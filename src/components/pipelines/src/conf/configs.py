@@ -1,3 +1,4 @@
+from asyncio.events import BaseDefaultEventLoopPolicy
 import os
 
 from pathlib import Path
@@ -8,8 +9,9 @@ BASE_DIR = str(Path(__file__).resolve().parent.parent) + "/"
 MAX_CONNECTION_ATTEMPTS = 24
 RETRY_DELAY = 5
 
-BASE_KANIKO_FILE = BASE_DIR + "conf/kaniko-base.yml"
-SCRATCH_DIR = BASE_DIR + "scratch/"
+BASE_WORK_DIR = "/mnt/pipelines/"
+
+LOG_FILE = BASE_DIR + "logs/service.log"
 
 DEPLOYMENT_TYPE = os.environ["DEPLOYMENT_TYPE"]
 
@@ -28,3 +30,19 @@ DB_NAME = os.environ["DB_NAME"]
 
 BROKER_URL = f"amqp://{BROKER_USER}:{BROKER_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}"
 BACKEND_URL = f"db+mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+KUBERNETES_NAMESPACE = os.environ["KUBERNETES_NAMESPACE"]
+
+# Default polling interval in seconds
+DEFAULT_POLLING_INTERVAL = 1
+
+# TAPIS_TENANT = os.environ["TAPIS_TENANT"]
+TAPIS_TENANT = "dev"  # TODO
+
+# TAPIS_SERVICE_ACCOUNT = os.environ["TAPIS_SERVICE_ACCOUNT"]
+TAPIS_SERVICE_ACCOUNT = "testuser2"  # TODO remove
+TAPIS_SERVICE_ACCOUNT_PASSWORD = "testuser2"
+
+TAPIS_BASE_URL = f"https://{TAPIS_TENANT}.tapis.io"
+
+TAPIS_JOB_POLLING_FREQUENCY = 2  # in seconds

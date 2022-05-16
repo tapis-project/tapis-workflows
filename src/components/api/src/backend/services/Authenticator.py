@@ -1,5 +1,3 @@
-import os
-
 from tapipy.tapis import Tapis
 
 from backend.conf.constants import TAPIS_BASE_URL

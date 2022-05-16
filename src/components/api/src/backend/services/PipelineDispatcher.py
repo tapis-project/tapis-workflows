@@ -2,7 +2,6 @@ import json
 from uuid import UUID
 
 from backend.services.MessageBroker import message_service as broker
-from backend.models import Pipeline
 
 
 class PipelineDispatcher:
@@ -14,7 +13,7 @@ class PipelineDispatcher:
 
     def _uuid_convert(self, obj):
         if isinstance(obj, UUID):
-            return obj.hex # TODO change from hex to string
+            return str(obj)
 
 pipeline_dispatcher = PipelineDispatcher()
 
