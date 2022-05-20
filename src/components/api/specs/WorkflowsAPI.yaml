@@ -1564,6 +1564,9 @@ components:
           $ref: "#/components/schemas/ContextCredentialsReq"
         dockerfile_path:
           type: string
+        identity_uuid:
+          type: string
+          format: uuid
         sub_path:
           type: string
         type:
@@ -1592,6 +1595,9 @@ components:
       properties:
         credentials:
           $ref: '#/components/schemas/DestinationCredentialsReq'
+        identity_uuid:
+          type: string
+          format: uuid
         tag: 
           type: string
         type:

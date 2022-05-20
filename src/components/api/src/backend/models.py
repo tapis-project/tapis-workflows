@@ -89,6 +89,24 @@ STATUSES = [
     (STATUS_SUCCESS, "success"),
 ]
 
+RUN_STATUS_ACTIVE = "active"
+RUN_STATUS_PENDING = "pending"
+RUN_STATUS_COMPLETED = "completed"
+RUN_STATUS_FAILED = "failed"
+RUN_STATUS_SUSPENDED = "suspended"
+RUN_STATUS_TERMINATED = "terminated"
+
+RUN_STATUSES = [
+    (RUN_STATUS_PENDING, "pending"),
+    (RUN_STATUS_ACTIVE, "active"),
+    (RUN_STATUS_COMPLETED, "completed"),
+    (RUN_STATUS_FAILED, "failed"),
+    (RUN_STATUS_SUSPENDED, "suspended"),
+    (RUN_STATUS_TERMINATED, "terminated"),
+]
+
+ACTION_EXECUTION_STATUSES = RUN_STATUSES
+
 VISIBILITY_PUBLIC = "public"
 VISIBILITY_PRIVATE = "private"
 VISIBILITY_TYPES = [
@@ -130,6 +148,14 @@ class Action(models.Model):
         indexes = [
             models.Index(fields=["id", "pipeline_id"])
         ]
+
+class ActionExecution(models.Model):
+    action = models.ForeignKey("backend.Action", related_name="action_executions", on_delete=models.CASCADE)
+    pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="action_executions", on_delete=models.CASCADE)
+    started_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=16, choices=ACTION_EXECUTION_STATUSES, default=RUN_STATUS_PENDING)
+    ended_at = models.DateTimeField()
+    uuid = models.UUIDField(default=uuid.uuid4)
 
 class Build(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -225,6 +251,15 @@ class Pipeline(models.Model):
     owner = models.CharField(max_length=64)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
+    current_run = models.ForeignKey("backend.PipelineRun", related_name="+", null=True, on_delete=models.CASCADE)
+    last_run = models.ForeignKey("backend.PipelineRun", related_name="+", null=True, on_delete=models.CASCADE)
+
+class PipelineRun(models.Model):
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="runs", on_delete=models.CASCADE)
+    status = models.CharField(max_length=16, choices=RUN_STATUSES, default=RUN_STATUS_PENDING)
+    started_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField()
+    uuid = models.UUIDField(primary_key=True)
 
 # class Policy(models.Model):      
 #     pass

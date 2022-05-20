@@ -86,7 +86,7 @@ class GroupCreateRequest(BaseModel):
     id: str
     users: List[GroupUserReq] = []
 
-# Actions
+
 class ActionDependency(BaseModel):
     id: str
     can_fail: bool = False
@@ -107,8 +107,16 @@ class Output(BaseModel):
 
 OutputType = Dict[str, Output]
 
+class HTTPBasicAuthCreds(BaseModel):
+    username: str = None
+    password: str = None
+
+class Auth(BaseModel):
+    type: str = "http_basic_auth"
+    creds: HTTPBasicAuthCreds
+
 class BaseAction(BaseModel):
-    auth: dict = None
+    auth: Auth = None
     auto_build: bool = None
     builder: str = None
     cache: bool = None
@@ -179,6 +187,19 @@ class CIPipeline(BasePipeline):
     http_method: str = None
     query_params: dict = None
     url: str = None
+
+# Pipeline runs and action executions
+class ActionExecution(BaseModel):
+    action_id: str
+    ended_at: str = None
+    pipeline_run_id: str
+    status: str
+
+class PipelineRun(BaseModel):
+    ended_at: str = None
+    pipeline_id: str
+    status: str
+    uuid: str
 
 class PreparedRequest:
     def __init__(

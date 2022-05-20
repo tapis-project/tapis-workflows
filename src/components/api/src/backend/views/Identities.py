@@ -3,9 +3,10 @@ from django.db import IntegrityError
 from backend.models import Identity, IDENTITY_TYPES
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.models import ModelListResponse, ModelResponse, BaseResponse
-from backend.views.http.responses.errors import BadRequest, NotFound, Forbidden
+from backend.views.http.responses.errors import BadRequest, NotFound, Forbidden, ServerError
 from backend.views.http.requests import IdentityCreateRequest
 from backend.services import CredentialsService
+from utils.cred_validators import validate_by_type
 
 
 IDENTITY_TYPES = [ identity_type[0] for identity_type in IDENTITY_TYPES ]
@@ -41,6 +42,15 @@ class Identities(RestrictedAPIView):
         if body.type not in IDENTITY_TYPES:
             return BadRequest(f"Invalid type for identity. Recieved: {body.type} - Expected one of the following: {IDENTITY_TYPES}")
 
+        # Validate the credentials
+        try:
+            is_valid = validate_by_type(body.type, body.credentials)
+        except Exception as e:
+            return ServerError("An error has occured when validating the identity credentials")
+
+        if not is_valid:
+            return BadRequest(f"Bad Credentials: The '{body.type}' credentials provided are invalid")
+
         # Persist the credentials in sk
         try:
             cred_service = CredentialsService()
@@ -73,5 +83,7 @@ class Identities(RestrictedAPIView):
             return Forbidden("You do not have access to this identity")
 
         identity.delete()
+
+        # TODO Delete the credentials for the identity in SK
 
         return BaseResponse(message="Identity deleted successfully")
