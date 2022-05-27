@@ -12,11 +12,8 @@ spec:
         app: workflows-api-deployment
     spec:
       containers:
-      - args:
-          - python3
-          - manage.py
-          - runserver
-          - 0.0.0.0:8000
+      - command: ["/bin/sh", "-c"]
+        args: ["python3 manage.py makemigrations; python3 manage.py migrate; python3 manage.py runserver 0.0.0.0:8000"]
         env:
           - name: BROKER_PASSWORD
             value: dev
