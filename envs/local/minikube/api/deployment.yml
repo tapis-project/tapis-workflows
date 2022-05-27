@@ -13,7 +13,9 @@ spec:
     spec:
       containers:
       - command: ["/bin/sh", "-c"]
-        args: ["python3 manage.py makemigrations; python3 manage.py migrate; python3 manage.py runserver 0.0.0.0:8000"]
+        args:
+          - "chmod +x scripts/run.sh;"
+          - "./scripts/run.sh;"
         env:
           - name: BROKER_PASSWORD
             value: dev
