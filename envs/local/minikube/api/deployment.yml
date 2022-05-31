@@ -44,6 +44,8 @@ spec:
             value: nathandf
           - name: TAPIS_TENANT
             value: dev
+          - name: WORKFLOWS_SERVICE_URL
+            value: https://dev.tapis.io
           - name: WORKFLOWS_SERVICE_ACCOUNT
             valueFrom:
               secretKeyRef:
