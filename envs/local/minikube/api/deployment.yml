@@ -34,6 +34,8 @@ spec:
             value: root
           - name: DEBUG
             value: 'true'
+          - name: DJANGO_SECRET_KEY
+            value: 'django-insecure-_!+8ppjzrs!$8l5n2k)^ry2=c&jkrxcx+w_a%!gcm4)u2@=_b2'
           - name: DJANGO_SUPERUSER_EMAIL
             value: nfreeman@tacc.utexas.edu
           - name: DJANGO_SUPERUSER_PASSWORD
@@ -57,5 +59,6 @@ spec:
         name: workflows-api
         ports:
           - containerPort: 8000
+            name: gunicorn
         resources: {}
         tty: true
