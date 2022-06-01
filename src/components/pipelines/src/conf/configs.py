@@ -31,6 +31,8 @@ DB_NAME = os.environ["DB_NAME"]
 BROKER_URL = f"amqp://{BROKER_USER}:{BROKER_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}"
 BACKEND_URL = f"db+mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
+# TODO get kubernetes namespace like the line below; reading directly from the secret
+# KUBERNETES_NAMESPACE = open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read()
 KUBERNETES_NAMESPACE = os.environ["KUBERNETES_NAMESPACE"]
 
 # Default polling interval in seconds
