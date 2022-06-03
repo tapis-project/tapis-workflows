@@ -1,0 +1,13 @@
+{
+    "id": "g1",
+    "users": [
+        {
+            "username":"nathandf",
+            "is_admin": true
+        },
+        {
+            "username": "testuser2",
+            "is_admin": true
+        }
+    ]
+}
