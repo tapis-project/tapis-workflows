@@ -5,6 +5,7 @@ from backend.views.Builds import Builds
 from backend.views.WebhookEvents import WebhookEvents
 from backend.views.Events import Events
 from backend.views.Groups import Groups
+from backend.views.HealthCheck import HealthCheck
 from backend.views.Identities import Identities
 from backend.views.Pipelines import Pipelines
 from backend.views.Users import Users
@@ -13,6 +14,7 @@ from backend.views.ChangePipelineOwner import ChangePipelineOwner
 
 
 urlpatterns = [
+    path("healthcheck/", HealthCheck.as_view()),
     path("auth/", Auth.as_view()),
     path("builds/", Builds.as_view()),
     path("webhooks/pipelines/<str:pipeline_id>", WebhookEvents.as_view()),
