@@ -55,7 +55,7 @@ jobs:
         username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
         password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
     - name: Build the Workflows API Docker image
-      run: docker build . --file src/components/api/src/Dockerfile --tag tapis/workflows-api:${{ steps.extract_branch.outputs.branch }}
+      run: docker build -f src/components/api/src/Dockerfile -t tapis/workflows-api:${{ steps.extract_branch.outputs.branch }} src/components/api/src/
     # if tag == prod release, tag as latest 
     - name: Build the Workflows API Docker image with latest tag
       if: ${{ steps.extract_branch.outputs.branch == 'main' }}
