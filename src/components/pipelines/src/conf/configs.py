@@ -31,17 +31,14 @@ DB_NAME = os.environ["DB_NAME"]
 BROKER_URL = f"amqp://{BROKER_USER}:{BROKER_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}"
 BACKEND_URL = f"db+mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-# TODO get kubernetes namespace like the line below; reading directly from the secret
+# Read the kubernetes namespace from the serviceaccount namespace directly
 KUBERNETES_NAMESPACE = open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read()
 
 # Default polling interval in seconds
 DEFAULT_POLLING_INTERVAL = 1
 
-TAPIS_TENANT = os.environ["TAPIS_TENANT"]
-
-# TAPIS_SERVICE_ACCOUNT = os.environ["TAPIS_SERVICE_ACCOUNT"]
-TAPIS_SERVICE_ACCOUNT = "testuser2"  # TODO remove
-TAPIS_SERVICE_ACCOUNT_PASSWORD = "testuser2"
+TAPIS_SERVICE_ACCOUNT = os.environ["WORKFLOWS_SERVICE_ACCOUNT"]
+TAPIS_SERVICE_ACCOUNT_PASSWORD = os.environ["WORKFLOWS_SERVICE_PASSWORD"]
 
 TAPIS_BASE_URL = os.environ["WORKFLOWS_SERVICE_URL"]
 

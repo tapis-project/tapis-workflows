@@ -1,7 +1,7 @@
 import os
 
-
-TAPIS_TENANT = os.environ["TAPIS_TENANT"]
+# TODO verify with rich that this is OK
+TAPIS_TENANT = "admin"
 
 WORKFLOWS_SERVICE_ACCOUNT = os.environ["WORKFLOWS_SERVICE_ACCOUNT"]
 WORKFLOWS_SERVICE_PASSWORD = os.environ["WORKFLOWS_SERVICE_PASSWORD"]

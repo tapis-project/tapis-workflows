@@ -6,8 +6,10 @@ RUN chmod 755 /usr/bin/kubectl
 
 RUN mkdir src
 
-COPY . /src
+COPY requirements.txt /src/requirements.txt
 
 WORKDIR /src
 
 RUN pip install -r requirements.txt
+
+COPY . /src

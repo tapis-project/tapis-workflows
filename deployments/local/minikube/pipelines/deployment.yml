@@ -55,15 +55,9 @@ spec:
             - name: WORKFLOWS_SERVICE_URL
               value: https://dev.tapis.io
             - name: WORKFLOWS_SERVICE_ACCOUNT
-              valueFrom:
-                secretKeyRef:
-                  name: workflows-secrets
-                  key: service-account
+              value: testuser2
             - name: WORKFLOWS_SERVICE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: workflows-secrets
-                  key: service-password
+              value: testuser2
           image: tapis/workflows-pipelines:dev
           imagePullPolicy: Always
           name: workflows-pipelines

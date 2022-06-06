@@ -1,18 +1,10 @@
 name: Tapis Workflows 
 
-on: [push]
-
-env:
-    SOME_VAR: "placeholder"
+on: [push, pull_request]
     
 jobs:
-    tests:
-        name: Run Tests
+    api-tests:
+        name: Run API Tests
         runs-on: ubuntu-latest
         steps:
-            - run: "echo 'runing tests'"
-    linting:
-        name: Linting
-        runs-on: ubuntu-latest
-        steps:
-            - run: "echo 'linting'"
+            - run: "echo 'running API tests'"
