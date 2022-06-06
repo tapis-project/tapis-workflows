@@ -30,7 +30,7 @@ jobs:
         username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
         password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
     - name: Build the Workflows Pipelines Docker image
-      run: docker build . --file src/components/pipelines/src/Dockerfile --tag tapis/workflows-pipelines:${{ steps.extract_branch.outputs.branch }}
+      run: docker build -f src/components/pipelines/src/Dockerfile -t tapis/workflows-pipelines:${{ steps.extract_branch.outputs.branch }} src/components/pipelines/src/
     # if tag == prod release, tag as latest 
     - name: Build the Workflows Pipelines Docker image with latest tag
       if: ${{ steps.extract_branch.outputs.branch == 'main' }}
