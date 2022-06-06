@@ -24,7 +24,7 @@ spec:
               value: dev
             - name: MYSQL_ROOT_PASSWORD
               value: dev
-            - name: MYSQL_USERNAME
+            - name: MYSQL_USER
               value: root
           image: mysql:8
           name: workflows-mysql
