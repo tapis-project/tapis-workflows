@@ -15,6 +15,7 @@ jobs:
         - run: "echo 'running API tests'"
 
   build-push-workflows-pipelines:
+    name: Build/Push Pipelines Image
     runs-on: ubuntu-latest
     steps:
     - name: Extract branch name
@@ -29,7 +30,7 @@ jobs:
         username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
         password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
     - name: Build the Workflows Pipelines Docker image
-      run: docker build . --file Dockerfile --tag tapis/workflows-pipelines:${{ steps.extract_branch.outputs.branch }}
+      run: docker build . --file src/components/pipelines/src/Dockerfile --tag tapis/workflows-pipelines:${{ steps.extract_branch.outputs.branch }}
     # if tag == prod release, tag as latest 
     - name: Build the Workflows Pipelines Docker image with latest tag
       if: ${{ steps.extract_branch.outputs.branch == 'main' }}
@@ -39,6 +40,7 @@ jobs:
       run: docker push --all-tags tapis/workflows-pipelines
 
   build-push-workflows-api:
+    name: Build/Push API Image
     runs-on: ubuntu-latest
     steps:
     - name: Extract branch name
@@ -53,7 +55,7 @@ jobs:
         username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
         password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
     - name: Build the Workflows API Docker image
-      run: docker build . --file Dockerfile --tag tapis/workflows-api:${{ steps.extract_branch.outputs.branch }}
+      run: docker build . --file src/components/api/src/Dockerfile --tag tapis/workflows-api:${{ steps.extract_branch.outputs.branch }}
     # if tag == prod release, tag as latest 
     - name: Build the Workflows API Docker image with latest tag
       if: ${{ steps.extract_branch.outputs.branch == 'main' }}
