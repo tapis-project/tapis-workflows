@@ -5,22 +5,17 @@ from typing import Dict
 from tapipy.tapis import Tapis
 
 from backend.models import Credentials
-from backend.conf.constants import TAPIS_BASE_URL, TAPIS_TENANT, WORKFLOWS_SERVICE_ACCOUNT, WORKFLOWS_SERVICE_PASSWORD
-
-
-# TODO update where the is an actual service account
-WORKFLOWS_SERVICE_ACCOUNT = "testuser2"
-WORKFLOWS_SERVICE_PASSWORD = "testuser2"
+from backend.conf.constants import WORKFLOWS_SERVICE_URL, TAPIS_TENANT, WORKFLOWS_SERVICE_ACCOUNT, WORKFLOWS_SERVICE_PASSWORD
 
 class CredentialsService:
     def __init__(self):
+        # TODO convert to use service token
         self.client = Tapis(
-            base_url=TAPIS_BASE_URL,
+            base_url=WORKFLOWS_SERVICE_URL,
             username=WORKFLOWS_SERVICE_ACCOUNT,
             password=WORKFLOWS_SERVICE_PASSWORD
         )
         
-        # TODO Cache the jwt
         self.client.get_tokens()
 
     def save(self, owner: str, data: Dict[str, str]):

@@ -42,10 +42,12 @@ spec:
             value: dev
           - name: DJANGO_SUPERUSER_USERNAME
             value: nathandf
+          - name: TAPIS_BASE_URL
+            value: https://dev.develop.tapis.io
           - name: TAPIS_TENANT
             value: dev
           - name: WORKFLOWS_SERVICE_URL
-            value: https://dev.tapis.io
+            value: https://admin.tapis.io
           - name: WORKFLOWS_SERVICE_ACCOUNT
             valueFrom:
               secretKeyRef:

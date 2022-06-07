@@ -10,7 +10,6 @@ from core.ActionExecutor import ActionExecutor
 
 PERMITTED_HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
-
 class WebhookModel(BaseModel):
     auth: Union[dict, None] = (None,)
     data: Any = (None,)
