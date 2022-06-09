@@ -45,7 +45,7 @@ class ActionExecutor:
         self.polling_interval = DEFAULT_POLLING_INTERVAL
 
     def _job_in_terminal_state(self, job):
-        return self._job_failed(job) or self._job_succeeded(job)
+        return (self._job_failed(job) or self._job_succeeded(job)) and job.status.active == None
 
     def _job_failed(self, job):
         return type(job.status.failed) == int and job.status.failed > 0

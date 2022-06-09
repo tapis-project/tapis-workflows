@@ -2,7 +2,7 @@ import time, logging
 
 from kubernetes import client
 
-from conf.configs import KUBERNETES_NAMESPACE
+from conf.configs import KUBERNETES_NAMESPACE, PIPELINES_PVC
 from core.ActionResult import ActionResult
 from core.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
@@ -15,9 +15,12 @@ class Kubernetes(BaseBuildExecutor):
         self.configmap = None
 
     def execute(self, on_finish_callback) -> ActionResult:
-        # Create the kaniko job
-        # TODO try block
-        job = self._create_kaniko_job()
+        # Create the kaniko job return a failed action result on exception
+        # with the error message as the str value of the exception
+        try: 
+            job = self._create_kaniko_job()
+        except Exception as e:
+            return ActionResult(status=1, errors=[e])
 
         # Poll the job status until the job is in a terminal state
         while not self._job_in_terminal_state(job):
@@ -30,10 +33,9 @@ class Kubernetes(BaseBuildExecutor):
         # Get the logs(stdout) from this job's pod
         pod_list = self.core_v1_api.list_namespaced_pod(
             namespace=KUBERNETES_NAMESPACE,
-            label_selector=f"job-name={job.metadata.name}",
-            # timeout_seconds=10 # TODO Consider timout
+            label_selector=f"job-name={job.metadata.name}"
         )
-
+        
         logs = None
         try:
             logs = self.core_v1_api.read_namespaced_pod_log(
@@ -42,7 +44,7 @@ class Kubernetes(BaseBuildExecutor):
                 _return_http_data_only=True,
                 _preload_content=False,
             ).data  # .decode("utf-8")
-
+            logging.debug(f"{logs}\n")
             self._store_result(".stdout", logs)
 
         except client.rest.ApiException as e:
@@ -68,10 +70,17 @@ class Kubernetes(BaseBuildExecutor):
         volume_mounts = []
         if self.configmap is not None:
             volume_mounts = [
+                # Volume mount for the registry credentials config map
                 client.V1VolumeMount(
                     name="regcred",
                     mount_path="/kaniko/.docker/config.json",
                     sub_path="config.json",
+                ),
+                # Volume mount for the output
+                client.V1VolumeMount(
+                    name="output",
+                    mount_path="/mnt/",
+                    sub_path=self.action.output_dir.lstrip("/mnt/pipelines/") 
                 )
             ]
 
@@ -87,10 +96,18 @@ class Kubernetes(BaseBuildExecutor):
         volumes = []
         if self.configmap is not None:
             volumes = [
+                # Volume for mounting the registry credentials
                 client.V1Volume(
                     name="regcred",
                     config_map=client.V1ConfigMapVolumeSource(
                         name=self.configmap.metadata.name
+                    ),
+                ),
+                # Volume for mounting the output
+                client.V1Volume(
+                    name="output",
+                    persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+                        claim_name=PIPELINES_PVC
                     ),
                 )
             ]
@@ -116,10 +133,13 @@ class Kubernetes(BaseBuildExecutor):
 
         # Job body
         body = client.V1Job(metadata=metadata, spec=job_spec)
-
-        job = self.batch_v1_api.create_namespaced_job(
-            namespace=KUBERNETES_NAMESPACE, body=body
-        )
+        
+        try:
+            job = self.batch_v1_api.create_namespaced_job(
+                namespace=KUBERNETES_NAMESPACE, body=body
+            )
+        except Exception as e:
+            raise e
 
         # Register the job to be deleted after execution
         self._register_resource(JobResource(job=job))
@@ -154,10 +174,15 @@ class Kubernetes(BaseBuildExecutor):
 
         # the image registry that the image will be pushed to
         destination = self._resolve_destination_string()
-        destination_arg = "--no-push"
 
-        if destination is not None:
-            destination_arg = f"--destination={destination}"
+        destination_arg = f"--destination={destination}"
+        if destination == None:
+            destination_arg = "--no-push"
+            # NOTE the option below will create a tar file called image.tar
+            # in the volume mount the in the action's output dir. However,
+            # it doesn't seem you can get the tar file WITHOUT also specifiying
+            # a destination, even when using the --no-push option. Makes no sense.
+            # container_args.append("--tarPath=/mnt/image.tar")
 
         container_args.append(destination_arg)
 

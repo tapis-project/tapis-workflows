@@ -34,6 +34,9 @@ BACKEND_URL = f"db+mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}
 # Read the kubernetes namespace from the serviceaccount namespace directly
 KUBERNETES_NAMESPACE = open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read()
 
+# TODO PIPELINES_PVC = os.environ["WORKFLOWS_PIPELINES_PVC"]
+PIPELINES_PVC = "workflows-pipelines-pvc"
+
 # Default polling interval in seconds
 DEFAULT_POLLING_INTERVAL = 1
 
