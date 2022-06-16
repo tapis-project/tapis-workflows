@@ -1,3 +1,4 @@
+from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
 from django.forms import model_to_dict
 
@@ -8,11 +9,17 @@ from backend.views.http.requests import BasePipeline, CIPipeline, ImageBuildActi
 from backend.models import Pipeline, Group, GroupUser, ACTION_TYPE_IMAGE_BUILD
 from backend.services import action_service, group_service
 from backend.views.http.responses.BaseResponse import BaseResponse
+from backend.errors.api import BadRequestError
 
 
 PIPELINE_TYPE_CI = "ci"
 PIPELINE_TYPE_WORKFLOW = "workflow"
 PIPELINE_TYPES = [ PIPELINE_TYPE_CI, PIPELINE_TYPE_WORKFLOW ]
+
+PIPELINE_TYPE_MAPPING = {
+    PIPELINE_TYPE_CI: "build_ci_pipeline",
+    PIPELINE_TYPE_WORKFLOW: "build_workflow_pipeline"
+}
 
 class Pipelines(RestrictedAPIView):
     def get(self, request, id=None):
@@ -28,7 +35,7 @@ class Pipelines(RestrictedAPIView):
             return NotFound(f"Pipeline not found with id '{id}'")
 
         # Check that the user belongs to the group that is attached
-        # to this pipline
+        # to this pipeline
         if not group_service.user_in_group(request.username, pipeline.group_id):
             return Forbidden(message="You do not have access to this pipeline")
 
@@ -86,18 +93,18 @@ class Pipelines(RestrictedAPIView):
             return UnprocessableEntity(f"Group '{body.group_id}' does not exist'")
     
         # Check that the user belongs to the group that is attached
-        # to this pipline
+        # to this pipeline
         if not group_service.user_in_group(request.username, group.id):
             return Forbidden(message="You cannot create a pipeline for this group")
 
         # NOTE Pipeline requests with type 'ci' are supported in order to make the 
         # process of setting up a ci/cd pipeline as simple as possible. Rather than
         # specifying actions, dependencies, etc, we let user pass most the required
-        # data in the top level of the pipline request.
-        if body.type == PIPELINE_TYPE_CI:
-            return self.build_ci_pipline(body, group, request.username)
-
-        return self.build_workflow_pipeline(body, group, request.username)
+        # data in the top level of the pipeline request.
+        return getattr(
+            self,
+            PIPELINE_TYPE_MAPPING[body.type]
+        )(body, group, request.username)
 
     def put(self, *args, **kwargs):
         return MethodNotAllowed(message="Events cannot be updated")
@@ -124,7 +131,7 @@ class Pipelines(RestrictedAPIView):
 
         return BaseResponse(message=f"Pipeline '{id}' and {len(actions)} action(s) deleted by '{request.username}'")
 
-    def build_ci_pipline(self, body, group, owner):
+    def build_ci_pipeline(self, body, group, owner):
         # Create the pipeline
         try:
             pipeline = Pipeline.objects.create(
@@ -135,17 +142,21 @@ class Pipelines(RestrictedAPIView):
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
 
-        # Build an action_request from the pipeline request body
-        action_request = ImageBuildAction(
-            id="build",
-            build=body.builder,
-            cache=body.cache,
-            description="Build an image from a repository and push it to an image registry",
-            destination=body.destination,
-            context=body.context,
-            pipeline_id=pipeline.id,
-            type=ACTION_TYPE_IMAGE_BUILD
-        )
+        try:
+            # Build an action_request from the pipeline request body
+            action_request = ImageBuildAction(
+                id="build",
+                builder=body.builder,
+                cache=body.cache,
+                description="Build an image from a repository and push it to an image registry",
+                destination=body.destination,
+                context=body.context,
+                pipeline_id=pipeline.id,
+                type=ACTION_TYPE_IMAGE_BUILD
+            )
+        except ValidationError as e:
+            pipeline.delete()
+            return BadRequest(message=e)
 
         # Create 'build' action
         try:
@@ -153,7 +164,11 @@ class Pipelines(RestrictedAPIView):
         except (IntegrityError, OperationalError) as e:
             pipeline.delete()
             return BadRequest(message=e.__cause__)
+        except BadRequestError as e:
+            pipeline.delete()
+            return BadRequest(message=e)
         except Exception as e:
+            pipeline.delete()
             return ServerError(e)
 
         return ModelResponse(pipeline)
@@ -169,15 +184,19 @@ class Pipelines(RestrictedAPIView):
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
         
+        # Create actions
         actions = []
         for action_request in body.actions:
             try:
                 actions.append(action_service.create(pipeline, action_request))
-            except (IntegrityError, OperationalError, DatabaseError):
+            except (IntegrityError, OperationalError, DatabaseError) as e:
                 pipeline.delete()
-                for action in actions:
-                    action.delete()
-
-
+                return BadRequest(message=e.__cause__)
+            except BadRequestError as e:
+                pipeline.delete()
+                return BadRequest(message=e)
+            except Exception as e:
+                pipeline.delete()
+                return ServerError(e)
 
         return ModelResponse(pipeline)

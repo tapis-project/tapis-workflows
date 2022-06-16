@@ -7,7 +7,7 @@ class BadRequest(BaseResponse):
             self,
             status=400,
             success=False,
-            message=message if message is not None else "Bad Request"
+            message=str(message) if message is not None else "Bad Request"
         )
 
 # 401
@@ -17,7 +17,7 @@ class Unauthorized(BaseResponse):
             self,
             status=401,
             success=False,
-            message=message if message is not None else "Unauthorized"
+            message=str(message) if message is not None else "Unauthorized"
         )
 
 # 403
@@ -27,7 +27,7 @@ class Forbidden(BaseResponse):
             self,
             status=403,
             success=False,
-            message=message if message is not None else "Forbidden"
+            message=str(message) if message is not None else "Forbidden"
         )
 
 # 404
@@ -37,7 +37,7 @@ class NotFound(BaseResponse):
             self,
             status=404,
             success=False,
-            message=message if message is not None else "Not Found"
+            message=str(message) if message is not None else "Not Found"
         )
 
 # 405
@@ -47,7 +47,7 @@ class MethodNotAllowed(BaseResponse):
             self,
             status=405,
             success=False,
-            message=message if message is not None else "Method not allowed"
+            message=str(message) if message is not None else "Method not allowed"
         )
 
 # 409
@@ -57,7 +57,7 @@ class Conflict(BaseResponse):
             self,
             status=409,
             success=False,
-            message=message if message is not None else "Conflict"
+            message=str(message) if message is not None else "Conflict"
         )
 
 # 415
@@ -67,7 +67,7 @@ class UnsupportedMediaType(BaseResponse):
             self,
             status=415,
             success=False,
-            message=message if message is not None else "Unsupported media type",
+            message=str(message) if message is not None else "Unsupported media type",
         )
 
 # 422
@@ -77,7 +77,7 @@ class UnprocessableEntity(BaseResponse):
             self,
             status=422,
             success=False,
-            message=message if message is not None else "Unprocessable entity",
+            message=str(message) if message is not None else "Unprocessable entity",
         )
 
 # 500
@@ -87,5 +87,5 @@ class ServerError(BaseResponse):
             self,
             status=500,
             success=False,
-            message=message if message is not None else "Server Error"
+            message=str(message) if message is not None else "Server Error"
         )

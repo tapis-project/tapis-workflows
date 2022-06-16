@@ -21,12 +21,13 @@ class Docker(BaseBuildExecutor):
             action, message.event, message.directives
         )
 
-        # Do not build if there is no BUILD directive and
-        # the auto_build flag set to False
-        if (hasattr(message.directives, "BUILD") or action.auto_build) == False:
-            logging.info("Build cancelled. No 'build' directive found.")
-            self._reset()
-            return
+        # TODO Pending deletion. Test thoroughly
+        # # Do not build if there is no BUILD directive and
+        # # the auto_build flag set to False
+        # if (hasattr(message.directives, "BUILD") or action.auto_build) == False:
+        #     logging.info("Build cancelled. No 'build' directive found.")
+        #     self._reset()
+        #     return
 
         # Create a docker client
         client = docker.from_env()
@@ -49,7 +50,7 @@ class Docker(BaseBuildExecutor):
                 if action.context.sub_path is not None
                 else ""
             )
-            + f" --dockerfile {action.context.dockerfile_path}"
+            + f" --dockerfile {action.context.recipe_file_path}"
             + (
                 f" --destination {destination}"
                 if action.destination is not None

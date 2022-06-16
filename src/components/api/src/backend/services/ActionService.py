@@ -1,22 +1,46 @@
-import logging
+import logging, json
 
+from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
 
 from backend.models import Action, Context, Destination, Identity
-from backend.models import ACTION_TYPE_WEBHOOK_NOTIFICATION, ACTION_TYPE_IMAGE_BUILD, ACTION_TYPE_CONTAINER_RUN, ACTION_TYPE_TAPIS_JOB, ACTION_TYPE_TAPIS_ACTOR
-from backend.views.http.requests import WebhookAction, ImageBuildAction, ContainerRunAction, TapisJobAction
+from backend.models import (
+    ACTION_TYPE_WEBHOOK_NOTIFICATION,
+    ACTION_TYPE_IMAGE_BUILD,
+    ACTION_TYPE_CONTAINER_RUN,
+    ACTION_TYPE_TAPIS_JOB,
+    ACTION_TYPE_TAPIS_ACTOR,
+    DESTINATION_TYPE_LOCAL,
+    DESTINATION_TYPE_DOCKERHUB,
+)
+from backend.views.http.requests import (
+    WebhookAction,
+    ImageBuildAction,
+    ContainerRunAction,
+    TapisJobAction,
+    TapisActorAction,
+    RegistryDestination,
+    LocalDestination
+)
 from backend.services.CredentialsService import CredentialsService
 from backend.services.Service import Service
+from backend.errors.api import BadRequestError, ServerError
 
 
-ACTION_REQUEST_MAPPING = {
+ACTION_TYPE_REQUEST_MAPPING = {
     ACTION_TYPE_IMAGE_BUILD: ImageBuildAction,
     ACTION_TYPE_WEBHOOK_NOTIFICATION: WebhookAction,
     ACTION_TYPE_CONTAINER_RUN: ContainerRunAction,
     ACTION_TYPE_TAPIS_JOB: TapisJobAction,
+    ACTION_TYPE_TAPIS_ACTOR: TapisActorAction,
 }
 
-ACTION_REQUEST_TYPES = list(ACTION_REQUEST_MAPPING.keys())
+DESTINATION_TYPE_REQUEST_MAPPING = {
+    DESTINATION_TYPE_DOCKERHUB: RegistryDestination,
+    DESTINATION_TYPE_LOCAL: LocalDestination
+}
+
+ACTION_REQUEST_TYPES = list(ACTION_TYPE_REQUEST_MAPPING.keys())
 
 class ActionService(Service):
     def __init__(self):
@@ -24,30 +48,25 @@ class ActionService(Service):
         self._register_service("cred_service", CredentialsService)
 
     def create(self, pipeline, request):
-        # Create the context
-        context = None
-        if request.context is not None:
-            try:
+        try:
+            # Create the context
+            context = None
+            if request.context != None:
                 context = self._create_context(request, pipeline)
-            except Exception as e:
-                # TODO log the error
-                self.rollback()
-                raise e
-
-        destination = None
-        if request.destination is not None:
-            try:
-                destination = self._create_destination(request, pipeline)
-            except Exception as e:
-                # TODO log the error
-                self.rollback()
-                raise e
             
+            # Create the destination
+            destination = None
+            if request.destination != None:
+                destination = self._create_destination(request, pipeline)
+
+        except Exception as e:
+            self.rollback()
+            raise e
+
         # Create action
         try:
             action = Action.objects.create(
                 auth=request.auth,
-                auto_build=request.auto_build,
                 builder=request.builder,
                 cache=request.cache,
                 context=context,
@@ -75,6 +94,10 @@ class ActionService(Service):
             self.rollback()
             raise e
 
+        except BadRequestError as e:
+            self.rollback()
+            raise e
+
         return action
 
     def _resolve_authn_source(self, request, pipeline, accessor):
@@ -89,7 +112,11 @@ class ActionService(Service):
         identity_uuid = getattr(target, "identity_uuid", None)
         identity = None
         if identity_uuid != None:
-            identity = Identity.objects.filter(pk=identity_uuid).first()
+            # Ensure has access to this identity.
+            # TODO Implement identity policies that allow group users access to this identity
+            identity = Identity.objects.filter(pk=identity_uuid, owner=pipeline.owner).first()
+            if identity == None:
+                raise BadRequestError(f"Identity with uuid '{identity_uuid}' does not exsit or you do not have access to it.")
 
             return (identity, None)
         
@@ -100,7 +127,7 @@ class ActionService(Service):
         if credentials != None:
             cred_data = {}
             for key, value in dict(credentials).items():
-                if value is not None:
+                if value != None:
                     cred_data[key] = getattr(credentials, key)
             
             try:
@@ -111,29 +138,33 @@ class ActionService(Service):
                 # should any subsequent model creations fail
                 self._add_rollback(cred_service.delete, cred.sk_id)
             except Exception as e:
-                raise e
+                raise ServerError(str(e))
         
         return (None, cred)
 
     def _create_context(self, request, pipeline):
-        (identity, cred) = self._resolve_authn_source(request, pipeline, "context")
-        
-        if (
-            request.context.visibility == "private"
-            and (identity == None and cred == None)
-        ):
-            raise Exception("Missing identity or credentials for private context")
+        """Creates the Context object for the action. The Context contains
+        data about the source of the build; which registry to pull from, the
+        path to the recipe file, etc"""
 
+        # Resolve the authentication source for the context
+        try:
+            (identity, cred) = self._resolve_authn_source(request, pipeline, "context")
+        except (BadRequestError, ServerError)as e:
+            raise e
+
+        # Create the context object for the action.
         try:
             context = Context.objects.create(
                 branch=request.context.branch,
                 credentials=cred,
-                dockerfile_path=request.context.dockerfile_path,
+                recipe_file_path=request.context.recipe_file_path,
                 sub_path=request.context.sub_path,
                 type=request.context.type,
                 url=request.context.url,
                 visibility=request.context.visibility,
-                identity=identity
+                identity=identity,
+                tag=request.context.tag
             )
 
             # Register a rollback funtion(partial) that will be used to delete the context
@@ -141,33 +172,60 @@ class ActionService(Service):
             self._add_rollback(context.delete)
         except (IntegrityError, OperationalError) as e:
             raise e
+        except Exception as e:
+            raise e
 
         return context
 
     def _create_destination(self, request, pipeline):
+        # Resolve the authentication source.
         (identity, cred) = self._resolve_authn_source(request, pipeline, "destination")
 
-         # Create the destination
+        # Validate the the destination portion of the request
+        request_schema = DESTINATION_TYPE_REQUEST_MAPPING[request.destination.type]
+
+        # Create the destination
         try:
+            # Validate the destination part of the request
+            request_object = request_schema(**dict(request.destination))
+
+            # Persist the Destination object
             destination = Destination.objects.create(
                 credentials=cred,
-                tag=request.destination.tag,
-                type=request.destination.type,
-                url=request.destination.url,
+                tag=getattr(request_object, "tag", None),
+                type=request_object.type,
+                url=getattr(request_object, "url", None),
+                filename=getattr(request_object, "filename", None),
                 identity=identity
             )
 
+            # Register a rollback funtion(partial) that will be used to delete the destination
+            # should any subsequent model creations fail
             self._add_rollback(destination.delete)
         except (IntegrityError, OperationalError) as e:
+            self.rollback()
+            raise e
+        except ValidationError as e:
+            self.rollback()
+            errors = [f"{error['type']}. {error['msg']}: {'.'.join(error['loc'])}" for error in json.loads(e.json())]
+            raise BadRequestError(str(errors))
+        except Exception as e:
+            self.rollback()
             raise e
 
         return destination
 
     def resolve_request_type(self, action_type):
-        return ACTION_REQUEST_MAPPING[action_type]
+        return ACTION_TYPE_REQUEST_MAPPING[action_type]
 
     def is_valid_action_type(self, action_type):
-        if action_type in ACTION_REQUEST_MAPPING:
+        if action_type in ACTION_TYPE_REQUEST_MAPPING:
+            return True
+
+        return False
+
+    def is_valid_destination_type(self, destination_type):
+        if destination_type in DESTINATION_TYPE_REQUEST_MAPPING:
             return True
 
         return False

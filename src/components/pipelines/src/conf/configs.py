@@ -1,4 +1,3 @@
-from asyncio.events import BaseDefaultEventLoopPolicy
 import os
 
 from pathlib import Path
@@ -39,6 +38,13 @@ PIPELINES_PVC = "workflows-pipelines-pvc"
 
 # Default polling interval in seconds
 DEFAULT_POLLING_INTERVAL = 1
+
+# Image tags and urls
+KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"
+KANIKO_IMAGE_TAG = "debug"
+
+SINGULARITY_IMAGE_URL = "quay.io/singularity/singularity"
+SINGULARITY_IMAGE_TAG = "v3.10.0"
 
 TAPIS_SERVICE_ACCOUNT = os.environ["WORKFLOWS_SERVICE_ACCOUNT"]
 TAPIS_SERVICE_ACCOUNT_PASSWORD = os.environ["WORKFLOWS_SERVICE_PASSWORD"]

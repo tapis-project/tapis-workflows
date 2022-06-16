@@ -20,7 +20,6 @@ DJANGO_TAPIS_TOKEN_HEADER = f"HTTP_{TAPIS_TOKEN_HEADER.replace('-', '_')}"
 
 DIRECTIVE_DELIMITER = "|"
 SUPPORTED_DIRECTIVES = [
-    "BUILD", # Tells the Pipelines Service to run the build action if auto_build is False
     "DEPLOY", # Implies the BUILD directive. Tells the Pipelines Service to run any post_build actions
     "CACHE", # Tells the image builder whether or not the image layers should be cached.
     "CUSTOM_TAG", # A key-value pair. Uses the value specified in the directive as the image tag

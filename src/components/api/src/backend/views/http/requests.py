@@ -1,5 +1,28 @@
+import re
+
 from typing import AnyStr, List, Union, Dict, TypedDict
-from pydantic import BaseModel
+from pydantic import BaseModel, validator, root_validator
+
+from backend.models import IMAGE_BUILDER_SINGULARITY, CONTEXT_TYPE_DOCKERHUB, VISIBILITY_PRIVATE, DESTINATION_TYPE_LOCAL
+
+
+### Validators ###
+
+def validate_id(value):
+    pattern = re.compile(r"^[A-Z0-9\-_]+$")
+    if pattern.match(value) == None:
+        raise ValueError("`id` property must only contain alphanumeric characters, underscores, and hypens")
+
+    return value
+
+def validate_ctx_dest_url(value):
+    pattern = re.compile(r"^[a-zA-Z0-9-_]+/[a-zA-Z0-9-_]+$")
+    if pattern.match(value) == None:
+        raise ValueError("`url` must follow the format:  `<username>/<name>`")
+
+    return value
+
+##################
 
 # Auth
 class AuthRequest(BaseModel):
@@ -24,31 +47,51 @@ class IdentityCreateRequest(BaseModel):
         DockerhubCredentials
     ]
 
-# Contexts
-
-# TODO add more types to the context credential types as they become supported
-ContextCredentialTypes = GithubCredentials
+# ContextCredentialTypes = Union[GithubCredentials, SomethingElse]
+ContextCredentialTypes = Union[GithubCredentials, DockerhubCredentials]
 
 class Context(BaseModel):
     credentials: ContextCredentialTypes = None
-    branch: str
-    dockerfile_path: str = "Dockerfile"
+    branch: str = None
+    recipe_file_path: str = None
     identity_uuid: str = None
     sub_path: str = None
+    tag: str = None
     type: str
     url: str
     visibility: str
 
-# Destination
+    # Validators
+    # _validate_url = validator("url", allow_reuse=True)(validate_ctx_dest_url)
+
 # TODO add more types to the destination credential types as they become supported
 DestinationCredentialTypes = DockerhubCredentials
 
 class Destination(BaseModel):
+    type: str
+    tag: str = None
     credentials: DestinationCredentialTypes = None
     identity_uuid: str = None
-    tag: str
-    type: str
+
+class RegistryDestination(Destination):
+    tag: str = None
+    credentials: DestinationCredentialTypes = None
+    identity_uuid: str = None
     url: str
+
+    # Validators
+    # _validate_url = validator("url", allow_reuse=True)(validate_ctx_dest_url)
+
+    @root_validator
+    def creds_or_identity(csl, values):
+        creds, identity = values.get("credentials"), values.get("identity_uuid")
+        if creds == None and identity == None:
+            raise ValueError("Missing credentials and identity_uuid. Must provide at lease one.")
+
+        return values
+
+class LocalDestination(Destination):
+    filename: str = None
 
 # Events
 class BaseEvent(BaseModel):
@@ -86,23 +129,26 @@ class GroupCreateRequest(BaseModel):
     id: str
     users: List[GroupUserReq] = []
 
+    # Validators
+    # _validate_id = validator("id", allow_reuse=True)(validate_id) 
 
 class ActionDependency(BaseModel):
     id: str
     can_fail: bool = False
 
+    # Validators
+    # _validate_id = validator("id", allow_reuse=True)(validate_id)
+
 IOValueType = Union[AnyStr, Dict, List, bool]
 
 class Input(BaseModel):
     type: str
-    mode: str
     value: IOValueType
 
 InputType = Dict[str, Input]
 
 class Output(BaseModel):
     type: str
-    model: str
     value: IOValueType
 
 OutputType = Dict[str, Output]
@@ -117,13 +163,15 @@ class Auth(BaseModel):
 
 class BaseAction(BaseModel):
     auth: Auth = None
-    auto_build: bool = None
     builder: str = None
     cache: bool = None
     context: Context = None
     data: dict = None
     description: str = None
-    destination: Destination = None
+    destination: Union[
+        RegistryDestination,
+        LocalDestination
+    ] = None
     headers: dict = None
     http_method: str = None
     image: str = None
@@ -140,15 +188,56 @@ class BaseAction(BaseModel):
     ttl: int = -1
     url: str = None
 
+    # Validators
+    # _validate_id = validator("id", allow_reuse=True)(validate_id)
+
+
+
 class ContainerRunAction(BaseAction):
     image: str
 
 class ImageBuildAction(BaseAction):
-    auto_build: bool = False
-    builder: str = "kaniko"
+    builder: str
     cache: bool = False
     context: Context
-    destination: Destination
+    destination: Union[
+        RegistryDestination,
+        LocalDestination
+    ]
+
+    @root_validator
+    def validate_image_build(cls, values):
+        builder = values.get("builder")
+        context = values.get("context")
+        destination = values.get("destination")
+        # Only allow context type of dockerhub when singularity is chosen
+        # as a the image builder
+        if (
+            context.type == CONTEXT_TYPE_DOCKERHUB
+            and builder != IMAGE_BUILDER_SINGULARITY
+        ):
+            raise ValueError("Context type 'dockerhub' can only be used in conjunction with a builder of type 'singularity'")
+        
+        if (
+            context.type == CONTEXT_TYPE_DOCKERHUB
+            and destination != DESTINATION_TYPE_LOCAL
+        ):
+            raise ValueError("Context type 'dockerhub' can only be used in conjunction with destination of type `local`")
+
+        return values
+    
+    @root_validator
+    def validate_ctx_authn(cls, values):
+        # Requester must provide an identity or credential in order
+        # to pull from a private repository
+        context = values.get("context")
+        if (
+            context.visibility == VISIBILITY_PRIVATE
+            and (context.identity_uuid == None and context.credentials == None)
+        ):
+            raise ValueError(f"Any Context of an image build action with visibilty `{VISIBILITY_PRIVATE}` must have an identity_uuid or credentials.")
+
+        return values
 
 class TapisActorAction(BaseAction):
     tapis_actor_id: str
@@ -176,11 +265,17 @@ class BasePipeline(BaseModel):
         ]
     ] = []
 
+    # Validators
+    # _validate_id = validator("id", allow_reuse=True)(validate_id)
+
 class CIPipeline(BasePipeline):
     cache: bool = False
-    builder: str = "kaniko"
+    builder: str
     context: Context
-    destination: Destination
+    destination: Union[
+        RegistryDestination,
+        LocalDestination
+    ] = None
     auth: dict = None
     data: dict = None
     headers: dict = None

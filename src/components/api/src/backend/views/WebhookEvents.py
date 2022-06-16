@@ -61,19 +61,19 @@ class WebhookEvents(APIView):
         # Get the pipeline actions, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
         actions = pipeline.actions.all()
-        actions_result = []
         
+        actions_request = []
         for action in actions:
             # Build action result
-            action_result = getattr(self, f"_{action.type}")(action)
-            actions_result.append(action_result)
+            action_request = getattr(self, f"_{action.type}")(action)
+            actions_request.append(action_request)
 
         # Convert pipleline to a dict and build the pipeline_dispatch_request
         pipeline_dispatch_request = {}
         pipeline_dispatch_request["group"] = model_to_dict(group)
         pipeline_dispatch_request["event"] = model_to_dict(event)
         pipeline_dispatch_request["pipeline"] = model_to_dict(pipeline)
-        pipeline_dispatch_request["pipeline"]["actions"] = actions_result
+        pipeline_dispatch_request["pipeline"]["actions"] = actions_request
 
         # Parse the directives from the commit message
         directives = parse(body.commit)
@@ -87,11 +87,11 @@ class WebhookEvents(APIView):
         return ModelResponse(event)
 
     def _image_build(self, action):
-        action_result = model_to_dict(action)
+        action_request = model_to_dict(action)
 
         cred_service = CredentialsService()
 
-        action_result["context"] = model_to_dict(action.context)
+        action_request["context"] = model_to_dict(action.context)
 
         # Resolve which context credentials to use if any provided
         context_creds = None
@@ -103,16 +103,16 @@ class WebhookEvents(APIView):
         if action.context.identity != None:
             context_creds = action.context.identity.credentials
 
-        action_result["context"]["credentials"] = None
+        action_request["context"]["credentials"] = None
         if context_creds != None:
-            action_result["context"]["credentials"] = model_to_dict(context_creds)
+            action_request["context"]["credentials"] = model_to_dict(context_creds)
 
             # Get the context credentials data
             context_cred_data = cred_service.get_secret(context_creds.sk_id)
-            action_result["context"]["credentials"]["data"] = context_cred_data
+            action_request["context"]["credentials"]["data"] = context_cred_data
 
         # Destination credentials
-        action_result["destination"] = model_to_dict(action.destination)
+        action_request["destination"] = model_to_dict(action.destination)
 
         destination_creds = None
         if action.destination.credentials != None:
@@ -120,19 +120,20 @@ class WebhookEvents(APIView):
 
         if action.destination.identity != None:
             destination_creds = action.destination.identity.credentials
-        
-        action_result["destination"]["credentials"] = model_to_dict(destination_creds)
 
-        # Get the context credentials data
-        destination_cred_data = cred_service.get_secret(destination_creds.sk_id)
-        action_result["destination"]["credentials"]["data"] = destination_cred_data
+        if destination_creds != None:
+            action_request["destination"]["credentials"] = model_to_dict(destination_creds)
 
-        return action_result
+            # Get the context credentials data
+            destination_cred_data = cred_service.get_secret(destination_creds.sk_id)
+            action_request["destination"]["credentials"]["data"] = destination_cred_data
+
+        return action_request
 
     def _webhook_notification(self, action):
-        action_result = model_to_dict(action)
-        return action_result
+        action_request = model_to_dict(action)
+        return action_request
 
     def _container_run(self, action):
-        action_result = model_to_dict(action)
-        return action_result
+        action_request = model_to_dict(action)
+        return action_request

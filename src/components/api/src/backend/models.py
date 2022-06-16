@@ -1,7 +1,8 @@
-import uuid
+import uuid, re
 
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.exceptions import ValidationError
 
 ONE_HOUR_IN_SEC = 3600
 
@@ -19,8 +20,10 @@ ACTION_TYPES = [
 ]
 
 IMAGE_BUILDER_KANIKO = "kaniko"
+IMAGE_BUILDER_SINGULARITY = "singularity"
 IMAGE_BUILDERS = [
     (IMAGE_BUILDER_KANIKO, "kaniko"),
+    (IMAGE_BUILDER_SINGULARITY, "singularity"),
 ]
 
 HTTP_METHOD_GET = "get"
@@ -38,20 +41,28 @@ ACTION_HTTP_METHODS = [
 
 CONTEXT_TYPE_GITHUB = "github"
 CONTEXT_TYPE_GITLAB = "gitlab"
+CONTEXT_TYPE_DOCKERHUB = "dockerhub"
 CONTEXT_TYPES = [
     (CONTEXT_TYPE_GITHUB, "github"),
     (CONTEXT_TYPE_GITLAB, "gitlab"),
+    (CONTEXT_TYPE_DOCKERHUB, "dockerhub"),
 ]
 
-DESTINATION_TYPE_REGISTRY = "dockerhub"
+DESTINATION_TYPE_DOCKERHUB = "dockerhub"
+DESTINATION_TYPE_DOCKERHUB_LOCAL = "dockerhub_local"
+DESTINATION_TYPE_LOCAL = "local"
+DESTINATION_TYPE_S3 = "s3"
 DESTINATION_TYPES = [
-    (DESTINATION_TYPE_REGISTRY, "dockerhub")
-    # NOTE support s3 destinations?
+    (DESTINATION_TYPE_DOCKERHUB, "dockerhub"),
+    (DESTINATION_TYPE_LOCAL, "local")
+    # TODO support s3 destinations
+    # TODO support local destination
+    # TODO support local dockerhub
 ]
 
-IDENTITY_TYPES = CONTEXT_TYPES + DESTINATION_TYPES
+IDENTITY_TYPES = CONTEXT_TYPES
 
-DEFAULT_DOCKERFILE_PATH = "Dockerfile"
+DEFAULT_RECIPE_FILE_PATH = "Dockerfile"
 
 GROUP_STATUS_DISABLED = "disabled"
 GROUP_STATUS_ENABLED = "enabled"
@@ -114,10 +125,23 @@ VISIBILITY_TYPES = [
     (VISIBILITY_PRIVATE, "private")
 ]
 
+### Validators ###
+
+def validate_id(value):
+    pattern = re.compile(r"^[A-Z0-9\-_]+$")
+    if pattern.match(value) == None:
+        raise ValidationError("`id` property must only contain alphanumeric characters, underscores, and hypens")
+
+def validate_ctx_dest_url(value):
+    pattern = re.compile(r"^[a-zA-Z0-9-_]+/[a-zA-Z0-9-_]+$")
+    if pattern.match(value) == None:
+        raise ValidationError("`url` must follow the format:  `<username>/<name>`")
+
+##################
+
 class Action(models.Model):
-    id = models.CharField(max_length=128)
+    id = models.CharField(validators=[validate_id], max_length=128)
     auth = models.ForeignKey("backend.Credentials", null=True, on_delete=models.CASCADE)
-    auto_build = models.BooleanField(null=True)
     builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
     cache = models.BooleanField(null=True)
     context = models.OneToOneField("backend.Context", null=True, on_delete=models.CASCADE)
@@ -127,6 +151,7 @@ class Action(models.Model):
     data = models.JSONField(null=True)
     headers = models.JSONField(null=True)
     http_method = models.CharField(max_length=32, choices=ACTION_HTTP_METHODS, null=True)
+    # Full image name for container run. includes scheme.
     image = models.CharField(max_length=128, null=True)
     input = models.JSONField(null=True)
     output = models.JSONField(null=True)
@@ -157,19 +182,6 @@ class ActionExecution(models.Model):
     ended_at = models.DateTimeField()
     uuid = models.UUIDField(default=uuid.uuid4)
 
-class Build(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    event = models.OneToOneField("backend.Event", on_delete=models.CASCADE)
-    group = models.ForeignKey("backend.Group", related_name="builds", on_delete=models.CASCADE)
-    pipeline = models.ForeignKey("backend.Pipeline", related_name="builds", on_delete=models.CASCADE)
-    status = models.CharField(max_length=32, choices=STATUSES, default=STATUS_QUEUED)
-    updated_at = models.DateTimeField(auto_now=True)
-    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    class Meta:
-        indexes = [
-            models.Index(fields=["pipeline_id"])
-        ]
-
 class Credentials(models.Model):
     sk_id = models.CharField(primary_key=True, max_length=128, unique=True)
     owner = models.CharField(max_length=64)
@@ -177,21 +189,23 @@ class Credentials(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4)
 
 class Context(models.Model):
-    branch = models.CharField(max_length=128)
+    branch = models.CharField(max_length=128, null=True)
     credentials = models.OneToOneField("backend.Credentials", null=True, on_delete=models.CASCADE)
-    dockerfile_path = models.CharField(max_length=255, default=DEFAULT_DOCKERFILE_PATH)
+    recipe_file_path = models.CharField(max_length=255, null=True)
     sub_path = models.CharField(max_length=255, null=True)
+    tag = models.CharField(max_length=128, null=True)
     type = models.CharField(max_length=32, choices=CONTEXT_TYPES)
-    url = models.CharField(max_length=128)
+    url = models.CharField(validators=[validate_ctx_dest_url], max_length=128)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     visibility = models.CharField(max_length=32, choices=VISIBILITY_TYPES)
     identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.CASCADE)
 
 class Destination(models.Model):
     credentials = models.OneToOneField("backend.Credentials", null=True, on_delete=models.CASCADE)
-    tag = models.CharField(max_length=128)
+    tag = models.CharField(max_length=128, null=True)
+    filename = models.CharField(max_length=128, null=True)
     type = models.CharField(max_length=32, choices=DESTINATION_TYPES)
-    url = models.CharField(max_length=255)
+    url = models.CharField(validators=[validate_ctx_dest_url], max_length=255, null=True)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.CASCADE)
 
@@ -214,7 +228,7 @@ class Event(models.Model):
         ]
 
 class Group(models.Model):
-    id = models.CharField(primary_key=True, max_length=128, unique=True)
+    id = models.CharField(validators=[validate_id], primary_key=True, max_length=128, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.CharField(max_length=64)
     updated_at = models.DateTimeField(auto_now=True)
@@ -245,7 +259,7 @@ class Identity(models.Model):
         unique_together = [["owner", "name"]]
 
 class Pipeline(models.Model):
-    id = models.CharField(primary_key=True, max_length=128)
+    id = models.CharField(validators=[validate_id], primary_key=True, max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
     owner = models.CharField(max_length=64)
