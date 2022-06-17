@@ -18,8 +18,9 @@ class ActionExecutor:
         self._resources: list[Resource] = []
 
         # Create the base directory for all files and output created during this action execution
-        work_dir = f"{self.message.pipeline.work_dir}{action.id}/"
+        work_dir = f"{self.pipeline.work_dir}{action.id}/"
         os.mkdir(work_dir)
+        self.action.work_dir = work_dir
 
         # Create the scratch dir for files created in support of the action execution
         scratch_dir = f"{work_dir}scratch/"

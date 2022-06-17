@@ -43,6 +43,7 @@ class PipelineCoordinator:
             start_message = f"Pipline dry run: {message.pipeline.id}"
 
         logging.info(start_message)
+        logging.info(f"Pipeline Run Id: {run_id}")
 
         # Validate the graph. Terminate the pipeline if it contains cycles
         # or invalid dependencies
@@ -53,7 +54,8 @@ class PipelineCoordinator:
             CycleDetectedError,
             MissingInitialActionsError,
         ) as e:
-            logging.error(str(e), f"\nPipeline terminated: {message.pipeline.id}")
+            logging.exception(e)
+            logging.error(f"\nPipeline terminated: {message.pipeline.id}")
             return
 
         # Add all of the asynchronous tasks to the queue

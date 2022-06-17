@@ -1,6 +1,6 @@
 import json, base64, os
 
-from helpers.ContextResolver import context_resolver
+from executors.builders.helpers.ContextResolver import context_resolver
 from errors.credentials import CredentialsError
 from core.ActionExecutor import ActionExecutor
 

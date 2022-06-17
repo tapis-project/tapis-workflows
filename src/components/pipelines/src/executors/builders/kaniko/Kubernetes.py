@@ -2,9 +2,9 @@ import time, logging
 
 from kubernetes import client
 
-from conf.configs import KUBERNETES_NAMESPACE, PIPELINES_PVC
+from conf.configs import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL, KANIKO_IMAGE_TAG
 from core.ActionResult import ActionResult
-from core.BaseBuildExecutor import BaseBuildExecutor
+from executors.builders.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
 
 
@@ -18,7 +18,7 @@ class Kubernetes(BaseBuildExecutor):
         # Create the kaniko job return a failed action result on exception
         # with the error message as the str value of the exception
         try: 
-            job = self._create_kaniko_job()
+            job = self._create_job()
         except Exception as e:
             return ActionResult(status=1, errors=[e])
 
@@ -30,21 +30,24 @@ class Kubernetes(BaseBuildExecutor):
 
             time.sleep(self.polling_interval)
 
-        # Get the logs(stdout) from this job's pod
+        # Get the job's pod name
         pod_list = self.core_v1_api.list_namespaced_pod(
             namespace=KUBERNETES_NAMESPACE,
             label_selector=f"job-name={job.metadata.name}"
         )
+
+        pod_name = pod_list.items[0].metadata.name
         
+        # Get the logs(stdout) from this job's pod
         logs = None
         try:
             logs = self.core_v1_api.read_namespaced_pod_log(
-                name=pod_list.items[0].metadata.name,
+                name=pod_name,
                 namespace=KUBERNETES_NAMESPACE,
                 _return_http_data_only=True,
                 _preload_content=False,
             ).data  # .decode("utf-8")
-            logging.debug(f"{logs}\n")
+            logging.debug(f"{logs}\n") # TODO Remove
             self._store_result(".stdout", logs)
 
         except client.rest.ApiException as e:
@@ -56,7 +59,7 @@ class Kubernetes(BaseBuildExecutor):
 
         return ActionResult(status=0 if self._job_succeeded(job) else 1)
 
-    def _create_kaniko_job(self):
+    def _create_job(self):
         """Create a job in the Kubernetes cluster"""
         # Set the name for the k8 job metadata
         job_name = f"{self.group.id}.{self.pipeline.id}.{self.action.id}"
@@ -87,7 +90,7 @@ class Kubernetes(BaseBuildExecutor):
         # Container object
         container = client.V1Container(
             name="kaniko",
-            image="gcr.io/kaniko-project/executor:debug",
+            image=f"{KANIKO_IMAGE_URL}:{KANIKO_IMAGE_TAG}",
             args=container_args,
             volume_mounts=volume_mounts,
         )
@@ -95,22 +98,25 @@ class Kubernetes(BaseBuildExecutor):
         # List of volume objects
         volumes = []
         if self.configmap is not None:
-            volumes = [
+            volumes.append(
                 # Volume for mounting the registry credentials
                 client.V1Volume(
                     name="regcred",
                     config_map=client.V1ConfigMapVolumeSource(
                         name=self.configmap.metadata.name
                     ),
-                ),
-                # Volume for mounting the output
-                client.V1Volume(
-                    name="output",
-                    persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
-                        claim_name=PIPELINES_PVC
-                    ),
                 )
-            ]
+            )
+
+        # Volume for mounting the output
+        volumes.append(
+            client.V1Volume(
+                name="output",
+                persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+                    claim_name=PIPELINES_PVC
+                ),
+            )
+        )
 
         # Pod template and pod template spec
         template = client.V1PodTemplateSpec(
@@ -170,7 +176,7 @@ class Kubernetes(BaseBuildExecutor):
         container_args.append(f'--git="branch={self.action.context.branch}"')
 
         # path to the Dockerfile in the repository
-        container_args.append(f"--dockerfile={self.action.context.dockerfile_path}")
+        container_args.append(f"--dockerfile={self.action.context.recipe_file_path}")
 
         # the image registry that the image will be pushed to
         destination = self._resolve_destination_string()
@@ -182,7 +188,9 @@ class Kubernetes(BaseBuildExecutor):
             # in the volume mount the in the action's output dir. However,
             # it doesn't seem you can get the tar file WITHOUT also specifiying
             # a destination, even when using the --no-push option. Makes no sense.
-            # container_args.append("--tarPath=/mnt/image.tar")
+            # image_name = getattr(self.action.destination, "image_name", None)
+            # image_name = image_name if image_name != None else "image"
+            # container_args.append(f"--tarPath=/mnt/{image_name}.tar")
 
         container_args.append(destination_arg)
 
