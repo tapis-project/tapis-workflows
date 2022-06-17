@@ -1,13 +1,12 @@
 import git, os, logging
 
-from kubernetes.client import V1Container, V1EnvVar, V1VolumeMount
+from kubernetes.client import V1Container, V1EnvVar
 
 from conf.configs import SINGULARITY_IMAGE_URL, SINGULARITY_IMAGE_TAG
 
 
 class ContainerBuilder:
     def build(self, action, volume_mounts=[], directives=None):
-        self.volume_mounts = volume_mounts
 
         command = self.resolve_command(action, directives=directives)
 
@@ -16,7 +15,7 @@ class ContainerBuilder:
             env=self.resolve_env(action),
             image=f"{SINGULARITY_IMAGE_URL}:{SINGULARITY_IMAGE_TAG}",
             command=command,
-            volume_mounts=self.volume_mounts,
+            volume_mounts=volume_mounts,
         )
 
         return container
@@ -60,24 +59,15 @@ class ContainerBuilder:
             # Recipe file path is the scratch dir + recipe file path specified
             # in the context
             recipe_file_path = os.path.join(
-                action.scratch_dir,
+                "/mnt/scratch/",
                 action.context.recipe_file_path
             )
-
-            # # Volume mount the scratch directory to the singularity container
-            # scratch_mount = V1VolumeMount(
-            #     name="output",
-            #     mount_path="/mnt/pipelines/",
-            #     sub_path=self.action.scratch_dir.lstrip("/mnt/pipelines/")
-            # )
-
-            # self.add_volume_mount(scratch_mount)
 
             # Build the command
             command = [
                 "singularity",
                 "build",
-                f"{filename}",
+                f"/mnt/output/{filename}",
                 recipe_file_path
             ]
 
@@ -99,8 +89,5 @@ class ContainerBuilder:
 
         # return an empty array by default
         return []
-
-    def add_volume_mount(self, volume_mount):
-        self.volume_mounts.append(volume_mount)
         
 container_builder = ContainerBuilder()
