@@ -11,6 +11,8 @@ from backend.services import pipeline_dispatcher
 from backend.models import Identity, Event, Pipeline, Group
 from backend.views.http.responses.BaseResponse import BaseResponse
 
+import pprint
+
 class WebhookEvents(APIView):
     def post(self, request, pipeline_id):
         prepared_request = self.prepare(WebhookEvent)
@@ -23,6 +25,8 @@ class WebhookEvents(APIView):
         # Find a pipeline that matches the request data
         pipeline = Pipeline.objects.filter(id=pipeline_id).prefetch_related(
             "group",
+            "archives",
+            "archives__archive",
             "actions",
             "actions__context",
             "actions__context__credentials",
@@ -68,22 +72,31 @@ class WebhookEvents(APIView):
             action_request = getattr(self, f"_{action.type}")(action)
             actions_request.append(action_request)
 
+        # Get the archives for this pipeline
+        archives = []
+        pipeline_archives = pipeline.archives.all()
+        for pipeline_archive in pipeline_archives:
+            # Fetch any credentials or identities for required to
+            # access this archive
+            # TODO Handle creds/identity for archives
+            archives.append(model_to_dict(pipeline_archive.archive))
+
         # Convert pipleline to a dict and build the pipeline_dispatch_request
         pipeline_dispatch_request = {}
         pipeline_dispatch_request["group"] = model_to_dict(group)
         pipeline_dispatch_request["event"] = model_to_dict(event)
         pipeline_dispatch_request["pipeline"] = model_to_dict(pipeline)
         pipeline_dispatch_request["pipeline"]["actions"] = actions_request
+        pipeline_dispatch_request["pipeline"]["archives"] = archives
 
         # Parse the directives from the commit message
         directives = parse(body.commit)
         pipeline_dispatch_request["directives"] = directives
 
-        # Send the pipelines service a service request
+        # Send the pipelines service a dispatch request
         pipeline_dispatcher.dispatch(pipeline_dispatch_request)
 
-        # Respond with the pipeline_context and build data
-        # return BaseResponse(result=pipeline_dispatch_request)
+        # Respond with the event
         return ModelResponse(event)
 
     def _image_build(self, action):

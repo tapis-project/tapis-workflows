@@ -10,7 +10,7 @@ AUTH_METHODS = [
 
 DEFAULT_AUTH_METHOD = "password"
 
-class TapisAuthenticator:
+class TapisAPIGateway:
     def __init__(self):
         self.base_url = TAPIS_BASE_URL
         self.client = None
@@ -32,6 +32,9 @@ class TapisAuthenticator:
 
     def get_username(self):
         return self.username
+
+    def get_client(self):
+        return self.client
 
     def _password(self, credentials):
         try:
@@ -64,5 +67,3 @@ class TapisAuthenticator:
         except Exception as e:
             self.error = str(e)
             return False
-
-authenticator = TapisAuthenticator()

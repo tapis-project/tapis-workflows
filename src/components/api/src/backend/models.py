@@ -19,6 +19,17 @@ ACTION_TYPES = [
     (ACTION_TYPE_TAPIS_ACTOR, "tapis_actor"),
 ]
 
+ARCHIVE_TYPE_SYSTEM = "system"
+ARCHIVE_TYPE_S3 = "s3"
+ARCHIVE_TYPE_IRODS = "irods"
+ARCHIVE_TYPES = [
+    (ARCHIVE_TYPE_SYSTEM, "system"),
+    (ARCHIVE_TYPE_S3, "s3"),
+    (ARCHIVE_TYPE_IRODS, "irods")
+]
+
+DEFAULT_ARCHIVE_DIR = "/workflows/archive/"
+
 IMAGE_BUILDER_KANIKO = "kaniko"
 IMAGE_BUILDER_SINGULARITY = "singularity"
 IMAGE_BUILDERS = [
@@ -141,37 +152,78 @@ def validate_ctx_dest_url(value):
 
 class Action(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128)
-    auth = models.ForeignKey("backend.Credentials", null=True, on_delete=models.CASCADE)
-    builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
     cache = models.BooleanField(null=True)
-    context = models.OneToOneField("backend.Context", null=True, on_delete=models.CASCADE)
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
-    destination = models.OneToOneField("backend.Destination", null=True, on_delete=models.CASCADE)
-    data = models.JSONField(null=True)
-    headers = models.JSONField(null=True)
-    http_method = models.CharField(max_length=32, choices=ACTION_HTTP_METHODS, null=True)
-    # Full image name for container run. includes scheme.
-    image = models.CharField(max_length=128, null=True)
     input = models.JSONField(null=True)
     output = models.JSONField(null=True)
-    poll = models.BooleanField(null=True)
-    query_params = models.JSONField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="actions", on_delete=models.CASCADE)
+    poll = models.BooleanField(null=True)
     retries = models.IntegerField(default=0)
-    tapis_job_def = models.JSONField(null=True)
-    tapis_actor_id = models.CharField(max_length=128, null=True)
     type = models.CharField(max_length=32, choices=ACTION_TYPES)
     ttl = models.BigIntegerField(
         default=ONE_HOUR_IN_SEC,
         validators=[MaxValueValidator(ONE_HOUR_IN_SEC*3), MinValueValidator(1)]
     )
-    url = models.CharField(max_length=255, null=True)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+
+    # Image build specific properties
+    builder = models.CharField(max_length=32, choices=IMAGE_BUILDERS, null=True)
+    context = models.OneToOneField("backend.Context", null=True, on_delete=models.CASCADE)
+    destination = models.OneToOneField("backend.Destination", null=True, on_delete=models.CASCADE)
+    
+    # Webhook notification specific properties
+    auth = models.ForeignKey("backend.Credentials", null=True, on_delete=models.CASCADE)
+    data = models.JSONField(null=True)
+    headers = models.JSONField(null=True)
+    http_method = models.CharField(max_length=32, choices=ACTION_HTTP_METHODS, null=True)
+    query_params = models.JSONField(null=True)
+    url = models.CharField(max_length=255, null=True)
+    
+    # Container run specific properties
+    # Full image name for container run. includes scheme.
+    image = models.CharField(max_length=128, null=True)
+
+    # Tapis job specific properties
+    tapis_job_def = models.JSONField(null=True)
+
+    # Tapis actor specific properties
+    tapis_actor_id = models.CharField(max_length=128, null=True)
+
     class Meta:
         unique_together = [["id", "pipeline_id"]]
         indexes = [
             models.Index(fields=["id", "pipeline_id"])
+        ]
+
+class Archive(models.Model):
+    id = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    credentials = models.OneToOneField("backend.Credentials", null=True, on_delete=models.CASCADE)
+    group = models.ForeignKey("backend.Group", related_name="archives", on_delete=models.CASCADE)
+    identity_uuid = models.UUIDField(null=True)
+    owner = models.CharField(max_length=64)
+    type = models.CharField(max_length=32, choices=ARCHIVE_TYPES)
+    updated_at = models.DateTimeField(auto_now=True)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+
+    # System specific properties
+    system_id = models.CharField(max_length=80, null=True) # Same max length as Tapis System
+    archive_dir = models.CharField(max_length=256, null=True)
+
+    # S3 specific properties
+    endpoint = models.CharField(max_length=256, null=True)
+    bucket = models.CharField(max_length=64, null=True)
+    region = models.CharField(max_length=64, null=True)
+
+    # IRODS specific properties
+    host = models.CharField(max_length=256, null=True)
+    port = models.PositiveIntegerField(null=True)
+
+    class Meta:
+        unique_together = [["id", "group_id"]]
+        indexes = [
+            models.Index(fields=["id", "group_id"])
         ]
 
 class ActionExecution(models.Model):
@@ -268,12 +320,17 @@ class Pipeline(models.Model):
     current_run = models.ForeignKey("backend.PipelineRun", related_name="+", null=True, on_delete=models.CASCADE)
     last_run = models.ForeignKey("backend.PipelineRun", related_name="+", null=True, on_delete=models.CASCADE)
 
+class PipelineArchive(models.Model):
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="archives", on_delete=models.CASCADE)
+    archive = models.ForeignKey("backend.Archive", related_name="pipelines", on_delete=models.CASCADE)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+
 class PipelineRun(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="runs", on_delete=models.CASCADE)
     status = models.CharField(max_length=16, choices=RUN_STATUSES, default=RUN_STATUS_PENDING)
     started_at = models.DateTimeField(auto_now_add=True)
     ended_at = models.DateTimeField()
-    uuid = models.UUIDField(primary_key=True)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
 
 # class Policy(models.Model):      
 #     pass

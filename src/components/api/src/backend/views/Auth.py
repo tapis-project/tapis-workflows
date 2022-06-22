@@ -1,5 +1,5 @@
 from backend.views.APIView import APIView
-from backend.services.Authenticator import authenticator
+from backend.services import TapisAPIGateway
 from backend.views.http.responses.errors import BaseResponse, Unauthorized
 from backend.views.http.requests import AuthRequest
 
@@ -13,18 +13,20 @@ class Auth(APIView):
 
         body = prepared_request.body
 
-        authenticated = authenticator.authenticate(
+        api_gateway = TapisAPIGateway()
+
+        authenticated = api_gateway.authenticate(
             {"username": body.username, "password": body.password},
             auth_method = "password"
         )
 
         if not authenticated:
-            return Unauthorized(message=authenticator.error)
+            return Unauthorized(message=api_gateway.error)
 
         return BaseResponse(
             message="successfully authenticated",
             result={
-                "jwt": authenticator.get_jwt()
+                "jwt": api_gateway.get_jwt()
             }
         )
             

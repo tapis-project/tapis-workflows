@@ -1,10 +1,20 @@
 import re
 
-from typing import AnyStr, List, Union, Dict, TypedDict
+from typing import AnyStr, List, Literal, Union, Dict, TypedDict
 from pydantic import BaseModel, validator, root_validator
 
-from backend.models import IMAGE_BUILDER_SINGULARITY, CONTEXT_TYPE_DOCKERHUB, VISIBILITY_PRIVATE, DESTINATION_TYPE_LOCAL
+from backend.models import (
+    IMAGE_BUILDER_SINGULARITY,
+    CONTEXT_TYPE_DOCKERHUB,
+    VISIBILITY_PRIVATE,
+    DESTINATION_TYPE_LOCAL,
+    ARCHIVE_TYPE_IRODS,
+    ARCHIVE_TYPE_S3,
+    ARCHIVE_TYPE_SYSTEM,
+    DEFAULT_ARCHIVE_DIR,
+)
 
+ARCHIVE_TYPES = [ARCHIVE_TYPE_IRODS, ARCHIVE_TYPE_S3, ARCHIVE_TYPE_SYSTEM]
 
 ### Validators ###
 
@@ -23,6 +33,76 @@ def validate_ctx_dest_url(value):
     return value
 
 ##################
+
+class S3Credentials(TypedDict):
+    access_key: str
+    access_secret: str
+
+class IRODSCredentials(TypedDict):
+    user: str
+    password: str
+
+# Archive
+class BaseArchive(BaseModel):
+    id: str
+    credentials: Union[
+        S3Credentials,
+        IRODSCredentials
+    ] = None
+    identity_uuid: str = None
+    type: str
+
+    # System archive
+    system_id: str = None
+    archive_dir: str = None
+
+    # S3 archive
+    endpoint: str = None
+    bucket: str = None
+    # encrypt: bool = None
+    # secure: bool = None
+    region: str = None
+
+    # IRODS archive
+    host: str = None
+    port: str = None
+
+class SystemArchive(BaseArchive):
+    system_id: str
+    archive_dir: str = DEFAULT_ARCHIVE_DIR # Relative to the system's RootDir
+
+class S3Archive(BaseArchive):
+    credentials: S3Credentials = None
+    identity_uuid: str = None
+    endpoint: str
+    bucket: str
+    region: str
+
+    @root_validator
+    def validate_supported_types(cls, values):
+        creds = values.get("credentials")
+        identity_uuid = values.get("identity_uuid")
+
+        if creds == None and identity_uuid == None:
+            raise ValueError("Archive of type `s3` must provide either an identity_uuid or credentials")
+
+        return values
+
+class IRODSArchive(BaseArchive):
+    credentials: S3Credentials = None
+    identity_uuid: str = None
+    host: str
+    port: str
+
+    @root_validator
+    def validate_supported_types(cls, values):
+        creds = values.get("credentials")
+        identity_uuid = values.get("identity_uuid")
+
+        if creds == None and identity_uuid == None:
+            raise ValueError("Archive of type `irods` must provide either an identity_uuid or credentials")
+
+        return values
 
 # Auth
 class AuthRequest(BaseModel):
@@ -191,8 +271,6 @@ class BaseAction(BaseModel):
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
 
-
-
 class ContainerRunAction(BaseAction):
     image: str
 
@@ -264,6 +342,7 @@ class BasePipeline(BaseModel):
             WebhookAction
         ]
     ] = []
+    archive_ids: List[str]
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
