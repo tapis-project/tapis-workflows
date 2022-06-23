@@ -50,6 +50,8 @@ spec:
               value: registry
             - name: REGISTRY_PORT
               value: "5000"
+            - name: TAPIS_BASE_URL
+              value: https://dev.develop.tapis.io
             - name: WORKFLOWS_SERVICE_URL
               value: https://admin.tapis.io
             - name: WORKFLOWS_SERVICE_ACCOUNT

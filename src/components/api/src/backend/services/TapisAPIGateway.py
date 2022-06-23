@@ -57,7 +57,7 @@ class TapisAPIGateway:
         try:
             self.client = Tapis(
                 base_url=self.base_url,
-                jwt = credentials["jwt"]
+                jwt=credentials["jwt"]
             )
 
             self.username = str(self.client.authenticator.get_userinfo().username)

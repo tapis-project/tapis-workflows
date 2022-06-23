@@ -2,6 +2,11 @@ import asyncio, uuid, os, logging
 
 from core.ActionExecutorFactory import action_executor_factory as factory
 from core.ActionResult import ActionResult
+from core.archivers import (
+    SystemArchiver,
+    S3Archiver,
+    IRODSArchiver
+)
 from helpers.GraphValidator import GraphValidator
 from errors.actions import (
     InvalidActionTypeError,
@@ -9,8 +14,15 @@ from errors.actions import (
     InvalidDependenciesError,
     CycleDetectedError,
 )
+from errors.archives import ArchiveError
 from conf.configs import BASE_WORK_DIR
 
+
+ARCHIVERS_BY_TYPE = {
+    "system": SystemArchiver,
+    "s3": S3Archiver,
+    "irods": IRODSArchiver
+}
 
 class PipelineCoordinator:
     def __init__(self):
@@ -194,12 +206,35 @@ class PipelineCoordinator:
                 tasks.append(self._execute(queued_action, message))
 
         if pipeline_complete:
-            self._cleanup_run(message.pipeline)
             logging.info(f"Pipeline finished: {message.pipeline.id}")
             logging.info(f"Fails: ({len(self.failed)})")
             logging.info(f"Successes: ({len(self.successful)})")
 
+            # Archive the results if any exist
+            self._archive(message.pipeline)
+
+            self._cleanup_run(message.pipeline)
+
         return tasks
+
+    def _archive(self, pipeline):
+        if len(pipeline.archives) < 1: return
+
+        logging.info(f"Archiving results: {pipeline.run_id}")
+        # TODO Handle for multiple archives
+        archive = pipeline.archives[0]
+
+        # Get and initialize the archiver
+        archiver = ARCHIVERS_BY_TYPE[archive.type]()
+
+        # Archive the results
+        try:
+            archiver.archive(archive, pipeline)
+        except ArchiveError as e:
+            logging.error(e.message)
+        except Exception as e:
+            logging.error(f"Something went wrong while archiving results for run {pipeline.run_id}: {e}")
+
 
     def _on_succeed(self, action):
         self.successful.append(action.id)

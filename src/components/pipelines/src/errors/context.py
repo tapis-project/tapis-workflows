@@ -1,5 +1,5 @@
-from errors.base import CICDBaseException
+from errors.base import PipelinesBaseException
 
 
-class ContextError(CICDBaseException):
+class ContextError(PipelinesBaseException):
     pass
