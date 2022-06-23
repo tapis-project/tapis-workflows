@@ -1,17 +1,31 @@
 import os, logging
 
 from tapipy.tapis import Tapis
-from tapipy.errors import InvalidInputError
+from tapipy.errors import InvalidInputError  
 
+from helpers import tapis_service_api_gateway
 from conf.configs import TAPIS_BASE_URL, BASE_WORK_DIR
 from errors.archives import ArchiveError
 
 
 class SystemArchiver:
     def archive(self, archive, pipeline):
+        service_client = tapis_service_api_gateway.get_client()
+        
         # Get a token for the user that owns the archive
-        # TODO Remove below
-        jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJqdGkiOiI3OGE3MTVjZi1kN2U0LTQ5YjYtYjM4MS1hMzcwZWRlYTA5MDUiLCJpc3MiOiJodHRwczovL2Rldi5kZXZlbG9wLnRhcGlzLmlvL3YzL3Rva2VucyIsInN1YiI6InRlc3R1c2VyMkBkZXYiLCJ0YXBpcy90ZW5hbnRfaWQiOiJkZXYiLCJ0YXBpcy90b2tlbl90eXBlIjoiYWNjZXNzIiwidGFwaXMvZGVsZWdhdGlvbiI6ZmFsc2UsInRhcGlzL2RlbGVnYXRpb25fc3ViIjpudWxsLCJ0YXBpcy91c2VybmFtZSI6InRlc3R1c2VyMiIsInRhcGlzL2FjY291bnRfdHlwZSI6InVzZXIiLCJleHAiOjE2NTU5NDgwNzgsInRhcGlzL2NsaWVudF9pZCI6bnVsbCwidGFwaXMvZ3JhbnRfdHlwZSI6InBhc3N3b3JkIn0.v3ToTCRx-GNaB-BvxdDwnzE62Bf6M1-7A8yRSvX8IhlxOjlAnXJ3CI8c0DwL1EDBcc9WTmjz45i56j4Nj1NG5Bf1r1DRF1PIaZaD6w1VLVlthV6urMSWMnwB00s2TQl3KX6NfHryvZ_paJCw_hYaQzQHwG2CSOeugr3htLnTBytwhrE8Ig2nyRGoF2D4gAFRCGzngjjo6ZgQ8JQ9hNXmFLKkONnAvJ6RCyjo8VQoqwUwN4EpC1zhjP3rj45Z4vO0aB5vjzkvaj8le8FbXi4OBIEVXcMYMM_gN9SFLJfVUesRlDzFPLuWFkCczDmOj_JiA_0sQ91g3kZeDLJLFzMcfw"
+        res = service_client.tokens.create_token(
+            account_type="user",
+            token_tenant_id=token_tenant,
+            token_username=archive.owner,
+            access_token_ttl=4400,
+            generate_refresh_token=False,
+            use_basic_auth=False,
+            _tapis_set_x_headers_from_service=True)
+
+        jwt = res.access_token.access_token
+
+        # # TODO Remove below
+        # jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJqdGkiOiI3OGE3MTVjZi1kN2U0LTQ5YjYtYjM4MS1hMzcwZWRlYTA5MDUiLCJpc3MiOiJodHRwczovL2Rldi5kZXZlbG9wLnRhcGlzLmlvL3YzL3Rva2VucyIsInN1YiI6InRlc3R1c2VyMkBkZXYiLCJ0YXBpcy90ZW5hbnRfaWQiOiJkZXYiLCJ0YXBpcy90b2tlbl90eXBlIjoiYWNjZXNzIiwidGFwaXMvZGVsZWdhdGlvbiI6ZmFsc2UsInRhcGlzL2RlbGVnYXRpb25fc3ViIjpudWxsLCJ0YXBpcy91c2VybmFtZSI6InRlc3R1c2VyMiIsInRhcGlzL2FjY291bnRfdHlwZSI6InVzZXIiLCJleHAiOjE2NTU5NDgwNzgsInRhcGlzL2NsaWVudF9pZCI6bnVsbCwidGFwaXMvZ3JhbnRfdHlwZSI6InBhc3N3b3JkIn0.v3ToTCRx-GNaB-BvxdDwnzE62Bf6M1-7A8yRSvX8IhlxOjlAnXJ3CI8c0DwL1EDBcc9WTmjz45i56j4Nj1NG5Bf1r1DRF1PIaZaD6w1VLVlthV6urMSWMnwB00s2TQl3KX6NfHryvZ_paJCw_hYaQzQHwG2CSOeugr3htLnTBytwhrE8Ig2nyRGoF2D4gAFRCGzngjjo6ZgQ8JQ9hNXmFLKkONnAvJ6RCyjo8VQoqwUwN4EpC1zhjP3rj45Z4vO0aB5vjzkvaj8le8FbXi4OBIEVXcMYMM_gN9SFLJfVUesRlDzFPLuWFkCczDmOj_JiA_0sQ91g3kZeDLJLFzMcfw"
         
         # Initialize the tapipy client
         client = Tapis(
