@@ -45,13 +45,9 @@ class SystemArchiver:
             # The archive output dir on the system
             archive_output_dir = os.path.join(base_archive_dir, action.id, "output")
 
-            logging.debug(archive_output_dir)
-
             # The location in the pipeline service where the outputs for this
             # action are stored
             action_output_dir = os.path.join(pipeline.work_dir, action.id, "output")
-
-            logging.debug(action_output_dir)
 
             # Upload each file
             # TODO support dirs? Maybe zip it?
@@ -59,7 +55,6 @@ class SystemArchiver:
                 path_to_file = os.path.join(action_output_dir, filename)
                 if os.path.isfile(path_to_file):
                     # Upload the files to the system
-                    print(f"Uploading {path_to_file} \n", end="")
                     client.upload(
                         system_id=archive.system_id,
                         source_file_path=path_to_file,
