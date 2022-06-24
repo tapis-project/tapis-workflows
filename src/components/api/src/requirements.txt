@@ -44,7 +44,7 @@ requests==2.27.1
 six==1.16.0
 sqlparse==0.4.2
 strict-rfc3339==0.7
-tapipy==1.1.1
+tapipy==1.2.6
 tapisservice==1.2.1
 typing_extensions==4.0.1
 urllib3==1.26.8

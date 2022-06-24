@@ -50,12 +50,29 @@ spec:
               value: registry
             - name: REGISTRY_PORT
               value: "5000"
+            - name: LOG_LEVEL
+              value: DEBUG
+            - name: TAPIS_BASE_URL
+              value: https://dev.develop.tapis.io
+            - name: TAPIS_CONFIG_PATH
+              value: "/src/config.json"
+            - name: TAPIS_CONFIGSCHEMA_PATH
+              value: "/src/configschema.json"
+            - name: TAPIS_SERVICE_SITE_ID
+              value: tacc
+            - name: TAPIS_SERVICE_TENANT_ID
+              value: admin
             - name: WORKFLOWS_SERVICE_URL
-              value: https://admin.tapis.io
+              value: https://admin.develop.tapis.io
             - name: WORKFLOWS_SERVICE_ACCOUNT
-              value: testuser2
+              # value: testuser2
+              value: workflows
             - name: WORKFLOWS_SERVICE_PASSWORD
-              value: testuser2
+              # value: testuser2
+              valueFrom:
+                secretKeyRef:
+                  name: tapis-workflows-secrets
+                  key: service-password
           image: tapis/workflows-pipelines:dev
           imagePullPolicy: Always
           name: workflows-pipelines

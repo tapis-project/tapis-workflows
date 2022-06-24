@@ -15,7 +15,7 @@ jobs:
         - run: "echo 'running API tests'"
 
   build-push-workflows-pipelines:
-    name: Build/Push Pipelines Image
+    name: Build/Test/Push Pipelines Image
     runs-on: ubuntu-latest
     steps:
     - name: Extract branch name
@@ -40,7 +40,7 @@ jobs:
       run: docker push --all-tags tapis/workflows-pipelines
 
   build-push-workflows-api:
-    name: Build/Push API Image
+    name: Build/Test/Push Pipelines Image API Image
     runs-on: ubuntu-latest
     steps:
     - name: Extract branch name

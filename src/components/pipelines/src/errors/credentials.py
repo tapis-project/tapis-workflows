@@ -1,5 +1,5 @@
-from errors.base import CICDBaseException
+from errors.base import PipelinesBaseException
 
 
-class CredentialsError(CICDBaseException):
+class CredentialsError(PipelinesBaseException):
     pass

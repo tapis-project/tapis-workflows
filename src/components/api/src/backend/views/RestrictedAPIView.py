@@ -8,7 +8,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest, Unauthorized
-from backend.services.Authenticator import authenticator
+from backend.services import TapisAPIGateway
 from backend.views.http.requests import PreparedRequest
 from backend.conf.constants import TAPIS_TOKEN_HEADER, DJANGO_TAPIS_TOKEN_HEADER, PERMITTED_CONTENT_TYPES, PERMITTED_HTTP_METHODS
 
@@ -35,14 +35,18 @@ class RestrictedAPIView(View):
         if DJANGO_TAPIS_TOKEN_HEADER not in request.META:
             return BadRequest(message=f"Missing header: {TAPIS_TOKEN_HEADER}")
 
+        # Initialize the APIGateway with which access to all other
+        # Tapis APIs will be provided
+        self.api_gateway = TapisAPIGateway()
+
         # Authenticate the user and get the account
-        authenticated = authenticator.authenticate(
+        authenticated = self.api_gateway.authenticate(
             {"jwt": request.META[DJANGO_TAPIS_TOKEN_HEADER]}, auth_method="jwt")
 
         if not authenticated:
-            return Unauthorized(authenticator.error)
+            return Unauthorized(self.api_gateway.error)
 
-        request.username = str(authenticator.get_username())
+        request.username = str(self.api_gateway.get_username())
 
         return super(RestrictedAPIView, self).dispatch(request, *args, **kwargs)
 

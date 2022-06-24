@@ -6,7 +6,13 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden, ServerError, MethodNotAllowed
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.requests import BasePipeline, CIPipeline, ImageBuildAction
-from backend.models import Pipeline, Group, GroupUser, ACTION_TYPE_IMAGE_BUILD
+from backend.models import (
+    Pipeline,
+    Archive,
+    PipelineArchive,
+    Group, GroupUser,
+    ACTION_TYPE_IMAGE_BUILD
+)
 from backend.services import action_service, group_service
 from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.errors.api import BadRequestError
@@ -58,6 +64,11 @@ class Pipelines(RestrictedAPIView):
         return ModelListResponse(pipelines)
 
     def post(self, request, *args, **kwargs):
+        """Pipeline requests with type 'ci' are supported in order to make the 
+        process of setting up a ci/cd pipeline as simple as possible. Rather than
+        specifying actions, dependencies, etc, we let user pass most the required
+        data in the top level of the pipeline request."""
+
         # Ensure the request body has a 'type' property and it is a valid value
         # before validating the rest of the request body
         if (
@@ -81,7 +92,7 @@ class Pipelines(RestrictedAPIView):
         # Get the JSON encoded body from the validation result
         body = prepared_request.body
         
-        # Check that id of the pipeline is unique
+        # Check that the id of the pipeline is unique
         if Pipeline.objects.filter(id=body.id).exists():
             return Conflict(f"A Pipeline already exists with the id '{body.id}'")
 
@@ -97,20 +108,54 @@ class Pipelines(RestrictedAPIView):
         if not group_service.user_in_group(request.username, group.id):
             return Forbidden(message="You cannot create a pipeline for this group")
 
-        # NOTE Pipeline requests with type 'ci' are supported in order to make the 
-        # process of setting up a ci/cd pipeline as simple as possible. Rather than
-        # specifying actions, dependencies, etc, we let user pass most the required
-        # data in the top level of the pipeline request.
-        return getattr(
-            self,
-            PIPELINE_TYPE_MAPPING[body.type]
-        )(body, group, request.username)
+        # Create the pipeline
+        try:
+            pipeline = Pipeline.objects.create(
+                id=body.id,
+                group=group,
+                owner=request.username
+            )
+        except (IntegrityError, OperationalError) as e:
+            return BadRequest(message=e.__cause__)
+
+        # Fetch the archives specified in the request then create relations
+        # between them and the pipline
+        pipeline_archives = []
+        try:
+            # Prevent duplicate pipeline archives by casting id array to 'set'
+            for archive_id in set(body.archive_ids):
+                # Fetch the archive object
+                archive = Archive.objects.filter(group_id=group.id, id=archive_id).first()
+
+                # Return bad request if archive not found
+                if archive == None:
+                    pipeline.delete()
+                    return BadRequest(message=f"Archive not found with an id of '{archive_id}' and group_id '{group.id}'")
+        
+                pipeline_archives.append(
+                    PipelineArchive.objects.create(
+                        pipeline=pipeline,
+                        archive=archive
+                    )
+                )
+        except (IntegrityError, OperationalError, DatabaseError) as e:
+            # Delete the pipeline
+            pipeline.delete()
+
+            # Delete the pipeline archive relationships that were just created
+            [pipeline_archive.delete() for pipeline_archive in pipeline_archives]
+            return BadRequest(message=e.__cause__)
+
+        # Fetch the function for building the pipeline according to its type.
+        fn = getattr(self, PIPELINE_TYPE_MAPPING[body.type])
+
+        return fn(body, pipeline)
 
     def put(self, *args, **kwargs):
-        return MethodNotAllowed(message="Events cannot be updated")
+        return MethodNotAllowed()
 
     def patch(self, *args, **kwargs):
-        return MethodNotAllowed(message="Events cannot be updated")
+        return MethodNotAllowed()
 
     def delete(self, request, id, *args, **kwargs):
         # Get the pipeline by the id provided in the path params
@@ -123,25 +168,17 @@ class Pipelines(RestrictedAPIView):
         if request.username != pipeline.owner:
             return Forbidden(message="Only the owner of this pipeline can delete it")
 
+        # Delete the pipeline
         pipeline.delete()
 
+        # Delete the actions
         actions = pipeline.actions.all()
         for action in actions:
             action.delete()
 
-        return BaseResponse(message=f"Pipeline '{id}' and {len(actions)} action(s) deleted by '{request.username}'")
+        return BaseResponse(message=f"Pipeline '{id}' deleted. {len(actions)} action(s) deleted.")
 
-    def build_ci_pipeline(self, body, group, owner):
-        # Create the pipeline
-        try:
-            pipeline = Pipeline.objects.create(
-                id=body.id,
-                group=group,
-                owner=owner
-            )
-        except (IntegrityError, OperationalError) as e:
-            return BadRequest(message=e.__cause__)
-
+    def build_ci_pipeline(self, body, pipeline):
         try:
             # Build an action_request from the pipeline request body
             action_request = ImageBuildAction(
@@ -173,17 +210,7 @@ class Pipelines(RestrictedAPIView):
 
         return ModelResponse(pipeline)
 
-    def build_workflow_pipeline(self, body, group, owner):
-        # Create the pipeline
-        try:
-            pipeline = Pipeline.objects.create(
-                id=body.id,
-                group=group,
-                owner=owner
-            )
-        except (IntegrityError, OperationalError) as e:
-            return BadRequest(message=e.__cause__)
-        
+    def build_workflow_pipeline(self, body, pipeline):
         # Create actions
         actions = []
         for action_request in body.actions:

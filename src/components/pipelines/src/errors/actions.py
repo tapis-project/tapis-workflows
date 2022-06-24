@@ -1,21 +1,21 @@
-from errors.base import CICDBaseException
+from errors.base import PipelinesBaseException
 
 
-class InvalidActionTypeError(CICDBaseException):
+class InvalidActionTypeError(PipelinesBaseException):
     pass
 
 
-class MissingInitialActionsError(CICDBaseException):
+class MissingInitialActionsError(PipelinesBaseException):
     pass
 
 
-class InvalidDependenciesError(CICDBaseException):
+class InvalidDependenciesError(PipelinesBaseException):
     pass
 
 
-class CycleDetectedError(CICDBaseException):
+class CycleDetectedError(PipelinesBaseException):
     pass
 
 
-class FailedActionError(CICDBaseException):
+class FailedActionError(PipelinesBaseException):
     pass
