@@ -32,8 +32,8 @@ spec:
             value: dev
           - name: DB_USER
             value: root
-          - name: DEBUG
-            value: 'true'
+          - name: LOG_LEVEL
+            value: DEBUG
           - name: DJANGO_SECRET_KEY
             value: 'django-insecure-_!+8ppjzrs!$8l5n2k)^ry2=c&jkrxcx+w_a%!gcm4)u2@=_b2'
           - name: DJANGO_SUPERUSER_EMAIL
@@ -42,10 +42,18 @@ spec:
             value: dev
           - name: DJANGO_SUPERUSER_USERNAME
             value: nathandf
+          - name: TAPIS_SERVICE_SITE_ID
+            value: tacc
+          - name: TAPIS_SERVICE_TENANT_ID
+            value: admin
           - name: TAPIS_BASE_URL
             value: https://dev.develop.tapis.io
           - name: TAPIS_TENANT
             value: dev
+          - name: TAPIS_CONFIG_PATH
+            value: "/src/config.json"
+          - name: TAPIS_CONFIGSCHEMA_PATH
+            value: "/src/configschema.json"
           - name: WORKFLOWS_SERVICE_URL
             value: https://admin.tapis.io
           - name: WORKFLOWS_SERVICE_ACCOUNT

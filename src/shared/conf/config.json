@@ -1,25 +1,13 @@
 {
-    "service_name": "pgrest",
-    "service_password": "1D9Bl69ARJpOj6x27yJ3gSHg",
-    "service_site_id": "tacc",
-    "service_tenant_id": "admin",
-    "primary_site_admin_tenant_base_url": "https://admin.develop.tapis.io",
-    "test_token": "",
-    "tenants": ["cii", "tacc", "dev", "admin"],
-    "log_level": "DEBUG",
-    "log_file": "/home/tapis/pgrest.log",
-    "show_traceback": false,
-    "databases": {
-      "default": {
-        "NAME": "postgres",
-        "USER": "postgres",
-        "PASSWORD": "postgres",
-        "HOST": "db",
-        "PORT": 5432,
-        "ENGINE": "django_tenants.postgresql_backend",
-        "OPTIONS": {
-          "options": "-c search_path=public"
-        }
-      }
-    }
-  }
+  "service_name": "",
+  "service_password": "",
+  "service_site_id": "",
+  "service_tenant_id": "",
+  "primary_site_admin_tenant_base_url": "",
+  "test_token": "",
+  "tenants": [],
+  "log_level": "",
+  "log_file": "/src/logs/workflows.logs",
+  "python_framework_type": "django",
+  "show_traceback": false
+}

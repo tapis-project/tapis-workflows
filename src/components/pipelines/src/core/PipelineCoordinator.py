@@ -256,5 +256,5 @@ class PipelineCoordinator:
         return self.executors[f"{run_id}.{action.id}"]
 
     def _cleanup_run(self, pipeline):
-        logging.info("Cleaning up pipeline resources")
+        logging.info(f"Cleaning up pipeline run {pipeline.run_id}")
         # os.system(f"rm -rf {pipeline.work_dir}")
