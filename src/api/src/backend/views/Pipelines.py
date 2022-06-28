@@ -10,7 +10,8 @@ from backend.models import (
     Pipeline,
     Archive,
     PipelineArchive,
-    Group, GroupUser,
+    Group,
+    GroupUser,
     ACTION_TYPE_IMAGE_BUILD
 )
 from backend.services import action_service, group_service

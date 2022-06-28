@@ -11,6 +11,8 @@ from backend.views.Users import Users
 from backend.views.Nuke import Nuke
 from backend.views.ChangePipelineOwner import ChangePipelineOwner
 from backend.views.Archives import Archives
+from backend.views.AddArchive import AddArchive
+from backend.views.RemoveArchive import RemoveArchive
 
 
 urlpatterns = [
@@ -27,6 +29,8 @@ urlpatterns = [
     path("identities/<str:identity_uuid>", Identities.as_view()),
     path("pipelines/", Pipelines.as_view()),
     path("ci/", Pipelines.as_view()),
+    path("pipelines/<str:group_id>/<str:pipeline_id>/addArchive", AddArchive.as_view()),
+    path("pipelines/<str:group_id>/<str:pipeline_id>/removeArchive", RemoveArchive.as_view()),
     path("pipelines/<str:pipeline_id>/actions/", Actions.as_view()),
     path("pipelines/<str:pipeline_id>/actions/<str:action_id>", Actions.as_view()),
     path("pipelines/<str:id>", Pipelines.as_view()),

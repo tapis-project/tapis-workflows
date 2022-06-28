@@ -11,7 +11,7 @@ from backend.models import (
     Archive, 
     ARCHIVE_TYPE_SYSTEM, 
     ARCHIVE_TYPE_S3, 
-    ARCHIVE_TYPE_IRODS,
+    ARCHIVE_TYPE_IRODS
 )
 from backend.services import group_service
 
@@ -21,6 +21,8 @@ ARCHIVE_REQUEST_MAPPING = {
     ARCHIVE_TYPE_S3: S3Archive,
     ARCHIVE_TYPE_IRODS: IRODSArchive
 }
+
+ARCHIVE_TYPES = [ARCHIVE_TYPE_SYSTEM, ARCHIVE_TYPE_S3, ARCHIVE_TYPE_IRODS]
 
 class Archives(RestrictedAPIView):
     def get(self, request, group_id, archive_id=None):

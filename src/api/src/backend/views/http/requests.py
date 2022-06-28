@@ -88,6 +88,9 @@ class S3Archive(BaseArchive):
 
         return values
 
+class AddRemoveArchive(BaseModel):
+    archive_id: str
+
 class IRODSArchive(BaseArchive):
     credentials: S3Credentials = None
     identity_uuid: str = None

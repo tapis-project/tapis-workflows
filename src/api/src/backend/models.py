@@ -324,6 +324,9 @@ class PipelineArchive(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="archives", on_delete=models.CASCADE)
     archive = models.ForeignKey("backend.Archive", related_name="pipelines", on_delete=models.CASCADE)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    
+    class Meta:
+        unique_together = [["pipeline", "archive"]]
 
 class PipelineRun(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="runs", on_delete=models.CASCADE)
