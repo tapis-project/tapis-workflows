@@ -17,7 +17,8 @@ class CredentialsService:
                 secretName=sk_id,
                 user=TAPIS_SERVICE_ACCOUNT,
                 tenant=SECRETS_TENANT,
-                data=data
+                data=data,
+                _tapis_set_x_headers_from_service=True
             )
         except Exception as e:
             raise e
@@ -34,7 +35,8 @@ class CredentialsService:
             secretName=sk_id,
             user=TAPIS_SERVICE_ACCOUNT,
             tenant=SECRETS_TENANT,
-            versions=[]
+            versions=[],
+            _tapis_set_x_headers_from_service=True
         )
 
         credentials = Credentials.objects.filter(sk_id=sk_id).first()
@@ -50,13 +52,19 @@ class CredentialsService:
     def get_secret(self, sk_id: str):
         service_client = tapis_service_api_gateway.get_client()
         
-        return service_client.sk.readSecret(
-            secretType="user",
-            secretName=sk_id,
-            user=TAPIS_SERVICE_ACCOUNT,
-            tenant=SECRETS_TENANT,
-            version=0
-        ).secretMap.__dict__
+        try:
+            res = service_client.sk.readSecret(
+                secretType="user",
+                secretName=sk_id,
+                user=TAPIS_SERVICE_ACCOUNT,
+                tenant=SECRETS_TENANT,
+                version=0,
+                _tapis_set_x_headers_from_service=True
+            )
+            
+            return res.secretMap.__dict__
+        except Exception as e:
+            pass
 
     def _format_secret_name(self, secret_name: str):
         return secret_name.replace(" ", "-")
