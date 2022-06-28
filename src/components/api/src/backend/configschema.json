@@ -1,6 +1,0 @@
-{
-    "$id": "http://github.com/tapis-project/tenants-api/tenants-api/configschema.json",
-    "$schema": "http://json-schema.org/schema#",
-    "properties": {}
-}
-

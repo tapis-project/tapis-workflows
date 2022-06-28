@@ -1,0 +1,31 @@
+#!/bin/bash
+
+#kubectl apply -f storageclass.yml
+
+# here=$(dirname $0)
+here=`pwd`
+
+# Apply cluster roles
+kubectl apply -f "$here/src/roles/clusterroles.yml"
+
+# Apply secrets
+kubectl apply -f "$here/src/secrets/workflows-secrets.yml"
+
+### Services ###
+
+# mysql
+chmod +x ./src/mysql/deploy/minkube/burnup
+./src/mysql/deploy/minkube/burnup
+
+# rabbitmq
+chmod +x ./src/rabbitmq/deploy/minkube/burnup
+./src/rabbitmq/deploy/minkube/burnup
+
+# api
+chmod +x ./src/api/deploy/minkube/burnup
+./src/api/deploy/minkube/burnup
+
+# pipelines
+chmod +x ./src/pipelines/deploy/minkube/burnup
+./src/pipelines/deploy/minkube/burnup
+
