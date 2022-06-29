@@ -8,7 +8,7 @@ from backend.models import Archive, PipelineArchive, Pipeline
 from backend.services import group_service
 
 
-class AddArchive(RestrictedAPIView):
+class AddPipelineArchive(RestrictedAPIView):
     def patch(self, request, group_id, pipeline_id):
         # Check that the user belongs to the group that owns this archive
         if not group_service.user_in_group(request.username, group_id):

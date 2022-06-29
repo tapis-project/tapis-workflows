@@ -22,5 +22,5 @@ COPY src/shared/conf/configschema.json /src/backend/configschema.json
 
 # Shared utils and helpers
 COPY src/shared/helpers /src/backend/helpers
-COPY src/shared/utils /src//backend/utils
+COPY src/shared/utils /src/backend/utils
 
