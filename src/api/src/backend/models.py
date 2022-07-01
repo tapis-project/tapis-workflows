@@ -269,6 +269,7 @@ class Event(models.Model):
     context_url = models.CharField(max_length=128, null=True)
     directives = models.JSONField(null=True)
     message = models.TextField()
+    group = models.ForeignKey("backend.Group", related_name="events", null=True, on_delete=models.CASCADE)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
     username = models.CharField(max_length=64, null=True)
@@ -311,14 +312,17 @@ class Identity(models.Model):
         unique_together = [["owner", "name"]]
 
 class Pipeline(models.Model):
-    id = models.CharField(validators=[validate_id], primary_key=True, max_length=128)
+    id = models.CharField(validators=[validate_id], max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
     owner = models.CharField(max_length=64)
     updated_at = models.DateTimeField(auto_now=True)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     current_run = models.ForeignKey("backend.PipelineRun", related_name="+", null=True, on_delete=models.CASCADE)
     last_run = models.ForeignKey("backend.PipelineRun", related_name="+", null=True, on_delete=models.CASCADE)
+    
+    class Meta:
+        unique_together = [["id", "group"]]
 
 class PipelineArchive(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="archives", on_delete=models.CASCADE)
@@ -334,6 +338,3 @@ class PipelineRun(models.Model):
     started_at = models.DateTimeField(auto_now_add=True)
     ended_at = models.DateTimeField()
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
-
-# class Policy(models.Model):      
-#     pass

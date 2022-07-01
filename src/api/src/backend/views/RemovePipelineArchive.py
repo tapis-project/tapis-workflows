@@ -7,7 +7,7 @@ from backend.services import group_service
 
 
 class RemovePipelineArchive(RestrictedAPIView):
-    def patch(self, request, group_id, pipeline_id):
+    def delete(self, request, group_id, pipeline_id):
         # Check that the user belongs to the group that owns this archive
         if not group_service.user_in_group(request.username, group_id):
             return Forbidden(message="You do not have access to this pipeline")
@@ -46,7 +46,4 @@ class RemovePipelineArchive(RestrictedAPIView):
             pipeline_archive.delete()
 
         return BaseResponse(message=f"Archive '{body.archive_id}' removed from pipeline '{pipeline_id}'")
-        
-    def put(self, request, group_id, pipeline_id):
-        self.patch(request, group_id, pipeline_id)
 

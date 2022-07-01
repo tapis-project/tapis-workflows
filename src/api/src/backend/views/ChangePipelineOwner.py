@@ -5,10 +5,12 @@ from backend.views.http.responses.BaseResponse import BaseResponse
 
 
 class ChangePipelineOwner(RestrictedAPIView):
-    def patch(self, request, pipeline_id, username):
-
+    def patch(self, request, group_id, pipeline_id, username):
         # Get the pipeline by the id provided in the path params
-        pipeline = Pipeline.objects.filter(id=pipeline_id).first()
+        pipeline = Pipeline.objects.filter(
+            group_id=group_id,
+            id=pipeline_id
+        ).first()
 
         if pipeline is None:
             return NotFound(f"Pipeline not found with id '{pipeline_id}'")
@@ -18,7 +20,8 @@ class ChangePipelineOwner(RestrictedAPIView):
             return Forbidden(message="Change of ownership can only be requested by the current pipeline owner")
 
         Pipeline.objects.filter(
-            id=pipeline_id
+            id=pipeline_id,
+            group_id=group_id
         ).update(owner=username)
 
         return BaseResponse(message=f"Owner for pipeline '{pipeline_id}' updated to {username}")

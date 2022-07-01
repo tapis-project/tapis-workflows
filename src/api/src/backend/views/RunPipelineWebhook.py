@@ -3,18 +3,22 @@ from django.forms import model_to_dict
 
 from backend.views.APIView import APIView
 from backend.views.http.requests import WebhookEvent
-from backend.views.http.responses.models import ModelListResponse, ModelResponse
+from backend.views.http.responses.models import ModelResponse
 from backend.views.http.responses.errors import ServerError
 from backend.utils.parse_directives import parse_directives as parse
 from backend.services.CredentialsService import CredentialsService
 from backend.services import pipeline_dispatcher
-from backend.models import Identity, Event, Pipeline, Group
-from backend.views.http.responses.BaseResponse import BaseResponse
+from backend.models import Identity, Event, Pipeline, Group, GroupUser
 
-import pprint
 
-class WebhookEvents(APIView):
-    def post(self, request, pipeline_id):
+WEBHOOK_SOURCE_GITHUB = "github"
+WEBHOOK_SOURCE_GITLAB = "gitlab"
+WEBHOOK_SOURCES = [WEBHOOK_SOURCE_GITHUB, WEBHOOK_SOURCE_GITLAB]
+
+cred_service = CredentialsService()
+
+class RunPipelineWebhook(APIView):
+    def post(self, _, group_id, pipeline_id):
         prepared_request = self.prepare(WebhookEvent)
 
         if not prepared_request.is_valid:
@@ -22,8 +26,24 @@ class WebhookEvents(APIView):
 
         body = prepared_request.body
 
+        # Get the group for this request
+        group = Group.objects.filter(id=group_id).first()
+
+        # Return Event if group does not exist
+        if group == None:
+            event = self._create_event(
+                body,
+                group,
+                None,
+                f"Pipeline failed to run. Group '{group_id}' does not exist"
+            )
+            return ModelResponse(event)
+
         # Find a pipeline that matches the request data
-        pipeline = Pipeline.objects.filter(id=pipeline_id).prefetch_related(
+        pipeline = Pipeline.objects.filter(
+            id=pipeline_id,
+            group_id=group_id
+        ).prefetch_related(
             "group",
             "archives",
             "archives__archive",
@@ -36,32 +56,64 @@ class WebhookEvents(APIView):
             "actions__destination__identity",
         ).first()
 
-        message = "No Pipeline found with details that match this event"
-        if pipeline != None:
-            message = f"Successfully triggered pipeline ({pipeline.id})"
-            
-        # Persist the event in the database
-        try:
-            event = Event.objects.create(
-                branch=body.branch,
-                commit=body.commit,
-                commit_sha=body.commit_sha,
-                context_url=body.context_url,
-                message=message,
-                pipeline=pipeline,
-                source=body.source,
-                username=body.username
+        # Return event if pipeline does not exist
+        if pipeline == None:
+            event = self._create_event(
+                body,
+                group,
+                pipeline,
+                f"Pipeline failed to run. Pipeline '{pipeline_id}' does not exist"
             )
-        except IntegrityError as e:
-            return ServerError(message=e.__cause__)
-
-        # Return the event if there is no pipeline matching the event
-        if pipeline is None:
             return ModelResponse(event)
 
-        # Get the group for this pipelines
-        group = pipeline.group
+        # Ensure the identity of the user triggering the pipeline is
+        # authorized to do so
+        group_users = GroupUser.objects.filter(group=group)
+        
+        identities = []
+        for group_user in group_users:
+            identities = identities + list(
+                Identity.objects.filter(
+                    owner=group_user.username,
+                    type=body.source
+                )
+            )
 
+        # If an identity is found with the username provided in the 
+        # webhook notification, this pipeline can be dispatched
+        username = None
+        for identity in identities:
+            # Fetch the credentials
+            identity_username = getattr(
+                cred_service.get_secret(identity.sk_id),
+                "username",
+                False
+            )
+
+            if identity_username and identity_username == body.username:
+                username = identity_username
+                break
+
+
+        if username == None:
+            event = self._create_event(
+                body,
+                group,
+                pipeline,
+                f"Pipeline failed to run. No identity found type '{body.source}' and username '{body.username}'"
+            )
+            return ModelResponse(event)
+
+        
+        # Create the event
+        event = self._create_event(
+            body,
+            group,
+            pipeline,
+            f"Successfully triggered pipeline ({pipeline.id})",
+            username=username
+        )
+   
         # Get the pipeline actions, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
         actions = pipeline.actions.all()
@@ -93,7 +145,7 @@ class WebhookEvents(APIView):
         directives = parse(body.commit)
         pipeline_dispatch_request["directives"] = directives
 
-        # Send the pipelines service a dispatch request
+        # Dispatch the request
         pipeline_dispatcher.dispatch(pipeline_dispatch_request)
 
         # Respond with the event
@@ -101,8 +153,6 @@ class WebhookEvents(APIView):
 
     def _image_build(self, action):
         action_request = model_to_dict(action)
-
-        cred_service = CredentialsService()
 
         action_request["context"] = model_to_dict(action.context)
 
@@ -150,3 +200,22 @@ class WebhookEvents(APIView):
     def _container_run(self, action):
         action_request = model_to_dict(action)
         return action_request
+
+    def _create_event(self, body, group, pipeline, message, username=None):
+        # Persist the event in the database
+        try:
+            event = Event.objects.create(
+                branch=body.branch,
+                commit=body.commit,
+                commit_sha=body.commit_sha,
+                context_url=body.context_url,
+                message=message,
+                group=group,
+                pipeline=pipeline,
+                source=body.source,
+                username=username
+            )
+        except IntegrityError as e:
+            return ServerError(message=e.__cause__)
+
+        return event

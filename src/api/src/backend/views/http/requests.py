@@ -335,7 +335,6 @@ class WebhookAction(BaseAction):
 class BasePipeline(BaseModel):
     id: str
     type: str = "workflow"
-    group_id: str
     actions: List[
         Union[
             ContainerRunAction,

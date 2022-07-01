@@ -9,21 +9,21 @@ from backend.models import Group, GroupUser
 
 
 class Groups(RestrictedAPIView):
-    def get(self, request, id=None):
+    def get(self, request, group_id=None):
         # Get a list of all groups the user belongs to
-        if id is None:
+        if group_id is None:
             group_users = GroupUser.objects.filter(username=request.username)
             group_ids = [ user.group_id for user in group_users ]
             return ModelListResponse(Group.objects.filter(id__in=group_ids))
 
         # Return the group by the id provided in the path params
-        group = Group.objects.filter(id=id).first()
+        group = Group.objects.filter(id=group_id).first()
         if group is None:
-            return NotFound(f"Group not found with id '{id}'")
+            return NotFound(f"Group not found with id '{group_id}'")
 
         # Get the group users. Return a 403 if user doesn't belong to the group
         group_users = group.users.all()
-        if request.username != [ user.name for user in group_users ]:
+        if request.username != [ user.username for user in group_users ]:
             return Forbidden("You do not have access to this group")
 
         # Convert model into a dict an

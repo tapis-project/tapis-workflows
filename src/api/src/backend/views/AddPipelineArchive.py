@@ -9,7 +9,7 @@ from backend.services import group_service
 
 
 class AddPipelineArchive(RestrictedAPIView):
-    def patch(self, request, group_id, pipeline_id):
+    def post(self, request, group_id, pipeline_id):
         # Check that the user belongs to the group that owns this archive
         if not group_service.user_in_group(request.username, group_id):
             return Forbidden(message="You do not have access to this pipeline")
@@ -52,7 +52,4 @@ class AddPipelineArchive(RestrictedAPIView):
             return BadRequest(message=e)
 
         return BaseResponse(message=f"Archive '{body.archive_id}' added to pipeline '{pipeline_id}'")
-        
-    def put(self, request, group_id, pipeline_id):
-        self.patch(request, group_id, pipeline_id)
 

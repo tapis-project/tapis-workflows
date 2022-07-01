@@ -12,7 +12,7 @@ from backend.models import Event, Pipeline
 
 
 class Events(RestrictedAPIView):
-    def post(self, request, pipeline_id, *args, **kwargs):
+    def post(self, request, group_id, pipeline_id, *args, **kwargs):
         prepared_request = self.prepare(APIEvent)
 
         if not prepared_request.is_valid:
@@ -21,7 +21,10 @@ class Events(RestrictedAPIView):
         body = prepared_request.body
 
         # Find a pipeline that matches the request data
-        pipeline = Pipeline.objects.filter(id=pipeline_id).prefetch_related(
+        pipeline = Pipeline.objects.filter(
+            group_id=group_id,
+            id=pipeline_id
+        ).prefetch_related(
             "actions",
             "actions__context",
             "actions__context__credentials",
@@ -85,9 +88,12 @@ class Events(RestrictedAPIView):
         # return BaseResponse(result=pipeline_dispatch_request)
         return ModelResponse(event)
 
-    def get(self, request, pipeline_id, event_uuid=None):
+    def get(self, request, group_id, pipeline_id, event_uuid=None):
         # Get the pipline
-        pipeline = Pipeline.objects.filter(id=pipeline_id).first()
+        pipeline = Pipeline.objects.filter(
+            group_id=group_id,
+            id=pipeline_id
+        ).first()
 
         # Return if BadRequest if no pipeline found
         if pipeline is None:

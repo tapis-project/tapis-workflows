@@ -64,7 +64,7 @@ class CredentialsService:
             
             return res.secretMap.__dict__
         except Exception as e:
-            pass
+            return None # TODO catch network error
 
     def _format_secret_name(self, secret_name: str):
         return secret_name.replace(" ", "-")
