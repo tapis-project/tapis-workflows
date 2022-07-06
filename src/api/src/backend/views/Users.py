@@ -4,7 +4,7 @@ from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.responses.errors import ServerError, NotFound, Forbidden
 from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.models import Group, GroupUser
-from backend.services import group_service
+from backend.services.GroupService import service as group_service
 
 
 class Users(RestrictedAPIView):

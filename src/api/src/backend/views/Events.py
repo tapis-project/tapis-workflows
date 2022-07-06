@@ -1,18 +1,27 @@
 from django.db import DatabaseError, IntegrityError, OperationalError
-from django.forms import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.requests import APIEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
-from backend.views.http.responses.errors import ServerError, MethodNotAllowed, Forbidden, NotFound, BadRequest
-from backend.utils.parse_directives import parse_directives as parse
-from backend.services import pipeline_dispatcher, group_service
-from backend.services.CredentialsService import CredentialsService
+from backend.views.http.responses.errors import (
+    ServerError,
+    MethodNotAllowed,
+    Forbidden,
+    NotFound,
+    BadRequest,
+    UnprocessableEntity
+)
+from backend.helpers.PipelineDispatchRequestBuilder import PipelineDispatchRequestBuilder
+from backend.services.PipelineDispatcher import service as pipeline_dispatcher
+from backend.services.GroupService import service as group_service
+from backend.services.CredentialsService import service as cred_service
 from backend.models import Event, Pipeline
 
 
+request_builder = PipelineDispatchRequestBuilder(cred_service)
+
 class Events(RestrictedAPIView):
-    def post(self, request, group_id, pipeline_id, *args, **kwargs):
+    def post(self, request, group_id, pipeline_id, *_, **__):
         prepared_request = self.prepare(APIEvent)
 
         if not prepared_request.is_valid:
@@ -20,21 +29,35 @@ class Events(RestrictedAPIView):
 
         body = prepared_request.body
 
+        # Get the group for this request
+        group = group_service.get(group_id)
+
+        # Return Event if group does not exist
+        if group == None:
+            return UnprocessableEntity(message=f"Group '{group_id}' does not exist")
+
+        if not group_service.user_in_group(request.username, group.id):
+            return Forbidden(f"You do not have access to group '{group_id}'")
+
         # Find a pipeline that matches the request data
         pipeline = Pipeline.objects.filter(
-            group_id=group_id,
-            id=pipeline_id
+            id=pipeline_id,
+            group_id=group_id
         ).prefetch_related(
+            "group",
+            "archives",
+            "archives__archive",
             "actions",
             "actions__context",
             "actions__context__credentials",
+            "actions__context__identity",
             "actions__destination",
-            "actions__destination__credentials"
+            "actions__destination__credentials",
+            "actions__destination__identity",
         ).first()
 
         message = "No Pipeline found with details that match this event"
         if pipeline is not None:
-            
             # Check that the user belongs to the group that is attached
             # to this pipline
             message = f"Successfully triggered pipeline ({pipeline.id})"
@@ -48,7 +71,6 @@ class Events(RestrictedAPIView):
                 pipeline=pipeline,
                 source="api",
                 username=request.username,
-                identity=None,
             )
         except (IntegrityError, OperationalError, DatabaseError) as e:
             return ServerError(message=e.__cause__)
@@ -57,35 +79,18 @@ class Events(RestrictedAPIView):
         if pipeline is None:
             return ModelResponse(event)
 
-        # Get the pipeline actions, their contexts, destinations, and respective
-        # credentials and generate a piplines_service_request
-        actions = pipeline.actions.all()
-        actions_result = []
-        
-        for action in actions:
-            # Build action request
-            action_request = getattr(self, f"_{action.type}")(action)
-            actions_result.append(action_request)
+        # Build the pipeline dispatch request
+        pipeline_dispatch_request = request_builder.build(
+            group,
+            pipeline,
+            event,
+            directives=body.directives
+        )
 
-        # Convert pipleline to a dict and build the pipeline_dispatch_request
-        pipeline_dispatch_request = {}
-        pipeline_dispatch_request["event"] = model_to_dict(event)
-        pipeline_dispatch_request["pipeline"] = model_to_dict(pipeline)
-        pipeline_dispatch_request["pipeline"]["actions"] = actions_result
-
-        # Parse the directives from the commit message
-        directives = {}
-        if body.directives is not None and len(body.directives) > 0:
-            directive_str = f"[{'|'.join([d for d in body.directives])}]"
-            directives = parse(directive_str)
-
-        pipeline_dispatch_request["directives"] = directives
-
-        # Send the pipelines service a service request
+        # Dispatch the request
         pipeline_dispatcher.dispatch(pipeline_dispatch_request)
 
-        # Respond with the pipeline_context and build data
-        # return BaseResponse(result=pipeline_dispatch_request)
+        # Respond with the event
         return ModelResponse(event)
 
     def get(self, request, group_id, pipeline_id, event_uuid=None):
@@ -127,34 +132,3 @@ class Events(RestrictedAPIView):
 
     def delete(self, *args, **kwargs):
         return MethodNotAllowed(message="Events cannot be deleted")
-
-    def _image_build(self, action):
-        action_request = model_to_dict(action)
-
-        # Initialized the credentials service
-        cred_service = CredentialsService()
-
-        action_request["context"] = model_to_dict(action.context)
-        if action.context.credentials is not None:
-            action_request["context"]["credentials"] = model_to_dict(action.context.credentials)
-
-            # Get the context credentials data
-            context_cred_data = cred_service.get_secret(action.context.credentials.sk_id)
-            action_request["context"]["credentials"]["data"] = context_cred_data
-
-        action_request["destination"] = model_to_dict(action.destination)
-        action_request["destination"]["credentials"] = model_to_dict(action.destination.credentials)
-
-        # Get the context credentials data
-        destination_cred_data = cred_service.get_secret(action.destination.credentials.sk_id)
-        action_request["destination"]["credentials"]["data"] = destination_cred_data
-
-        return action_request
-
-    def _webhook_notification(self, action):
-        action_request = model_to_dict(action)
-        return action_request
-
-    def _container_run(self, action):
-        action_request = model_to_dict(action)
-        return action_request

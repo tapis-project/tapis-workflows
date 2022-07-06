@@ -1,14 +1,20 @@
 import uuid
 
 from typing import Dict
+
 from backend.models import Credentials
 from backend.conf.constants import SECRETS_TENANT, TAPIS_SERVICE_ACCOUNT, SECRETS_TENANT
-from backend.helpers import tapis_service_api_gateway
+from backend.helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
+from backend.services.Service import Service
 
 
-class CredentialsService:
+class CredentialsService(Service):
+    def __init__(self):
+        self.service_api_gateway = TapisServiceAPIGateway()
+        Service.__init__(self)
+
     def save(self, owner: str, data: Dict[str, str]):
-        service_client = tapis_service_api_gateway.get_client()
+        service_client = self.service_api_gateway.get_client()
 
         sk_id = f"workflows+{owner}+{uuid.uuid4()}"
         try:
@@ -28,7 +34,7 @@ class CredentialsService:
         return credentials
 
     def delete(self, sk_id: str):
-        service_client = tapis_service_api_gateway.get_client()
+        service_client = self.service_api_gateway.get_client()
         
         service_client.sk.deleteSecret(
             secretType="user",
@@ -50,7 +56,7 @@ class CredentialsService:
         return None
 
     def get_secret(self, sk_id: str):
-        service_client = tapis_service_api_gateway.get_client()
+        service_client = self.service_api_gateway.get_client()
         
         try:
             res = service_client.sk.readSecret(
@@ -68,3 +74,5 @@ class CredentialsService:
 
     def _format_secret_name(self, secret_name: str):
         return secret_name.replace(" ", "-")
+
+service = CredentialsService()

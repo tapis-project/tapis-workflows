@@ -1,16 +1,16 @@
-from backend.errors.base import CICDBaseException
+from backend.errors.base import APIBaseException
 
-class BadRequestError(CICDBaseException):
+class BadRequestError(APIBaseException):
     pass
 
-class AccessForbiddenError(CICDBaseException):
+class AccessForbiddenError(APIBaseException):
     pass
         
-class UnprocessableEntityError(CICDBaseException):
+class UnprocessableEntityError(APIBaseException):
     pass
 
-class NotFoundError(CICDBaseException):
+class NotFoundError(APIBaseException):
     pass
 
-class ServerError(CICDBaseException):
+class ServerError(APIBaseException):
     pass

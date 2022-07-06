@@ -1,4 +1,4 @@
-from backend.errors.base import CICDBaseException
+from backend.errors.base import APIBaseException
 
-class InvalidExchangeError(CICDBaseException):
+class InvalidExchangeError(APIBaseException):
     pass

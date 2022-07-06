@@ -6,7 +6,8 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.views.http.responses.errors import BadRequest, UnprocessableEntity, Forbidden, NotFound, MethodNotAllowed, ServerError
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
-from backend.services import action_service, group_service
+from backend.services.ActionService import service as action_service
+from backend.services.GroupService import service as group_service
 
 
 class Actions(RestrictedAPIView):

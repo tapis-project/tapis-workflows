@@ -5,7 +5,7 @@ from backend.views.http.responses import BaseResponse
 from backend.views.http.responses.errors import Forbidden, NotFound, BadRequest
 from backend.views.http.requests import AddRemoveArchive
 from backend.models import Archive, PipelineArchive, Pipeline
-from backend.services import group_service
+from backend.services.GroupService import service as group_service
 
 
 class AddPipelineArchive(RestrictedAPIView):

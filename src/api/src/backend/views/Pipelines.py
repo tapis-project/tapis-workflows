@@ -13,7 +13,8 @@ from backend.models import (
     Group,
     ACTION_TYPE_IMAGE_BUILD
 )
-from backend.services import action_service, group_service
+from backend.services.ActionService import service as action_service
+from backend.services.GroupService import service as group_service
 from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.errors.api import BadRequestError
 

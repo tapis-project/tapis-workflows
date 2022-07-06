@@ -51,4 +51,4 @@ class MessageBroker:
         self.channel.basic_publish(exchange=exchange, routing_key="", body=message)
         self._close_connection()
 
-message_service = MessageBroker()
+service = MessageBroker()

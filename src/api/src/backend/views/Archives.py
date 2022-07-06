@@ -13,7 +13,7 @@ from backend.models import (
     ARCHIVE_TYPE_S3, 
     ARCHIVE_TYPE_IRODS
 )
-from backend.services import group_service
+from backend.services.GroupService import service as group_service
 
 
 ARCHIVE_REQUEST_MAPPING = {

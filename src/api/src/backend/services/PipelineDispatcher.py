@@ -1,7 +1,7 @@
 import json
 from uuid import UUID
 
-from backend.services.MessageBroker import message_service as broker
+from backend.services.MessageBroker import service as broker
 
 
 class PipelineDispatcher:
@@ -15,5 +15,5 @@ class PipelineDispatcher:
         if isinstance(obj, UUID):
             return str(obj)
 
-pipeline_dispatcher = PipelineDispatcher()
+service = PipelineDispatcher()
 

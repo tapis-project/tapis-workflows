@@ -67,3 +67,5 @@ class TapisAPIGateway:
         except Exception as e:
             self.error = str(e)
             return False
+
+service = TapisAPIGateway()

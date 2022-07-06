@@ -1,4 +1,4 @@
-class CICDBaseException(Exception):
+class APIBaseException(Exception):
     def __init__(self, message):
         self.message = message
 

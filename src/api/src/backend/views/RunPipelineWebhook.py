@@ -1,21 +1,21 @@
-from django.db import IntegrityError
-from django.forms import model_to_dict
+from django.db import IntegrityError, DatabaseError, OperationalError
 
 from backend.views.APIView import APIView
 from backend.views.http.requests import WebhookEvent
 from backend.views.http.responses.models import ModelResponse
-from backend.views.http.responses.errors import ServerError
-from backend.utils.parse_directives import parse_directives as parse
-from backend.services.CredentialsService import CredentialsService
-from backend.services import pipeline_dispatcher
+from backend.views.http.responses.errors import ServerError as ServerErrorResp
+from backend.services.PipelineDispatcher import service as pipeline_dispatcher
+from backend.services.CredentialsService import service as cred_service
 from backend.models import Identity, Event, Pipeline, Group, GroupUser
+from backend.helpers.PipelineDispatchRequestBuilder import PipelineDispatchRequestBuilder
+from backend.errors.api import ServerError
 
 
 WEBHOOK_SOURCE_GITHUB = "github"
 WEBHOOK_SOURCE_GITLAB = "gitlab"
 WEBHOOK_SOURCES = [WEBHOOK_SOURCE_GITHUB, WEBHOOK_SOURCE_GITLAB]
 
-cred_service = CredentialsService()
+request_builder = PipelineDispatchRequestBuilder(cred_service)
 
 class RunPipelineWebhook(APIView):
     def post(self, _, group_id, pipeline_id):
@@ -76,130 +76,59 @@ class RunPipelineWebhook(APIView):
                 Identity.objects.filter(
                     owner=group_user.username,
                     type=body.source
-                )
+                ).prefetch_related("credentials")
             )
 
         # If an identity is found with the username provided in the 
         # webhook notification, this pipeline can be dispatched
         username = None
-        for identity in identities:
-            # Fetch the credentials
-            identity_username = getattr(
-                cred_service.get_secret(identity.sk_id),
-                "username",
-                False
-            )
+        for identity in identities: 
+            # Fetch the secret from SK
+            secret = cred_service.get_secret(identity.credentials.sk_id)
+            if secret == None: break
+
+            # Get the username from the secret
+            identity_username = secret.get("username")
+            if identity_username == None: break
 
             if identity_username and identity_username == body.username:
                 username = identity_username
                 break
-
 
         if username == None:
             event = self._create_event(
                 body,
                 group,
                 pipeline,
-                f"Pipeline failed to run. No identity found type '{body.source}' and username '{body.username}'"
+                f"Pipeline failed to run. No identity found with type '{body.source}' and username '{body.username}'"
             )
             return ModelResponse(event)
 
-        
         # Create the event
-        event = self._create_event(
-            body,
+        try:
+            event = self._create_event(
+                body,
+                group,
+                pipeline,
+                f"Successfully triggered pipeline ({pipeline.id})",
+                username=username
+            )
+        except ServerError as e:
+            return ServerErrorResp(message=e)
+
+        # Build the pipeline dispatch request
+        pipeline_dispatch_request = request_builder.build(
             group,
             pipeline,
-            f"Successfully triggered pipeline ({pipeline.id})",
-            username=username
+            event,
+            commit=body.commit
         )
-   
-        # Get the pipeline actions, their contexts, destinations, and respective
-        # credentials and generate a piplines_service_request
-        actions = pipeline.actions.all()
-        
-        actions_request = []
-        for action in actions:
-            # Build action result
-            action_request = getattr(self, f"_{action.type}")(action)
-            actions_request.append(action_request)
-
-        # Get the archives for this pipeline
-        archives = []
-        pipeline_archives = pipeline.archives.all()
-        for pipeline_archive in pipeline_archives:
-            # Fetch any credentials or identities for required to
-            # access this archive
-            # TODO Handle creds/identity for archives
-            archives.append(model_to_dict(pipeline_archive.archive))
-
-        # Convert pipleline to a dict and build the pipeline_dispatch_request
-        pipeline_dispatch_request = {}
-        pipeline_dispatch_request["group"] = model_to_dict(group)
-        pipeline_dispatch_request["event"] = model_to_dict(event)
-        pipeline_dispatch_request["pipeline"] = model_to_dict(pipeline)
-        pipeline_dispatch_request["pipeline"]["actions"] = actions_request
-        pipeline_dispatch_request["pipeline"]["archives"] = archives
-
-        # Parse the directives from the commit message
-        directives = parse(body.commit)
-        pipeline_dispatch_request["directives"] = directives
 
         # Dispatch the request
         pipeline_dispatcher.dispatch(pipeline_dispatch_request)
 
         # Respond with the event
         return ModelResponse(event)
-
-    def _image_build(self, action):
-        action_request = model_to_dict(action)
-
-        action_request["context"] = model_to_dict(action.context)
-
-        # Resolve which context credentials to use if any provided
-        context_creds = None
-        if action.context.credentials != None:
-            context_creds = action.context.credentials
-        
-        # Identity takes precedence over credentials placed directly in
-        # the context
-        if action.context.identity != None:
-            context_creds = action.context.identity.credentials
-
-        action_request["context"]["credentials"] = None
-        if context_creds != None:
-            action_request["context"]["credentials"] = model_to_dict(context_creds)
-
-            # Get the context credentials data
-            context_cred_data = cred_service.get_secret(context_creds.sk_id)
-            action_request["context"]["credentials"]["data"] = context_cred_data
-
-        # Destination credentials
-        action_request["destination"] = model_to_dict(action.destination)
-
-        destination_creds = None
-        if action.destination.credentials != None:
-            destination_creds = action.destination.credentials
-
-        if action.destination.identity != None:
-            destination_creds = action.destination.identity.credentials
-
-        if destination_creds != None:
-            action_request["destination"]["credentials"] = model_to_dict(destination_creds)
-
-            # Get the context credentials data
-            destination_cred_data = cred_service.get_secret(destination_creds.sk_id)
-            action_request["destination"]["credentials"]["data"] = destination_cred_data
-
-        return action_request
-
-    def _webhook_notification(self, action):
-        action_request = model_to_dict(action)
-        return action_request
-
-    def _container_run(self, action):
-        action_request = model_to_dict(action)
-        return action_request
 
     def _create_event(self, body, group, pipeline, message, username=None):
         # Persist the event in the database
@@ -215,7 +144,7 @@ class RunPipelineWebhook(APIView):
                 source=body.source,
                 username=username
             )
-        except IntegrityError as e:
-            return ServerError(message=e.__cause__)
+        except (IntegrityError, DatabaseError, OperationalError) as e:
+            raise ServerError(e.__cause__)
 
         return event

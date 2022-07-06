@@ -2,7 +2,7 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.models import ModelListResponse
 from backend.views.http.responses.errors import Forbidden, NotFound
 from backend.models import PipelineArchive, Pipeline
-from backend.services import group_service
+from backend.services.GroupService import service as group_service
 
 
 class ListPipelineArchives(RestrictedAPIView):

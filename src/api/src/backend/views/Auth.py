@@ -1,5 +1,5 @@
 from backend.views.APIView import APIView
-from backend.services import TapisAPIGateway
+from backend.services.TapisAPIGateway import service as api_gateway
 from backend.views.http.responses.errors import BaseResponse, Unauthorized
 from backend.views.http.requests import AuthRequest
 
@@ -12,8 +12,6 @@ class Auth(APIView):
             return prepared_request.failure_view
 
         body = prepared_request.body
-
-        api_gateway = TapisAPIGateway()
 
         authenticated = api_gateway.authenticate(
             {"username": body.username, "password": body.password},

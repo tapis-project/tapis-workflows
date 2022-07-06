@@ -22,7 +22,7 @@ from backend.views.http.requests import (
     RegistryDestination,
     LocalDestination
 )
-from backend.services.CredentialsService import CredentialsService
+from backend.services.CredentialsService import service as cred_service
 from backend.services.Service import Service
 from backend.errors.api import BadRequestError, ServerError
 
@@ -45,7 +45,6 @@ ACTION_REQUEST_TYPES = list(ACTION_TYPE_REQUEST_MAPPING.keys())
 class ActionService(Service):
     def __init__(self):
         Service.__init__(self)
-        self._register_service("cred_service", CredentialsService)
 
     def create(self, pipeline, request):
         try:
@@ -131,7 +130,6 @@ class ActionService(Service):
                     cred_data[key] = getattr(credentials, key)
             
             try:
-                cred_service = self._get_service("cred_service")
                 cred = cred_service.save(f"pipeline:{pipeline.id}", cred_data)
                 
                 # Register a rollback funtion(partial) that will be used to delete the credentials
