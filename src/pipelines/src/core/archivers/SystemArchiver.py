@@ -4,7 +4,7 @@ from tapipy.tapis import Tapis
 from tapipy.errors import InvalidInputError  
 
 from helpers import tapis_service_api_gateway
-from conf.configs import TAPIS_BASE_URL, BASE_WORK_DIR
+from conf.configs import TAPIS_DEV_URL, BASE_WORK_DIR
 from errors.archives import ArchiveError
 
 
@@ -26,8 +26,9 @@ class SystemArchiver:
             jwt = res.access_token.access_token
 
             # Initialize the tapipy client
+            # TODO import shared tapis api gateway
             client = Tapis(
-                base_url=TAPIS_BASE_URL,
+                base_url=TAPIS_DEV_URL,
                 jwt=jwt
             )
 

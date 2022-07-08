@@ -53,7 +53,6 @@ ALLOWED_HOSTS = [
     ".tapis.io", # dev, staging, prod
     "localhost", # local
     "127.0.0.1", # local
-    ".ngrok.io", # local # TODO remove cause dangerous
 ]
 
 # Application definition

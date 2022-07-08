@@ -16,14 +16,14 @@ spec:
         args:
           - "./scripts/start.sh;"
         env:
+          - name: BROKER_USER
+            value: dev
           - name: BROKER_PASSWORD
             value: dev
           - name: BROKER_PORT
             value: "5672"
           - name: BROKER_URL
             value: workflows-rabbitmq-service
-          - name: BROKER_USER
-            value: dev
           - name: DB_HOST
             value: workflows-mysql-service
           - name: DB_NAME
@@ -46,7 +46,7 @@ spec:
             value: tacc
           - name: TAPIS_SERVICE_TENANT_ID
             value: admin
-          - name: TAPIS_BASE_URL
+          - name: TAPIS_DEV_URL
             value: https://dev.develop.tapis.io
           - name: TAPIS_CONFIG_PATH
             value: "/src/backend/config.json"

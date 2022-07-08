@@ -5,8 +5,8 @@ SECRETS_TENANT = "admin"
 WORKFLOWS_SERVICE_ACCOUNT = os.environ["WORKFLOWS_SERVICE_ACCOUNT"]
 WORKFLOWS_SERVICE_PASSWORD = os.environ["WORKFLOWS_SERVICE_PASSWORD"]
 
-# TODO needs to be determined by the users request
-TAPIS_BASE_URL = os.environ["TAPIS_BASE_URL"]
+TAPIS_DEV_URL = os.environ["TAPIS_DEV_URL"]
+TAPIS_DEV_TENANT = "dev" # TODO add to environment variables
 
 TAPIS_SERVICE_SITE_ID = os.environ["TAPIS_SERVICE_SITE_ID"]
 TAPIS_SERVICE_TENANT_ID = os.environ["TAPIS_SERVICE_TENANT_ID"]

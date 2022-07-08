@@ -6,9 +6,15 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest, Unauthorized
-from backend.services.TapisAPIGateway import service as api_gateway
 from backend.views.http.requests import PreparedRequest
-from backend.conf.constants import TAPIS_TOKEN_HEADER, DJANGO_TAPIS_TOKEN_HEADER, PERMITTED_CONTENT_TYPES, PERMITTED_HTTP_METHODS
+from backend.services.TapisAPIGateway import TapisAPIGateway
+from backend.conf.constants import (
+    TAPIS_TOKEN_HEADER,
+    DJANGO_TAPIS_TOKEN_HEADER,
+    PERMITTED_CONTENT_TYPES,
+    PERMITTED_HTTP_METHODS
+)
+
 
 class RestrictedAPIView(View):
     # All methods on the RestrictedAPIView do not require a CSRF token
@@ -29,18 +35,31 @@ class RestrictedAPIView(View):
             except json.JSONDecodeError:
                 return BadRequest(message="Could not decode request body")
 
+        ### Auth start ###
+        # TODO consider refactor
+
         # Check that the X-TAPIS-TOKEN header is set
         if DJANGO_TAPIS_TOKEN_HEADER not in request.META:
             return BadRequest(message=f"Missing header: {TAPIS_TOKEN_HEADER}")
 
+        # Get the request base url
+        request_url = f"{request.scheme}://{request.get_host()}"
+
+        # Initialize the tapis API Gateway based on the tenant provided
+        api_gateway = TapisAPIGateway(request_url)
+
         # Authenticate the user and get the account
-        authenticated = api_gateway.authenticate(
+        request.authenticated = api_gateway.authenticate(
             {"jwt": request.META[DJANGO_TAPIS_TOKEN_HEADER]}, auth_method="jwt")
 
-        if not authenticated:
+        request.tenant_id = api_gateway.tenant_id
+
+        if not request.authenticated:
             return Unauthorized(api_gateway.error)
 
         request.username = str(api_gateway.get_username())
+
+        ### Auth end ###
 
         return super(RestrictedAPIView, self).dispatch(request, *args, **kwargs)
 

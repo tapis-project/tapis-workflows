@@ -1,6 +1,8 @@
 from tapipy.tapis import Tapis
 
-from backend.conf.constants import TAPIS_BASE_URL
+from backend.conf.constants import TAPIS_DEV_URL, TAPIS_DEV_TENANT
+from backend.helpers.tapis import resolve_tenant_id, resolve_tapis_v3_token
+from backend.errors.api import AuthenticationError
 
 
 AUTH_METHODS = [
@@ -11,8 +13,16 @@ AUTH_METHODS = [
 DEFAULT_AUTH_METHOD = "password"
 
 class TapisAPIGateway:
-    def __init__(self):
-        self.base_url = TAPIS_BASE_URL
+    def __init__(self, base_url):
+        # Use the base url to determine the tenant
+        self.tenant_id = resolve_tenant_id(base_url)
+        
+        # Set the base url to the tenant dev url if in the
+        # dev tenant
+        if self.tenant_id == TAPIS_DEV_TENANT:
+            base_url = TAPIS_DEV_URL
+
+        self.base_url = base_url
         self.client = None
         self.credentials = {}
         self.error = None
@@ -32,6 +42,9 @@ class TapisAPIGateway:
 
     def get_username(self):
         return self.username
+
+    def get_tenant_id(self):
+        return self.tenant_id
 
     def get_client(self):
         return self.client
@@ -60,12 +73,16 @@ class TapisAPIGateway:
                 jwt=credentials["jwt"]
             )
 
-            self.username = str(self.client.authenticator.get_userinfo().username)
+            self.username = resolve_tapis_v3_token(
+                credentials["jwt"],
+                self.tenant_id
+            )
 
-            return True
-
+        except AuthenticationError as e:
+            self.error = str(e)
+            return False
         except Exception as e:
             self.error = str(e)
             return False
-
-service = TapisAPIGateway()
+        
+        return True

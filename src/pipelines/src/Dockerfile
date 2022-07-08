@@ -23,7 +23,7 @@ COPY src/shared/conf/config.json /src/config.json
 COPY src/shared/conf/configschema.json /src/configschema.json
 
 # Shared utils and helpers
-COPY src/shared/helpers /src/helpers
-COPY src/shared/utils /src/utils
+COPY src/shared/GraphValidator.py /src/helpers
+COPY src/shared/TapisServiceAPIGateway.py /src/helpers
 
 RUN chmod +x /src/scripts/start.sh

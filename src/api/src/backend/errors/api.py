@@ -1,5 +1,8 @@
 from backend.errors.base import APIBaseException
 
+class AuthenticationError(APIBaseException):
+    pass
+
 class BadRequestError(APIBaseException):
     pass
 

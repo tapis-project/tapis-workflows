@@ -6,7 +6,7 @@ from core.ActionResult import ActionResult
 from conf.configs import (
     TAPIS_SERVICE_ACCOUNT,
     TAPIS_SERVICE_ACCOUNT_PASSWORD,
-    TAPIS_BASE_URL,
+    TAPIS_DEV_URL,
     TAPIS_JOB_POLLING_FREQUENCY,
 )
 
@@ -15,7 +15,7 @@ class TapisJob:
     def execute(self, action, _):
         try:
             client = Tapis(
-                base_url=TAPIS_BASE_URL,
+                base_url=TAPIS_DEV_URL,
                 username=TAPIS_SERVICE_ACCOUNT,
                 password=TAPIS_SERVICE_ACCOUNT_PASSWORD,
             )

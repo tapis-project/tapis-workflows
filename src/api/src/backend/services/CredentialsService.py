@@ -4,7 +4,7 @@ from typing import Dict
 
 from backend.models import Credentials
 from backend.conf.constants import SECRETS_TENANT, TAPIS_SERVICE_ACCOUNT, SECRETS_TENANT
-from backend.helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
+from backend.services.TapisServiceAPIGateway import TapisServiceAPIGateway
 from backend.services.Service import Service
 
 
