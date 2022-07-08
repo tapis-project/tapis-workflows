@@ -31,7 +31,7 @@ spec:
           - name: DB_PASSWORD
             value: dev
           - name: DB_USER
-            value: root
+            value: workflows
           - name: LOG_LEVEL
             value: DEBUG
           - name: DJANGO_SECRET_KEY
