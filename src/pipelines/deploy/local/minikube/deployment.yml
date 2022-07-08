@@ -33,7 +33,7 @@ spec:
             - name: BROKER_USER
               value: dev
             - name: DB_HOST
-              value: database
+              value: workflows-mysql-service
             - name: DB_NAME
               value: tasks
             - name: DB_PASSWORD
@@ -41,23 +41,19 @@ spec:
             - name: DB_PORT
               value: "3306"
             - name: DB_USER
-              value: root
+              value: workflows
             - name: DEPLOYMENT_TYPE
               value: kubernetes
-            - name: KUBERNETES_NAMESPACE
-              value: default
-            - name: REGISTRY_HOST
-              value: registry
-            - name: REGISTRY_PORT
-              value: "5000"
             - name: LOG_LEVEL
               value: DEBUG
-            - name: TAPIS_DEV_URL
-              value: https://dev.develop.tapis.io
+            - name: KUBERNETES_NAMESPACE
+              value: default
             - name: TAPIS_CONFIG_PATH
               value: "/src/config.json"
             - name: TAPIS_CONFIGSCHEMA_PATH
               value: "/src/configschema.json"
+            - name: TAPIS_DEV_URL
+              value: https://dev.develop.tapis.io
             - name: TAPIS_SERVICE_SITE_ID
               value: tacc
             - name: TAPIS_SERVICE_TENANT_ID
