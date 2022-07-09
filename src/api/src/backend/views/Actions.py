@@ -3,11 +3,12 @@ import json
 from django.db import IntegrityError, OperationalError
 from backend.models import Action, Pipeline, Group
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses.BaseResponse import BaseResponse
+from backend.views.http.responses import BaseResponse, ResourceURLResponse
 from backend.views.http.responses.errors import BadRequest, UnprocessableEntity, Forbidden, NotFound, MethodNotAllowed, ServerError
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.services.ActionService import service as action_service
 from backend.services.GroupService import service as group_service
+from backend.helpers import resource_url_builder
 
 
 class Actions(RestrictedAPIView):
@@ -116,7 +117,8 @@ class Actions(RestrictedAPIView):
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
 
-        return ModelResponse(action)
+        return ResourceURLResponse(
+            url=resource_url_builder(request.url, action.id))
 
 
     def put(self, request, group_id, pipeline_id, action_id=None):

@@ -13,11 +13,8 @@ class Auth(APIView):
 
         body = prepared_request.body
 
-        # Get the request base url
-        request_url = f"{request.scheme}://{request.get_host()}"
-
         # Intialize the TapisAPIGateway
-        api_gateway = TapisAPIGateway(request_url)
+        api_gateway = TapisAPIGateway(request.base_url)
 
         authenticated = api_gateway.authenticate(
             {"username": body.username, "password": body.password},

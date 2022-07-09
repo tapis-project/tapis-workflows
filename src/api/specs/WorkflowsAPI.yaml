@@ -50,6 +50,33 @@ tags:
 
 # -- Paths for groups ---
 paths:
+  '/v3/workflows/pipelines/{pipeline_id}/changeOwner/{username}':
+    patch:
+      tags:
+        - Pipelines
+      summary: Change pipeline owner
+      description: |
+        Change the owner of a pipeline. Requesting user must be the current owner
+      operationId: changePipelineOwner
+      parameters:
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: username
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Username'
+      responses:
+        '200':
+          description: Check successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectResp'
+
   '/v3/workflows/healthcheck':
     get:
       tags:
@@ -126,12 +153,12 @@ paths:
             schema:
               $ref: '#/components/schemas/GroupPostReq'
       responses:
-        '200':
+        '201':
           description: Group created.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GroupResp'
+                $ref: '#/components/schemas/ResourceUrlResp'
         '400':
           description: Bad request. Invalid JSON.
           content:
@@ -480,9 +507,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IdentityPostReq'
+              $ref: '#/components/schemas/ResourceUrlResp'
       responses:
-        '200':
+        '201':
           description: Identity created.
           content:
             application/json:
@@ -659,12 +686,12 @@ paths:
             schema:
               $ref: '#/components/schemas/CIPipelinePostReq'
       responses:
-        '200':
+        '201':
           description: Pipeline created.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PipelineResp'
+                $ref: '#/components/schemas/ResourceUrlResp'
         '400':
           description: Bad request. Invalid JSON.
           content:
@@ -798,7 +825,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PipelinePostReq'
+              $ref: '#/components/schemas/ResourceUrlResp'
       responses:
         '200':
           description: Pipeline created.
@@ -900,34 +927,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResp'
-
-  '/v3/workflows/pipelines/{pipeline_id}/changeOwner/{username}':
-    patch:
-      tags:
-        - Pipelines
-      summary: Change pipeline owner
-      description: |
-        Change the owner of a pipeline. Requesting user must be the current owner
-      operationId: changePipelineOwner
-      parameters:
-        - name: pipeline_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-        - name: username
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/Username'
-      responses:
-        '200':
-          description: Check successful.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ObjectResp'
-
 
   '/v3/workflows/pipelines/{pipeline_id}/actions':
     get:
@@ -1643,6 +1642,27 @@ components:
     # -------------------------------------------------------------------------
     # --- Response objects ----------------------------------------------------
     # -------------------------------------------------------------------------
+    ResourceUrlResp:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: true
+        status:
+          type: integer
+          default: 201
+        message:
+          type: string
+          default: 'created'
+        result:
+          $ref: '#/components/schemas/ResourceUrlResult'
+
+    ResourceUrlResult:
+      type: object
+      properties:
+        url:
+          type: string
+
     ObjectResp:
       type: object
       properties:
@@ -1859,6 +1879,7 @@ components:
       type: string
       enum:
         - kaniko
+        - singularity
 
     ContextVisibilityEnum:
       type: string

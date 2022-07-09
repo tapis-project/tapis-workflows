@@ -3,7 +3,7 @@ from tapipy.errors import InvalidInputError
 from django.db import DatabaseError, IntegrityError, OperationalError
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses import BaseResponse
+from backend.views.http.responses import BaseResponse, ResourceURLResponse
 from backend.views.http.responses.errors import Conflict, Forbidden, NotFound, BadRequest, ServerError
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.requests import SystemArchive, S3Archive, IRODSArchive
@@ -14,6 +14,7 @@ from backend.models import (
     ARCHIVE_TYPE_IRODS
 )
 from backend.services.GroupService import service as group_service
+from backend.helpers import resource_url_builder
 
 
 ARCHIVE_REQUEST_MAPPING = {
@@ -134,7 +135,8 @@ class Archives(RestrictedAPIView):
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return BadRequest(message=e)
 
-        return ModelResponse(archive)
+        return ResourceURLResponse(
+            url=resource_url_builder(request.url, archive.id))
 
 
     def s3(self, *_):

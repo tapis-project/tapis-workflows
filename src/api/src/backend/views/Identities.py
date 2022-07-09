@@ -4,10 +4,11 @@ from backend.models import Identity, IDENTITY_TYPES
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.models import ModelListResponse, ModelResponse, BaseResponse
 from backend.views.http.responses.errors import BadRequest, NotFound, Forbidden, ServerError
+from backend.views.http.responses import ResourceURLResponse
 from backend.views.http.requests import IdentityCreateRequest
 from backend.services import CredentialsService
 from utils.cred_validators import validate_by_type
-
+from backend.helpers import resource_url_builder
 
 IDENTITY_TYPES = [ identity_type[0] for identity_type in IDENTITY_TYPES ]
 
@@ -70,7 +71,8 @@ class Identities(RestrictedAPIView):
             cred_service.delete(credentials.sk_id)
             return BadRequest(message=e.__cause__)
 
-        return ModelResponse(identity)
+        return ResourceURLResponse(
+            url=resource_url_builder(request.url, identity.uuid))
 
     def delete(self, request, identity_uuid):
         identity = Identity.objects.filter(pk=identity_uuid).first()

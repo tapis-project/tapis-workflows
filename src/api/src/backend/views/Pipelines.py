@@ -5,6 +5,7 @@ from django.forms import model_to_dict
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden, ServerError, MethodNotAllowed
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
+from backend.views.http.responses import BaseResponse, ResourceURLResponse
 from backend.views.http.requests import BasePipeline, CIPipeline, ImageBuildAction
 from backend.models import (
     Pipeline,
@@ -15,8 +16,8 @@ from backend.models import (
 )
 from backend.services.ActionService import service as action_service
 from backend.services.GroupService import service as group_service
-from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.errors.api import BadRequestError
+from backend.helpers import resource_url_builder
 
 
 PIPELINE_TYPE_CI = "ci"
@@ -148,7 +149,7 @@ class Pipelines(RestrictedAPIView):
         # Fetch the function for building the pipeline according to its type.
         fn = getattr(self, PIPELINE_TYPE_MAPPING[body.type])
 
-        return fn(body, pipeline)
+        return fn(request, body, pipeline)
 
     def delete(self, request, group_id, pipeline_id, *_, **__):
         # Get the group
@@ -183,7 +184,7 @@ class Pipelines(RestrictedAPIView):
 
         return BaseResponse(message=f"Pipeline '{pipeline_id}' deleted. {len(actions)} action(s) deleted.")
 
-    def build_ci_pipeline(self, body, pipeline):
+    def build_ci_pipeline(self, request, body, pipeline):
         try:
             # Build an action_request from the pipeline request body
             action_request = ImageBuildAction(
@@ -215,7 +216,7 @@ class Pipelines(RestrictedAPIView):
 
         return ModelResponse(pipeline)
 
-    def build_workflow_pipeline(self, body, pipeline):
+    def build_workflow_pipeline(self, request, body, pipeline):
         # Create actions
         actions = []
         for action_request in body.actions:
@@ -231,4 +232,5 @@ class Pipelines(RestrictedAPIView):
                 pipeline.delete()
                 return ServerError(e)
 
-        return ModelResponse(pipeline)
+        return ResourceURLResponse(
+            url=resource_url_builder(request.url, pipeline.id))

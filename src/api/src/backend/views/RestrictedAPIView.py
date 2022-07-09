@@ -1,4 +1,4 @@
-import json
+import json, os
 
 from pydantic import ValidationError
 
@@ -34,19 +34,21 @@ class RestrictedAPIView(View):
                 self.request_body = json.loads(request.body)
             except json.JSONDecodeError:
                 return BadRequest(message="Could not decode request body")
+        
+        # Set the request base url
+        request.base_url = f"{request.scheme}://{request.get_host()}"
+
+        # Set the request url
+        request.url = os.path.join(request.base_url, request.path)
 
         ### Auth start ###
-        # TODO consider refactor
 
         # Check that the X-TAPIS-TOKEN header is set
         if DJANGO_TAPIS_TOKEN_HEADER not in request.META:
             return BadRequest(message=f"Missing header: {TAPIS_TOKEN_HEADER}")
 
-        # Get the request base url
-        request_url = f"{request.scheme}://{request.get_host()}"
-
         # Initialize the tapis API Gateway based on the tenant provided
-        api_gateway = TapisAPIGateway(request_url)
+        api_gateway = TapisAPIGateway(request.base_url)
 
         # Authenticate the user and get the account
         request.authenticated = api_gateway.authenticate(

@@ -2,9 +2,10 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.requests import GroupUserCreateRequest, GroupUserPutPatchRequest
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.responses.errors import ServerError, NotFound, Forbidden
-from backend.views.http.responses.BaseResponse import BaseResponse
+from backend.views.http.responses import BaseResponse, ResourceURLResponse
 from backend.models import Group, GroupUser
 from backend.services.GroupService import service as group_service
+from backend.helpers import resource_url_builder
 
 
 class Users(RestrictedAPIView):
@@ -83,7 +84,8 @@ class Users(RestrictedAPIView):
             is_admin=body.is_admin
         )
         
-        return ModelResponse(group_user)
+        return ResourceURLResponse(
+            url=resource_url_builder(request.url, group_user.username))
 
     def put(self, request, group_id, username):
         self.patch(request, group_id, username)

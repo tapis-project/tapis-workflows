@@ -4,8 +4,9 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.requests import GroupCreateRequest
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.responses.errors import ServerError, Conflict, BadRequest, NotFound, Forbidden
-from backend.views.http.responses.BaseResponse import BaseResponse
+from backend.views.http.responses import BaseResponse, ResourceURLResponse
 from backend.models import Group, GroupUser
+from backend.helpers import resource_url_builder
 
 
 class Groups(RestrictedAPIView):
@@ -73,5 +74,6 @@ class Groups(RestrictedAPIView):
             except Exception as e:
                 return BadRequest(message=str(e))
         
-        return ModelResponse(group)
+        return ResourceURLResponse(
+            url=resource_url_builder(request.url, group.id))
         

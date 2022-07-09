@@ -1,6 +1,4 @@
-import json
-
-from typing import List
+import json, os
 
 from pydantic import ValidationError
 
@@ -17,6 +15,12 @@ class APIView(View):
     def dispatch(self, request, *args, **kwargs):
         if request.method not in PERMITTED_HTTP_METHODS:
             return MethodNotAllowed()
+
+        # Set the request base url
+        request.base_url = f"{request.scheme}://{request.get_host()}"
+
+        # Set the request url
+        request.url = os.path.join(request.base_url, request.path)
 
         if request.method != "GET":
             # Accept only application/json for all non get methods
