@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# mysql
+chmod +x ./src/mysql/deploy/minkube/burndown
+./src/mysql/deploy/minkube/burndown
+
+# rabbitmq
+chmod +x ./src/rabbitmq/deploy/minkube/burndown
+./src/rabbitmq/deploy/minkube/burndown
+
+# api
+chmod +x ./src/api/deploy/minkube/burndown
+./src/api/deploy/minkube/burndown
+
+# pipelines
+chmod +x ./src/pipelines/burndown
+./src/pipelines/deploy/minkube/burndown
+

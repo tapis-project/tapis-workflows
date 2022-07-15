@@ -1,13 +1,13 @@
 {
-  "service_name": "",
-  "service_password": "",
-  "service_site_id": "",
-  "service_tenant_id": "",
-  "primary_site_admin_tenant_base_url": "",
-  "test_token": "",
-  "tenants": [],
-  "log_level": "",
-  "log_file": "/src/logs/workflows.logs",
-  "python_framework_type": "django",
-  "show_traceback": false
+    "service_name": "",
+    "service_password": "",
+    "service_site_id": "",
+    "service_tenant_id": "",
+    "primary_site_admin_tenant_base_url": "",
+    "test_token": "",
+    "tenants": [],
+    "log_level": "ERROR",
+    "log_file": "",
+    "python_framework_type": "django",
+    "show_traceback": false
 }

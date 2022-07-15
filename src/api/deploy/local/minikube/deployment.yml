@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflows-api-deployment
+spec:
+  selector:
+    matchLabels:
+      app: workflows-api-deployment
+  template:
+    metadata:
+      labels:
+        app: workflows-api-deployment
+    spec:
+      containers:
+      - command: [ "/bin/sh", "-c" ]
+        args:
+          - "./scripts/start.sh;"
+        env:
+          - name: BROKER_USER
+            value: dev
+          - name: BROKER_PASSWORD
+            value: dev
+          - name: BROKER_PORT
+            value: "5672"
+          - name: BROKER_URL
+            value: workflows-rabbitmq-service
+          - name: DB_HOST
+            value: workflows-mysql-service
+          - name: DB_NAME
+            value: workflows
+          - name: DB_PASSWORD
+            value: dev
+          - name: DB_USER
+            value: workflows
+          - name: LOG_LEVEL
+            value: DEBUG
+          - name: DJANGO_SECRET_KEY
+            value: 'django-insecure-_!+8ppjzrs!$8l5n2k)^ry2=c&jkrxcx+w_a%!gcm4)u2@=_b2'
+          - name: DJANGO_SUPERUSER_EMAIL
+            value: nfreeman@tacc.utexas.edu
+          - name: DJANGO_SUPERUSER_PASSWORD
+            value: dev
+          - name: DJANGO_SUPERUSER_USERNAME
+            value: nathandf
+          - name: TAPIS_SERVICE_SITE_ID
+            value: tacc
+          - name: TAPIS_SERVICE_TENANT_ID
+            value: admin
+          - name: TAPIS_DEV_URL
+            value: https://dev.develop.tapis.io
+          - name: TAPIS_CONFIG_PATH
+            value: "/src/backend/config.json"
+          - name: TAPIS_CONFIGSCHEMA_PATH
+            value: "/src/backend/configschema.json"
+          - name: WORKFLOWS_SERVICE_URL
+            value: https://admin.develop.tapis.io
+          - name: WORKFLOWS_SERVICE_ACCOUNT
+            value: workflows
+          - name: WORKFLOWS_SERVICE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: tapis-workflows-secrets
+                key: service-password
+        image: tapis/workflows-api:dev
+        imagePullPolicy: Always
+        name: workflows-api
+        ports:
+          - containerPort: 8000
+            name: gunicorn
+        resources: {}
+        tty: true
