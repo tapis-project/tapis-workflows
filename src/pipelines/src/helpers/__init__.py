@@ -1,4 +1,2 @@
 from helpers.GraphValidator import GraphValidator
 from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
-
-tapis_service_api_gateway = TapisServiceAPIGateway()

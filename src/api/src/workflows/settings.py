@@ -15,49 +15,56 @@ from pathlib import Path
 
 import pymysql
 
+
+# The environment in which the application is currently deployed
+ENV = os.environ["ENV"]
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.env["DJANGO_SECRET_KEY"]
+SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True if os.environ["LOG_LEVEL"] == "DEBUG" else False
+LOG_LEVEL = os.environ["LOG_LEVEL"]
+DEBUG = True if LOG_LEVEL == "DEBUG" else False
 
 # LOGGING = {
 #     'version': 1,
 #     'disable_existing_loggers': True,
 #     'handlers': {
 #         'file': {
-#             'level': 'DEBUG',
+#             'level': LOG_LEVEL,
 #             'class': 'logging.FileHandler',
-#             'filename': './logs/debug.log',
+#             'filename': f'./logs/{LOG_LEVEL}.logs',
 #         },
 #     },
 #     'loggers': {
 #         'django': {
 #             'handlers': ['file'],
-#             'level': 'DEBUG',
+#             'level': LOG_LEVEL,
 #             'propagate': True,
 #         },
 #     },
 # }
 
-ALLOWED_HOSTS = [
-    "c006.rodeo.tacc.utexas.edu", # dev
-    ".tapis.io", # dev, staging, prod
-    "localhost", # local
-    "127.0.0.1", # local
-    ".ngrok.io", # local # TODO remove cause dangerous
-]
+# Set allowed hosts by env
+ALLOWED_HOSTS = []
+
+if ENV == "LOCAL":
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, "localhost", "127.0.0.1"]
+elif ENV in ["DEV", "DEVELOP", "DEVELOPMENT"]:
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, "c006.rodeo.tacc.utexas.edu", ".develop.tapis.io"]
+elif ENV in ["STAGE", "STAGING"]:
+    ALLOWED_HOSTS  = [*ALLOWED_HOSTS, ".staging.tapis.io"]
+elif ENV in ["PROD", "PRODUCTION"]:
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, ".tapis.io"]
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -81,6 +88,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'workflows.urls'
 
+# Set url prefix based on env
+URL_PREFIX = "" if ENV == "LOCAL" else "v3/workflows/"
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -99,10 +109,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'workflows.wsgi.application'
 
+ASGI_APPLICATION = 'workflows.asgi.application'
+
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -121,7 +132,6 @@ pymysql.install_as_MySQLdb()
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -140,7 +150,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -154,10 +163,8 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
-
 STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

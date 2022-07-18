@@ -3,7 +3,7 @@ import os, logging
 from tapipy.tapis import Tapis
 from tapipy.errors import InvalidInputError  
 
-from helpers import tapis_service_api_gateway
+from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
 from conf.configs import TAPIS_DEV_URL, BASE_WORK_DIR
 from errors.archives import ArchiveError
 
@@ -11,6 +11,7 @@ from errors.archives import ArchiveError
 class SystemArchiver:
     def archive(self, archive, pipeline):
         try:
+            tapis_service_api_gateway = TapisServiceAPIGateway()
             service_client = tapis_service_api_gateway.get_client()
         
             # Get a token for the user that owns the archive
@@ -26,7 +27,6 @@ class SystemArchiver:
             jwt = res.access_token.access_token
 
             # Initialize the tapipy client
-            # TODO import shared tapis api gateway
             client = Tapis(
                 base_url=TAPIS_DEV_URL,
                 jwt=jwt

@@ -16,6 +16,8 @@ spec:
         args:
           - "./scripts/start.sh;"
         env:
+          - name: ENV
+            value: LOCAL
           - name: BROKER_USER
             value: dev
           - name: BROKER_PASSWORD

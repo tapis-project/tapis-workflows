@@ -5,7 +5,7 @@ from conf.constants import (
     TAPIS_SERVICE_ACCOUNT_PASSWORD,
     TAPIS_SERVICE_SITE_ID,
     TAPIS_SERVICE_TENANT_ID,
-    TAPIS_SERVICE_URL,
+    WORKFLOWS_SERVICE_URL,
     TAPIS_SERVICE_LOG_FILE
 )
 
@@ -16,7 +16,7 @@ def setup():
 
     config = {
         **config,
-        "primary_site_admin_tenant_base_url": TAPIS_SERVICE_URL,
+        "primary_site_admin_tenant_base_url": WORKFLOWS_SERVICE_URL,
         "log_level": "ERROR",
         "service_name": TAPIS_SERVICE_ACCOUNT,
         "service_password": TAPIS_SERVICE_ACCOUNT_PASSWORD,
