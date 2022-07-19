@@ -10,11 +10,11 @@ from backend.services.Service import Service
 
 class CredentialsService(Service):
     def __init__(self):
-        self.service_api_gateway = TapisServiceAPIGateway()
+        self.tapis_service_api_gateway = TapisServiceAPIGateway()
         Service.__init__(self)
 
     def save(self, owner: str, data: Dict[str, str]):
-        service_client = self.service_api_gateway.get_client()
+        service_client = self.tapis_service_api_gateway.get_client()
 
         sk_id = f"workflows+{owner}+{uuid.uuid4()}"
         try:
@@ -34,7 +34,7 @@ class CredentialsService(Service):
         return credentials
 
     def delete(self, sk_id: str):
-        service_client = self.service_api_gateway.get_client()
+        service_client = self.tapis_service_api_gateway.get_client()
         
         service_client.sk.deleteSecret(
             secretType="user",
@@ -56,7 +56,7 @@ class CredentialsService(Service):
         return None
 
     def get_secret(self, sk_id: str):
-        service_client = self.service_api_gateway.get_client()
+        service_client = self.tapis_service_api_gateway.get_client()
         
         try:
             res = service_client.sk.readSecret(

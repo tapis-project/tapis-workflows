@@ -6,7 +6,7 @@ from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import BadRequest, NotFound, Forbidden, ServerError
 from backend.views.http.responses import ResourceURLResponse
 from backend.views.http.requests import IdentityCreateRequest
-from backend.services import CredentialsService
+from backend.services.CredentialsService import CredentialsService
 from utils.cred_validators import validate_by_type
 from backend.helpers import resource_url_builder
 
@@ -28,7 +28,7 @@ class Identities(RestrictedAPIView):
 
         return ModelResponse(identity)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *_, **__):
         # Validate the request body
         self.prepare(IdentityCreateRequest)
 
@@ -72,7 +72,7 @@ class Identities(RestrictedAPIView):
             return BadRequest(message=e.__cause__)
 
         return ResourceURLResponse(
-            url=resource_url_builder(request.url, identity.uuid))
+            url=resource_url_builder(request.url, str(identity.uuid)))
 
     def delete(self, request, identity_uuid):
         identity = Identity.objects.filter(pk=identity_uuid).first()

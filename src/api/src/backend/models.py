@@ -284,6 +284,7 @@ class Group(models.Model):
     id = models.CharField(validators=[validate_id], primary_key=True, max_length=128, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.CharField(max_length=64)
+    tenant_id = models.CharField(max_length=128)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(default=uuid.uuid4)
     class Meta:

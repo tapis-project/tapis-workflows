@@ -24,7 +24,6 @@ class Groups(RestrictedAPIView):
 
         # Get the group users. Return a 403 if user doesn't belong to the group
         group_users = group.users.all()
-        print("request.username", request.username)
         if request.username not in [user.username for user in group_users]:
             return Forbidden("You do not have access to this group")
 

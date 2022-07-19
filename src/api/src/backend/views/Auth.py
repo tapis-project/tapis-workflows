@@ -14,20 +14,20 @@ class Auth(APIView):
         body = prepared_request.body
 
         # Intialize the TapisAPIGateway
-        api_gateway = TapisAPIGateway(request.base_url)
+        tapis_api_gateway = TapisAPIGateway(request.base_url)
 
-        authenticated = api_gateway.authenticate(
+        authenticated = tapis_api_gateway.authenticate(
             {"username": body.username, "password": body.password},
             auth_method="password"
         )
 
         if not authenticated:
-            return Unauthorized(message=api_gateway.error)
+            return Unauthorized(message=tapis_api_gateway.error)
 
         return BaseResponse(
             message="successfully authenticated",
             result={
-                "jwt": api_gateway.get_jwt()
+                "jwt": tapis_api_gateway.get_jwt()
             }
         )
             

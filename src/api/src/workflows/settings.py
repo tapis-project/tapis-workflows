@@ -109,8 +109,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'workflows.wsgi.application'
 
-ASGI_APPLICATION = 'workflows.asgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases

@@ -48,18 +48,18 @@ class RestrictedAPIView(View):
             return BadRequest(message=f"Missing header: {TAPIS_TOKEN_HEADER}")
 
         # Initialize the tapis API Gateway based on the tenant provided
-        api_gateway = TapisAPIGateway(request.base_url)
+        self.tapis_api_gateway = TapisAPIGateway(request.base_url)
 
         # Authenticate the user and get the account
-        request.authenticated = api_gateway.authenticate(
+        request.authenticated = self.tapis_api_gateway.authenticate(
             {"jwt": request.META[DJANGO_TAPIS_TOKEN_HEADER]}, auth_method="jwt")
 
-        request.tenant_id = api_gateway.tenant_id
+        request.tenant_id = self.tapis_api_gateway.tenant_id
 
         if not request.authenticated:
-            return Unauthorized(api_gateway.error)
+            return Unauthorized(self.tapis_api_gateway.error)
 
-        request.username = str(api_gateway.get_username())
+        request.username = str(self.tapis_api_gateway.get_username())
 
         ### Auth end ###
 

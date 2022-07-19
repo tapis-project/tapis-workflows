@@ -108,12 +108,12 @@ class Archives(RestrictedAPIView):
         return BaseResponse(message=f"Archive deleted")
 
     def system(self, request, body, group_id):
-        client = self.api_gateway.get_client()
+        client = self.tapis_api_gateway.get_client()
 
         try:
             res = client.systems.getUserPerms(
                 systemId=body.system_id,
-                userName=self.api_gateway.get_username()
+                userName=request.username
             )
         except InvalidInputError as e:
             print(e)
