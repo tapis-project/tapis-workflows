@@ -1,6 +1,6 @@
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.BaseResponse import BaseResponse
-from backend.services.CredentialsService import service as cred_service
+from backend.services.SecretService import service as secret_service
 from backend.models import Action, Identity, Credentials, Context, Destination, Group, GroupUser, Event, Pipeline
 
 models = [
@@ -25,6 +25,6 @@ class Nuke(RestrictedAPIView):
             credentials_list = Credentials.objects.all()
 
             for credentials in credentials_list:
-                cred_service.delete(credentials.sk_id)
+                secret_service.delete(credentials.sk_id)
 
         return BaseResponse(message="Boom")

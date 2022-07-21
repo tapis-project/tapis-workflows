@@ -8,7 +8,7 @@ from backend.services.TapisServiceAPIGateway import TapisServiceAPIGateway
 from backend.services.Service import Service
 
 
-class CredentialsService(Service):
+class SecretService(Service):
     def __init__(self):
         self.tapis_service_api_gateway = TapisServiceAPIGateway()
         Service.__init__(self)
@@ -75,4 +75,4 @@ class CredentialsService(Service):
     def _format_secret_name(self, secret_name: str):
         return secret_name.replace(" ", "-")
 
-service = CredentialsService()
+service = SecretService()

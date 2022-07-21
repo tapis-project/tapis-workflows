@@ -191,7 +191,12 @@ class Action(models.Model):
     tapis_actor_id = models.CharField(max_length=128, null=True)
 
     class Meta:
-        unique_together = [["id", "pipeline_id"]]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id", "pipeline_id"],
+                name="action_id_pipeline_id"
+            )
+        ]
         indexes = [
             models.Index(fields=["id", "pipeline_id"])
         ]
@@ -221,7 +226,12 @@ class Archive(models.Model):
     port = models.PositiveIntegerField(null=True)
 
     class Meta:
-        unique_together = [["id", "group_id"]]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id", "group_id"],
+                name="archive_id_group_id"
+            )
+        ]
         indexes = [
             models.Index(fields=["id", "group_id"])
         ]
@@ -281,15 +291,21 @@ class Event(models.Model):
         ]
 
 class Group(models.Model):
-    id = models.CharField(validators=[validate_id], primary_key=True, max_length=128, unique=True)
+    id = models.CharField(validators=[validate_id], max_length=128, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.CharField(max_length=64)
     tenant_id = models.CharField(max_length=128)
     updated_at = models.DateTimeField(auto_now=True)
-    uuid = models.UUIDField(default=uuid.uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     class Meta:
         indexes = [
-            models.Index(fields=["owner"])
+            models.Index(fields=["owner", "tenant_id"])
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id", "tenant_id"],
+                name="group_id_tenant_id"
+            )
         ]
 
 class GroupUser(models.Model):
@@ -297,20 +313,22 @@ class GroupUser(models.Model):
     username = models.CharField(max_length=64)
     is_admin = models.BooleanField(default=False)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    class Meta:
-        indexes = [
-            models.Index(fields=["username"])
-        ]
 
 class Identity(models.Model):
     name = models.CharField(max_length=64)
     description = models.TextField(null=True)
     type = models.CharField(max_length=32, choices=IDENTITY_TYPES)
     owner = models.CharField(max_length=64)
+    tenant_id = models.CharField(max_length=128)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     credentials = models.OneToOneField("backend.Credentials", on_delete=models.CASCADE)
     class Meta:
-        unique_together = [["owner", "name"]]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "owner", "tenant_id"],
+                name="identity_name_owner_tenant_id"
+            )
+        ]
 
 class Pipeline(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128)
@@ -323,7 +341,12 @@ class Pipeline(models.Model):
     last_run = models.ForeignKey("backend.PipelineRun", related_name="+", null=True, on_delete=models.CASCADE)
     
     class Meta:
-        unique_together = [["id", "group"]]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id", "group"],
+                name="pipeline_id_group"
+            )
+        ]
 
 class PipelineArchive(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="archives", on_delete=models.CASCADE)
@@ -331,7 +354,12 @@ class PipelineArchive(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     
     class Meta:
-        unique_together = [["pipeline", "archive"]]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["pipeline", "archive"],
+                name="pipelinearchive_pipeline_archive"
+            )
+        ]
 
 class PipelineRun(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="runs", on_delete=models.CASCADE)

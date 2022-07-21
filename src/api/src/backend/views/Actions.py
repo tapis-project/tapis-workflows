@@ -14,56 +14,43 @@ from backend.helpers import resource_url_builder
 class Actions(RestrictedAPIView):
 
     def get(self, request, group_id, pipeline_id, action_id=None):
-        if action_id is None:
-            return self.list(request, pipeline_id)
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
+
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
 
         # Get the pipline
         pipeline = Pipeline.objects.filter(
-            group_id=group_id,
+            group=group,
             id=pipeline_id
         ).first()
 
         # Return if BadRequest if no pipeline found
-        if pipeline is None:
-            return BadRequest(f"Pipline '{pipeline_id}' does not exist")
+        if pipeline == None:
+            return BadRequest(f"Pipline with id '{pipeline_id}' does not exist")
+        
+        if action_id == None:
+            return self.list(request, group, pipeline)
 
         # Check that the user belongs to the group that is attached
         # to this pipline
-        if not group_service.user_in_group(request.username, group_id):
+        if not group_service.user_in_group(request.username, group_id, request.tenant):
             return Forbidden(message="You cannot view actions for this pipeline")
 
         action = Action.objects.filter(pipeline=pipeline_id, id=action_id).first()
 
-        if action is None:
+        if action == None:
             return NotFound(f"Action with id '{action_id}' not found in pipeline '{pipeline_id}'")
 
         return ModelResponse(action)
 
 
-    def list(self, request, group_id, pipeline_id, *args, **kwargs):
-        # Get the pipline
-        pipeline = Pipeline.objects.filter(
-            group_id=group_id,
-            id=pipeline_id
-        ).first()
-
-        # Return if BadRequest if no pipeline found
-        if pipeline is None:
-            return BadRequest(f"Pipline '{pipeline_id}' does not exist")
-
-        # Get the group
-        group = Group.objects.filter(id=group_id).first()
-
-        # Check that the group_id passed by the user is a valid group
-        if group is None:
-            return UnprocessableEntity(f"Group '{group_id}' does not exist'")
-
-        # Check that the user belongs to the group that is attached
-        # to this pipline
-        if not group_service.user_in_group(request.username, group_id):
-            return Forbidden(message="You cannot view actions for this pipeline")
-            
-        actions = Action.objects.filter(pipeline=pipeline_id)
+    def list(self, request, group, pipeline, *args, **kwargs):    
+        actions = Action.objects.filter(pipeline=pipeline)
 
         return ModelListResponse(actions)
     
@@ -75,18 +62,14 @@ class Actions(RestrictedAPIView):
         if not action_service.is_valid_action_type(self.request_body["type"]):
             return BadRequest(message=f"Invalid action type: Expected one of: {action_service.get_action_request_types()} - Recieved: {self.request_body['type']}. ")
 
-        # Ensure the user belongs to the group that owns the pipeline
         # Get the group
-        group = Group.objects.filter(id=group_id).first()
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
 
-        # Check that the group_id passed by the user is a valid group
-        if group is None:
-            return UnprocessableEntity(f"Group '{group_id}' does not exist'")
-
-        # Check that the user belongs to the group that is attached
-        # to this pipline
-        if not group_service.user_in_group(request.username, group_id):
-            return Forbidden(message="You cannot create a an action for this pipeline")
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
 
         # Resolve the the proper request for the type of action provided in the request body
         ActionRequest = action_service.resolve_request_type(self.request_body["type"])
@@ -101,15 +84,15 @@ class Actions(RestrictedAPIView):
         # Get the JSON encoded body from the validation result
         body = prepared_request.body
 
-        # Get the pipline for the new action
+        # Get the pipline
         pipeline = Pipeline.objects.filter(
-            group_id=group_id,
+            group=group,
             id=pipeline_id
         ).first()
 
         # Return if BadRequest if no pipeline found
-        if pipeline is None:
-            return BadRequest(f"Pipline '{pipeline_id}' does not exist")
+        if pipeline == None:
+            return BadRequest(f"Pipline with id '{pipeline_id}' does not exist")
 
         # Create action
         try:
@@ -122,24 +105,24 @@ class Actions(RestrictedAPIView):
 
 
     def put(self, request, group_id, pipeline_id, action_id=None):
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
+
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
+
         # Get the pipline
         pipeline = Pipeline.objects.filter(
-            group_id=group_id,
+            group=group,
             id=pipeline_id
         ).first()
 
-        # Return if BadRequest if no pipeline found
-        if pipeline is None:
-            return BadRequest(f"Pipline '{pipeline_id}' does not exist")
+        action = Action.objects.filter(pipeline=pipeline, id=action_id).first()
 
-        # Check that the user belongs to the group that is attached
-        # to this pipline
-        if not group_service.user_in_group(request.username, group_id):
-            return Forbidden(message="You cannot update actions for this pipeline")
-
-        action = Action.objects.filter(pipeline=pipeline_id, id=action_id).first()
-
-        if action is None:
+        if action == None:
             return NotFound(f"Action with id '{action_id}' not found in pipeline '{pipeline_id}'")
 
         # Validate the request body
@@ -164,7 +147,7 @@ class Actions(RestrictedAPIView):
 
         # Disallow updating the type property
         if body.type != action.type:
-            return BadRequest(f"Updating the type of an action is not allowed. Expected action.type: {action.type} - Recieved: {'null' if body.type is None else body.type}")
+            return BadRequest(f"Updating the type of an action is not allowed. Expected action.type: {action.type} - Recieved: {'null' if body.type == None else body.type}")
 
         # The pipeline_id property will be set to the previous value as we do not
         # allow that property to be updated
@@ -185,24 +168,24 @@ class Actions(RestrictedAPIView):
         return MethodNotAllowed("Method 'PATCH' not allowed for 'Action' objects")
 
     def delete(self, request, group_id, pipeline_id, action_id):
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
+
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
+
         # Get the pipline
         pipeline = Pipeline.objects.filter(
-            group_id=group_id,
+            group=group,
             id=pipeline_id
         ).first()
 
-        # Check that the user belongs to the group that is attached
-        # to this pipline
-        if not group_service.user_in_group(request.username, group_id):
-            return Forbidden(message="You cannot update actions for this pipeline")
+        action = Action.objects.filter(pipeline=pipeline, id=action_id).first()
 
-        # Return if BadRequest if no pipeline found
-        if pipeline is None:
-            return BadRequest(f"Pipline '{pipeline_id}' does not exist")
-
-        action = Action.objects.filter(pipeline=pipeline_id, id=action_id).first()
-
-        if action is None:
+        if action == None:
             return NotFound(f"Action with id '{action_id}' not found in pipeline '{pipeline_id}'")
 
         try:

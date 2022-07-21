@@ -6,9 +6,10 @@ from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import BadRequest, NotFound, Forbidden, ServerError
 from backend.views.http.responses import ResourceURLResponse
 from backend.views.http.requests import IdentityCreateRequest
-from backend.services.CredentialsService import CredentialsService
+from backend.services.SecretService import service as secret_service
 from utils.cred_validators import validate_by_type
 from backend.helpers import resource_url_builder
+
 
 IDENTITY_TYPES = [ identity_type[0] for identity_type in IDENTITY_TYPES ]
 
@@ -54,8 +55,7 @@ class Identities(RestrictedAPIView):
 
         # Persist the credentials in sk
         try:
-            cred_service = CredentialsService()
-            credentials = cred_service.save(request.username, body.credentials)
+            credentials = secret_service.save(request.username, body.credentials)
         except Exception as e:
             return BadRequest(message=e)
 
@@ -65,17 +65,22 @@ class Identities(RestrictedAPIView):
                 description=body.description,
                 type=body.type,
                 owner=request.username,
-                credentials=credentials
+                credentials=credentials,
+                tenant_id=request.tenant_id
             )
         except IntegrityError as e:
-            cred_service.delete(credentials.sk_id)
+            secret_service.delete(credentials.sk_id)
             return BadRequest(message=e.__cause__)
 
         return ResourceURLResponse(
             url=resource_url_builder(request.url, str(identity.uuid)))
 
     def delete(self, request, identity_uuid):
-        identity = Identity.objects.filter(pk=identity_uuid).first()
+        identity = Identity.objects.filter(
+            pk=identity_uuid
+        ).prefetch_related(
+            "credentials"
+        ).first()
 
         if identity == None:
             return NotFound("Identity does not exist")
@@ -83,6 +88,8 @@ class Identities(RestrictedAPIView):
         # Requesting user can only delete their own identities
         if identity.owner != request.username:
             return Forbidden("You do not have access to this identity")
+
+        secret_service.delete(identity.credentials.sk_id)
 
         identity.delete()
 

@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
 from django.forms import model_to_dict
@@ -11,7 +12,7 @@ from backend.models import (
     Pipeline,
     Archive,
     PipelineArchive,
-    Group,
+    Action,
     ACTION_TYPE_IMAGE_BUILD
 )
 from backend.services.ActionService import service as action_service
@@ -31,23 +32,27 @@ PIPELINE_TYPE_MAPPING = {
 
 class Pipelines(RestrictedAPIView):
     def get(self, request, group_id, pipeline_id=None):
-        # Check that the user belongs to the group that is attached
-        # to this pipeline
-        if not group_service.user_in_group(request.username, group_id):
-            return Forbidden(message="You do not have access to this pipeline")
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
+
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
 
         # Get a list of all pipelines that belong to the user's groups
         # if no id is provided
-        if pipeline_id is None:
-            return self.list(group_id)
+        if pipeline_id == None:
+            return self.list(group)
 
         # Get the pipeline by the id provided in the path params
         pipeline = Pipeline.objects.filter(
             id=pipeline_id,
-            group_id=group_id
+            group=group
         ).prefetch_related("actions").first()
 
-        if pipeline is None:
+        if pipeline == None:
             return NotFound(f"Pipeline not found with id '{pipeline_id}'")
 
         # Get the pipeline actions.
@@ -60,8 +65,8 @@ class Pipelines(RestrictedAPIView):
         
         return BaseResponse(result=result)
 
-    def list(self, group_id):
-        pipelines = Pipeline.objects.filter(group_id=group_id)
+    def list(self, group):
+        pipelines = Pipeline.objects.filter(group=group)
         return ModelListResponse(pipelines)
 
     def post(self, request, group_id, *_, **__):
@@ -70,16 +75,13 @@ class Pipelines(RestrictedAPIView):
         specifying actions, dependencies, etc, we let user pass most the required
         data in the top level of the pipeline request."""
         # Get the group
-        group = Group.objects.filter(id=group_id).first()
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
 
-        # Check that the group_id passed by the user is a valid group
-        if group is None:
-            return UnprocessableEntity(f"Group '{group_id}' does not exist'")
-    
-        # Check that the user belongs to the group that is attached
-        # to this pipeline
-        if not group_service.user_in_group(request.username, group.id):
-            return Forbidden(message="You cannot create a pipeline for this group")
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
 
         # Ensure the request body has a 'type' property and it is a valid value
         # before validating the rest of the request body
@@ -105,7 +107,7 @@ class Pipelines(RestrictedAPIView):
         body = prepared_request.body
         
         # Check that the id of the pipeline is unique
-        if Pipeline.objects.filter(id=body.id).exists():
+        if Pipeline.objects.filter(id=body.id, group=group).exists():
             return Conflict(f"A Pipeline already exists with the id '{body.id}'")
 
         # Create the pipeline
@@ -125,7 +127,7 @@ class Pipelines(RestrictedAPIView):
             # Prevent duplicate pipeline archives by casting id array to 'set'
             for archive_id in set(body.archive_ids):
                 # Fetch the archive object
-                archive = Archive.objects.filter(group_id=group.id, id=archive_id).first()
+                archive = Archive.objects.filter(group=group, id=archive_id).first()
 
                 # Return bad request if archive not found
                 if archive == None:
@@ -153,21 +155,21 @@ class Pipelines(RestrictedAPIView):
 
     def delete(self, request, group_id, pipeline_id, *_, **__):
         # Get the group
-        group = Group.objects.filter(id=group_id).first()
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
 
-        # Check that the group_id passed by the user is a valid group
-        if group is None:
-            return UnprocessableEntity(f"Group '{group_id}' does not exist'")
-    
-        # Check that the user belongs to the group that is attached
-        # to this pipeline
-        if not group_service.user_in_group(request.username, group.id):
-            return Forbidden(message="You cannot delete a pipeline for this group")
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
 
         # Get the pipeline by the id provided in the path params
-        pipeline = Pipeline.objects.filter(id=pipeline_id).prefetch_related("actions").first()
+        pipeline = Pipeline.objects.filter(
+            id=pipeline_id,
+            group=group
+        ).prefetch_related("actions").first()
 
-        if pipeline is None:
+        if pipeline == None:
             return NotFound(f"Pipeline not found with id '{pipeline_id}'")
 
         # Delete operation only allowed by owner
@@ -178,6 +180,8 @@ class Pipelines(RestrictedAPIView):
         pipeline.delete()
 
         # Delete the actions
+        # TODO Use the ActionService to delete Actions so it can delete
+        # all the secrets/credentials associated with that action
         actions = pipeline.actions.all()
         for action in actions:
             action.delete()
@@ -214,23 +218,34 @@ class Pipelines(RestrictedAPIView):
             pipeline.delete()
             return ServerError(e)
 
-        return ModelResponse(pipeline)
+        return ResourceURLResponse(
+            url=resource_url_builder(request.url.replace("/ci", "/pipelines"), pipeline.id))
 
     def build_workflow_pipeline(self, request, body, pipeline):
         # Create actions
+        # TODO Use the ActionService to delete Actions so it can delete
+        # all the secrets/credentials associated with it
         actions = []
         for action_request in body.actions:
             try:
                 actions.append(action_service.create(pipeline, action_request))
             except (IntegrityError, OperationalError, DatabaseError) as e:
                 pipeline.delete()
+                self._delte_actions(actions)
                 return BadRequest(message=e.__cause__)
             except BadRequestError as e:
+                self._delte_actions(actions)
                 pipeline.delete()
                 return BadRequest(message=e)
             except Exception as e:
+                self._delte_actions(actions)
                 pipeline.delete()
                 return ServerError(e)
 
         return ResourceURLResponse(
             url=resource_url_builder(request.url, pipeline.id))
+
+    def _delete_actions(self, actions: List[Action]):
+        # TODO Error handling
+        for action in actions:
+            action.delete()

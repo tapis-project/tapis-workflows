@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest
 from backend.views.http.requests import PreparedRequest
 from backend.conf.constants import PERMITTED_HTTP_METHODS, PERMITTED_CONTENT_TYPES
+from backend.helpers.tapis import resolve_tenant_id
 
 class APIView(View):
     # All methods on the APIView do not require a CSRF token
@@ -20,7 +21,11 @@ class APIView(View):
         request.base_url = f"{request.scheme}://{request.get_host()}"
 
         # Set the request url
-        request.url = os.path.join(request.base_url, request.path)
+        # Set the request url
+        request.url = request.base_url.rstrip("/") + "/" + request.path.lstrip("/")
+
+        # Set the tenant_id of the request
+        request.tenant_id = resolve_tenant_id(request.base_url)
 
         if request.method != "GET":
             # Accept only application/json for all non get methods

@@ -3,10 +3,11 @@ from django.db import IntegrityError, DatabaseError, OperationalError
 from backend.views.APIView import APIView
 from backend.views.http.requests import WebhookEvent
 from backend.views.http.responses.models import ModelResponse
-from backend.views.http.responses.errors import ServerError as ServerErrorResp
+from backend.views.http.responses.errors import ServerError as ServerErrorResp, NotFound
 from backend.services.PipelineDispatcher import service as pipeline_dispatcher
-from backend.services.CredentialsService import service as cred_service
-from backend.models import Identity, Event, Pipeline, Group, GroupUser
+from backend.services.SecretService import service as secret_service
+from backend.services.GroupService import service as group_service
+from backend.models import Identity, Event, Pipeline, GroupUser
 from backend.helpers.PipelineDispatchRequestBuilder import PipelineDispatchRequestBuilder
 from backend.errors.api import ServerError
 
@@ -15,10 +16,10 @@ WEBHOOK_SOURCE_GITHUB = "github"
 WEBHOOK_SOURCE_GITLAB = "gitlab"
 WEBHOOK_SOURCES = [WEBHOOK_SOURCE_GITHUB, WEBHOOK_SOURCE_GITLAB]
 
-request_builder = PipelineDispatchRequestBuilder(cred_service)
+request_builder = PipelineDispatchRequestBuilder(secret_service)
 
 class RunPipelineWebhook(APIView):
-    def post(self, _, group_id, pipeline_id):
+    def post(self, request, group_id, pipeline_id):
         prepared_request = self.prepare(WebhookEvent)
 
         if not prepared_request.is_valid:
@@ -26,23 +27,15 @@ class RunPipelineWebhook(APIView):
 
         body = prepared_request.body
 
-        # Get the group for this request
-        group = Group.objects.filter(id=group_id).first()
-
-        # Return Event if group does not exist
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
         if group == None:
-            event = self._create_event(
-                body,
-                group,
-                None,
-                f"Pipeline failed to run. Group '{group_id}' does not exist"
-            )
-            return ModelResponse(event)
+            return NotFound(f"No group found with id '{group_id}'")
 
         # Find a pipeline that matches the request data
         pipeline = Pipeline.objects.filter(
             id=pipeline_id,
-            group_id=group_id
+            group=group
         ).prefetch_related(
             "group",
             "archives",
@@ -58,13 +51,7 @@ class RunPipelineWebhook(APIView):
 
         # Return event if pipeline does not exist
         if pipeline == None:
-            event = self._create_event(
-                body,
-                group,
-                pipeline,
-                f"Pipeline failed to run. Pipeline '{pipeline_id}' does not exist"
-            )
-            return ModelResponse(event)
+            return NotFound(f"No pipeline found with id '{pipeline_id}'")
 
         # Ensure the identity of the user triggering the pipeline is
         # authorized to do so
@@ -75,6 +62,7 @@ class RunPipelineWebhook(APIView):
             identities = identities + list(
                 Identity.objects.filter(
                     owner=group_user.username,
+                    tenant_id=request.tenant_id,
                     type=body.source
                 ).prefetch_related("credentials")
             )
@@ -84,14 +72,14 @@ class RunPipelineWebhook(APIView):
         username = None
         for identity in identities: 
             # Fetch the secret from SK
-            secret = cred_service.get_secret(identity.credentials.sk_id)
+            secret = secret_service.get_secret(identity.credentials.sk_id)
             if secret == None: break
 
             # Get the username from the secret
-            identity_username = secret.get("username")
+            identity_username = secret.get("username", None)
             if identity_username == None: break
 
-            if identity_username and identity_username == body.username:
+            if identity_username == body.username:
                 username = identity_username
                 break
 

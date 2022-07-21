@@ -1,4 +1,4 @@
-import json, os
+import json
 
 from pydantic import ValidationError
 
@@ -39,7 +39,7 @@ class RestrictedAPIView(View):
         request.base_url = f"{request.scheme}://{request.get_host()}"
 
         # Set the request url
-        request.url = os.path.join(request.base_url, request.path)
+        request.url = request.base_url.rstrip("/") + "/" + request.path.lstrip("/")
 
         ### Auth start ###
 

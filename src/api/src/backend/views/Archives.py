@@ -27,16 +27,21 @@ ARCHIVE_TYPES = [ARCHIVE_TYPE_SYSTEM, ARCHIVE_TYPE_S3, ARCHIVE_TYPE_IRODS]
 
 class Archives(RestrictedAPIView):
     def get(self, request, group_id, archive_id=None):
-        # Check that the user belongs to the group that owns this archive
-        if not group_service.user_in_group(request.username, group_id):
-            return Forbidden(message="You do not have access to this archive")
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
+
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
         
         # Get the a list of all the archives that belong to this group
         if archive_id == None:
-            return self.list(group_id)
+            return self.list(group)
 
         archive = Archive.objects.filter(
-            group_id=group_id,
+            group=group,
             id=archive_id
         ).first()
 
@@ -46,14 +51,19 @@ class Archives(RestrictedAPIView):
         return ModelResponse(archive)
 
 
-    def list(self, group_id):
-        archives = Archive.objects.filter(group_id=group_id)
+    def list(self, group):
+        archives = Archive.objects.filter(group=group)
         return ModelListResponse(archives)
 
     def post(self, request, group_id, **_):
-        # Check that the user belongs to the group that owns this archive
-        if not group_service.user_in_group(request.username, group_id):
-            return Forbidden(message="You do not have access to this archive")
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
+
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
 
         # Ensure the request body has a 'type' property and it is a valid value
         # before validating the rest of the request body
@@ -74,12 +84,12 @@ class Archives(RestrictedAPIView):
         body = prepared_request.body
 
         # Check that id of the pipeline is unique
-        if Archive.objects.filter(id=body.id, group_id=group_id).exists():
+        if Archive.objects.filter(id=body.id, group=group).exists():
             return Conflict(f"An archive already exists with the id '{body.id}'")
 
         # Build the archive based on the specified type and return the response
         try:
-            response = getattr(self, body.type)(request, body, group_id)
+            response = getattr(self, body.type)(request, body, group)
         except NotImplementedError as e:
             return BadRequest(message=e)
 
@@ -92,13 +102,18 @@ class Archives(RestrictedAPIView):
         pass
 
     def delete(self, request, group_id, archive_id):
-        # Check that the user belongs to the group that owns this archive
-        if not group_service.user_in_group(request.username, group_id):
-            return Forbidden(message="You do not have access to this archive")
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
+
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
         
         # Get the archive by the id provided in the path params
         archive = Archive.objects.filter(
-            group_id=group_id, id=archive_id).first()
+            group=group, id=archive_id).first()
 
         if archive is None:
             return NotFound(f"Archive not found with id '{archive_id}'")
@@ -107,7 +122,7 @@ class Archives(RestrictedAPIView):
 
         return BaseResponse(message=f"Archive deleted")
 
-    def system(self, request, body, group_id):
+    def system(self, request, body, group):
         client = self.tapis_api_gateway.get_client()
 
         try:
@@ -116,7 +131,6 @@ class Archives(RestrictedAPIView):
                 userName=request.username
             )
         except InvalidInputError as e:
-            print(e)
             return BadRequest(f"System '{body.system_id}' does not exist or you do not have access to it.")
         except Exception as e:
             return ServerError(message=e)
@@ -128,7 +142,7 @@ class Archives(RestrictedAPIView):
         # Persist the archive to the db
         try:
             archive = Archive.objects.create(
-                group_id=group_id,
+                group=group,
                 owner=request.username,
                 **dict(body)
             )

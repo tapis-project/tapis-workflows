@@ -1,22 +1,30 @@
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.models import ModelListResponse
-from backend.views.http.responses.errors import Forbidden, NotFound
+from backend.views.http.responses.errors import Forbidden, NotFound, BadRequest
 from backend.models import PipelineArchive, Pipeline
 from backend.services.GroupService import service as group_service
 
 
 class ListPipelineArchives(RestrictedAPIView):
     def get(self, request, group_id, pipeline_id):
-        # Check that the user belongs to the group that owns this archive
-        if not group_service.user_in_group(request.username, group_id):
-            return Forbidden(message="You do not have access to this pipeline")
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
 
-        # Get the pipeline
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
+
+        # Get the pipline
         pipeline = Pipeline.objects.filter(
-            group_id=group_id, id=pipeline_id).first()
+            group=group,
+            id=pipeline_id
+        ).first()
 
+        # Return if BadRequest if no pipeline found
         if pipeline == None:
-            return NotFound(message=f"Pipeline '{pipeline_id}' does not exist for group '{group_id}'")
+            return BadRequest(f"Pipline with id '{pipeline_id}' does not exist")
         
         # Get the archive
         pipeline_archives = PipelineArchive.objects.filter(

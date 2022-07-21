@@ -22,7 +22,7 @@ from backend.views.http.requests import (
     RegistryDestination,
     LocalDestination
 )
-from backend.services.CredentialsService import service as cred_service
+from backend.services.SecretService import service as secret_service
 from backend.services.Service import Service
 from backend.errors.api import BadRequestError, ServerError
 
@@ -89,6 +89,7 @@ class ActionService(Service):
                 ttl=request.ttl,
                 url=request.url,
             )
+            print(action)
         except (IntegrityError, OperationalError, DatabaseError) as e:
             self.rollback()
             raise e
@@ -115,7 +116,7 @@ class ActionService(Service):
             # TODO Implement identity policies that allow group users access to this identity
             identity = Identity.objects.filter(pk=identity_uuid, owner=pipeline.owner).first()
             if identity == None:
-                raise BadRequestError(f"Identity with uuid '{identity_uuid}' does not exsit or you do not have access to it.")
+                raise BadRequestError(f"Identity with uuid '{identity_uuid}' does not exist or you do not have access to it.")
 
             return (identity, None)
         
@@ -130,11 +131,11 @@ class ActionService(Service):
                     cred_data[key] = getattr(credentials, key)
             
             try:
-                cred = cred_service.save(f"pipeline:{pipeline.id}", cred_data)
+                cred = secret_service.save(f"pipeline:{pipeline.id}", cred_data)
                 
                 # Register a rollback funtion(partial) that will be used to delete the credentials
                 # should any subsequent model creations fail
-                self._add_rollback(cred_service.delete, cred.sk_id)
+                self._add_rollback(secret_service.delete, cred.sk_id)
             except Exception as e:
                 raise ServerError(str(e))
         

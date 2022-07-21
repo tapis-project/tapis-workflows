@@ -197,6 +197,7 @@ class WebhookEvent(BaseEvent):
     source: str
     context_url: str
     username: str
+    tenant_id: str
 
 # Groups and Users
 class GroupUserReq(BaseModel):

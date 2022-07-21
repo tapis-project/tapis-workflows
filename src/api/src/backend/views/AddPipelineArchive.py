@@ -10,9 +10,24 @@ from backend.services.GroupService import service as group_service
 
 class AddPipelineArchive(RestrictedAPIView):
     def post(self, request, group_id, pipeline_id):
-        # Check that the user belongs to the group that owns this archive
-        if not group_service.user_in_group(request.username, group_id):
-            return Forbidden(message="You do not have access to this pipeline")
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
+
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
+
+        # Get the pipline
+        pipeline = Pipeline.objects.filter(
+            group=group,
+            id=pipeline_id
+        ).first()
+
+        # Return if BadRequest if no pipeline found
+        if pipeline == None:
+            return BadRequest(f"Pipline with id '{pipeline_id}' does not exist")
 
         # Validate the request body based on the type of pipeline specified
         prepared_request = self.prepare(AddRemoveArchive)
@@ -24,16 +39,9 @@ class AddPipelineArchive(RestrictedAPIView):
         # Get the JSON encoded body from the validation result
         body = prepared_request.body
 
-        # Get the pipeline
-        pipeline = Pipeline.objects.filter(
-            group_id=group_id, id=pipeline_id).first()
-
-        if pipeline == None:
-            return NotFound(message=f"Pipeline '{pipeline_id}' does not exist for group '{group_id}'")
-
         # Get the archive
         archive = Archive.objects.filter(
-            group_id=group_id, id=body.archive_id).first()
+            group=group, id=body.archive_id).first()
 
         if archive == None:
             return NotFound(message=f"Archive '{body.archive_id}' does not exist for group '{group_id}'")

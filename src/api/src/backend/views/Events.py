@@ -14,11 +14,11 @@ from backend.views.http.responses.errors import (
 from backend.helpers.PipelineDispatchRequestBuilder import PipelineDispatchRequestBuilder
 from backend.services.PipelineDispatcher import service as pipeline_dispatcher
 from backend.services.GroupService import service as group_service
-from backend.services.CredentialsService import service as cred_service
+from backend.services.SecretService import service as secret_service
 from backend.models import Event, Pipeline
 
 
-request_builder = PipelineDispatchRequestBuilder(cred_service)
+request_builder = PipelineDispatchRequestBuilder(secret_service)
 
 class Events(RestrictedAPIView):
     def post(self, request, group_id, pipeline_id, *_, **__):
@@ -29,20 +29,19 @@ class Events(RestrictedAPIView):
 
         body = prepared_request.body
 
-        # Get the group for this request
-        group = group_service.get(group_id)
-
-        # Return Event if group does not exist
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
         if group == None:
-            return UnprocessableEntity(message=f"Group '{group_id}' does not exist")
+            return NotFound(f"No group found with id '{group_id}'")
 
-        if not group_service.user_in_group(request.username, group.id):
-            return Forbidden(f"You do not have access to group '{group_id}'")
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
 
         # Find a pipeline that matches the request data
         pipeline = Pipeline.objects.filter(
             id=pipeline_id,
-            group_id=group_id
+            group=group
         ).prefetch_related(
             "group",
             "archives",
@@ -57,12 +56,10 @@ class Events(RestrictedAPIView):
         ).first()
 
         message = "No Pipeline found with details that match this event"
-        if pipeline is not None:
+        if pipeline != None:
             # Check that the user belongs to the group that is attached
             # to this pipline
             message = f"Successfully triggered pipeline ({pipeline.id})"
-            if not group_service.user_in_group(request.username, pipeline.group_id):
-                message = f"Failed to trigger pipline ({pipeline.id}): '{request.username}' does not have access to this pipeline"
 
         # Persist the event in the database
         try:
@@ -76,7 +73,7 @@ class Events(RestrictedAPIView):
             return ServerError(message=e.__cause__)
 
         # Return the event if there is no pipeline matching the event
-        if pipeline is None:
+        if pipeline == None:
             return ModelResponse(event)
 
         # Build the pipeline dispatch request
@@ -94,34 +91,38 @@ class Events(RestrictedAPIView):
         return ModelResponse(event)
 
     def get(self, request, group_id, pipeline_id, event_uuid=None):
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
+
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
+
         # Get the pipline
         pipeline = Pipeline.objects.filter(
-            group_id=group_id,
+            group=group,
             id=pipeline_id
         ).first()
 
         # Return if BadRequest if no pipeline found
-        if pipeline is None:
+        if pipeline == None:
             return BadRequest(f"Pipline '{pipeline_id}' does not exist")
 
-        # Check that the user belongs to the group that is attached
-        # to this pipline
-        if not group_service.user_in_group(request.username, pipeline.group_id):
-            return Forbidden(message="You cannot view events for this pipeline")
-
         # Return a list of events if uuid is not specified
-        if event_uuid is None:
-            return self.list(pipeline_id)
+        if event_uuid == None:
+            return self.list(pipeline)
 
         event = Event.objects.filter(uuid=event_uuid).first()
 
-        if event is None:
+        if event == None:
             return NotFound(f"Event with uuid '{event_uuid}' not found in pipeline '{pipeline_id}'")
 
         return ModelResponse(event)
 
-    def list(self, pipeline_id):    
-        events = Event.objects.filter(pipeline=pipeline_id)
+    def list(self, pipeline):    
+        events = Event.objects.filter(pipeline=pipeline)
         return ModelListResponse(events)
 
     def put(self, *args, **kwargs):
