@@ -1,4 +1,6 @@
 from django.urls import path
+from django.conf import settings
+
 from backend.views.Actions import Actions
 from backend.views.Auth import Auth
 from backend.views.RunPipelineWebhook import RunPipelineWebhook
@@ -58,7 +60,11 @@ urlpatterns = [
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/events", Events.as_view()),
 
     # Events
-    # TODO Make endpoint for pipeline events and all events
-    path("pipelines/<str:pipeline_id>/events/<str:event_uuid>", Events.as_view()),
-    path("nuke", Nuke.as_view()), # TODO Remove
+    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/events/<str:event_uuid>", Events.as_view()),
 ]
+
+# NOTE This is handy, but there is the distinct posibility that someone malicious
+# could add the production env to the list and hit the endpoint and nuke the prod db.
+# TODO Reconsider this endpoint
+if settings.ENV in ["LOCAL", "DEV", "STAGE"]:
+    urlpatterns.append(path("nuke", Nuke.as_view()))

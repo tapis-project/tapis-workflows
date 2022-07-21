@@ -34,7 +34,8 @@ class APIView(View):
 
             # Ensure the body of the request is correctly encoded json
             try:
-                self.request_body = json.loads(request.body)
+                self.request_body = json.loads(
+                    b"{}" if request.body == b"" else request.body)
             except json.JSONDecodeError:
                 return BadRequest(message=f"Could not decode request body: {request.body}")
 

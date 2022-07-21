@@ -12,7 +12,6 @@ from backend.helpers import resource_url_builder
 
 
 class Actions(RestrictedAPIView):
-
     def get(self, request, group_id, pipeline_id, action_id=None):
         # Get the group
         group = group_service.get(group_id, request.tenant_id)
@@ -34,42 +33,31 @@ class Actions(RestrictedAPIView):
             return BadRequest(f"Pipline with id '{pipeline_id}' does not exist")
         
         if action_id == None:
-            return self.list(request, group, pipeline)
+            return self.list(pipeline)
 
         # Check that the user belongs to the group that is attached
         # to this pipline
         if not group_service.user_in_group(request.username, group_id, request.tenant_id):
             return Forbidden(message="You cannot view actions for this pipeline")
 
-        action = Action.objects.filter(pipeline=pipeline_id, id=action_id).first()
+        action = Action.objects.filter(pipeline=pipeline, id=action_id).first()
 
         if action == None:
-            return NotFound(f"Action with id '{action_id}' not found in pipeline '{pipeline_id}'")
+            return NotFound(f"Action with id '{action_id}' does not exists for pipeline '{pipeline_id}'")
 
         return ModelResponse(action)
 
 
-    def list(self, request, group, pipeline, *args, **kwargs):    
-        actions = Action.objects.filter(pipeline=pipeline)
-
-        return ModelListResponse(actions)
+    def list(self, pipeline, *_, **__):    
+        return ModelListResponse(Action.objects.filter(pipeline=pipeline))
     
-    def post(self, request, group_id, pipeline_id, *args, **kwargs):
+    def post(self, request, group_id, pipeline_id, *_, **__):
         # Validate the request body
         if "type" not in self.request_body:
             return BadRequest(message="Request body missing 'type' property")
 
         if not action_service.is_valid_action_type(self.request_body["type"]):
             return BadRequest(message=f"Invalid action type: Expected one of: {action_service.get_action_request_types()} - Recieved: {self.request_body['type']}. ")
-
-        # Get the group
-        group = group_service.get(group_id, request.tenant_id)
-        if group == None:
-            return NotFound(f"No group found with id '{group_id}'")
-
-        # Check that the user belongs to the group
-        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
-            return Forbidden(message="You do not have access to this group")
 
         # Resolve the the proper request for the type of action provided in the request body
         ActionRequest = action_service.resolve_request_type(self.request_body["type"])
@@ -83,6 +71,15 @@ class Actions(RestrictedAPIView):
 
         # Get the JSON encoded body from the validation result
         body = prepared_request.body
+
+        # Get the group
+        group = group_service.get(group_id, request.tenant_id)
+        if group == None:
+            return NotFound(f"No group found with id '{group_id}'")
+
+        # Check that the user belongs to the group
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+            return Forbidden(message="You do not have access to this group")
 
         # Get the pipline
         pipeline = Pipeline.objects.filter(

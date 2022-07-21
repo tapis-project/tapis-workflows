@@ -15,6 +15,8 @@ from pathlib import Path
 
 import pymysql
 
+# List of all acceptable ENV values
+ENVS = ["LOCAL", "DEV", "STAGE", "PROD"]
 
 # The environment in which the application is currently deployed
 ENV = os.environ["ENV"]
@@ -30,7 +32,7 @@ SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 LOG_LEVEL = os.environ["LOG_LEVEL"]
-DEBUG = True if LOG_LEVEL == "DEBUG" else False
+DEBUG = True if ENV != "PROD" else False
 
 # LOGGING = {
 #     'version': 1,
@@ -54,14 +56,18 @@ DEBUG = True if LOG_LEVEL == "DEBUG" else False
 # Set allowed hosts by env
 ALLOWED_HOSTS = []
 
+# TODO This needs to be more flexible to allow tapis deployments
+# that are not located at .tapis.io to run this api
 if ENV == "LOCAL":
     ALLOWED_HOSTS = [*ALLOWED_HOSTS, "localhost", "127.0.0.1"]
-elif ENV in ["DEV", "DEVELOP", "DEVELOPMENT"]:
+elif ENV == "DEV":
     ALLOWED_HOSTS = [*ALLOWED_HOSTS, "c006.rodeo.tacc.utexas.edu", ".develop.tapis.io"]
-elif ENV in ["STAGE", "STAGING"]:
+elif ENV == "STAGE":
     ALLOWED_HOSTS  = [*ALLOWED_HOSTS, ".staging.tapis.io"]
-elif ENV in ["PROD", "PRODUCTION"]:
+elif ENV == "PROD":
     ALLOWED_HOSTS = [*ALLOWED_HOSTS, ".tapis.io"]
+else:
+    raise Exception(f"Invalid ENV set. Recieved '{ENV}' Expected oneOf: {ENVS}")
 
 
 # Application definition
