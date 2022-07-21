@@ -16,8 +16,6 @@ WORKDIR /src
 
 RUN pip install -r requirements.txt
 
-COPY src/pipelines/src /src
-
 # Tapisservice config and configschema
 COPY src/shared/conf/config.json /src/config.json
 COPY src/shared/conf/configschema.json /src/configschema.json
@@ -25,5 +23,7 @@ COPY src/shared/conf/configschema.json /src/configschema.json
 # Shared utils and helpers
 COPY src/shared/GraphValidator.py /src/helpers
 COPY src/shared/TapisServiceAPIGateway.py /src/helpers
+
+COPY src/pipelines/src /src
 
 RUN chmod +x /src/scripts/start.sh

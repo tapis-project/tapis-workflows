@@ -40,7 +40,7 @@ jobs:
       run: docker push --all-tags tapis/workflows-pipelines
 
   build-push-workflows-api:
-    name: Build/Test/Push Pipelines Image API Image
+    name: Build/Test/Push API Image
     runs-on: ubuntu-latest
     steps:
     - name: Extract branch name
