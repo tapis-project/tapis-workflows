@@ -38,7 +38,7 @@ class Actions(RestrictedAPIView):
 
         # Check that the user belongs to the group that is attached
         # to this pipline
-        if not group_service.user_in_group(request.username, group_id, request.tenant):
+        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
             return Forbidden(message="You cannot view actions for this pipeline")
 
         action = Action.objects.filter(pipeline=pipeline_id, id=action_id).first()
