@@ -23,11 +23,11 @@ DJANGO_TAPIS_TOKEN_HEADER = f"HTTP_{TAPIS_TOKEN_HEADER.replace('-', '_')}"
 
 DIRECTIVE_DELIMITER = "|"
 SUPPORTED_DIRECTIVES = [
-    "DEPLOY", # Implies the BUILD directive. Tells the Pipelines Service to run any post_build actions
+    "DEPLOY", # Implies the BUILD directive. Tells the Pipelines Service to run any post_build tasks
     "CACHE", # Tells the image builder whether or not the image layers should be cached.
     "CUSTOM_TAG", # A key-value pair. Uses the value specified in the directive as the image tag
     "TAG_COMMIT_SHA", # Tells the image builder to tag the image with the commit_sha if one exists
-    "DRY_RUN", # Simulates a pipeline run without triggering action executors
+    "DRY_RUN", # Simulates a pipeline run without triggering task executors
     "NO_PUSH", # Prevents the image builder from pushing the new image to the registry
 ]
 

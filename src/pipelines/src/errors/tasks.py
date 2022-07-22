@@ -1,11 +1,11 @@
 from errors.base import PipelinesBaseException
 
 
-class InvalidActionTypeError(PipelinesBaseException):
+class InvalidTaskTypeError(PipelinesBaseException):
     pass
 
 
-class MissingInitialActionsError(PipelinesBaseException):
+class MissingInitialTasksError(PipelinesBaseException):
     pass
 
 
@@ -17,5 +17,5 @@ class CycleDetectedError(PipelinesBaseException):
     pass
 
 
-class FailedActionError(PipelinesBaseException):
+class FailedTaskError(PipelinesBaseException):
     pass

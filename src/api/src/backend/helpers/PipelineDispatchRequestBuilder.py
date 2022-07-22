@@ -8,15 +8,15 @@ class PipelineDispatchRequestBuilder:
         self.cred_service = cred_service
 
     def build(self, group, pipeline, event, commit=None, directives=None):
-        # Get the pipeline actions, their contexts, destinations, and respective
+        # Get the pipeline tasks, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
-        actions = pipeline.actions.all()
+        tasks = pipeline.tasks.all()
         
-        actions_request = []
-        for action in actions:
-            # Build action result
-            action_request = getattr(self, f"_{action.type}")(action)
-            actions_request.append(action_request)
+        tasks_request = []
+        for task in tasks:
+            # Build task result
+            task_request = getattr(self, f"_{task.type}")(task)
+            tasks_request.append(task_request)
 
         # Get the archives for this pipeline
         archives = []
@@ -32,7 +32,7 @@ class PipelineDispatchRequestBuilder:
         request["group"] = model_to_dict(group)
         request["event"] = model_to_dict(event)
         request["pipeline"] = model_to_dict(pipeline)
-        request["pipeline"]["actions"] = actions_request
+        request["pipeline"]["tasks"] = tasks_request
         request["pipeline"]["archives"] = archives
 
         # Parse the directives from the commit message
@@ -48,52 +48,52 @@ class PipelineDispatchRequestBuilder:
 
         return request
 
-    def _image_build(self, action):
-        action_request = model_to_dict(action)
+    def _image_build(self, task):
+        task_request = model_to_dict(task)
 
-        action_request["context"] = model_to_dict(action.context)
+        task_request["context"] = model_to_dict(task.context)
 
         # Resolve which context credentials to use if any provided
         context_creds = None
-        if action.context.credentials != None:
-            context_creds = action.context.credentials
+        if task.context.credentials != None:
+            context_creds = task.context.credentials
         
         # Identity takes precedence over credentials placed directly in
         # the context
-        if action.context.identity != None:
-            context_creds = action.context.identity.credentials
+        if task.context.identity != None:
+            context_creds = task.context.identity.credentials
 
-        action_request["context"]["credentials"] = None
+        task_request["context"]["credentials"] = None
         if context_creds != None:
-            action_request["context"]["credentials"] = model_to_dict(context_creds)
+            task_request["context"]["credentials"] = model_to_dict(context_creds)
 
             # Get the context credentials data
             context_cred_data = self.cred_service.get_secret(context_creds.sk_id)
-            action_request["context"]["credentials"]["data"] = context_cred_data
+            task_request["context"]["credentials"]["data"] = context_cred_data
 
         # Destination credentials
-        action_request["destination"] = model_to_dict(action.destination)
+        task_request["destination"] = model_to_dict(task.destination)
 
         destination_creds = None
-        if action.destination.credentials != None:
-            destination_creds = action.destination.credentials
+        if task.destination.credentials != None:
+            destination_creds = task.destination.credentials
 
-        if action.destination.identity != None:
-            destination_creds = action.destination.identity.credentials
+        if task.destination.identity != None:
+            destination_creds = task.destination.identity.credentials
 
         if destination_creds != None:
-            action_request["destination"]["credentials"] = model_to_dict(destination_creds)
+            task_request["destination"]["credentials"] = model_to_dict(destination_creds)
 
             # Get the context credentials data
             destination_cred_data = self.cred_service.get_secret(destination_creds.sk_id)
-            action_request["destination"]["credentials"]["data"] = destination_cred_data
+            task_request["destination"]["credentials"]["data"] = destination_cred_data
 
-        return action_request
+        return task_request
 
-    def _webhook_notification(self, action):
-        action_request = model_to_dict(action)
-        return action_request
+    def _request(self, task):
+        task_request = model_to_dict(task)
+        return task_request
 
-    def _container_run(self, action):
-        action_request = model_to_dict(action)
-        return action_request
+    def _container_run(self, task):
+        task_request = model_to_dict(task)
+        return task_request

@@ -6,13 +6,13 @@ from conf.configs import SINGULARITY_IMAGE_URL, SINGULARITY_IMAGE_TAG
 
 
 class ContainerBuilder:
-    def build(self, action, volume_mounts=[], directives=None):
+    def build(self, task, volume_mounts=[], directives=None):
 
-        command = self.resolve_command(action, directives=directives)
+        command = self.resolve_command(task, directives=directives)
 
         container = V1Container(
             name="singularity",
-            env=self.resolve_env(action),
+            env=self.resolve_env(task),
             image=f"{SINGULARITY_IMAGE_URL}:{SINGULARITY_IMAGE_TAG}",
             command=command,
             volume_mounts=volume_mounts,
@@ -20,47 +20,47 @@ class ContainerBuilder:
 
         return container
 
-    def resolve_command(self, action, directives=None):
+    def resolve_command(self, task, directives=None):
         # Save to image.sif if no file name provided
         filename = "image.sif"
-        if action.destination.filename != None:
-            filename = action.destination.filename
+        if task.destination.filename != None:
+            filename = task.destination.filename
 
         # Pull the image from dockerhub and generate the SIF file
-        if action.context.type == "dockerhub":
+        if task.context.type == "dockerhub":
             # Use latest tag if not specified
             tag = "latest"
-            if action.context.tag != None:
-                tag = action.context.tag
+            if task.context.tag != None:
+                tag = task.context.tag
             
             return [
                 "singularity",
                 "pull",
                 "--dir=/mnt/output/",
                 filename,
-                f"docker://{action.context.url}:{tag}"
+                f"docker://{task.context.url}:{tag}"
             ]
 
-        if action.context.type == "github":
+        if task.context.type == "github":
             # Add the token to the repository url
             token = ""
-            if action.context.visibility == "private":
-                token = f"{action.context.credentials.data.personal_access_token}@"
+            if task.context.visibility == "private":
+                token = f"{task.context.credentials.data.personal_access_token}@"
 
             # Pull the git repository with the recipe file
-            repo = os.path.join(f"https://{token}github.com", action.context.url) + ".git"
+            repo = os.path.join(f"https://{token}github.com", task.context.url) + ".git"
             
             git.Repo.clone_from(
                 repo,
-                action.scratch_dir,
-                branch=action.context.branch
+                task.scratch_dir,
+                branch=task.context.branch
             )
 
             # Recipe file path is the scratch dir + recipe file path specified
             # in the context
             recipe_file_path = os.path.join(
                 "/mnt/scratch/",
-                action.context.recipe_file_path
+                task.context.recipe_file_path
             )
 
             # Build the command
@@ -73,17 +73,17 @@ class ContainerBuilder:
 
             return command
 
-    def resolve_env(self, action):
+    def resolve_env(self, task):
         # Add the dockerhub username and access token
-        if action.destination.type == "dockerhub":
+        if task.destination.type == "dockerhub":
             return [
                 V1EnvVar(
                     name="SINGULARITY_DOCKERHUB_USERNAME",
-                    value=action.destination.credentials.data.username
+                    value=task.destination.credentials.data.username
                 ),
                 V1EnvVar(
                     name="SINGULARITY_DOCKERHUB_PASSOWORD",
-                    value=action.destination.credentials.data.token
+                    value=task.destination.credentials.data.token
                 )
             ]
 

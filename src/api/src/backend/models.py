@@ -6,18 +6,55 @@ from django.core.exceptions import ValidationError
 
 ONE_HOUR_IN_SEC = 3600
 
-ACTION_TYPE_IMAGE_BUILD = "image_build"
-ACTION_TYPE_CONTAINER_RUN = "container_run"
-ACTION_TYPE_WEBHOOK_NOTIFICATION = "webhook_notification"
-ACTION_TYPE_TAPIS_JOB = "tapis_job"
-ACTION_TYPE_TAPIS_ACTOR = "tapis_actor"
-ACTION_TYPES = [
-    (ACTION_TYPE_IMAGE_BUILD, "image_build"),
-    (ACTION_TYPE_CONTAINER_RUN, "container_run"),
-    (ACTION_TYPE_WEBHOOK_NOTIFICATION, "webhook_notification"),
-    (ACTION_TYPE_TAPIS_JOB, "tapis_job"),
-    (ACTION_TYPE_TAPIS_ACTOR, "tapis_actor"),
+TASK_INVOCATION_MODE_SYNC = "sync"
+TASK_INVOCATION_MODE_ASYNC = "async"
+TASK_INVOCATION_MODE_ASYNCS = [
+    (TASK_INVOCATION_MODE_SYNC, "sync"),
+    (TASK_INVOCATION_MODE_ASYNC, "async")
 ]
+
+TASK_TYPE_IMAGE_BUILD = "image_build"
+TASK_TYPE_CONTAINER_RUN = "container_run"
+TASK_TYPE_REQUEST = "request"
+TASK_TYPE_TAPIS_JOB = "tapis_job"
+TASK_TYPE_TAPIS_ACTOR = "tapis_actor"
+TASK_TYPES = [
+    (TASK_TYPE_IMAGE_BUILD, "image_build"),
+    (TASK_TYPE_CONTAINER_RUN, "container_run"),
+    (TASK_TYPE_REQUEST, "request"),
+    (TASK_TYPE_TAPIS_JOB, "tapis_job"),
+    (TASK_TYPE_TAPIS_ACTOR, "tapis_actor"),
+]
+
+TASK_PROTOCOL_HTTP = "http"
+TASK_PROTOCOL_SSH = "ssh"
+TASK_PROTOCOL_SFTP = "sftp"
+TASK_PROTOCOL_FTP = "ftp"
+TASK_PROTOCOL_FTPS = "ftps"
+TASK_PROTOCOLS = [
+    (TASK_PROTOCOL_HTTP, "http"),
+    (TASK_PROTOCOL_SSH, "ssh"),
+    (TASK_PROTOCOL_SFTP, "sftp"),
+    (TASK_PROTOCOL_FTP, "ftp"),
+    (TASK_PROTOCOL_FTPS, "ftps"),
+]
+
+DEFAULT_TASK_INVOCATION_MODE = TASK_INVOCATION_MODE_ASYNC
+DEFAULT_WORKFLOW_INVOCATION_MODE = DEFAULT_TASK_INVOCATION_MODE
+
+# Execution times in seconds
+DEFAULT_MAX_EXEC_TIME = 3600
+DEFAULT_MAX_TASK_EXEC_TIME = DEFAULT_MAX_EXEC_TIME
+DEFAULT_MAX_WORKFLOW_EXEC_TIME = DEFAULT_MAX_EXEC_TIME*3
+
+# Retries and retry policies
+RETRY_POLICY_EXPONENTIAL_BACKOFF = "exponential_backoff"
+
+DEFAULT_RETRY_POLICY = RETRY_POLICY_EXPONENTIAL_BACKOFF
+
+RETRIES_NONE = 0
+RETRIES_UNLIMITED = -1
+DEFAULT_MAX_RETRIES = RETRIES_NONE
 
 ARCHIVE_TYPE_SYSTEM = "system"
 ARCHIVE_TYPE_S3 = "s3"
@@ -42,7 +79,7 @@ HTTP_METHOD_POST = "post"
 HTTP_METHOD_PUT = "put"
 HTTP_METHOD_PATCH = "patch"
 HTTP_METHOD_DELETE = "delete"
-ACTION_HTTP_METHODS = [
+TASK_HTTP_METHODS = [
     (HTTP_METHOD_GET, "get"),
     (HTTP_METHOD_POST, "post"),
     (HTTP_METHOD_PUT, "put"),
@@ -113,6 +150,7 @@ STATUSES = [
 
 RUN_STATUS_ACTIVE = "active"
 RUN_STATUS_PENDING = "pending"
+RUN_STATUS_BACKOFF = "backoff"
 RUN_STATUS_COMPLETED = "completed"
 RUN_STATUS_FAILED = "failed"
 RUN_STATUS_SUSPENDED = "suspended"
@@ -121,13 +159,14 @@ RUN_STATUS_TERMINATED = "terminated"
 RUN_STATUSES = [
     (RUN_STATUS_PENDING, "pending"),
     (RUN_STATUS_ACTIVE, "active"),
+    (RUN_STATUS_BACKOFF, "backoff"),
     (RUN_STATUS_COMPLETED, "completed"),
     (RUN_STATUS_FAILED, "failed"),
     (RUN_STATUS_SUSPENDED, "suspended"),
     (RUN_STATUS_TERMINATED, "terminated"),
 ]
 
-ACTION_EXECUTION_STATUSES = RUN_STATUSES
+TASK_EXECUTION_STATUSES = RUN_STATUSES
 
 VISIBILITY_PUBLIC = "public"
 VISIBILITY_PRIVATE = "private"
@@ -150,21 +189,24 @@ def validate_ctx_dest_url(value):
 
 ##################
 
-class Action(models.Model):
+class Task(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128)
     cache = models.BooleanField(null=True)
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
     input = models.JSONField(null=True)
+    invocation_mode = models.CharField(default=DEFAULT_TASK_INVOCATION_MODE)
+    max_exec_time = models.BigIntegerField(
+        default=DEFAULT_MAX_TASK_EXEC_TIME,
+        validators=[MaxValueValidator(DEFAULT_MAX_TASK_EXEC_TIME*3), MinValueValidator(1)]
+    )
+    max_retries: int = models.IntegerField(default=DEFAULT_MAX_RETRIES)
     output = models.JSONField(null=True)
-    pipeline = models.ForeignKey("backend.Pipeline", related_name="actions", on_delete=models.CASCADE)
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="tasks", on_delete=models.CASCADE)
     poll = models.BooleanField(null=True)
     retries = models.IntegerField(default=0)
-    type = models.CharField(max_length=32, choices=ACTION_TYPES)
-    ttl = models.BigIntegerField(
-        default=ONE_HOUR_IN_SEC,
-        validators=[MaxValueValidator(ONE_HOUR_IN_SEC*3), MinValueValidator(1)]
-    )
+    retry_policy: str = models.CharField(default=DEFAULT_RETRY_POLICY)
+    type = models.CharField(max_length=32, choices=TASK_TYPES)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
 
     # Image build specific properties
@@ -172,11 +214,12 @@ class Action(models.Model):
     context = models.OneToOneField("backend.Context", null=True, on_delete=models.CASCADE)
     destination = models.OneToOneField("backend.Destination", null=True, on_delete=models.CASCADE)
     
-    # Webhook notification specific properties
+    # Request specific properties
     auth = models.ForeignKey("backend.Credentials", null=True, on_delete=models.CASCADE)
     data = models.JSONField(null=True)
     headers = models.JSONField(null=True)
-    http_method = models.CharField(max_length=32, choices=ACTION_HTTP_METHODS, null=True)
+    http_method = models.CharField(max_length=32, choices=TASK_HTTP_METHODS, null=True)
+    protocol = models.CharField(max_length=32, choices=TASK_PROTOCOLS, null=True)
     query_params = models.JSONField(null=True)
     url = models.CharField(max_length=255, null=True)
     
@@ -194,7 +237,7 @@ class Action(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["id", "pipeline_id"],
-                name="action_id_pipeline_id"
+                name="task_id_pipeline_id"
             )
         ]
         indexes = [
@@ -236,11 +279,11 @@ class Archive(models.Model):
             models.Index(fields=["id", "group_id"])
         ]
 
-class ActionExecution(models.Model):
-    action = models.ForeignKey("backend.Action", related_name="action_executions", on_delete=models.CASCADE)
-    pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="action_executions", on_delete=models.CASCADE)
+class TaskExecution(models.Model):
+    task = models.ForeignKey("backend.Task", related_name="task_executions", on_delete=models.CASCADE)
+    pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="task_executions", on_delete=models.CASCADE)
     started_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=16, choices=ACTION_EXECUTION_STATUSES, default=RUN_STATUS_PENDING)
+    status = models.CharField(max_length=16, choices=TASK_EXECUTION_STATUSES, default=RUN_STATUS_PENDING)
     ended_at = models.DateTimeField()
     uuid = models.UUIDField(default=uuid.uuid4)
 
@@ -334,7 +377,14 @@ class Pipeline(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
+    invocation_mode = models.CharField(default=DEFAULT_WORKFLOW_INVOCATION_MODE)
+    max_exec_time = models.BigIntegerField(
+        default=DEFAULT_MAX_WORKFLOW_EXEC_TIME,
+        validators=[MaxValueValidator(DEFAULT_MAX_WORKFLOW_EXEC_TIME), MinValueValidator(1)]
+    )
+    max_retries: int = models.IntegerField(default=DEFAULT_MAX_RETRIES)
     owner = models.CharField(max_length=64)
+    retry_policy: str = models.CharField(default=DEFAULT_RETRY_POLICY)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     current_run = models.ForeignKey("backend.PipelineRun", related_name="+", null=True, on_delete=models.CASCADE)

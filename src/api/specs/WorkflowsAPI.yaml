@@ -26,7 +26,7 @@ security:
   - TapisJWT: []
 tags:
   - name: Workflows
-    description: Manage Pipeline and Action resources. Create, retrieve, update, etc.
+    description: Manage Pipeline and Task resources. Create, retrieve, update, etc.
   - name: General
     description: General service health and readiness
   - name: Groups
@@ -36,13 +36,13 @@ tags:
   - name: Identities
     description: Manage external identities . Create, retrieve, delete.
   - name: Pipelines
-    description: Manage collections of actions. Create, retrieve and delete.
-  - name: Actions
+    description: Manage collections of tasks. Create, retrieve and delete.
+  - name: Tasks
     description: Manage tasks to be executed as part of a workflow. Create, retrieve and delete.
   - name: Events
     description: Trigger workflows. Create and retrieve.
   - name: CI/CD
-    description: Create CI/CD-specific workflows (Image builds and webhook notifications).
+    description: Create CI/CD-specific workflows (Image builds and http requests).
 
 # ------------------------------------------------------------------------------
 # --- Paths -------------------------------------------------------------------
@@ -650,7 +650,7 @@ paths:
 
         Note: When creating pipelines for the CI/CD use case(primarily building images), use this endpoint. It offers a simplified interface
         for those who want to avoid the complexities of creating a standard workflow. This pipeline's
-        actions may be modified later.
+        tasks may be modified later.
       operationId: createCIPipeline
       requestBody:
         required: true
@@ -945,14 +945,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResp'
 
-  '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/actions':
+  '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/tasks':
     get:
       tags:
-        - Actions
-      summary: List actions
+        - Tasks
+      summary: List tasks
       description: |
-        Retrieve all actions for a given pipeline
-      operationId: listActions
+        Retrieve all tasks for a given pipeline
+      operationId: listTasks
       parameters:
         - name: group_id
           in: path
@@ -966,20 +966,20 @@ paths:
             $ref: '#/components/schemas/ID'
       responses:
         '200':
-          description: Actions found.
+          description: Tasks found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionListResp'
+                $ref: '#/components/schemas/TaskListResp'
 
-  '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/actions/{action_id}':
+  '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/tasks/{task_id}':
     get:
       tags:
-        - Actions
-      summary: Retrieve action details
+        - Tasks
+      summary: Retrieve task details
       description: |
-        Retrieve action details for given pipeline id and action id
-      operationId: getAction
+        Retrieve task details for given pipeline id and task id
+      operationId: getTask
       parameters:
         - name: group_id
           in: path
@@ -991,18 +991,18 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/ID'
-        - name: action_id
+        - name: task_id
           in: path
           required: true
           schema:
             $ref: '#/components/schemas/ID'
       responses:
         '200':
-          description: Action found.
+          description: Task found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActionResp'
+                $ref: '#/components/schemas/TaskResp'
 
   '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/events':
     get:
@@ -1058,10 +1058,10 @@ components:
         uuid:
           type: string
           format: uuid
-        actions:
+        tasks:
           type: array
           items:
-            $ref: '#/components/schemas/ImageBuildAction'
+            $ref: '#/components/schemas/ImageBuildTask'
 
     Pipeline:
       type: object
@@ -1075,25 +1075,25 @@ components:
         uuid:
           type: string
           format: uuid
-        actions:
+        tasks:
           type: array
           items:
-            $ref: '#/components/schemas/Action'
+            $ref: '#/components/schemas/Task'
 
-    # --- Action ---
-    Action:
+    # --- Task ---
+    Task:
       type: object
       properties:
         id:
           type: string
       oneOf:
-        - $ref: '#/components/schemas/ImageBuildAction'
-        - $ref: '#/components/schemas/WebhookNotificationAction'
-        - $ref: '#/components/schemas/ContainerRunAction'
-        - $ref: '#/components/schemas/TapisJobAction'
-        - $ref: '#/components/schemas/TapisActorAction'
+        - $ref: '#/components/schemas/ImageBuildTask'
+        - $ref: '#/components/schemas/RequestTask'
+        - $ref: '#/components/schemas/ContainerRunTask'
+        - $ref: '#/components/schemas/TapisJobTask'
+        - $ref: '#/components/schemas/TapisActorTask'
     
-    BaseAction:
+    BaseTask:
       type: object
       required:
         - id
@@ -1102,11 +1102,11 @@ components:
         id:
           type: string
         type:
-          $ref: '#/components/schemas/ActionTypeEnum'
+          $ref: '#/components/schemas/TaskTypeEnum'
         depends_on:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDependency'
+            $ref: '#/components/schemas/TaskDependency'
         description:
           type: string
           default: null
@@ -1123,9 +1123,9 @@ components:
           type: integer
           default: -1
 
-    ImageBuildAction:
+    ImageBuildTask:
       allOf:
-        - $ref: '#/components/schemas/BaseAction'
+        - $ref: '#/components/schemas/BaseTask'
         - type: object
           properties:
             auto_build:
@@ -1145,9 +1145,9 @@ components:
             type:
               default: "image_build"
 
-    WebhookNotificationAction:
+    RequestTask:
       allOf:
-        - $ref: '#/components/schemas/BaseAction'
+        - $ref: '#/components/schemas/BaseTask'
         - type: object
           properties:
             auth:
@@ -1167,14 +1167,14 @@ components:
               type: object
               default: null
             type:
-              default: "webhook_notification"
+              default: "request"
             url:
               type: string
               default: null
 
-    ContainerRunAction:
+    ContainerRunTask:
       allOf:
-        - $ref: '#/components/schemas/BaseAction'
+        - $ref: '#/components/schemas/BaseTask'
         - type: object
           properties:
             image:
@@ -1182,9 +1182,9 @@ components:
             type:
               default: "container_run"
 
-    TapisJobAction:
+    TapisJobTask:
       allOf:
-        - $ref: '#/components/schemas/BaseAction'
+        - $ref: '#/components/schemas/BaseTask'
         - type: object
           properties:
             poll:
@@ -1193,11 +1193,11 @@ components:
             tapis_job_def:
               type: object
             type:
-              default: "tapis_job_action"
+              default: "tapis_job_task"
 
-    TapisActorAction:
+    TapisActorTask:
       allOf:
-        - $ref: '#/components/schemas/BaseActionReq'
+        - $ref: '#/components/schemas/BaseTaskReq'
         - type: object
           properties:
             poll:
@@ -1207,10 +1207,10 @@ components:
               type: string
               default: null
             type:
-              default: "tapis_actor_action"
+              default: "tapis_actor_task"
 
-    # --- Action Dependency ---
-    ActionDependency:
+    # --- Task Dependency ---
+    TaskDependency:
       type: object
       properties:
         id:
@@ -1438,17 +1438,17 @@ components:
           $ref: '#/components/schemas/DescriptionString'
         type:
           $ref: '#/components/schemas/PipelineTypeEnum'
-        actions:
+        tasks:
           type: array
           items:
             anyOf:
-              - $ref: '#/components/schemas/ImageBuildActionReq'
-              - $ref: '#/components/schemas/WebhookNotificationActionReq'
-              - $ref: '#/components/schemas/ContainerRunActionReq'
-              - $ref: '#/components/schemas/TapisJobActionReq'
-              - $ref: '#/components/schemas/TapisActorActionReq'
+              - $ref: '#/components/schemas/ImageBuildTaskReq'
+              - $ref: '#/components/schemas/RequestTaskReq'
+              - $ref: '#/components/schemas/ContainerRunTaskReq'
+              - $ref: '#/components/schemas/TapisJobTaskReq'
+              - $ref: '#/components/schemas/TapisActorTaskReq'
 
-    BaseActionReq:
+    BaseTaskReq:
       type: object
       required:
         - id
@@ -1457,11 +1457,11 @@ components:
         id:
           type: string
         type:
-          $ref: '#/components/schemas/ActionTypeEnum'
+          $ref: '#/components/schemas/TaskTypeEnum'
         depends_on:
           type: array
           items:
-            $ref: '#/components/schemas/ActionDependency'
+            $ref: '#/components/schemas/TaskDependency'
         description:
           type: string
           default: null
@@ -1478,9 +1478,9 @@ components:
           type: integer
           default: -1
 
-    ImageBuildActionReq:
+    ImageBuildTaskReq:
       allOf:
-        - $ref: '#/components/schemas/BaseActionReq'
+        - $ref: '#/components/schemas/BaseTaskReq'
         - type: object
           properties:
             auto_build:
@@ -1499,9 +1499,9 @@ components:
             type:
               default: "image_build"
 
-    WebhookNotificationActionReq:
+    RequestTaskReq:
       allOf:
-        - $ref: '#/components/schemas/BaseActionReq'
+        - $ref: '#/components/schemas/BaseTaskReq'
         - type: object
           properties:
             auth:
@@ -1520,14 +1520,14 @@ components:
               type: object
               default: null
             type:
-              default: "webhook_notification"
+              default: "request"
             url:
               type: string
               default: null
 
-    ContainerRunActionReq:
+    ContainerRunTaskReq:
       allOf:
-        - $ref: '#/components/schemas/BaseActionReq'
+        - $ref: '#/components/schemas/BaseTaskReq'
         - type: object
           properties:
             image:
@@ -1535,9 +1535,9 @@ components:
             type:
               default: "container_run"
 
-    TapisJobActionReq:
+    TapisJobTaskReq:
       allOf:
-        - $ref: '#/components/schemas/BaseActionReq'
+        - $ref: '#/components/schemas/BaseTaskReq'
         - type: object
           properties:
             poll:
@@ -1546,11 +1546,11 @@ components:
             tapis_job_def:
               $ref: '#/components/schemas/TapisJobDefReq'
             type:
-              default: "tapis_job_action"
+              default: "tapis_job_task"
 
-    TapisActorActionReq:
+    TapisActorTaskReq:
       allOf:
-        - $ref: '#/components/schemas/BaseActionReq'
+        - $ref: '#/components/schemas/BaseTaskReq'
         - type: object
           properties:
             poll:
@@ -1560,7 +1560,7 @@ components:
               type: string
               default: null
             type:
-              default: "tapis_actor_action"
+              default: "tapis_actor_task"
         
     CIPipelinePostReq:
       type: object
@@ -1854,15 +1854,15 @@ components:
               items:
                 $ref: '#/components/schemas/Pipeline'
     
-    ActionResp:
+    TaskResp:
       allOf:
         - $ref: '#/components/schemas/ObjectResp'
         - type: object
           properties:
             result:
-              $ref: '#/components/schemas/Action'
+              $ref: '#/components/schemas/Task'
 
-    ActionListResp:
+    TaskListResp:
       allOf:
         - $ref: '#/components/schemas/ListResp' 
         - type: object
@@ -1870,7 +1870,7 @@ components:
             result:
               type: array
               items:
-                $ref: '#/components/schemas/Action'
+                $ref: '#/components/schemas/Task'
 
     EventResp:
       allOf:
@@ -1899,12 +1899,12 @@ components:
         - workflow
         - ci
 
-    ActionTypeEnum:
+    TaskTypeEnum:
       type: string
       enum:
         - image_build
         - container_run
-        - webhook_notification
+        - request
         - tapis_job
         - tapis_actor
 

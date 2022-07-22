@@ -2,7 +2,7 @@ from time import time
 
 from tapipy.tapis import Tapis
 
-from core.ActionResult import ActionResult
+from core.TaskResult import TaskResult
 from conf.configs import (
     TAPIS_SERVICE_ACCOUNT,
     TAPIS_SERVICE_ACCOUNT_PASSWORD,
@@ -12,7 +12,7 @@ from conf.configs import (
 
 
 class TapisJob:
-    def execute(self, action, _):
+    def execute(self, task, _):
         try:
             client = Tapis(
                 base_url=TAPIS_DEV_URL,
@@ -24,12 +24,12 @@ class TapisJob:
             client.get_tokens()
 
             # Submit the job
-            job = client.jobs.submitJob(**action.tapis_job_def)
+            job = client.jobs.submitJob(**task.tapis_job_def)
 
             # Get the initial job status
             job_status = job.status
 
-            if action.poll:
+            if task.poll:
                 # Keep polling until the job is complete
                 while job_status not in ["FINISHED", "CANCELLED", "FAILED"]:
                     # Wait the polling frequency time then try poll again
@@ -38,16 +38,16 @@ class TapisJob:
 
                 job_data = {"jobUuid": job.uuid, "status": job_status}
 
-                # Return an action result based on the final status of the tapis job
+                # Return an task result based on the final status of the tapis job
                 if job_status == "FINISHED":
-                    return ActionResult(0, data=job_data)
+                    return TaskResult(0, data=job_data)
 
-                return ActionResult(1, data=job_data)
+                return TaskResult(1, data=job_data)
 
-            return ActionResult(0, data={"jobUuid": job.uuid, "status": job_status})
+            return TaskResult(0, data={"jobUuid": job.uuid, "status": job_status})
 
         except Exception as e:
-            return ActionResult(1, errors=[str(e)])
+            return TaskResult(1, errors=[str(e)])
 
 
 executor = TapisJob()

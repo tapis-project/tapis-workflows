@@ -3,22 +3,22 @@ import logging, json
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
 
-from backend.models import Action, Context, Destination, Identity
+from backend.models import Task, Context, Destination, Identity
 from backend.models import (
-    ACTION_TYPE_WEBHOOK_NOTIFICATION,
-    ACTION_TYPE_IMAGE_BUILD,
-    ACTION_TYPE_CONTAINER_RUN,
-    ACTION_TYPE_TAPIS_JOB,
-    ACTION_TYPE_TAPIS_ACTOR,
+    TASK_TYPE_REQUEST,
+    TASK_TYPE_IMAGE_BUILD,
+    TASK_TYPE_CONTAINER_RUN,
+    TASK_TYPE_TAPIS_JOB,
+    TASK_TYPE_TAPIS_ACTOR,
     DESTINATION_TYPE_LOCAL,
     DESTINATION_TYPE_DOCKERHUB,
 )
 from backend.views.http.requests import (
-    WebhookAction,
-    ImageBuildAction,
-    ContainerRunAction,
-    TapisJobAction,
-    TapisActorAction,
+    RequestTask,
+    ImageBuildTask,
+    ContainerRunTask,
+    TapisJobTask,
+    TapisActorTask,
     RegistryDestination,
     LocalDestination
 )
@@ -27,12 +27,12 @@ from backend.services.Service import Service
 from backend.errors.api import BadRequestError, ServerError
 
 
-ACTION_TYPE_REQUEST_MAPPING = {
-    ACTION_TYPE_IMAGE_BUILD: ImageBuildAction,
-    ACTION_TYPE_WEBHOOK_NOTIFICATION: WebhookAction,
-    ACTION_TYPE_CONTAINER_RUN: ContainerRunAction,
-    ACTION_TYPE_TAPIS_JOB: TapisJobAction,
-    ACTION_TYPE_TAPIS_ACTOR: TapisActorAction,
+TASK_TYPE_REQUEST_MAPPING = {
+    TASK_TYPE_IMAGE_BUILD: ImageBuildTask,
+    TASK_TYPE_REQUEST: RequestTask,
+    TASK_TYPE_CONTAINER_RUN: ContainerRunTask,
+    TASK_TYPE_TAPIS_JOB: TapisJobTask,
+    TASK_TYPE_TAPIS_ACTOR: TapisActorTask,
 }
 
 DESTINATION_TYPE_REQUEST_MAPPING = {
@@ -40,9 +40,9 @@ DESTINATION_TYPE_REQUEST_MAPPING = {
     DESTINATION_TYPE_LOCAL: LocalDestination
 }
 
-ACTION_REQUEST_TYPES = list(ACTION_TYPE_REQUEST_MAPPING.keys())
+TASK_REQUEST_TYPES = list(TASK_TYPE_REQUEST_MAPPING.keys())
 
-class ActionService(Service):
+class TaskService(Service):
     def __init__(self):
         Service.__init__(self)
 
@@ -62,9 +62,9 @@ class ActionService(Service):
             self.rollback()
             raise e
 
-        # Create action
+        # Create task
         try:
-            action = Action.objects.create(
+            task = Task.objects.create(
                 auth=request.auth,
                 builder=request.builder,
                 cache=request.cache,
@@ -86,10 +86,9 @@ class ActionService(Service):
                 retries=request.retries,
                 tapis_job_def=request.tapis_job_def,
                 tapis_actor_id=request.tapis_actor_id,
-                ttl=request.ttl,
+                max_exec_time=request.max_exec_time,
                 url=request.url,
             )
-            print(action)
         except (IntegrityError, OperationalError, DatabaseError) as e:
             self.rollback()
             raise e
@@ -98,14 +97,14 @@ class ActionService(Service):
             self.rollback()
             raise e
 
-        return action
+        return task
 
     def _resolve_authn_source(self, request, pipeline, accessor):
         """Determines whether the authn source will come and identity
         or credentials directly"""
 
         # Accessor is either "context" or "destination", and "target" is
-        # the context or destination object of the action
+        # the context or destination object of the task
         target = getattr(request, accessor)
 
         # Return the identity if one is provided
@@ -142,7 +141,7 @@ class ActionService(Service):
         return (None, cred)
 
     def _create_context(self, request, pipeline):
-        """Creates the Context object for the action. The Context contains
+        """Creates the Context object for the task. The Context contains
         data about the source of the build; which registry to pull from, the
         path to the recipe file, etc"""
 
@@ -152,7 +151,7 @@ class ActionService(Service):
         except (BadRequestError, ServerError)as e:
             raise e
 
-        # Create the context object for the action.
+        # Create the context object for the task.
         try:
             context = Context.objects.create(
                 branch=request.context.branch,
@@ -214,11 +213,11 @@ class ActionService(Service):
 
         return destination
 
-    def resolve_request_type(self, action_type):
-        return ACTION_TYPE_REQUEST_MAPPING[action_type]
+    def resolve_request_type(self, task_type):
+        return TASK_TYPE_REQUEST_MAPPING[task_type]
 
-    def is_valid_action_type(self, action_type):
-        if action_type in ACTION_TYPE_REQUEST_MAPPING:
+    def is_valid_task_type(self, task_type):
+        if task_type in TASK_TYPE_REQUEST_MAPPING:
             return True
 
         return False
@@ -229,7 +228,7 @@ class ActionService(Service):
 
         return False
 
-    def get_action_request_types(self):
-        return ACTION_REQUEST_TYPES
+    def get_task_request_types(self):
+        return TASK_REQUEST_TYPES
 
-service = ActionService()
+service = TaskService()

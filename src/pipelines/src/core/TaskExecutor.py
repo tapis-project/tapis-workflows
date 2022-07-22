@@ -6,9 +6,9 @@ from core.resources import Resource, ResourceType
 from conf.configs import DEFAULT_POLLING_INTERVAL, KUBERNETES_NAMESPACE
 
 
-class ActionExecutor:
-    def __init__(self, action, message):
-        self.action = action
+class TaskExecutor:
+    def __init__(self, task, message):
+        self.task = task
         self.pipeline = message.pipeline
         self.group = message.group
         self.event = message.event
@@ -17,28 +17,28 @@ class ActionExecutor:
         self.polling_interval = DEFAULT_POLLING_INTERVAL
         self._resources: list[Resource] = []
 
-        # Create the base directory for all files and output created during this action execution
-        work_dir = f"{self.pipeline.work_dir}{action.id}/"
+        # Create the base directory for all files and output created during this task execution
+        work_dir = f"{self.pipeline.work_dir}{task.id}/"
         os.mkdir(work_dir)
-        self.action.work_dir = work_dir
+        self.task.work_dir = work_dir
 
-        # Create the scratch dir for files created in support of the action execution
+        # Create the scratch dir for files created in support of the task execution
         scratch_dir = f"{work_dir}scratch/"
         os.mkdir(scratch_dir)
-        self.action.scratch_dir = scratch_dir
+        self.task.scratch_dir = scratch_dir
 
-        # Create the output dir in which the output of the action execution will be stored
+        # Create the output dir in which the output of the task execution will be stored
         output_dir = f"{work_dir}output/"
         os.mkdir(output_dir)
-        self.action.output_dir = output_dir
+        self.task.output_dir = output_dir
 
         # Connect to the kubernetes cluster and instatiate the api instances
         config.load_incluster_config()
         self.core_v1_api = client.CoreV1Api()
         self.batch_v1_api = client.BatchV1Api()
 
-        # Set the polling interval for the action executor based on the
-        # the action TTL
+        # Set the polling interval for the task executor based on the
+        # the task TTL
         self._set_polling_interval()
 
     def _set_polling_interval(self):
@@ -58,7 +58,7 @@ class ActionExecutor:
         self._resources.append(resource)
 
     def _store_result(self, filename, value, flag="wb"):
-        with open(f"{self.action.output_dir}{filename.lstrip('/')}", flag) as file:
+        with open(f"{self.task.output_dir}{filename.lstrip('/')}", flag) as file:
             file.write(value)
 
     def cleanup(self):

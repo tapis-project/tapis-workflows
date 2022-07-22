@@ -1,10 +1,10 @@
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.services.SecretService import service as secret_service
-from backend.models import Action, Identity, Credentials, Context, Destination, Group, GroupUser, Event, Pipeline
+from backend.models import Task, Identity, Credentials, Context, Destination, Group, GroupUser, Event, Pipeline
 
 models = [
-    Action,
+    Task,
     Identity,
     Credentials,
     Context,

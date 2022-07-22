@@ -54,19 +54,19 @@ class SystemArchiver:
             pipeline.work_dir.lstrip(BASE_WORK_DIR)
         )
 
-        # Transfer all files in the action output dirs to the system
-        for action in pipeline.actions:
+        # Transfer all files in the task output dirs to the system
+        for task in pipeline.tasks:
             # The archive output dir on the system
-            archive_output_dir = os.path.join(base_archive_dir, action.id, "output")
+            archive_output_dir = os.path.join(base_archive_dir, task.id, "output")
 
             # The location in the pipeline service where the outputs for this
-            # action are stored
-            action_output_dir = os.path.join(pipeline.work_dir, action.id, "output")
+            # task are stored
+            task_output_dir = os.path.join(pipeline.work_dir, task.id, "output")
 
             # Upload each file
             # TODO support dirs? Maybe zip it?
-            for filename in os.listdir(action_output_dir):
-                path_to_file = os.path.join(action_output_dir, filename)
+            for filename in os.listdir(task_output_dir):
+                path_to_file = os.path.join(task_output_dir, filename)
                 if os.path.isfile(path_to_file):
                     # Upload the files to the system
                     client.upload(

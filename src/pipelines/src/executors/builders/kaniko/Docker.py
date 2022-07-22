@@ -2,7 +2,7 @@ import os, logging
 
 import docker
 
-from core.ActionResult import ActionResult
+from core.TaskResult import TaskResult
 from core.BaseBuildExecutor import BaseBuildExecutor
 from conf.configs import LOG_FILE
 
@@ -11,20 +11,20 @@ class Docker(BaseBuildExecutor):
     def __init__(self):
         self.dockerhub_config_file = None
 
-    def execute(self, action, message):
+    def execute(self, task, message):
         # Resolve the repository from which the code containing the Dockerfile
         # will be pulled
-        context = self._resolve_context_string(action)
+        context = self._resolve_context_string(task)
 
         # Resolve the image registry to which the image will be pushed after build
         destination = self._resolve_destination_string(
-            action, message.event, message.directives
+            task, message.event, message.directives
         )
 
         # TODO Pending deletion. Test thoroughly
         # # Do not build if there is no BUILD directive and
         # # the auto_build flag set to False
-        # if (hasattr(message.directives, "BUILD") or action.auto_build) == False:
+        # if (hasattr(message.directives, "BUILD") or task.auto_build) == False:
         #     logging.info("Build cancelled. No 'build' directive found.")
         #     self._reset()
         #     return
@@ -34,11 +34,11 @@ class Docker(BaseBuildExecutor):
 
         # Generate the credentials config that kaniko will use to push the
         # image to an image registry
-        self._create_dockerhub_config(action, message.pipeline)
+        self._create_dockerhub_config(task, message.pipeline)
 
         # Build the entrypoint for the kaniko executor based on the pipeline
         # and directives
-        can_cache = action.cache or hasattr(message.directives, "CACHE")
+        can_cache = task.cache or hasattr(message.directives, "CACHE")
         entrypoint = (
             "/kaniko/executor"
             + f" --cache={'true' if can_cache else 'false'}"
@@ -46,19 +46,19 @@ class Docker(BaseBuildExecutor):
             +
             # f" --force" +
             (
-                f" --context-sub-path {action.context.sub_path}"
-                if action.context.sub_path is not None
+                f" --context-sub-path {task.context.sub_path}"
+                if task.context.sub_path is not None
                 else ""
             )
-            + f" --dockerfile {action.context.recipe_file_path}"
+            + f" --dockerfile {task.context.recipe_file_path}"
             + (
                 f" --destination {destination}"
-                if action.destination is not None
+                if task.destination is not None
                 else f" --no-push"
             )
             + (
-                f" --git branch={action.context.branch}"
-                if action.context.branch is not None
+                f" --git branch={task.context.branch}"
+                if task.context.branch is not None
                 else ""
             )
         )
@@ -96,8 +96,8 @@ class Docker(BaseBuildExecutor):
 
         self._reset(delete_config=True)
 
-        return ActionResult(0, data={})
-        # return ActionResult(result["StatusCode"], data=result)
+        return TaskResult(0, data={})
+        # return TaskResult(result["StatusCode"], data=result)
 
     def _reset(self, delete_config=False):
         # Delete the config file

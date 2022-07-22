@@ -1,12 +1,12 @@
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: action-executors
+    name: task-executors
 subjects:
   - kind: ServiceAccount
-    name: action-executors
+    name: task-executors
     namespace: default
 roleRef:
     kind: ClusterRole
-    name: action-executors
+    name: task-executors
     apiGroup: rbac.authorization.k8s.io

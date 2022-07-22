@@ -1,16 +1,16 @@
 import asyncio, uuid, os, logging
 
-from core.ActionExecutorFactory import action_executor_factory as factory
-from core.ActionResult import ActionResult
+from core.TaskExecutorFactory import task_executor_factory as factory
+from core.TaskResult import TaskResult
 from core.archivers import (
     SystemArchiver,
     S3Archiver,
     IRODSArchiver
 )
 from helpers.GraphValidator import GraphValidator
-from errors.actions import (
-    InvalidActionTypeError,
-    MissingInitialActionsError,
+from errors.tasks import (
+    InvalidTaskTypeError,
+    MissingInitialTasksError,
     InvalidDependenciesError,
     CycleDetectedError,
 )
@@ -30,10 +30,10 @@ class PipelineCoordinator:
         self.successful = []
         self.finished = []
         self.queue = []
-        self.actions = []
+        self.tasks = []
         self.executors = {}
         self.dependencies = {}
-        self.initial_actions = []
+        self.initial_tasks = []
         self.is_dry_run = False
 
     async def start(self, message):
@@ -60,31 +60,31 @@ class PipelineCoordinator:
         # Validate the graph. Terminate the pipeline if it contains cycles
         # or invalid dependencies
         try:
-            self._set_actions(message.pipeline.actions, message)
+            self._set_tasks(message.pipeline.tasks, message)
         except (
             InvalidDependenciesError,
             CycleDetectedError,
-            MissingInitialActionsError,
+            MissingInitialTasksError,
         ) as e:
             logging.exception(e)
             logging.error(f"\nPipeline terminated: {message.pipeline.id}")
             return
 
-        # Add all of the asynchronous tasks to the queue
+        # Add all of the asynchronous coroutines to the queue
         self.queue = []
-        for action in self.actions:
-            self.queue.append(action)
+        for task in self.tasks:
+            self.queue.append(task)
 
-        # Execute the initial actions
-        tasks = []
-        for action in self.initial_actions:
-            self._remove_from_queue(action)
-            tasks.append(self._execute(action, message))
+        # Execute the initial tasks
+        coroutines = []
+        for task in self.initial_tasks:
+            self._remove_from_queue(task)
+            coroutines.append(self._execute(task, message))
 
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*coroutines)
 
-    async def _execute(self, action, message):
-        logging.info(f"Starting action '{action.id}'")
+    async def _execute(self, task, message):
+        logging.info(f"Starting task '{task.id}'")
 
         # The folowing line forces the async function to yield control to the event loop,
         # allowing other async functions to run concurrently
@@ -92,118 +92,118 @@ class PipelineCoordinator:
 
         try:
             if not self.is_dry_run:
-                # Resolve the action executor and execute the action
-                executor = factory.build(action, message)
+                # Resolve the task executor and execute the task
+                executor = factory.build(task, message)
 
-                # Register the action executor
-                self._register_executor(message.pipeline.run_id, action, executor)
+                # Register the task executor
+                self._register_executor(message.pipeline.run_id, task, executor)
 
-                action_result = executor.execute(self._on_finish)
+                task_result = executor.execute(self._on_finish)
             else:
-                action_result = ActionResult(0, data={"action": action.id})
-        except InvalidActionTypeError as e:
-            action_result = ActionResult(1, errors=[str(e)])
+                task_result = TaskResult(0, data={"task": task.id})
+        except InvalidTaskTypeError as e:
+            task_result = TaskResult(1, errors=[str(e)])
 
-        # Get the next queued actions if any
-        tasks = self._on_finish(action, action_result, message)
+        # Get the next queued tasks if any
+        coroutines = self._on_finish(task, task_result, message)
 
-        # Await the tasks to run them
-        await asyncio.gather(*tasks)
+        # Await the coroutines to run them
+        await asyncio.gather(*coroutines)
 
-    def _get_initial_actions(self, actions):
-        initial_actions = [action for action in actions if len(action.depends_on) == 0]
+    def _get_initial_tasks(self, tasks):
+        initial_tasks = [task for task in tasks if len(task.depends_on) == 0]
 
-        if len(initial_actions) == 0:
-            raise MissingInitialActionsError(
-                "Expected: 1 or more actions with no dependencies - Found: 0"
+        if len(initial_tasks) == 0:
+            raise MissingInitialTasksError(
+                "Expected: 1 or more tasks with no dependencies - Found: 0"
             )
 
-        return initial_actions
+        return initial_tasks
 
-    def _get_action(self, name):
-        return next(filter(lambda a: a.name == name, self.actions), None)
+    def _get_task(self, name):
+        return next(filter(lambda a: a.name == name, self.tasks), None)
 
-    def _set_actions(self, actions, message):
-        # Create a list of the ids of the actions
-        action_ids = [action.id for action in actions]
+    def _set_tasks(self, tasks, message):
+        # Create a list of the ids of the tasks
+        task_ids = [task.id for task in tasks]
 
         # Determine if there are any invalid dependencies (dependencies not
-        # included in the actions list)
+        # included in the tasks list)
         invalid_deps = 0
         invalid_deps_message = ""
-        for action in actions:
-            for dep in action.depends_on:
-                if dep.id == action.id:
+        for task in tasks:
+            for dep in task.depends_on:
+                if dep.id == task.id:
                     invalid_deps += 1
                     invalid_deps_message = (
                         invalid_deps_message
-                        + f"#{invalid_deps} An action cannot be dependent on itself: {action.id} | "
+                        + f"#{invalid_deps} An task cannot be dependent on itself: {task.id} | "
                     )
-                if dep.id not in action_ids:
+                if dep.id not in task_ids:
                     invalid_deps += 1
                     invalid_deps_message = (
                         invalid_deps_message
-                        + f"#{invalid_deps} Action '{action.id}' depends on non-existent action '{dep.id}'"
+                        + f"#{invalid_deps} Task '{task.id}' depends on non-existent task '{dep.id}'"
                     )
 
         if invalid_deps > 0:
             raise InvalidDependenciesError(invalid_deps_message)
 
-        self.actions = actions
+        self.tasks = tasks
 
-        # Build a mapping between each action and the actions that depend on them.
+        # Build a mapping between each task and the tasks that depend on them.
         # Doing this here saves us from having to perform the dependency
-        # look-ups when queueing actions, improving performance
-        self.dependencies = {action.id: [] for action in self.actions}
+        # look-ups when queueing tasks, improving performance
+        self.dependencies = {task.id: [] for task in self.tasks}
 
-        for action in self.actions:
-            for parent_action in action.depends_on:
-                self.dependencies[parent_action.id].append(action.id)
+        for task in self.tasks:
+            for parent_task in task.depends_on:
+                self.dependencies[parent_task.id].append(task.id)
 
         # Detect loops in the graph
         try:
-            self.initial_actions = self._get_initial_actions(self.actions)
+            self.initial_tasks = self._get_initial_tasks(self.tasks)
             graph_validator = GraphValidator()
-            if graph_validator.has_cycle(self.dependencies, self.initial_actions):
+            if graph_validator.has_cycle(self.dependencies, self.initial_tasks):
                 raise CycleDetectedError("Cyclical dependencies detected")
         except (
             InvalidDependenciesError,
-            MissingInitialActionsError,
+            MissingInitialTasksError,
             CycleDetectedError,
         ) as e:
             raise e
 
-    def _on_fail(self, action):
-        logging.info(f"Action '{action.id}' failed")
-        self.failed.append(action.id)
+    def _on_fail(self, task):
+        logging.info(f"Task '{task.id}' failed")
+        self.failed.append(task.id)
 
-    def _on_finish(self, action, action_result, message):
-        # Add the action to the finished list
-        self.finished.append(action.id)
+    def _on_finish(self, task, task_result, message):
+        # Add the task to the finished list
+        self.finished.append(task.id)
 
-        logging.info(f"Finished action '{action.id}'")
-        logging.debug(f"Result for '{action.id}': {vars(action_result)}")
+        logging.info(f"Finished task '{task.id}'")
+        logging.debug(f"Result for '{task.id}': {vars(task_result)}")
 
-        pipeline_complete = True if len(self.actions) == len(self.finished) else False
+        pipeline_complete = True if len(self.tasks) == len(self.finished) else False
 
-        # TODO Raise FailedActionError if this action is not permitted to fail
-        self._on_succeed(action) if action_result.success else self._on_fail(action)
+        # TODO Raise FailedTaskError if this task is not permitted to fail
+        self._on_succeed(task) if task_result.success else self._on_fail(task)
 
-        # Deregister the action executor
-        self._deregister_executor(message.pipeline.run_id, action)
+        # Deregister the task executor
+        self._deregister_executor(message.pipeline.run_id, task)
 
-        # Execute all possible queued actions
-        tasks = []
-        for queued_action in self.queue:
+        # Execute all possible queued tasks
+        coroutines = []
+        for queued_task in self.queue:
             can_run = True
-            for dep in queued_action.depends_on:
+            for dep in queued_task.depends_on:
                 if dep.id not in self.finished:
                     can_run = False
                     break
 
             if can_run:
-                self._remove_from_queue(queued_action)
-                tasks.append(self._execute(queued_action, message))
+                self._remove_from_queue(queued_task)
+                coroutines.append(self._execute(queued_task, message))
 
         if pipeline_complete:
             msg = "failed" if len(self.failed) > 0 else "finished"
@@ -216,7 +216,7 @@ class PipelineCoordinator:
 
             self._cleanup_run(message.pipeline)
 
-        return tasks
+        return coroutines
 
     def _archive(self, pipeline):
         if len(pipeline.archives) < 1: return
@@ -238,25 +238,25 @@ class PipelineCoordinator:
 
         logging.info(f"Archiving completed: {pipeline.run_id}")
 
-    def _on_succeed(self, action):
-        self.successful.append(action.id)
+    def _on_succeed(self, task):
+        self.successful.append(task.id)
 
-    def _remove_from_queue(self, action):
-        self.queue.pop(self.queue.index(action))
+    def _remove_from_queue(self, task):
+        self.queue.pop(self.queue.index(task))
 
-    def _register_executor(self, run_id, action, executor):
-        self.executors[f"{run_id}.{action.id}"] = executor
+    def _register_executor(self, run_id, task, executor):
+        self.executors[f"{run_id}.{task.id}"] = executor
 
-    def _deregister_executor(self, run_id, action):
-        logging.debug(f"Executor cleanup started: {action.id}")
-        # Clean up the resources created by the action executor
-        executor = self._get_executor(run_id, action)
+    def _deregister_executor(self, run_id, task):
+        logging.debug(f"Executor cleanup started: {task.id}")
+        # Clean up the resources created by the task executor
+        executor = self._get_executor(run_id, task)
         executor.cleanup()
-        del self.executors[f"{run_id}.{action.id}"]
-        logging.debug(f"Executor cleanup completed: {action.id}")
+        del self.executors[f"{run_id}.{task.id}"]
+        logging.debug(f"Executor cleanup completed: {task.id}")
 
-    def _get_executor(self, run_id, action):
-        return self.executors[f"{run_id}.{action.id}"]
+    def _get_executor(self, run_id, task):
+        return self.executors[f"{run_id}.{task.id}"]
 
     def _cleanup_run(self, pipeline):
         logging.info(f"Pipeline run cleanup started: {pipeline.run_id}")

@@ -3,24 +3,24 @@ import time, logging
 from kubernetes import client
 
 from conf.configs import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL, KANIKO_IMAGE_TAG
-from core.ActionResult import ActionResult
+from core.TaskResult import TaskResult
 from executors.builders.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
 
 
 class Kubernetes(BaseBuildExecutor):
-    def __init__(self, action, message):
-        BaseBuildExecutor.__init__(self, action, message)
+    def __init__(self, task, message):
+        BaseBuildExecutor.__init__(self, task, message)
 
         self.configmap = None
 
-    def execute(self, on_finish_callback) -> ActionResult:
-        # Create the kaniko job return a failed action result on exception
+    def execute(self, on_finish_callback) -> TaskResult:
+        # Create the kaniko job return a failed task result on exception
         # with the error message as the str value of the exception
         try: 
             job = self._create_job()
         except Exception as e:
-            return ActionResult(status=1, errors=[e])
+            return TaskResult(status=1, errors=[e])
 
         # Poll the job status until the job is in a terminal state
         while not self._job_in_terminal_state(job):
@@ -53,18 +53,18 @@ class Kubernetes(BaseBuildExecutor):
         except client.rest.ApiException as e:
             logging.error(f"Exception reading pod log: {e}")
 
-        # TODO Validate the jobs outputs against outputs in the action definition
+        # TODO Validate the jobs outputs against outputs in the task definition
 
         # TODO implement on_finish_callback
 
-        return ActionResult(status=0 if self._job_succeeded(job) else 1)
+        return TaskResult(status=0 if self._job_succeeded(job) else 1)
 
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
         # Set the name for the k8 job metadata
-        job_name = f"{self.group.id}.{self.pipeline.id}.{self.action.id}"
+        job_name = f"{self.group.id}.{self.pipeline.id}.{self.task.id}"
 
-        # Create a list of the container args based on action properties.
+        # Create a list of the container args based on task properties.
         # A by-product of this process is the creation of the dockerhub configmap
         # that is mounted into the kaniko job container
         container_args = self._resolve_container_args(job_name)
@@ -83,7 +83,7 @@ class Kubernetes(BaseBuildExecutor):
                 client.V1VolumeMount(
                     name="output",
                     mount_path="/mnt/",
-                    sub_path=self.action.output_dir.lstrip("/mnt/pipelines/") 
+                    sub_path=self.task.output_dir.lstrip("/mnt/pipelines/") 
                 )
             ]
 
@@ -127,7 +127,7 @@ class Kubernetes(BaseBuildExecutor):
 
         # Job spec
         job_spec = client.V1JobSpec(
-            backoff_limit=(self.action.retries + 1), template=template
+            backoff_limit=(self.task.retries + 1), template=template
         )
 
         # Job metadata
@@ -160,7 +160,7 @@ class Kubernetes(BaseBuildExecutor):
         container_args = []
 
         # Enable image layer caching for imporved performance
-        can_cache = self.action.cache or hasattr(self.directives, "CACHE")
+        can_cache = self.task.cache or hasattr(self.directives, "CACHE")
         container_args.append(f"--cache={'true' if can_cache else 'false'}")
 
         # Source of dockerfile for image to be build
@@ -169,14 +169,14 @@ class Kubernetes(BaseBuildExecutor):
 
         # Useful when your context is, for example, a git repository,
         #  and you want to build one of its subfolders instead of the root folder
-        if self.action.context.sub_path is not None:
-            container_args.append(f"--context-sub-path={self.action.context.sub_path}")
+        if self.task.context.sub_path is not None:
+            container_args.append(f"--context-sub-path={self.task.context.sub_path}")
 
         # The branch to be pulled
-        container_args.append(f'--git="branch={self.action.context.branch}"')
+        container_args.append(f'--git="branch={self.task.context.branch}"')
 
         # path to the Dockerfile in the repository
-        container_args.append(f"--dockerfile={self.action.context.recipe_file_path}")
+        container_args.append(f"--dockerfile={self.task.context.recipe_file_path}")
 
         # the image registry that the image will be pushed to
         destination = self._resolve_destination_string()
@@ -185,10 +185,10 @@ class Kubernetes(BaseBuildExecutor):
         if destination == None:
             destination_arg = "--no-push"
             # NOTE the option below will create a tar file called image.tar
-            # in the volume mount the in the action's output dir. However,
+            # in the volume mount the in the task's output dir. However,
             # it doesn't seem you can get the tar file WITHOUT also specifiying
             # a destination, even when using the --no-push option. Makes no sense.
-            # image_name = getattr(self.action.destination, "image_name", None)
+            # image_name = getattr(self.task.destination, "image_name", None)
             # image_name = image_name if image_name != None else "image"
             # container_args.append(f"--tarPath=/mnt/{image_name}.tar")
 

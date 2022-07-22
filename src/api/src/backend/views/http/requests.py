@@ -1,6 +1,6 @@
 import re
 
-from typing import AnyStr, List, Literal, Union, Dict, TypedDict
+from typing import AnyStr, List, Union, Dict, TypedDict
 from pydantic import BaseModel, validator, root_validator
 
 from backend.models import (
@@ -12,12 +12,17 @@ from backend.models import (
     ARCHIVE_TYPE_S3,
     ARCHIVE_TYPE_SYSTEM,
     DEFAULT_ARCHIVE_DIR,
+    DEFAULT_TASK_INVOCATION_MODE,
+    DEFAULT_WORKFLOW_INVOCATION_MODE,
+    DEFAULT_MAX_EXEC_TIME,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RETRY_POLICY,
+    ONE_HOUR_IN_SEC
 )
 
 ARCHIVE_TYPES = [ARCHIVE_TYPE_IRODS, ARCHIVE_TYPE_S3, ARCHIVE_TYPE_SYSTEM]
 
 ### Validators ###
-
 def validate_id(value):
     pattern = re.compile(r"^[A-Z0-9\-_]+$")
     if pattern.match(value) == None:
@@ -31,7 +36,6 @@ def validate_ctx_dest_url(value):
         raise ValueError("`url` must follow the format:  `<username>/<name>`")
 
     return value
-
 ##################
 
 class S3Credentials(TypedDict):
@@ -216,7 +220,7 @@ class GroupCreateRequest(BaseModel):
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id) 
 
-class ActionDependency(BaseModel):
+class TaskDependency(BaseModel):
     id: str
     can_fail: bool = False
 
@@ -245,7 +249,15 @@ class Auth(BaseModel):
     type: str = "http_basic_auth"
     creds: HTTPBasicAuthCreds
 
-class BaseAction(BaseModel):
+class ExecutionProfile(BaseModel):
+    max_exec_time: int = DEFAULT_MAX_EXEC_TIME
+    invocation_mode: str = DEFAULT_TASK_INVOCATION_MODE,
+    retry_policy: str = DEFAULT_RETRY_POLICY,
+    max_retries: int = DEFAULT_MAX_RETRIES
+
+DEFAULT_TASK_EXECUTION_PROFILE = ExecutionProfile()
+
+class BaseTask(BaseModel):
     auth: Auth = None
     builder: str = None
     cache: bool = None
@@ -256,6 +268,7 @@ class BaseAction(BaseModel):
         RegistryDestination,
         LocalDestination
     ] = None
+    execution_profile: ExecutionProfile = DEFAULT_TASK_EXECUTION_PROFILE
     headers: dict = None
     http_method: str = None
     image: str = None
@@ -265,7 +278,7 @@ class BaseAction(BaseModel):
     poll: bool = None
     query_params: str = None
     type: str
-    depends_on: List[ActionDependency] = []
+    depends_on: List[TaskDependency] = []
     retries: int = 0
     tapis_actor_id: str = None
     tapis_job_def: dict = None
@@ -275,10 +288,10 @@ class BaseAction(BaseModel):
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
 
-class ContainerRunAction(BaseAction):
+class ContainerRunTask(BaseTask):
     image: str
 
-class ImageBuildAction(BaseAction):
+class ImageBuildTask(BaseTask):
     builder: str
     cache: bool = False
     context: Context
@@ -317,34 +330,42 @@ class ImageBuildAction(BaseAction):
             context.visibility == VISIBILITY_PRIVATE
             and (context.identity_uuid == None and context.credentials == None)
         ):
-            raise ValueError(f"Any Context of an image build action with visibilty `{VISIBILITY_PRIVATE}` must have an identity_uuid or credentials.")
+            raise ValueError(f"Any Context of an image build task with visibilty `{VISIBILITY_PRIVATE}` must have an identity_uuid or credentials.")
 
         return values
 
-class TapisActorAction(BaseAction):
+class TapisActorTask(BaseTask):
     tapis_actor_id: str
 
-class TapisJobAction(BaseAction):
+class TapisJobTask(BaseTask):
     tapis_job_def: dict
     poll: bool = True
 
-class WebhookAction(BaseAction):
+class RequestTask(BaseTask):
     http_method: str
     url: str
+
+DEFAULT_PIPELINE_EXECUTION_PROFILE = ExecutionProfile(
+    max_exec_time=ONE_HOUR_IN_SEC,
+    invocation_mode=DEFAULT_WORKFLOW_INVOCATION_MODE,
+    retry_policy=DEFAULT_RETRY_POLICY,
+    max_retries=DEFAULT_MAX_RETRIES,
+)
 
 # Pipelines
 class BasePipeline(BaseModel):
     id: str
     type: str = "workflow"
-    actions: List[
+    tasks: List[
         Union[
-            ContainerRunAction,
-            ImageBuildAction,
-            TapisActorAction,
-            TapisJobAction,
-            WebhookAction
+            ContainerRunTask,
+            ImageBuildTask,
+            TapisActorTask,
+            TapisJobTask,
+            RequestTask
         ]
     ] = []
+    execution_profile: ExecutionProfile = DEFAULT_PIPELINE_EXECUTION_PROFILE
     archive_ids: List[str]
 
     # Validators
@@ -365,9 +386,9 @@ class CIPipeline(BasePipeline):
     query_params: dict = None
     url: str = None
 
-# Pipeline runs and action executions
-class ActionExecution(BaseModel):
-    action_id: str
+# Pipeline runs and task executions
+class TaskExecution(BaseModel):
+    task_id: str
     ended_at: str = None
     pipeline_run_id: str
     status: str

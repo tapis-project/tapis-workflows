@@ -6,12 +6,12 @@ from importlib import import_module
 from errors.builder import InvalidBuilderError
 
 
-class BuildActionExecutorResolver:
+class BuildTaskExecutorResolver:
     def __init__(self):
         self.deployment_type = self._to_class_name(os.environ["DEPLOYMENT_TYPE"])
 
-    def resolve(self, action):
-        builder_name = action.builder
+    def resolve(self, task):
+        builder_name = task.builder
         builder_ns = f"executors.builders.{builder_name}"
 
         if bool(find_spec(builder_ns)):
@@ -26,4 +26,4 @@ class BuildActionExecutorResolver:
         return string.lower().capitalize()
 
 
-build_action_executor_resolver = BuildActionExecutorResolver()
+build_task_executor_resolver = BuildTaskExecutorResolver()

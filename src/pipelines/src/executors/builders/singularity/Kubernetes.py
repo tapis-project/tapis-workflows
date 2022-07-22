@@ -15,20 +15,20 @@ from kubernetes.client import (
 )
 
 from conf.configs import KUBERNETES_NAMESPACE, PIPELINES_PVC
-from core.ActionResult import ActionResult
+from core.TaskResult import TaskResult
 from core.resources import JobResource
 from executors.builders.BaseBuildExecutor import BaseBuildExecutor
 from executors.builders.singularity.helpers.ContainerBuilder import container_builder
 
 
 class Kubernetes(BaseBuildExecutor):
-    def execute(self, on_finish_callback) -> ActionResult:
-        # Create the kaniko job return a failed action result on exception
+    def execute(self, on_finish_callback) -> TaskResult:
+        # Create the kaniko job return a failed task result on exception
         # with the error message as the str value of the exception
         try: 
             job = self._create_job()
         except Exception as e:
-            return ActionResult(status=1, errors=[str(e)])
+            return TaskResult(status=1, errors=[str(e)])
 
         # Poll the job status until the job is in a terminal state
         while not self._job_in_terminal_state(job):
@@ -59,16 +59,16 @@ class Kubernetes(BaseBuildExecutor):
         except ApiException as e:
             logging.exception(e)
 
-        # TODO Validate the jobs outputs against outputs in the action definition
+        # TODO Validate the jobs outputs against outputs in the task definition
 
         # TODO implement on_finish_callback
 
-        return ActionResult(status=0 if self._job_succeeded(job) else 1)
+        return TaskResult(status=0 if self._job_succeeded(job) else 1)
 
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
         # Set the name for the k8 job metadata
-        job_name = f"{self.group.id}.{self.pipeline.id}.{self.action.id}"
+        job_name = f"{self.group.id}.{self.pipeline.id}.{self.task.id}"
 
         # List of volume mount objects for the container 
         volume_mounts = [
@@ -76,14 +76,14 @@ class Kubernetes(BaseBuildExecutor):
             V1VolumeMount(
                 name="output",
                 mount_path="/mnt/",
-                # sub_path=self.action.output_dir.lstrip("/mnt/pipelines/") # NOTE works
-                sub_path=self.action.work_dir.lstrip("/mnt/pipelines/")
+                # sub_path=self.task.output_dir.lstrip("/mnt/pipelines/") # NOTE works
+                sub_path=self.task.work_dir.lstrip("/mnt/pipelines/")
             )
         ]
 
         # Container object
         container = container_builder.build(
-            self.action,
+            self.task,
             volume_mounts=volume_mounts,
             directives=self.directives,
         )
@@ -108,7 +108,7 @@ class Kubernetes(BaseBuildExecutor):
 
         # Job spec
         job_spec = V1JobSpec(
-            backoff_limit=(self.action.retries + 1), template=template
+            backoff_limit=(self.task.retries + 1), template=template
         )
 
         # Job metadata

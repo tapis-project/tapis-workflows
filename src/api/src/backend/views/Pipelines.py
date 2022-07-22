@@ -7,15 +7,15 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden, ServerError, MethodNotAllowed
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
-from backend.views.http.requests import BasePipeline, CIPipeline, ImageBuildAction
+from backend.views.http.requests import BasePipeline, CIPipeline, ImageBuildTask
 from backend.models import (
     Pipeline,
     Archive,
     PipelineArchive,
-    Action,
-    ACTION_TYPE_IMAGE_BUILD
+    Task,
+    TASK_TYPE_IMAGE_BUILD
 )
-from backend.services.ActionService import service as action_service
+from backend.services.TaskService import service as task_service
 from backend.services.GroupService import service as group_service
 from backend.errors.api import BadRequestError
 from backend.helpers import resource_url_builder
@@ -50,18 +50,18 @@ class Pipelines(RestrictedAPIView):
         pipeline = Pipeline.objects.filter(
             id=pipeline_id,
             group=group
-        ).prefetch_related("actions").first()
+        ).prefetch_related("tasks").first()
 
         if pipeline == None:
             return NotFound(f"Pipeline not found with id '{pipeline_id}'")
 
-        # Get the pipeline actions.
-        actions = pipeline.actions.all()
-        actions_result = [ model_to_dict(action) for action in actions ]
+        # Get the pipeline tasks.
+        tasks = pipeline.tasks.all()
+        tasks_result = [ model_to_dict(task) for task in tasks ]
 
         # Convert model into a dict an
         result = model_to_dict(pipeline)
-        result["actions"] = actions_result
+        result["tasks"] = tasks_result
         
         return BaseResponse(result=result)
 
@@ -72,7 +72,7 @@ class Pipelines(RestrictedAPIView):
     def post(self, request, group_id, *_, **__):
         """Pipeline requests with type 'ci' are supported in order to make the 
         process of setting up a ci/cd pipeline as simple as possible. Rather than
-        specifying actions, dependencies, etc, we let user pass most the required
+        specifying tasks, dependencies, etc, we let user pass most the required
         data in the top level of the pipeline request."""
         # Get the group
         group = group_service.get(group_id, request.tenant_id)
@@ -167,7 +167,7 @@ class Pipelines(RestrictedAPIView):
         pipeline = Pipeline.objects.filter(
             id=pipeline_id,
             group=group
-        ).prefetch_related("actions").first()
+        ).prefetch_related("tasks").first()
 
         if pipeline == None:
             return NotFound(f"Pipeline not found with id '{pipeline_id}'")
@@ -179,19 +179,19 @@ class Pipelines(RestrictedAPIView):
         # Delete the pipeline
         pipeline.delete()
 
-        # Delete the actions
-        # TODO Use the ActionService to delete Actions so it can delete
-        # all the secrets/credentials associated with that action
-        actions = pipeline.actions.all()
-        for action in actions:
-            action.delete()
+        # Delete the tasks
+        # TODO Use the TaskService to delete Tasks so it can delete
+        # all the secrets/credentials associated with that task
+        tasks = pipeline.tasks.all()
+        for task in tasks:
+            task.delete()
 
-        return BaseResponse(message=f"Pipeline '{pipeline_id}' deleted. {len(actions)} action(s) deleted.")
+        return BaseResponse(message=f"Pipeline '{pipeline_id}' deleted. {len(tasks)} task(s) deleted.")
 
     def build_ci_pipeline(self, request, body, pipeline):
         try:
-            # Build an action_request from the pipeline request body
-            action_request = ImageBuildAction(
+            # Build an task_request from the pipeline request body
+            task_request = ImageBuildTask(
                 id="build",
                 builder=body.builder,
                 cache=body.cache,
@@ -199,15 +199,15 @@ class Pipelines(RestrictedAPIView):
                 destination=body.destination,
                 context=body.context,
                 pipeline_id=pipeline.id,
-                type=ACTION_TYPE_IMAGE_BUILD
+                type=TASK_TYPE_IMAGE_BUILD
             )
         except ValidationError as e:
             pipeline.delete()
             return BadRequest(message=e)
 
-        # Create 'build' action
+        # Create 'build' task
         try:
-            action_service.create(pipeline, action_request)
+            task_service.create(pipeline, task_request)
         except (IntegrityError, OperationalError) as e:
             pipeline.delete()
             return BadRequest(message=e.__cause__)
@@ -222,30 +222,30 @@ class Pipelines(RestrictedAPIView):
             url=resource_url_builder(request.url.replace("/ci", "/pipelines"), pipeline.id))
 
     def build_workflow_pipeline(self, request, body, pipeline):
-        # Create actions
-        # TODO Use the ActionService to delete Actions so it can delete
+        # Create tasks
+        # TODO Use the TaskService to delete Tasks so it can delete
         # all the secrets/credentials associated with it
-        actions = []
-        for action_request in body.actions:
+        tasks = []
+        for task_request in body.tasks:
             try:
-                actions.append(action_service.create(pipeline, action_request))
+                tasks.append(task_service.create(pipeline, task_request))
             except (IntegrityError, OperationalError, DatabaseError) as e:
                 pipeline.delete()
-                self._delte_actions(actions)
+                self._delte_tasks(tasks)
                 return BadRequest(message=e.__cause__)
             except BadRequestError as e:
-                self._delte_actions(actions)
+                self._delte_tasks(tasks)
                 pipeline.delete()
                 return BadRequest(message=e)
             except Exception as e:
-                self._delte_actions(actions)
+                self._delte_tasks(tasks)
                 pipeline.delete()
                 return ServerError(e)
 
         return ResourceURLResponse(
             url=resource_url_builder(request.url, pipeline.id))
 
-    def _delete_actions(self, actions: List[Action]):
+    def _delete_tasks(self, tasks: List[Task]):
         # TODO Error handling
-        for action in actions:
-            action.delete()
+        for task in tasks:
+            task.delete()

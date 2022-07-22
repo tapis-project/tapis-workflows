@@ -2,8 +2,7 @@
 
 #kubectl apply -f storageclass.yml
 
-# here=$(dirname $0)
-here=`pwd`
+here=$(dirname $0)
 
 # Apply cluster roles
 kubectl apply -f "$here/src/roles/clusterroles.yml"

@@ -1,7 +1,7 @@
 from django.urls import path
 from django.conf import settings
 
-from backend.views.Actions import Actions
+from backend.views.Tasks import Tasks
 from backend.views.Auth import Auth
 from backend.views.RunPipelineWebhook import RunPipelineWebhook
 from backend.views.Events import Events
@@ -46,9 +46,9 @@ urlpatterns = [
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>", Pipelines.as_view()),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/owner/<str:username>", ChangePipelineOwner.as_view()),
 
-    # Actions
-    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/actions", Actions.as_view()),
-    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/actions/<str:action_id>", Actions.as_view()),
+    # Tasks
+    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/tasks", Tasks.as_view()),
+    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/tasks/<str:task_id>", Tasks.as_view()),
 
     # Pipeline Archives
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/archives", ListPipelineArchives.as_view()),

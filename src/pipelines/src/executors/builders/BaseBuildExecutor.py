@@ -2,24 +2,24 @@ import json, base64, os
 
 from executors.builders.helpers.ContextResolver import context_resolver
 from errors.credentials import CredentialsError
-from core.ActionExecutor import ActionExecutor
+from core.TaskExecutor import TaskExecutor
 
 
-class BaseBuildExecutor(ActionExecutor):
-    def __init__(self, action, message):
-        ActionExecutor.__init__(self, action, message)
+class BaseBuildExecutor(TaskExecutor):
+    def __init__(self, task, message):
+        TaskExecutor.__init__(self, task, message)
 
     def _resolve_context_string(self):
         # Resolve the repository from which the code containing the Dockerfile
         # will be pulled
-        return context_resolver.resolve(self.action.context)
+        return context_resolver.resolve(self.task.context)
 
     def _resolve_destination_string(self):
-        if self.action.destination == None:
+        if self.task.destination == None:
             return None
 
         # Default to latest tag
-        tag = self.action.destination.tag
+        tag = self.task.destination.tag
         if tag is None:
             tag = "latest"
 
@@ -31,22 +31,22 @@ class BaseBuildExecutor(ActionExecutor):
                 if key == "CUSTOM_TAG" and key is not None:
                     tag = value
                 elif key == "CUSTOM_TAG" and key is None:
-                    tag = self.action.destination.tag
+                    tag = self.task.destination.tag
                 elif key == "TAG_COMMIT_SHA" and self.event.commit_sha is not None:
                     tag = self.event.commit_sha
 
-        destination = self.action.destination.url + f":{tag}"
+        destination = self.task.destination.url + f":{tag}"
 
         return destination
 
     def _create_dockerhub_config(self):
         # Get image registry credentials
-        credentials = self.action.destination.credentials
+        credentials = self.task.destination.credentials
         if credentials == None:
             raise CredentialsError("No credentials for the destination")
 
         # Create the config dir to store the credentials
-        self.dockerhub_config_dir = f"{self.action.scratch_dir}dockerhub/"
+        self.dockerhub_config_dir = f"{self.task.scratch_dir}dockerhub/"
         os.mkdir(self.dockerhub_config_dir)
 
         # Base64 encode credentials

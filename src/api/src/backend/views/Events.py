@@ -8,8 +8,7 @@ from backend.views.http.responses.errors import (
     MethodNotAllowed,
     Forbidden,
     NotFound,
-    BadRequest,
-    UnprocessableEntity
+    BadRequest
 )
 from backend.helpers.PipelineDispatchRequestBuilder import PipelineDispatchRequestBuilder
 from backend.services.PipelineDispatcher import service as pipeline_dispatcher
@@ -46,13 +45,13 @@ class Events(RestrictedAPIView):
             "group",
             "archives",
             "archives__archive",
-            "actions",
-            "actions__context",
-            "actions__context__credentials",
-            "actions__context__identity",
-            "actions__destination",
-            "actions__destination__credentials",
-            "actions__destination__identity",
+            "tasks",
+            "tasks__context",
+            "tasks__context__credentials",
+            "tasks__context__identity",
+            "tasks__destination",
+            "tasks__destination__credentials",
+            "tasks__destination__identity",
         ).first()
 
         message = "No Pipeline found with details that match this event"
