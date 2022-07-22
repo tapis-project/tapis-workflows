@@ -195,17 +195,17 @@ class Task(models.Model):
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
     input = models.JSONField(null=True)
-    invocation_mode = models.CharField(default=DEFAULT_TASK_INVOCATION_MODE)
+    invocation_mode = models.CharField(max_length=16, default=DEFAULT_TASK_INVOCATION_MODE)
     max_exec_time = models.BigIntegerField(
         default=DEFAULT_MAX_TASK_EXEC_TIME,
         validators=[MaxValueValidator(DEFAULT_MAX_TASK_EXEC_TIME*3), MinValueValidator(1)]
     )
-    max_retries: int = models.IntegerField(default=DEFAULT_MAX_RETRIES)
+    max_retries = models.IntegerField(default=DEFAULT_MAX_RETRIES)
     output = models.JSONField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="tasks", on_delete=models.CASCADE)
     poll = models.BooleanField(null=True)
     retries = models.IntegerField(default=0)
-    retry_policy: str = models.CharField(default=DEFAULT_RETRY_POLICY)
+    retry_policy = models.CharField(max_length=32, default=DEFAULT_RETRY_POLICY)
     type = models.CharField(max_length=32, choices=TASK_TYPES)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
 
@@ -377,14 +377,14 @@ class Pipeline(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
-    invocation_mode = models.CharField(default=DEFAULT_WORKFLOW_INVOCATION_MODE)
+    invocation_mode = models.CharField(max_length=16, default=DEFAULT_WORKFLOW_INVOCATION_MODE)
     max_exec_time = models.BigIntegerField(
         default=DEFAULT_MAX_WORKFLOW_EXEC_TIME,
         validators=[MaxValueValidator(DEFAULT_MAX_WORKFLOW_EXEC_TIME), MinValueValidator(1)]
     )
-    max_retries: int = models.IntegerField(default=DEFAULT_MAX_RETRIES)
+    max_retries = models.IntegerField(default=DEFAULT_MAX_RETRIES)
     owner = models.CharField(max_length=64)
-    retry_policy: str = models.CharField(default=DEFAULT_RETRY_POLICY)
+    retry_policy = models.CharField(max_length=32, default=DEFAULT_RETRY_POLICY)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     current_run = models.ForeignKey("backend.PipelineRun", related_name="+", null=True, on_delete=models.CASCADE)
