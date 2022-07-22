@@ -24,7 +24,7 @@ ARCHIVERS_BY_TYPE = {
     "irods": IRODSArchiver
 }
 
-class PipelineCoordinator:
+class PipelineExecutor:
     def __init__(self):
         self.failed = []
         self.successful = []
@@ -35,6 +35,9 @@ class PipelineCoordinator:
         self.dependencies = {}
         self.initial_tasks = []
         self.is_dry_run = False
+
+        # A unique id for the running executor
+        self.id = uuid.uuid4()
 
     async def start(self, message):
         # Generate a unique id for this pipeline run

@@ -1,6 +1,7 @@
 import json
 
 from django.db import IntegrityError, OperationalError
+
 from backend.models import Task, Pipeline
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses import BaseResponse, ResourceURLResponse

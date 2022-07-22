@@ -83,11 +83,14 @@ class TaskService(Service):
                 query_params=request.query_params,
                 type=request.type,
                 depends_on=[ dict(item) for item in request.depends_on ],
-                retries=request.retries,
                 tapis_job_def=request.tapis_job_def,
                 tapis_actor_id=request.tapis_actor_id,
-                max_exec_time=request.max_exec_time,
                 url=request.url,
+                # Exection profile
+                max_exec_time=request.execution_profile.max_exec_time,
+                max_retries=request.execution_profile.max_retries,
+                invocation_mode=request.execution_profile.invocation_mode,
+                retry_policy=request.execution_profile.retry_policy
             )
         except (IntegrityError, OperationalError, DatabaseError) as e:
             self.rollback()

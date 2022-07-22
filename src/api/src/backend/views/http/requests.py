@@ -13,11 +13,9 @@ from backend.models import (
     ARCHIVE_TYPE_SYSTEM,
     DEFAULT_ARCHIVE_DIR,
     DEFAULT_TASK_INVOCATION_MODE,
-    DEFAULT_WORKFLOW_INVOCATION_MODE,
     DEFAULT_MAX_EXEC_TIME,
     DEFAULT_MAX_RETRIES,
     DEFAULT_RETRY_POLICY,
-    ONE_HOUR_IN_SEC
 )
 
 ARCHIVE_TYPES = [ARCHIVE_TYPE_IRODS, ARCHIVE_TYPE_S3, ARCHIVE_TYPE_SYSTEM]
@@ -251,11 +249,9 @@ class Auth(BaseModel):
 
 class ExecutionProfile(BaseModel):
     max_exec_time: int = DEFAULT_MAX_EXEC_TIME
-    invocation_mode: str = DEFAULT_TASK_INVOCATION_MODE,
-    retry_policy: str = DEFAULT_RETRY_POLICY,
+    invocation_mode: str = DEFAULT_TASK_INVOCATION_MODE
+    retry_policy: str = DEFAULT_RETRY_POLICY
     max_retries: int = DEFAULT_MAX_RETRIES
-
-DEFAULT_TASK_EXECUTION_PROFILE = ExecutionProfile()
 
 class BaseTask(BaseModel):
     auth: Auth = None
@@ -268,7 +264,7 @@ class BaseTask(BaseModel):
         RegistryDestination,
         LocalDestination
     ] = None
-    execution_profile: ExecutionProfile = DEFAULT_TASK_EXECUTION_PROFILE
+    execution_profile: ExecutionProfile = ExecutionProfile()
     headers: dict = None
     http_method: str = None
     image: str = None
@@ -282,7 +278,6 @@ class BaseTask(BaseModel):
     retries: int = 0
     tapis_actor_id: str = None
     tapis_job_def: dict = None
-    ttl: int = -1
     url: str = None
 
     # Validators
@@ -345,13 +340,6 @@ class RequestTask(BaseTask):
     http_method: str
     url: str
 
-DEFAULT_PIPELINE_EXECUTION_PROFILE = ExecutionProfile(
-    max_exec_time=ONE_HOUR_IN_SEC,
-    invocation_mode=DEFAULT_WORKFLOW_INVOCATION_MODE,
-    retry_policy=DEFAULT_RETRY_POLICY,
-    max_retries=DEFAULT_MAX_RETRIES,
-)
-
 # Pipelines
 class BasePipeline(BaseModel):
     id: str
@@ -365,7 +353,8 @@ class BasePipeline(BaseModel):
             RequestTask
         ]
     ] = []
-    execution_profile: ExecutionProfile = DEFAULT_PIPELINE_EXECUTION_PROFILE
+    execution_profile: ExecutionProfile = ExecutionProfile(
+        max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
     archive_ids: List[str]
 
     # Validators

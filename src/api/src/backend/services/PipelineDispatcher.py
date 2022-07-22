@@ -9,7 +9,10 @@ class PipelineDispatcher:
         self.error = None
 
     def dispatch(self, service_request):
-        broker.publish("pipelines", json.dumps(service_request, default=self._uuid_convert))
+        broker.publish(
+            "workflows",
+            json.dumps(service_request, default=self._uuid_convert)
+        )
 
     def _uuid_convert(self, obj):
         if isinstance(obj, UUID):

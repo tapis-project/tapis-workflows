@@ -107,9 +107,9 @@ class Kubernetes(BaseBuildExecutor):
         )
 
         # Job spec
+        self.task.max_retries = 0 if self.task.max_retries < 0 else self.task.max_retries
         job_spec = V1JobSpec(
-            backoff_limit=(self.task.retries + 1), template=template
-        )
+            backoff_limit=(self.task.max_retries), template=template)
 
         # Job metadata
         metadata = V1ObjectMeta(

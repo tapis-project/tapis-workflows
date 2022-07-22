@@ -5,8 +5,12 @@ from pathlib import Path
 
 BASE_DIR = str(Path(__file__).resolve().parent.parent) + "/"
 
+# PipelineExecutor configs
 MAX_CONNECTION_ATTEMPTS = 24
 RETRY_DELAY = 5
+
+STARTING_WORKERS = 3
+MAX_WORKERS = 10
 
 BASE_WORK_DIR = "/mnt/pipelines/"
 
@@ -14,6 +18,7 @@ LOG_FILE = BASE_DIR + "logs/service.log"
 
 LOG_LEVEL = os.environ["LOG_LEVEL"]
 
+# TODO probably remove. Going full kubernetes
 DEPLOYMENT_TYPE = os.environ["DEPLOYMENT_TYPE"]
 
 WORKFLOWS_API_BASE_URL = os.environ["WORKFLOWS_API_BASE_URL"]

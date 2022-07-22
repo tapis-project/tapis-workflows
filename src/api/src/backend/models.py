@@ -8,7 +8,7 @@ ONE_HOUR_IN_SEC = 3600
 
 TASK_INVOCATION_MODE_SYNC = "sync"
 TASK_INVOCATION_MODE_ASYNC = "async"
-TASK_INVOCATION_MODE_ASYNCS = [
+TASK_INVOCATION_MODES = [
     (TASK_INVOCATION_MODE_SYNC, "sync"),
     (TASK_INVOCATION_MODE_ASYNC, "async")
 ]
@@ -40,7 +40,7 @@ TASK_PROTOCOLS = [
 ]
 
 DEFAULT_TASK_INVOCATION_MODE = TASK_INVOCATION_MODE_ASYNC
-DEFAULT_WORKFLOW_INVOCATION_MODE = DEFAULT_TASK_INVOCATION_MODE
+DEFAULT_WORKFLOW_INVOCATION_MODE = TASK_INVOCATION_MODE_ASYNC
 
 # Execution times in seconds
 DEFAULT_MAX_EXEC_TIME = 3600
@@ -204,7 +204,6 @@ class Task(models.Model):
     output = models.JSONField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="tasks", on_delete=models.CASCADE)
     poll = models.BooleanField(null=True)
-    retries = models.IntegerField(default=0)
     retry_policy = models.CharField(max_length=32, default=DEFAULT_RETRY_POLICY)
     type = models.CharField(max_length=32, choices=TASK_TYPES)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)

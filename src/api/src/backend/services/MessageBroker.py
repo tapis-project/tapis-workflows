@@ -7,6 +7,11 @@ from pika.exchange_type import ExchangeType
 from backend.errors.message_broker import InvalidExchangeError
 
 
+EXCHANGES = [
+    "workflows"
+    "tasks"
+]
+
 class MessageBroker:
     def __init__(self):
         self.user = os.environ["BROKER_USER"]
@@ -22,10 +27,6 @@ class MessageBroker:
             pika.PlainCredentials(self.user, self.password)
         )
 
-        self.EXCHANGES = [
-            "pipelines",
-            "notifications"
-        ]
 
     def _open_connection(self):
         # Initialize connection to the message queue
@@ -39,8 +40,8 @@ class MessageBroker:
 
     def _validate_exchange(self, exchange):
         # Normalize the exchange name
-        if exchange not in self.EXCHANGES:
-            raise InvalidExchangeError(f"Exchange {exchange} is not a valid option. Exchanges: {self.EXCHANGES}")
+        if exchange not in EXCHANGES:
+            raise InvalidExchangeError(f"Exchange {exchange} is not a valid option. Exchanges: {EXCHANGES}")
 
     def publish(self, exchange, message):
         self._validate_exchange(exchange)
