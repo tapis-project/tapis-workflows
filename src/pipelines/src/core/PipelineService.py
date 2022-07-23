@@ -118,7 +118,7 @@ class PipelineService:
             logging.error(e.__class__.__name__, e)
             return
 
-    def _ack_message(channel, delivery_tag):
+    def _ack_message(self, channel, delivery_tag):
         if channel.is_open:
             channel.basic_ack(delivery_tag)
             return

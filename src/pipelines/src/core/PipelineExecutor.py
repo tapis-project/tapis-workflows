@@ -59,6 +59,7 @@ class PipelineExecutor:
 
         logging.info(start_message)
         logging.info(f"Pipeline Run Id: {run_id}")
+        logging.debug(f"Pipeline Executor Id: {self.id}")
 
         # Validate the graph. Terminate the pipeline if it contains cycles
         # or invalid dependencies
@@ -219,6 +220,8 @@ class PipelineExecutor:
 
             self._cleanup_run(message.pipeline)
 
+            self._reset()
+
         return coroutines
 
     def _archive(self, pipeline):
@@ -265,3 +268,14 @@ class PipelineExecutor:
         logging.info(f"Pipeline run cleanup started: {pipeline.run_id}")
         # os.system(f"rm -rf {pipeline.work_dir}")
         logging.info(f"Pipeline run cleanup completed: {pipeline.run_id}")
+
+    def _reset(self):
+        self.failed = []
+        self.successful = []
+        self.finished = []
+        self.queue = []
+        self.tasks = []
+        self.executors = {}
+        self.dependencies = {}
+        self.initial_tasks = []
+        self.is_dry_run = False

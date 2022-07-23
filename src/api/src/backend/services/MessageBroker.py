@@ -8,8 +8,8 @@ from backend.errors.message_broker import InvalidExchangeError
 
 
 EXCHANGES = [
-    "workflows"
-    "tasks"
+    "workflows",
+    "tasks",
 ]
 
 class MessageBroker:
