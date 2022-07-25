@@ -1,4 +1,9 @@
-import git, os, logging
+import logging, os
+
+# NOTE TODO git lib not respecting the earlier directive to only 
+# log CRITICAL messages
+logging.getLogger("git").setLevel(logging.CRITICAL)
+import git
 
 from kubernetes.client import V1Container, V1EnvVar
 
