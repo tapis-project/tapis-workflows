@@ -38,7 +38,7 @@ class TapisJob:
 
                 job_data = {"jobUuid": job.uuid, "status": job_status}
 
-                # Return an task result based on the final status of the tapis job
+                # Return a task result based on the final status of the tapis job
                 if job_status == "FINISHED":
                     return TaskResult(0, data=job_data)
 

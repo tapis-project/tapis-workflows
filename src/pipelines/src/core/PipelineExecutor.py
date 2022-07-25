@@ -279,3 +279,4 @@ class PipelineExecutor:
         self.dependencies = {}
         self.initial_tasks = []
         self.is_dry_run = False
+    
