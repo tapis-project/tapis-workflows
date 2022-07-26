@@ -11,6 +11,7 @@ class Styles:
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
     MUTED = "\033[90m"
+    CYAN = "\033[36m"
 
 
 class Styler:
@@ -22,6 +23,9 @@ class Styler:
 
     def bold(self, string):
         return self.apply(Styles.BOLD, string)
+
+    def cyan(self, string):
+        return self.apply(Styles.CYAN, string)
 
     def muted(self, string):
         return self.apply(Styles.MUTED, string)

@@ -12,6 +12,9 @@ RETRY_DELAY = 5
 STARTING_WORKERS = 3
 MAX_WORKERS = 10
 
+# Exchanges
+WORKFLOWS_EXCHANGE = "workflows"
+
 BASE_WORK_DIR = "/mnt/pipelines/"
 
 LOG_FILE = BASE_DIR + "logs/service.log"

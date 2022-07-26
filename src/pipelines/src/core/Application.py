@@ -12,7 +12,8 @@ from conf.configs import (
     MAX_CONNECTION_ATTEMPTS,
     STARTING_WORKERS,
     MAX_WORKERS,
-    RETRY_DELAY
+    RETRY_DELAY,
+    WORKFLOWS_EXCHANGE,
 )
 from utils.bytes_to_json import bytes_to_json
 from utils.json_to_object import json_to_object
@@ -37,7 +38,7 @@ class Application:
         self.executors = WorkerPool(
             worker_cls=PipelineExecutor,
             starting_worker_count=STARTING_WORKERS,
-            max_workers=MAX_WORKERS
+            max_workers=MAX_WORKERS,
         )
 
         logging.info(f"{SSTR} INITIALIZING WORKERS ({self.executors.count()})")
@@ -77,13 +78,13 @@ class Application:
         # Consume the messages on the workflows exchange
         # Create a channel and declare an exchange
         channel = connection.channel()
-        channel.exchange_declare("workflows", exchange_type=ExchangeType.fanout)
+        channel.exchange_declare(WORKFLOWS_EXCHANGE, exchange_type=ExchangeType.fanout)
 
         # Declare the queue
         queue = channel.queue_declare(queue="", exclusive=True)
 
         # Bind the queue to the channel
-        channel.queue_bind(exchange="workflows", queue=queue.method.queue)
+        channel.queue_bind(exchange=WORKFLOWS_EXCHANGE, queue=queue.method.queue)
 
         # Start cosuming
         threads = []
@@ -107,7 +108,7 @@ class Application:
 
         connection.close()
 
-    def _work(self, message, connection, channel, delivery_tag, body):
+    def _run(self, message, connection, channel, delivery_tag):
         try:
             # Get the pipeline executor
             executor = self.executors.check_out()
@@ -130,16 +131,33 @@ class Application:
             message = json_to_object(bytes_to_json(body))
         except JSONDecodeError as e:
             logging.error(e)
-            # TODO nack the message
+            channel.basic_reject(method.delivery_tag, requeue=False)
             return
 
-        # TODO If incoming message is for a pipeline that is currently
-        # running, terminate the running pipeline
+        # # TODO If incoming message is for a pipeline that is currently
+        # # running, terminate the running pipeline
+        # if (
+        #     message.pipeline.exclusive
+        #     and self._pipeline_in_progress(message.pipeline)
+        # ):
+        #     executor = filter(
+        #         lambda executor: (
+        #             executor.pipeline.id == message.pipeline.id
+        #             and self.message.group.id == "<something_here>"
+        #             and self.message.group.tenant_id == "<something_here>"
+        #         ),
+        #         self.executors.get_all_running()
+        #     )
+
+        #     executor.terminate()
+
+        # # Register the running pipeline
+        # self.running_pipelines.append(message.pipeline)
         
         (connection, threads) = args
         t = threading.Thread(
-            target=self._work,
-            args=(message, connection, channel, method.delivery_tag, body)
+            target=self._run,
+            args=(message, connection, channel, method.delivery_tag)
         )
         t.start()
         threads.append(t)
@@ -150,6 +168,9 @@ class Application:
             return
         
         # TODO do something if channel is closed
+
+    def _pipeline_in_progress(self, pipeline):
+        return False
 
 
     

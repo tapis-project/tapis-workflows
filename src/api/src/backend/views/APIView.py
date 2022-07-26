@@ -7,8 +7,14 @@ from django.views.decorators.csrf import csrf_exempt
 
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest
 from backend.views.http.requests import PreparedRequest
-from backend.conf.constants import PERMITTED_HTTP_METHODS, PERMITTED_CONTENT_TYPES
+from backend.conf.constants import (
+    PERMITTED_HTTP_METHODS,
+    PERMITTED_CONTENT_TYPES,
+    LOCAL_DEV_URLS,
+    TAPIS_DEV_URL
+)
 from backend.helpers.tapis import resolve_tenant_id
+from backend.utils import one_in
 
 class APIView(View):
     # All methods on the APIView do not require a CSRF token
@@ -17,10 +23,12 @@ class APIView(View):
         if request.method not in PERMITTED_HTTP_METHODS:
             return MethodNotAllowed()
 
-        # Set the request base url
+        # Set the request base url. If the request comes from a local source,
+        # change the base_url to the dev url
         request.base_url = f"{request.scheme}://{request.get_host()}"
+        if one_in(LOCAL_DEV_URLS, request.base_url):
+            request.base_url = TAPIS_DEV_URL
 
-        # Set the request url
         # Set the request url
         request.url = request.base_url.rstrip("/") + "/" + request.path.lstrip("/")
 

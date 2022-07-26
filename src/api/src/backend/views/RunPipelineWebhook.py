@@ -106,6 +106,7 @@ class RunPipelineWebhook(APIView):
 
         # Build the pipeline dispatch request
         pipeline_dispatch_request = request_builder.build(
+            request.base_url,
             group,
             pipeline,
             event,

@@ -8,11 +8,14 @@ from django.views.decorators.csrf import csrf_exempt
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest, Unauthorized
 from backend.views.http.requests import PreparedRequest
 from backend.services.TapisAPIGateway import TapisAPIGateway
+from backend.utils import one_in
 from backend.conf.constants import (
     TAPIS_TOKEN_HEADER,
     DJANGO_TAPIS_TOKEN_HEADER,
     PERMITTED_CONTENT_TYPES,
-    PERMITTED_HTTP_METHODS
+    PERMITTED_HTTP_METHODS,
+    TAPIS_DEV_URL,
+    LOCAL_DEV_URLS,
 )
 
 
@@ -36,8 +39,11 @@ class RestrictedAPIView(View):
             except json.JSONDecodeError:
                 return BadRequest(message="Could not decode request body")
         
-        # Set the request base url
+        # Set the request base url. If the request comes from a local source,
+        # change the base_url to the dev url
         request.base_url = f"{request.scheme}://{request.get_host()}"
+        if one_in(LOCAL_DEV_URLS, request.base_url):
+            request.base_url = TAPIS_DEV_URL
 
         # Set the request url
         request.url = request.base_url.rstrip("/") + "/" + request.path.lstrip("/")

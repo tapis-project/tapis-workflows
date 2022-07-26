@@ -8,7 +8,9 @@ class WorkerPool:
         self,
         worker_cls,
         starting_worker_count,
-        max_workers=1
+        max_workers=1,
+        worker_args=[],
+        worker_kwargs={},
     ):
         self.max_workers = max_workers
         # Double-ended queue. Like a list but better
@@ -17,7 +19,7 @@ class WorkerPool:
         # Generate the workers
         self.worker_cls = worker_cls
         for i in range(starting_worker_count):
-            self.pool.append(worker_cls(_id=i))
+            self.pool.append(worker_cls(*worker_args, _id=i, **worker_kwargs))
             
         self.checked_out = []
 
@@ -55,6 +57,9 @@ class WorkerPool:
 
     def count(self):
         return len(self.checked_out) + len(self.pool)
+
+    def get_all_running(self):
+        return self.checked_out
         
 
 

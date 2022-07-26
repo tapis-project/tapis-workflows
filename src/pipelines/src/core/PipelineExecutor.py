@@ -218,7 +218,7 @@ class PipelineExecutor:
             logging.info(f"{PSTR} FAILS: ({len(self.failed)})")
 
             # Archive the results if any exist
-            self._archive(message.pipeline)
+            self._archive(message.pipeline, message.group, message.base_url)
 
             self._cleanup_run(message.pipeline)
 
@@ -226,7 +226,7 @@ class PipelineExecutor:
 
         return coroutines
 
-    def _archive(self, pipeline):
+    def _archive(self, pipeline, group, base_url):
         if len(pipeline.archives) < 1: return
 
         logging.info(f"{PSTR} ARCHIVING: {trunc_uuid(pipeline.run_id)}")
@@ -238,11 +238,13 @@ class PipelineExecutor:
 
         # Archive the results
         try:
-            archiver.archive(archive, pipeline)
+            archiver.archive(archive, pipeline, group, base_url)
         except ArchiveError as e:
-            logging.error(e.message)
+            logging.error(f"{PSTR} ARCHIVING ERROR: {trunc_uuid(pipeline.run_id)}: {e.message}")
+            return
         except Exception as e:
             logging.error(f"{PSTR} ARCHIVING ERROR: {trunc_uuid(pipeline.run_id)}: {e}")
+            return
 
         logging.info(f"{PSTR} ARCHIVING COMPLETED: {trunc_uuid(pipeline.run_id)}")
 

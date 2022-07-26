@@ -16,12 +16,6 @@ class TapisAPIGateway:
     def __init__(self, base_url):
         # Use the base url to determine the tenant
         self.tenant_id = resolve_tenant_id(base_url)
-        
-        # Set the base url to the tenant dev url if in the
-        # dev tenant
-        if self.tenant_id == TAPIS_DEV_TENANT:
-            base_url = TAPIS_DEV_URL
-
         self.base_url = base_url
         self.client = None
         self.credentials = {}

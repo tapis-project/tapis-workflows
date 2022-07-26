@@ -27,16 +27,17 @@ class Kubernetes(BaseBuildExecutor):
         # with the error message as the str value of the exception
         try: 
             job = self._create_job()
-        except Exception as e:
+        
+            # Poll the job status until the job is in a terminal state
+            while not self._job_in_terminal_state(job):
+                job = self.batch_v1_api.read_namespaced_job(
+                    job.metadata.name, KUBERNETES_NAMESPACE
+                )
+
+                time.sleep(self.polling_interval)
+        except ApiException as e:
             return TaskResult(status=1, errors=[str(e)])
 
-        # Poll the job status until the job is in a terminal state
-        while not self._job_in_terminal_state(job):
-            job = self.batch_v1_api.read_namespaced_job(
-                job.metadata.name, KUBERNETES_NAMESPACE
-            )
-
-            time.sleep(self.polling_interval)
 
         # Get the job's pods name
         pod_name = self.core_v1_api.list_namespaced_pod(
@@ -107,9 +108,16 @@ class Kubernetes(BaseBuildExecutor):
         )
 
         # Job spec
+        v1jobspec_props = {}
+        if self.task.max_exec_time > 0:
+            v1jobspec_props["active_deadline_seconds"] = self.task.max_exec_time
+
         self.task.max_retries = 0 if self.task.max_retries < 0 else self.task.max_retries
         job_spec = V1JobSpec(
-            backoff_limit=(self.task.max_retries), template=template)
+            **v1jobspec_props,
+            backoff_limit=self.task.max_retries,
+            template=template
+        )
 
         # Job metadata
         metadata = V1ObjectMeta(
@@ -125,7 +133,7 @@ class Kubernetes(BaseBuildExecutor):
             job = self.batch_v1_api.create_namespaced_job(
                 namespace=KUBERNETES_NAMESPACE, body=body
             )
-        except Exception as e:
+        except ApiException as e:
             raise e
 
         # Register the job to be deleted after execution

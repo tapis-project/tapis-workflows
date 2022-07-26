@@ -7,7 +7,7 @@ class PipelineDispatchRequestBuilder:
     def __init__(self, secret_service):
         self.secret_service = secret_service
 
-    def build(self, group, pipeline, event, commit=None, directives=None):
+    def build(self, base_url, group, pipeline, event, commit=None, directives=None):
         # Get the pipeline tasks, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
         tasks = pipeline.tasks.all()
@@ -29,9 +29,12 @@ class PipelineDispatchRequestBuilder:
 
         # Convert pipleline to a dict and build the request
         request = {}
+        request["base_url"] = base_url
         request["group"] = model_to_dict(group)
         request["event"] = model_to_dict(event)
         request["pipeline"] = model_to_dict(pipeline)
+        # TODO Implement model and request object.
+        request["pipeline"]["exclusive"] = True # NOTE terminate running pipelines with same id
         request["pipeline"]["tasks"] = tasks_request
         request["pipeline"]["archives"] = archives
 
