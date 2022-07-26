@@ -3,7 +3,7 @@ import os, logging
 import docker
 
 from core.TaskResult import TaskResult
-from core.BaseBuildExecutor import BaseBuildExecutor
+from core.executors.builders.BaseBuildExecutor import BaseBuildExecutor
 from conf.configs import LOG_FILE
 
 

@@ -62,7 +62,6 @@ class TaskExecutor:
             file.write(value)
 
     def cleanup(self):
-        logging.debug(f"Total resources to clean: ({len(self._resources)})")
         for resource in self._resources:
             # ConfigMaps
             if resource.type == ResourceType.configmap:
@@ -81,3 +80,6 @@ class TaskExecutor:
                     body=body,
                 )
                 continue
+
+    def terminate(self):
+        pass

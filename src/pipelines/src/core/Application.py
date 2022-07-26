@@ -1,7 +1,8 @@
 
-import os, sys, time, asyncio, logging
+import os, sys, time, asyncio, logging, threading
 
 from json.decoder import JSONDecodeError
+from functools import partial
 
 import pika
 
@@ -15,22 +16,33 @@ from conf.configs import (
 )
 from utils.bytes_to_json import bytes_to_json
 from utils.json_to_object import json_to_object
+from utils import lbuffer_str as lbuf
 
 from core.PipelineExecutor import PipelineExecutor
 from core.WorkerPool import WorkerPool
 
-# TODO NOTE pipelines cannot run at the same time with this setup
-class PipelineService:
+
+SSTR = lbuf("[SYSTEM]")
+
+class Application:
     def __init__(self):
+        # Attempt to connect to the message broker
+        logging.info(f"{SSTR} STARTING PIPELINE SERVICE")
+        
+        # The pipelines that are currently running.
+        self.running_pipelines = []
+
         # Create a worker pool that consists of the pipeline executors that will
         # run the pipelines
-        self.worker_pool = WorkerPool(
+        self.executors = WorkerPool(
             worker_cls=PipelineExecutor,
             starting_worker_count=STARTING_WORKERS,
             max_workers=MAX_WORKERS
         )
 
-    def start(self):
+        logging.info(f"{SSTR} INITIALIZING WORKERS ({self.executors.count()})")
+
+    def __call__(self):
         # Initialize connection parameters with plain credentials
         connection_parameters = pika.ConnectionParameters(
             os.environ["BROKER_URL"],
@@ -40,8 +52,7 @@ class PipelineService:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        # Attempt to connect to the message broker
-        logging.info("Starting connection with message broker...")
+        logging.info(f"{SSTR} CONNECTING TO BROKER")
 
         connected = False
         connection_attempts = 0
@@ -51,19 +62,17 @@ class PipelineService:
                 connection = pika.BlockingConnection(connection_parameters)
                 connected = True
             except Exception:
-                logging.info(
-                    f"Attempting to connect to message broker... Attempts({connection_attempts})"
-                )
+                logging.info(f"{SSTR} FAILED CONNECTON ({connection_attempts})")
                 time.sleep(RETRY_DELAY)
 
         # Kill the build service if unable to connect
         if connected == False:
             logging.critical(
-                f"Error: Maximum connection attempts reached({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker."
+                f"\nError: Maximum connection attempts reached({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker."
             )
             sys.exit(1)
 
-        logging.info("Successfully connected to message broker")
+        logging.info(f"{SSTR} CONNECTED")
 
         # Consume the messages on the workflows exchange
         # Create a channel and declare an exchange
@@ -76,41 +85,64 @@ class PipelineService:
         # Bind the queue to the channel
         channel.queue_bind(exchange="workflows", queue=queue.method.queue)
 
-        # Start cosuming the queue
+        # Start cosuming
+        threads = []
+
         channel.basic_consume(
             queue=queue.method.queue,
             auto_ack=False,
-            on_message_callback=self._on_message_callback
+            on_message_callback=partial(
+                self._on_message_callback,
+                args=(connection, threads)
+            )
         )
 
         channel.start_consuming()
 
-    def _work(self):
-        pass
+        logging.info(f"{SSTR} READY")
 
-    # Resolve the image builder
-    def _on_message_callback(self, channel, method, properties, body):
-        logging.debug("Message recieved")
+        # Wait for all to complete
+        for thread in threads:
+            thread.join()
+
+        connection.close()
+
+    def _work(self, message, connection, channel, delivery_tag, body):
         try:
-            # Decode the message
-            message = json_to_object(bytes_to_json(body))
-
             # Get the pipeline executor
-            executor = self.worker_pool.get()
+            executor = self.executors.check_out()
             if executor != None:
                 asyncio.run(executor.start(message))
 
-                # Return the pipeline executor back to the 
-                self.worker_pool.join(executor)
-                self._ack_message(channel, method.delivery_tag)
-
-        except JSONDecodeError as e:
-            logging.error(e)
-            # TODO reject the message
-            return
+                # Return the pipeline executor back to the worker pool
+                self.executors.check_in(executor)
         except Exception as e:
             logging.error(e.__class__.__name__, e)
+            # TODO nack or ack?
             return
+
+        cb = partial(self._ack_message, channel, delivery_tag)
+        connection.add_callback_threadsafe(cb)
+
+    def _on_message_callback(self, channel, method, _, body, args):
+        # Prepare the message
+        try:
+            message = json_to_object(bytes_to_json(body))
+        except JSONDecodeError as e:
+            logging.error(e)
+            # TODO nack the message
+            return
+
+        # TODO If incoming message is for a pipeline that is currently
+        # running, terminate the running pipeline
+        
+        (connection, threads) = args
+        t = threading.Thread(
+            target=self._work,
+            args=(message, connection, channel, method.delivery_tag, body)
+        )
+        t.start()
+        threads.append(t)
 
     def _ack_message(self, channel, delivery_tag):
         if channel.is_open:

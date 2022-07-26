@@ -4,7 +4,7 @@ from kubernetes import client
 
 from conf.configs import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL, KANIKO_IMAGE_TAG
 from core.TaskResult import TaskResult
-from executors.builders.BaseBuildExecutor import BaseBuildExecutor
+from core.executors.builders.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
 
 
@@ -47,7 +47,7 @@ class Kubernetes(BaseBuildExecutor):
                 _return_http_data_only=True,
                 _preload_content=False,
             ).data  # .decode("utf-8")
-            logging.debug(f"{logs}\n") # TODO Remove
+            # logging.debug(f"{logs}\n") # TODO Remove
             self._store_result(".stdout", logs)
 
         except client.rest.ApiException as e:
@@ -62,7 +62,7 @@ class Kubernetes(BaseBuildExecutor):
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
         # Set the name for the k8 job metadata
-        job_name = f"{self.group.id}.{self.pipeline.id}.{self.task.id}"
+        job_name = f"{self.group.id}.{self.pipeline.id}.{self.pipeline.run_id}.{self.task.id}"
 
         # Create a list of the container args based on task properties.
         # A by-product of this process is the creation of the dockerhub configmap
@@ -203,7 +203,7 @@ class Kubernetes(BaseBuildExecutor):
     def _create_dockerhub_configmap(self, job_name):
         self._create_dockerhub_config()
 
-        configmap_name = f"dockerhub.regcred.{job_name}"
+        configmap_name = f"{job_name}.dockerhub.regcred"
 
         # Setup ConfigMap metadata
         metadata = client.V1ObjectMeta(

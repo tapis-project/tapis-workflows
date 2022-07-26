@@ -4,8 +4,8 @@ from backend.utils.parse_directives import parse_directives as parse
 
 
 class PipelineDispatchRequestBuilder:
-    def __init__(self, cred_service):
-        self.cred_service = cred_service
+    def __init__(self, secret_service):
+        self.secret_service = secret_service
 
     def build(self, group, pipeline, event, commit=None, directives=None):
         # Get the pipeline tasks, their contexts, destinations, and respective
@@ -68,7 +68,7 @@ class PipelineDispatchRequestBuilder:
             task_request["context"]["credentials"] = model_to_dict(context_creds)
 
             # Get the context credentials data
-            context_cred_data = self.cred_service.get_secret(context_creds.sk_id)
+            context_cred_data = self.secret_service.get_secret(context_creds.sk_id)
             task_request["context"]["credentials"]["data"] = context_cred_data
 
         # Destination credentials
@@ -85,7 +85,7 @@ class PipelineDispatchRequestBuilder:
             task_request["destination"]["credentials"] = model_to_dict(destination_creds)
 
             # Get the context credentials data
-            destination_cred_data = self.cred_service.get_secret(destination_creds.sk_id)
+            destination_cred_data = self.secret_service.get_secret(destination_creds.sk_id)
             task_request["destination"]["credentials"]["data"] = destination_cred_data
 
         return task_request

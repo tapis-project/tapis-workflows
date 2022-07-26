@@ -12,7 +12,7 @@ class BuildTaskExecutorResolver:
 
     def resolve(self, task):
         builder_name = task.builder
-        builder_ns = f"executors.builders.{builder_name}"
+        builder_ns = f"core.executors.builders.{builder_name}"
 
         if bool(find_spec(builder_ns)):
             module = import_module(f"{builder_ns}.{self.deployment_type}", "./")

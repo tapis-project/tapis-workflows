@@ -1,6 +1,6 @@
 import sys, logging
 
-from core.PipelineService import PipelineService
+from core.Application import Application
 
 
 # Set all lib loggers to critical
@@ -11,9 +11,10 @@ logging.basicConfig(
     # filename=LOG_FILE,
     stream=sys.stdout,
     level=logging.DEBUG,
-    format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s",
+    # format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s",
+    format="[%(asctime)s] %(message)s",
 )
 
-service = PipelineService()
-service.start()
+app = Application()
+app()
 

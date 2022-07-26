@@ -17,8 +17,8 @@ from kubernetes.client import (
 from conf.configs import KUBERNETES_NAMESPACE, PIPELINES_PVC
 from core.TaskResult import TaskResult
 from core.resources import JobResource
-from executors.builders.BaseBuildExecutor import BaseBuildExecutor
-from executors.builders.singularity.helpers.ContainerBuilder import container_builder
+from core.executors.builders.BaseBuildExecutor import BaseBuildExecutor
+from core.executors.builders.singularity.helpers.ContainerBuilder import container_builder
 
 
 class Kubernetes(BaseBuildExecutor):
@@ -53,7 +53,7 @@ class Kubernetes(BaseBuildExecutor):
                 _return_http_data_only=True,
                 _preload_content=False,
             ).data  # .decode("utf-8")
-            logging.debug(f"{logs}\n")
+            # logging.debug(f"{logs}\n") # TODO Remove
             self._store_result(".stdout", logs)
 
         except ApiException as e:
@@ -68,7 +68,7 @@ class Kubernetes(BaseBuildExecutor):
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
         # Set the name for the k8 job metadata
-        job_name = f"{self.group.id}.{self.pipeline.id}.{self.task.id}"
+        job_name = f"{self.group.id}.{self.pipeline.id}.{self.pipeline.run_id}.{self.task.id}"
 
         # List of volume mount objects for the container 
         volume_mounts = [
