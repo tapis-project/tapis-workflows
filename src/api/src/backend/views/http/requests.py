@@ -1,7 +1,8 @@
 import re
 
-from typing import AnyStr, List, Union, Dict, TypedDict
-from pydantic import BaseModel, validator, root_validator
+from typing import AnyStr, List, Union, Dict, TypedDict, Literal
+from typing_extensions import Annotated
+from pydantic import BaseModel, validator, root_validator, Field
 
 from backend.models import (
     IMAGE_BUILDER_SINGULARITY,
@@ -283,10 +284,15 @@ class BaseTask(BaseModel):
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
 
+    class Config:
+        arbitrary_types_allowed = True
+
 class ContainerRunTask(BaseTask):
+    type: Literal["container_run"]
     image: str
 
 class ImageBuildTask(BaseTask):
+    type: Literal["image_build"]
     builder: str
     cache: bool = False
     context: Context
@@ -310,7 +316,7 @@ class ImageBuildTask(BaseTask):
         
         if (
             context.type == CONTEXT_TYPE_DOCKERHUB
-            and destination != DESTINATION_TYPE_LOCAL
+            and destination.type != DESTINATION_TYPE_LOCAL
         ):
             raise ValueError("Context type 'dockerhub' can only be used in conjunction with destination of type `local`")
 
@@ -330,32 +336,39 @@ class ImageBuildTask(BaseTask):
         return values
 
 class TapisActorTask(BaseTask):
+    type: Literal["tapis_actor"]
     tapis_actor_id: str
 
 class TapisJobTask(BaseTask):
+    type: Literal["tapis_job"]
     tapis_job_def: dict
     poll: bool = True
 
 class RequestTask(BaseTask):
+    type: Literal["request"]
     http_method: str
     url: str
 
 # Pipelines
+
+Task = Annotated[
+    Union[
+        ContainerRunTask,
+        ImageBuildTask,
+        TapisActorTask,
+        TapisJobTask,
+        RequestTask
+    ],
+    Field(discriminator="type")
+]
+
 class BasePipeline(BaseModel):
     id: str
     type: str = "workflow"
-    tasks: List[
-        Union[
-            ContainerRunTask,
-            ImageBuildTask,
-            TapisActorTask,
-            TapisJobTask,
-            RequestTask
-        ]
-    ] = []
+    tasks: List[Task] = []
     execution_profile: ExecutionProfile = ExecutionProfile(
         max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
-    archive_ids: List[str]
+    archive_ids: List[str] = []
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)

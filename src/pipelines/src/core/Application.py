@@ -134,23 +134,6 @@ class Application:
             channel.basic_reject(method.delivery_tag, requeue=False)
             return
 
-        # # TODO If incoming message is for a pipeline that is currently
-        # # running, terminate the running pipeline
-        # if (
-        #     message.pipeline.exclusive
-        #     and self._pipeline_in_progress(message.pipeline)
-        # ):
-        #     executor = filter(
-        #         lambda executor: (
-        #             executor.pipeline.id == message.pipeline.id
-        #             and self.message.group.id == "<something_here>"
-        #             and self.message.group.tenant_id == "<something_here>"
-        #         ),
-        #         self.executors.get_all_running()
-        #     )
-
-        #     executor.terminate()
-
         # # Register the running pipeline
         # self.running_pipelines.append(message.pipeline)
         

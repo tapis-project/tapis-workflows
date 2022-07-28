@@ -92,6 +92,10 @@ class Pipelines(RestrictedAPIView):
             return BadRequest(f"Request body must inlcude a 'type' property with one of the following values: {PIPELINE_TYPES}")
 
         # Determine the proper request type. Default will be a BasePipeline request
+        # TODO Remove note below once addressed
+        # NOTE Validation is not fully complete but works for now. It is difficult
+        # to validate the many different Task models. Currently something like
+        # Union[...task_models] is being used as the type for the "tasks" property
         PipelineCreateRequest = BasePipeline
         if self.request_body["type"] == PIPELINE_TYPE_CI:
             PipelineCreateRequest = CIPipeline
@@ -201,13 +205,12 @@ class Pipelines(RestrictedAPIView):
                 pipeline_id=pipeline.id,
                 type=TASK_TYPE_IMAGE_BUILD
             )
+
+            # Create 'build' task
+            task_service.create(pipeline, task_request)
         except ValidationError as e:
             pipeline.delete()
             return BadRequest(message=e)
-
-        # Create 'build' task
-        try:
-            task_service.create(pipeline, task_request)
         except (IntegrityError, OperationalError) as e:
             pipeline.delete()
             return BadRequest(message=e.__cause__)
@@ -229,16 +232,20 @@ class Pipelines(RestrictedAPIView):
         for task_request in body.tasks:
             try:
                 tasks.append(task_service.create(pipeline, task_request))
+            except ValidationError as e:
+                pipeline.delete()
+                self._delete_tasks(tasks)
+                return BadRequest(message=e)
             except (IntegrityError, OperationalError, DatabaseError) as e:
                 pipeline.delete()
-                self._delte_tasks(tasks)
+                self._delete_tasks(tasks)
                 return BadRequest(message=e.__cause__)
             except BadRequestError as e:
-                self._delte_tasks(tasks)
+                self._delete_tasks(tasks)
                 pipeline.delete()
                 return BadRequest(message=e)
             except Exception as e:
-                self._delte_tasks(tasks)
+                self._delete_tasks(tasks)
                 pipeline.delete()
                 return ServerError(e)
 

@@ -34,7 +34,6 @@ class PipelineDispatchRequestBuilder:
         request["event"] = model_to_dict(event)
         request["pipeline"] = model_to_dict(pipeline)
         # TODO Implement model and request object.
-        request["pipeline"]["exclusive"] = True # NOTE terminate running pipelines with same id
         request["pipeline"]["tasks"] = tasks_request
         request["pipeline"]["archives"] = archives
 
