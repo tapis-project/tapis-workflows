@@ -15,7 +15,7 @@ from backend.conf.constants import (
     PERMITTED_CONTENT_TYPES,
     PERMITTED_HTTP_METHODS,
     TAPIS_DEV_URL,
-    LOCAL_DEV_URLS,
+    LOCAL_DEV_HOSTS,
 )
 
 
@@ -41,8 +41,8 @@ class RestrictedAPIView(View):
         
         # Set the request base url. If the request comes from a local source,
         # change the base_url to the dev url
-        request.base_url = f"{request.scheme}://{request.get_host()}"
-        if one_in(LOCAL_DEV_URLS, request.base_url):
+        request.base_url = f"{request.scheme.replace('https', 'http')}s://{request.get_host()}"
+        if one_in(LOCAL_DEV_HOSTS, request.base_url):
             request.base_url = TAPIS_DEV_URL
 
         # Set the request url

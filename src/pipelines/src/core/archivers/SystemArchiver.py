@@ -13,7 +13,7 @@ class SystemArchiver:
         try:
             tapis_service_api_gateway = TapisServiceAPIGateway()
             service_client = tapis_service_api_gateway.get_client()
-        
+
             # Get a token for the user that owns the archive
             res = service_client.tokens.create_token(
                 account_type="user",
@@ -32,9 +32,12 @@ class SystemArchiver:
                 jwt=jwt
             )
 
+            # Fetch the system
+            system = client.systems.getSystem(systemId=archive.system_id)
+
             # Get the requesters permissions
-            res = client.systems.getUserPerms(
-                systemId=archive.system_id,
+            perms = client.systems.getUserPerms(
+                systemId=system.id,
                 userName=archive.owner
             )
         except InvalidInputError as e:
@@ -42,22 +45,28 @@ class SystemArchiver:
             raise ArchiveError(f"System '{archive.system_id}' does not exist or you do not have access to it.")
         except Exception as e:
             raise e
-
+        
         # Check that the requesting user had modify permissons on this system
-        if "MODIFY" not in res.names:
+        if "MODIFY" not in perms.names:
             raise ArchiveError(f"You do not have 'MODIFY' permissions for system '{archive.system_id}'")
-
-        # Create the archive directories on the system. Strip the base work dir
-        # from the pipline work dir
+        
+        # The base archive directory on the system for this pipeline work.
+        # Strip the base work dir from the pipline work dir
         base_archive_dir = os.path.join(
-            archive.archive_dir,
-            pipeline.work_dir.lstrip(BASE_WORK_DIR)
+            archive.archive_dir.strip("/"),
+            pipeline.work_dir.lstrip(BASE_WORK_DIR).strip("/")
         )
 
         # Transfer all files in the task output dirs to the system
         for task in pipeline.tasks:
             # The archive output dir on the system
             archive_output_dir = os.path.join(base_archive_dir, task.id, "output")
+            
+            # Create the directories on the system (like an mkdir -p)
+            try:
+                client.files.mkdir(systemId=system.id, path=archive_output_dir)
+            except Exception as e:
+                logging.error(e)
 
             # The location in the pipeline service where the outputs for this
             # task are stored
@@ -69,8 +78,11 @@ class SystemArchiver:
                 path_to_file = os.path.join(task_output_dir, filename)
                 if os.path.isfile(path_to_file):
                     # Upload the files to the system
-                    client.upload(
-                        system_id=archive.system_id,
-                        source_file_path=path_to_file,
-                        dest_file_path=os.path.join(archive_output_dir, filename)
-                    )
+                    try:
+                        client.upload(
+                            system_id=archive.system_id,
+                            source_file_path=path_to_file,
+                            dest_file_path=os.path.join(archive_output_dir, filename)
+                        )
+                    except Exception as e:
+                        logging.error(e)

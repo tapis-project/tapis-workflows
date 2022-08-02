@@ -56,13 +56,13 @@ class PipelineExecutor:
         message.pipeline.run_id = run_id
         message.pipeline.work_dir = work_dir
 
-        start_message = f"{PSTR} RUNNING: {message.pipeline.id}"
+        start_message = f"{PSTR} {message.pipeline.id} [RUNNING]"
         if hasattr(message.directives, "DRY_RUN"):
             self.is_dry_run = True
-            start_message = f"{PSTR} RUNNING(DRY-RUN): {message.pipeline.id}"
+            start_message = f"{PSTR} {message.pipeline.id} [DRY-RUN]"
 
         logging.info(start_message)
-        logging.info(f"{PSTR} RUN_ID: {run_id}")
+        logging.info(f"{PSTR} {message.pipeline.id} [RUN_ID] {run_id}")
 
         # Validate the graph. Terminate the pipeline if it contains cycles
         # or invalid dependencies
@@ -74,7 +74,7 @@ class PipelineExecutor:
             MissingInitialTasksError,
         ) as e:
             logging.exception(e)
-            logging.error(f"\n{PSTR} TERMINATED: {message.pipeline.id}")
+            logging.error(f"\n{PSTR} {message.pipeline.id} [TERMINATED]")
             return
 
         # Add all of the asynchronous coroutines to the queue
@@ -91,7 +91,7 @@ class PipelineExecutor:
         await asyncio.gather(*coroutines)
 
     async def _execute(self, task, message):
-        logging.info(f"{TSTR} RUNNING: '{task.id}'")
+        logging.info(f"{TSTR} {task.id} [RUNNING]")
 
         # The folowing line forces the async function to yield control to the event loop,
         # allowing other async functions to run concurrently
@@ -181,14 +181,14 @@ class PipelineExecutor:
             raise e
 
     def _on_fail(self, task):
-        logging.info(f"{TSTR} FAILED: '{task.id}'")
+        logging.info(f"{TSTR} {task.id} [FAILED]")
         self.failed.append(task.id)
 
     def _on_finish(self, task, task_result, message):
         # Add the task to the finished list
         self.finished.append(task.id)
 
-        logging.info(f"{TSTR} COMPLETE: '{task.id}'")
+        logging.info(f"{TSTR} {task.id} [COMPLETE]")
 
         pipeline_complete = True if len(self.tasks) == len(self.finished) else False
 
@@ -213,9 +213,9 @@ class PipelineExecutor:
 
         if pipeline_complete:
             msg = "FAILED" if len(self.failed) > 0 else "COMPLETE"
-            logging.info(f"{PSTR} {msg}: {message.pipeline.id}")
-            logging.info(f"{PSTR} SUCCESSES: ({len(self.successful)})")
-            logging.info(f"{PSTR} FAILS: ({len(self.failed)})")
+            logging.info(f"{PSTR} {message.pipeline.id} [{msg}] ")
+            logging.info(f"{PSTR} {message.pipeline.id} [SUCCESSES] ({len(self.successful)})")
+            logging.info(f"{PSTR} {message.pipeline.id} [FAILS] ({len(self.failed)})")
 
             # Archive the results if any exist
             self._archive(message.pipeline, message.group, message.base_url)
@@ -229,7 +229,7 @@ class PipelineExecutor:
     def _archive(self, pipeline, group, base_url):
         if len(pipeline.archives) < 1: return
 
-        logging.info(f"{PSTR} ARCHIVING: {trunc_uuid(pipeline.run_id)}")
+        logging.info(f"{PSTR} {pipeline.id} [ARCHIVING] {trunc_uuid(pipeline.run_id)}")
         # TODO Handle for multiple archives
         archive = pipeline.archives[0]
 
@@ -240,13 +240,13 @@ class PipelineExecutor:
         try:
             archiver.archive(archive, pipeline, group, base_url)
         except ArchiveError as e:
-            logging.error(f"{PSTR} ARCHIVING ERROR: {trunc_uuid(pipeline.run_id)}: {e.message}")
+            logging.error(f"{PSTR} {pipeline.id} [ARCHIVING ERROR] {trunc_uuid(pipeline.run_id)}: {e.message}")
             return
         except Exception as e:
-            logging.error(f"{PSTR} ARCHIVING ERROR: {trunc_uuid(pipeline.run_id)}: {e}")
+            logging.error(f"{PSTR} {pipeline.id} [ARCHIVING ERROR] {trunc_uuid(pipeline.run_id)}: {e}")
             return
 
-        logging.info(f"{PSTR} ARCHIVING COMPLETED: {trunc_uuid(pipeline.run_id)}")
+        logging.info(f"{PSTR} {pipeline.id} [ARCHIVING COMPLETED] {trunc_uuid(pipeline.run_id)}")
 
     def _on_succeed(self, task):
         self.successful.append(task.id)
@@ -258,20 +258,20 @@ class PipelineExecutor:
         self.executors[f"{run_id}.{task.id}"] = executor
 
     def _deregister_executor(self, run_id, task):
-        logging.debug(f"{TSTR} CLEANUP STARTED: {task.id}")
+        logging.debug(f"{TSTR} {task.id} [CLEANUP STARTED]")
         # Clean up the resources created by the task executor
         executor = self._get_executor(run_id, task)
         executor.cleanup()
         del self.executors[f"{run_id}.{task.id}"]
-        logging.debug(f"{TSTR} CLEANUP COMPLETED: {task.id}")
+        logging.debug(f"{TSTR} {task.id} [CLEANUP COMPLETED]")
 
     def _get_executor(self, run_id, task):
         return self.executors[f"{run_id}.{task.id}"]
 
     def _cleanup_run(self, pipeline):
-        logging.info(f"{PSTR} CLEANUP STARTED: {trunc_uuid(pipeline.run_id)}")
+        logging.info(f"{PSTR} {pipeline.id} [CLEANUP STARTED] {trunc_uuid(pipeline.run_id)}")
         # os.system(f"rm -rf {pipeline.work_dir}")
-        logging.info(f"{PSTR} CLEANUP COMPLETED: {trunc_uuid(pipeline.run_id)}")
+        logging.info(f"{PSTR} {pipeline.id} [CLEANUP COMPLETED] {trunc_uuid(pipeline.run_id)}")
 
     def _reset(self):
         self.failed = []

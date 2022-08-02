@@ -7,7 +7,7 @@ WORKFLOWS_SERVICE_PASSWORD = os.environ["WORKFLOWS_SERVICE_PASSWORD"]
 
 TAPIS_DEV_URL = os.environ["TAPIS_DEV_URL"]
 TAPIS_DEV_TENANT = "dev" # TODO add to environment variables
-LOCAL_DEV_URLS = ["127.0.0.1", "localhost", "c006.rodeo.tacc.utexas.edu"]
+LOCAL_DEV_HOSTS = ["127.0.0.1", "localhost", "c006.rodeo.tacc.utexas.edu"]
 
 TAPIS_SERVICE_SITE_ID = os.environ["TAPIS_SERVICE_SITE_ID"]
 TAPIS_SERVICE_TENANT_ID = os.environ["TAPIS_SERVICE_TENANT_ID"]

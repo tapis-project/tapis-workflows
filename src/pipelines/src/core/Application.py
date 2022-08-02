@@ -28,7 +28,7 @@ SSTR = lbuf("[SYSTEM]")
 class Application:
     def __init__(self):
         # Attempt to connect to the message broker
-        logging.info(f"{SSTR} STARTING PIPELINE SERVICE")
+        logging.info(f"{SSTR} Workflow Executor [STARTING]")
         
         # The pipelines that are currently running.
         self.running_pipelines = []
@@ -41,7 +41,7 @@ class Application:
             max_workers=MAX_WORKERS,
         )
 
-        logging.info(f"{SSTR} INITIALIZING WORKERS ({self.executors.count()})")
+        logging.info(f"{SSTR} Workflow Executor [INITIALIZING WORKERS] ({self.executors.count()})")
 
     def __call__(self):
         # Initialize connection parameters with plain credentials
@@ -53,7 +53,7 @@ class Application:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        logging.info(f"{SSTR} CONNECTING TO BROKER")
+        logging.info(f"{SSTR} Workflow Executor [CONNECTING]")
 
         connected = False
         connection_attempts = 0
@@ -63,7 +63,7 @@ class Application:
                 connection = pika.BlockingConnection(connection_parameters)
                 connected = True
             except Exception:
-                logging.info(f"{SSTR} FAILED CONNECTON ({connection_attempts})")
+                logging.info(f"{SSTR} Workflow Executor [CONNECTION FAILED] ({connection_attempts})")
                 time.sleep(RETRY_DELAY)
 
         # Kill the build service if unable to connect
@@ -73,7 +73,7 @@ class Application:
             )
             sys.exit(1)
 
-        logging.info(f"{SSTR} CONNECTED")
+        logging.info(f"{SSTR} Workflow Executor [CONNECTED]")
 
         # Consume the messages on the workflows exchange
         # Create a channel and declare an exchange

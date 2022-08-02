@@ -6,4 +6,4 @@ data:
   init.sql: |
     CREATE DATABASE IF NOT EXISTS workflows;
     CREATE USER IF NOT EXISTS workflows IDENTIFIED BY "dev";
-    GRANT ALL PRIVILEGES ON workflows.* TO "workflows"
+    GRANT ALL PRIVILEGES ON workflows.* TO "workflows";

@@ -5,7 +5,7 @@ from tapisservice import errors
 from backend.utils import one_in
 from backend.errors.api import AuthenticationError
 from backend.services.TapisServiceAPIGateway import TapisServiceAPIGateway
-from backend.conf.constants import LOCAL_DEV_URLS
+from backend.conf.constants import LOCAL_DEV_HOSTS
 
 
 service_client = TapisServiceAPIGateway().get_client()
@@ -14,7 +14,7 @@ def resolve_tenant_id(base_url):
     """
     Returns the tenant_id associated with the base url of a request.
     """
-    if one_in(LOCAL_DEV_URLS, base_url):
+    if one_in(LOCAL_DEV_HOSTS, base_url):
         logging.debug("Resolving tenant id to 'dev' for local testing.")
         return "dev"
 
