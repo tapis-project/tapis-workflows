@@ -22,8 +22,9 @@ services = args[1:]
 
 def _validate(services):
     for service in services:
-        if service not in valid_services:
-            print(f"{service} is not a valid service")
+        name, _ = _get_name_version(service)
+        if name not in valid_services:
+            print(f"{name} is not a valid service")
             sys.exit(1)
 
 def _startable_validate(services):
@@ -50,7 +51,8 @@ def down(services):
         return
 
     for service in services:
-        subprocess.run(f"./src/{service}/deploy/local/minikube/burndown")
+        name, _ = _get_name_version(service)
+        subprocess.run(f"./src/{name}/deploy/local/minikube/burndown")
 
 # Burnup services
 def up(services):
@@ -60,7 +62,8 @@ def up(services):
         return
 
     for service in services:
-        subprocess.run(f"./src/{service}/deploy/local/minikube/burnup")
+        name, _ = _get_name_version(service)
+        subprocess.run(f"./src/{name}/deploy/local/minikube/burnup")
 
 # Burndown then burnup services
 def restart(services):
@@ -75,8 +78,9 @@ def restart(services):
 def build(services):
     down(services)
     for service in services:
-        if service in buildable_services:
-            os.system(f"docker build -t tapis/workflows-{service}:dev -f src/{service}/src/Dockerfile .")
+        name, v = _get_name_version(service)
+        if name in buildable_services:
+            os.system(f"docker build -t tapis/workflows-{name}:{v} -f src/{name}/src/Dockerfile .")
     
     up(services)
 
@@ -84,8 +88,9 @@ def build(services):
 def rebuild(services):
     down(services)
     for service in services:
-        if service in buildable_services:
-            os.system(f"docker build -t tapis/workflows-{service}:dev -f ./src/{service}/src/Dockerfile . && docker push tapis/workflows-{service}:dev")
+        name, v = _get_name_version(service)
+        if name in buildable_services:
+            os.system(f"docker build -t tapis/workflows-{name}:{v} -f ./src/{name}/src/Dockerfile . && docker push tapis/workflows-{name}:{v}")
     
     up(services)
 
@@ -93,19 +98,19 @@ def exec(services):
     if len(services) > 1:
         print("You can only watch one service at a time")
 
-    service = services[0]
+    name, _ = _get_name_version(services[0])
 
-    print(f"Exec(ing) into {service}")
-    os.system(f"service=\"$(kubectl get pods --no-headers -o custom-columns=':metadata.name' | grep {service}-deployment)\" && kubectl exec --stdin --tty $service -- /bin/bash")
+    print(f"Exec(ing) into {name}")
+    os.system(f"service=\"$(kubectl get pods --no-headers -o custom-columns=':metadata.name' | grep {name}-deployment)\" && kubectl exec --stdin --tty $service -- /bin/bash")
 
 def watch(services):
     if len(services) > 1:
         print("You can only watch one service at a time")
 
-    service = services[0]
+    name, _ = _get_name_version(services[0])
 
-    print(f"Watching pod logs for the {service} deployment")
-    os.system(f"service=\"$(kubectl get pods --no-headers -o custom-columns=':metadata.name' | grep {service}-deployment)\" && kubectl logs -f $service")
+    print(f"Watching pod logs for the {name} deployment")
+    os.system(f"service=\"$(kubectl get pods --no-headers -o custom-columns=':metadata.name' | grep {name}-deployment)\" && kubectl logs -f $service")
 
 def clean(*args):
     args = args[0]
@@ -116,6 +121,10 @@ def clean(*args):
     if "cache" in args:
         print("Deleting docker build cache")
         os.system("docker builder prune -a")
+
+def _get_name_version(service):
+    parts = service.split(":")
+    return (parts[0], "dev") if len(parts) < 2 else (parts[0], (parts[1] or "dev"))
 
 # Run action
 if hasattr(sys.modules[__name__], action):
