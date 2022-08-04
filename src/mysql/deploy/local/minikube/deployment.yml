@@ -16,6 +16,28 @@ spec:
       labels:
         app: workflows-mysql-deployment
     spec:
+      initContainers:
+        - name: mysql-init
+          imagePullPolicy: Always
+          image: mysql:8
+          command: [ "/bin/bash", "-c"]
+          args:
+            - "bash"
+            - "./docker-entrypoint-initdb.d/mysql-init.sh"
+          env:
+          - name: MYSQL_DATABASE
+            value: workflows
+          - name: MYSQL_PASSWORD
+            value: dev
+          - name: MYSQL_ROOT_PASSWORD
+            value: dev
+          - name: MYSQL_USER
+            value: workflows
+          volumeMounts:
+            - name: workflows-mysql-pvc
+              mountPath: /var/lib/mysql
+            - name: mysql-init-script
+              mountPath: /docker-entrypoint-initdb.d
       containers:
         - env:
             - name: MYSQL_DATABASE
