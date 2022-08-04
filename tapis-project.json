@@ -30,7 +30,8 @@
         {
             "name": "rabbitmq",
             "displayName": "RabbitMQ",
-            "image": "rabbitmq:3.9.11-management"
+            "image": "rabbitmq:3.9.11-management",
+            "startable": true
         }
     ] 
 }
