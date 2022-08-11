@@ -73,12 +73,11 @@ class Kubernetes(BaseBuildExecutor):
 
         # List of volume mount objects for the container 
         volume_mounts = [
-            # Volume mount for the output
+            # Volume mount for the workdir
             V1VolumeMount(
-                name="output",
+                name="workdir",
                 mount_path="/mnt/",
-                # sub_path=self.task.output_dir.lstrip("/mnt/pipelines/") # NOTE works
-                sub_path=self.task.work_dir.lstrip("/mnt/pipelines/")
+                sub_path=self.task.work_dir.replace("/mnt/pipelines/", "")
             )
         ]
 
@@ -93,7 +92,7 @@ class Kubernetes(BaseBuildExecutor):
         volumes = [
             # Volume for mounting the output
             V1Volume(
-                name="output",
+                name="workdir",
                 persistent_volume_claim=V1PersistentVolumeClaimVolumeSource(
                     claim_name=PIPELINES_PVC
                 ),
