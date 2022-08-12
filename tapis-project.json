@@ -4,34 +4,47 @@
     "projectPattern": "monorepo",
     "prodImageTag": "1.2",
     "deploymentType": "minikube",
-    "components": [
-        {
-            "name": "api",
-            "displayName": "API",
-            "language": "python",
-            "framework": "django",
-            "image": "tapis/workflows-api",
-            "buildable": true,
-            "startable": true
-        },
-        {
-            "name": "pipelines",
-            "displayName": "Workflow Executor",
-            "language": "python",
-            "framework": null,
-            "image": "tapis/workflows-pipelines",
-            "buildable": true
-        },
-        {
-            "name": "mysql",
-            "displayName": "MySQL database",
-            "image": "mysql:8"
-        },
-        {
-            "name": "rabbitmq",
-            "displayName": "RabbitMQ",
-            "image": "rabbitmq:3.9.11-management",
-            "startable": true
-        }
-    ] 
+    "categories": {
+        "api": [
+            {
+                "name": "api",
+                "displayName": "API",
+                "language": "python",
+                "framework": "django",
+                "image": "tapis/workflows-api",
+                "buildable": true,
+                "startable": true,
+                "launchable": true,
+                "uses": ["database.mysql", "broker.rabbitmq"]
+            }
+        ],
+        "frontend": [],
+        "broker": [
+            {
+                "name": "rabbitmq",
+                "displayName": "RabbitMQ",
+                "image": "rabbitmq:3.9.11-management",
+                "startable": true
+            }
+        ],
+        "database": [
+            {
+                "name": "mysql",
+                "displayName": "MySQL database",
+                "image": "mysql:8"
+            }
+        ],
+        "proxy": [],
+        "service": [
+            {
+                "name": "pipelines",
+                "displayName": "Workflow Executor",
+                "language": "python",
+                "framework": null,
+                "image": "tapis/workflows-pipelines",
+                "buildable": true,
+                "uses": ["broker.rabbitmq"]
+            }
+        ]
+    } 
 }

@@ -54,7 +54,7 @@ class SystemArchiver:
         # Strip the base work dir from the pipline work dir
         base_archive_dir = os.path.join(
             archive.archive_dir.strip("/"),
-            pipeline.work_dir.lstrip(BASE_WORK_DIR).strip("/")
+            pipeline.work_dir.replace(BASE_WORK_DIR, "").strip("/")
         )
 
         # Transfer all files in the task output dirs to the system
