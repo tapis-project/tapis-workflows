@@ -19,16 +19,16 @@ class Kubernetes(BaseBuildExecutor):
         # with the error message as the str value of the exception
         try: 
             job = self._create_job()
+
+            # Poll the job status until the job is in a terminal state
+            while not self._job_in_terminal_state(job):
+                job = self.batch_v1_api.read_namespaced_job(
+                    job.metadata.name, KUBERNETES_NAMESPACE
+                )
+
+                time.sleep(self.polling_interval)
         except Exception as e:
             return TaskResult(status=1, errors=[e])
-
-        # Poll the job status until the job is in a terminal state
-        while not self._job_in_terminal_state(job):
-            job = self.batch_v1_api.read_namespaced_job(
-                job.metadata.name, KUBERNETES_NAMESPACE
-            )
-
-            time.sleep(self.polling_interval)
 
         # Get the job's pod name
         pod_list = self.core_v1_api.list_namespaced_pod(
@@ -83,7 +83,7 @@ class Kubernetes(BaseBuildExecutor):
                 client.V1VolumeMount(
                     name="output",
                     mount_path="/mnt/",
-                    sub_path=self.task.output_dir.lstrip("/mnt/pipelines/") 
+                    sub_path=self.task.output_dir.replace("/mnt/pipelines/", "") 
                 )
             ]
 

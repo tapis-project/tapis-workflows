@@ -16,7 +16,7 @@ spec:
       labels:
         app: workflows-pipelines-deployment
     spec:
-      serviceAccountName: action-executors
+      serviceAccountName: task-executors
       containers:
         - command: [ "/bin/sh", "-c" ]
           args:
