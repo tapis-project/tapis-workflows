@@ -52,9 +52,10 @@ class Users(RestrictedAPIView):
         body = prepared_request.body
 
         # If the user already exists. Do nothing. Return the user.
-        group_user = GroupUser.object.filter(username=body.username, group=group)
+        group_user = GroupUser.objects.filter(username=body.username, group=group).first()
         if group_user != None:
-            return ModelResponse(group_user)
+            return ResourceURLResponse(
+                url=resource_url_builder(request.url, group_user.username))
 
         # Create the user
         try:
@@ -66,7 +67,8 @@ class Users(RestrictedAPIView):
         except Exception as e:
             return ServerError(message=str(e))
         
-        return ModelResponse(group_user)
+        return ResourceURLResponse(
+            url=resource_url_builder(request.url, group_user.username))
 
     def patch(self, request, group_id, username):
         # Get the group

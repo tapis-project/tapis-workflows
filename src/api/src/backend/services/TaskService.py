@@ -1,5 +1,7 @@
 import logging, json
 
+from typing import List
+
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
 
@@ -146,7 +148,7 @@ class TaskService(Service):
     def _create_context(self, request, pipeline):
         """Creates the Context object for the task. The Context contains
         data about the source of the build; which registry to pull from, the
-        path to the recipe file, etc"""
+        path to the build file, etc"""
 
         # Resolve the authentication source for the context
         try:
@@ -159,7 +161,7 @@ class TaskService(Service):
             context = Context.objects.create(
                 branch=request.context.branch,
                 credentials=cred,
-                recipe_file_path=request.context.recipe_file_path,
+                recipe_file_path=request.context.build_file_path,
                 sub_path=request.context.sub_path,
                 type=request.context.type,
                 url=request.context.url,
@@ -233,5 +235,14 @@ class TaskService(Service):
 
     def get_task_request_types(self):
         return TASK_REQUEST_TYPES
+
+    def delete(self, tasks: List[Task]):
+        for task in tasks:
+            try:
+                task.delete()
+            except (DatabaseError, OperationalError) as e:
+                raise ServerError(message=e.__cause__)
+            except Exception as e:
+                raise ServerError(message=str(e))
 
 service = TaskService()

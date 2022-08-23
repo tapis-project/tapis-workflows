@@ -4,20 +4,25 @@ from django.db import DatabaseError, IntegrityError, OperationalError
 from django.forms import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses.errors import Conflict, BadRequest, NotFound, UnprocessableEntity, Forbidden, ServerError, MethodNotAllowed
-from backend.views.http.responses.models import ModelResponse, ModelListResponse
+from backend.views.http.responses.errors import (
+    Conflict,
+    BadRequest,
+    NotFound,
+    Forbidden,
+    ServerError as ServerErrorResp
+)
+from backend.views.http.responses.models import ModelListResponse
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
 from backend.views.http.requests import BasePipeline, CIPipeline, ImageBuildTask
 from backend.models import (
     Pipeline,
     Archive,
     PipelineArchive,
-    Task,
     TASK_TYPE_IMAGE_BUILD
 )
 from backend.services.TaskService import service as task_service
 from backend.services.GroupService import service as group_service
-from backend.errors.api import BadRequestError
+from backend.errors.api import BadRequestError, ServerError
 from backend.helpers import resource_url_builder
 
 
@@ -181,16 +186,19 @@ class Pipelines(RestrictedAPIView):
             return Forbidden(message="Only the owner of this pipeline can delete it")
 
         # Delete the pipeline
-        pipeline.delete()
+        try:
+            pipeline.delete()
 
-        # Delete the tasks
-        # TODO Use the TaskService to delete Tasks so it can delete
-        # all the secrets/credentials associated with that task
-        tasks = pipeline.tasks.all()
-        for task in tasks:
-            task.delete()
+            # Delete the tasks
+            tasks = pipeline.tasks.all()
+            task_service.delete(tasks)
+        except (DatabaseError, OperationalError) as e:
+            return ServerErrorResp(message=e.__cause__)
+        except ServerError as e:
+            return ServerErrorResp(message=e)
 
-        return BaseResponse(message=f"Pipeline '{pipeline_id}' deleted. {len(tasks)} task(s) deleted.")
+        msg = f"Pipeline '{pipeline_id}' deleted. {len(tasks)} task(s) deleted."
+        return BaseResponse(message=msg, result=msg)
 
     def build_ci_pipeline(self, request, body, pipeline):
         try:
@@ -208,18 +216,15 @@ class Pipelines(RestrictedAPIView):
 
             # Create 'build' task
             task_service.create(pipeline, task_request)
-        except ValidationError as e:
+        except (ValidationError, BadRequestError) as e:
             pipeline.delete()
             return BadRequest(message=e)
-        except (IntegrityError, OperationalError) as e:
+        except (IntegrityError, OperationalError, DatabaseError) as e:
             pipeline.delete()
             return BadRequest(message=e.__cause__)
-        except BadRequestError as e:
-            pipeline.delete()
-            return BadRequest(message=e)
         except Exception as e:
             pipeline.delete()
-            return ServerError(e)
+            return ServerErrorResp(message=e)
 
         return ResourceURLResponse(
             url=resource_url_builder(request.url.replace("/ci", "/pipelines"), pipeline.id))
@@ -232,27 +237,20 @@ class Pipelines(RestrictedAPIView):
         for task_request in body.tasks:
             try:
                 tasks.append(task_service.create(pipeline, task_request))
-            except ValidationError as e:
+            except (ValidationError, BadRequestError) as e:
                 pipeline.delete()
-                self._delete_tasks(tasks)
+                task_service.delete(tasks)
                 return BadRequest(message=e)
             except (IntegrityError, OperationalError, DatabaseError) as e:
                 pipeline.delete()
-                self._delete_tasks(tasks)
+                task_service.delete(tasks)
                 return BadRequest(message=e.__cause__)
-            except BadRequestError as e:
-                self._delete_tasks(tasks)
-                pipeline.delete()
-                return BadRequest(message=e)
+            except ServerError as e:
+                return ServerErrorResp(message=e)
             except Exception as e:
-                self._delete_tasks(tasks)
+                task_service.delete(tasks)
                 pipeline.delete()
-                return ServerError(e)
+                return ServerErrorResp(message=e)
 
         return ResourceURLResponse(
             url=resource_url_builder(request.url, pipeline.id))
-
-    def _delete_tasks(self, tasks: List[Task]):
-        # TODO Error handling
-        for task in tasks:
-            task.delete()
