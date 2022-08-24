@@ -995,6 +995,11 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
       responses:
         '200':
           description: Success.
