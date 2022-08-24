@@ -2450,11 +2450,11 @@ components:
               type: string
 
     ObjectResp:
-      $ref: "#/components/scheams/BaseResp"
+      $ref: "#/components/schemas/BaseResp"
 
     ListResp:
       allOf:
-        - $ref: "#/components/scheams/BaseResp"
+        - $ref: "#/components/schemas/BaseResp"
         - type: object
           properties:
             result:
@@ -2464,7 +2464,7 @@ components:
 
     ErrorResp:
       allOf:
-        - $ref: "#/components/scheams/BaseResp"
+        - $ref: "#/components/schemas/BaseResp"
         - type: object
           properties:
             status:
