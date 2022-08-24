@@ -3,9 +3,3 @@ __pycache__/
 
 
 */**/logs
-
-envs/local/.volumes/
-envs/*/secrets/*
-!envs/*/secrets/.gitkeep
-envs/*/**/secrets/*
-!envs/*/**/secrets/.gitkeep

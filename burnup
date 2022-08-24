@@ -1,0 +1,27 @@
+#!/bin/bash
+
+#kubectl apply -f storageclass.yml
+
+# here=$(dirname $0)
+
+# Apply secrets
+kubectl apply -f ".//src/secrets/secrets.yml"
+
+### Services ###
+
+# mysql
+chmod +x ./src/mysql/deploy/local/minikube/burnup
+./src/mysql/deploy/local/minikube/burnup
+
+# rabbitmq
+chmod +x ./src/rabbitmq/deploy/local/minikube/burnup
+./src/rabbitmq/deploy/local/minikube/burnup
+
+# api
+chmod +x ./src/api/deploy/local/minikube/burnup
+./src/api/deploy/local/minikube/burnup
+
+# pipelines
+chmod +x ./src/pipelines/deploy/local/minikube/burnup
+./src/pipelines/deploy/local/minikube/burnup
+
