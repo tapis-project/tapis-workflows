@@ -139,7 +139,7 @@ ContextCredentialTypes = Union[GithubCredentials, DockerhubCredentials]
 class Context(BaseModel):
     credentials: ContextCredentialTypes = None
     branch: str = None
-    recipe_file_path: str = None
+    build_file_path: str = None
     identity_uuid: str = None
     sub_path: str = None
     tag: str = None

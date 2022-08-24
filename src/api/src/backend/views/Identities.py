@@ -24,7 +24,7 @@ class Identities(RestrictedAPIView):
         if identity == None:
             return NotFound("Identity not found")
 
-        if identity.owner != request.owner:
+        if request.username != identity.owner:
             return Forbidden("You do not have access to this identity")
 
         return ModelResponse(identity)
@@ -94,5 +94,5 @@ class Identities(RestrictedAPIView):
         identity.delete()
 
         # TODO Delete the credentials for the identity in SK
-
-        return BaseResponse(message="Identity deleted successfully")
+        msg = "Identity deleted successfully"
+        return BaseResponse(result=msg, message=msg)
