@@ -2390,7 +2390,7 @@ components:
         username:
           type: string
 
-    RunPipelinePostRequest:
+    RunPipelinePostReq:
       type: object
       properties:
         directives:
