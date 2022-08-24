@@ -1,5 +1,7 @@
 import os
 
+API_VERSION = "v1"
+
 SECRETS_TENANT = "admin"
 
 WORKFLOWS_SERVICE_ACCOUNT = os.environ["WORKFLOWS_SERVICE_ACCOUNT"]
