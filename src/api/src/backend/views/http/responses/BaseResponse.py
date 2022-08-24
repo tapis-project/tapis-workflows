@@ -13,16 +13,14 @@ class BaseResponse(JsonResponse):
         result: Union[dict, List[dict]] = None,
         metadata: dict = {}
     ):
-        self.status = status
+        # Conform to the tapis response object schema
+        self.status = "success" if success else "error"
         self.message = str(message)
         self.result = result
         self.metadata = metadata
+        self.version = API_VERSION
 
         # Set the metadata with some nice-to-have properties for api consumers
-        metadata["success"] = success
-        metadata["http_status_code"] = status
-
-        # Conform to the tapis response object schema
-        tapis_status = "success" if success else "error"
-
-        JsonResponse.__init__(self, vars(self), status=tapis_status, verion=API_VERSION)
+        self.metadata["success"] = success
+ 
+        JsonResponse.__init__(self, vars(self), status=status)
