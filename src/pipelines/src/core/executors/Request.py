@@ -33,10 +33,10 @@ class RequestModel(BaseModel):
 
 # TODO Request Task needs to be containerized
 class Request(TaskExecutor):
-    def __init__(self, task, message):
-        TaskExecutor.__init__(self, task, message)
+    def __init__(self, task, ctx, exchange):
+        TaskExecutor.__init__(self, task, ctx, exchange)
 
-    def execute(self, on_finish_callback):
+    def execute(self):
         try:
             request_task = RequestModel(
                 auth=self.task.auth,

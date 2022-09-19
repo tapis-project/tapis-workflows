@@ -1,5 +1,5 @@
-from errors.base import PipelinesBaseException
+from errors.base import WorkflowsBaseException
 
 
-class WorkerLimitExceed(PipelinesBaseException):
+class WorkerLimitExceed(WorkflowsBaseException):
     pass

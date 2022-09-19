@@ -2,35 +2,36 @@ import os, logging
 
 from kubernetes import config, client
 
+from utils import lbuffer_str as lbuf
+from core.events import EventPublisher, EventExchange, Event
 from core.resources import Resource, ResourceType
-from conf.configs import DEFAULT_POLLING_INTERVAL, KUBERNETES_NAMESPACE
+from conf.configs import (
+    DEFAULT_POLLING_INTERVAL,
+    MAX_POLLING_INTERVAL,
+    MIN_POLLING_INTERVAL,
+    KUBERNETES_NAMESPACE,
+)
 
 
-class TaskExecutor:
-    def __init__(self, task, message):
+PSTR = lbuf('[PIPELINE]')
+TSTR = lbuf('[TASK]')
+
+class TaskExecutor(EventPublisher):
+    def __init__(self, task, ctx, exchange: EventExchange):
+        # Enabling task executors to publish events to the exchange. 
+        EventPublisher.__init__(self, exchange)
+
+        self.ctx = ctx
         self.task = task
-        self.pipeline = message.pipeline
-        self.group = message.group
-        self.event = message.event
-        self.directives = message.directives
-        self.message = message
+        self.pipeline = self.ctx.pipeline
+        self.group = self.ctx.group
+        self.event = self.ctx.event
+        self.directives = self.ctx.directives
         self.polling_interval = DEFAULT_POLLING_INTERVAL
         self._resources: list[Resource] = []
 
-        # Create the base directory for all files and output created during this task execution
-        work_dir = f"{self.pipeline.work_dir}{task.id}/"
-        os.mkdir(work_dir)
-        self.task.work_dir = work_dir
-
-        # Create the scratch dir for files created in support of the task execution
-        scratch_dir = f"{work_dir}scratch/"
-        os.mkdir(scratch_dir)
-        self.task.scratch_dir = scratch_dir
-
-        # Create the output dir in which the output of the task execution will be stored
-        output_dir = f"{work_dir}output/"
-        os.mkdir(output_dir)
-        self.task.output_dir = output_dir
+        # Initialize the file system
+        self._initialize_fs()
 
         # Connect to the kubernetes cluster and instatiate the api instances
         config.load_incluster_config()
@@ -38,12 +39,18 @@ class TaskExecutor:
         self.batch_v1_api = client.BatchV1Api()
 
         # Set the polling interval for the task executor based on the
-        # the task TTL
-        self._set_polling_interval()
+        # the task max_exec_time
+        self._set_polling_interval(task)
 
-    def _set_polling_interval(self):
-        # TODO determine polling interval based on TTL
-        self.polling_interval = DEFAULT_POLLING_INTERVAL
+    def _set_polling_interval(self, task):
+        # Default is already the DEFAULT_POLLING_INTERVAL
+        if task.max_exec_time <= 0: return
+        
+        # TODO Replace line below.
+        # Calculate the interval based on the max_exec_time of the task
+        interval = self.polling_interval
+
+        self.polling_interval = interval if interval >= 1 else self.polling_interval
 
     def _job_in_terminal_state(self, job):
         return (self._job_failed(job) or self._job_succeeded(job)) and job.status.active == None
@@ -61,7 +68,22 @@ class TaskExecutor:
         with open(f"{self.task.output_dir}{filename.lstrip('/')}", flag) as file:
             file.write(value)
 
+    def _initialize_fs(self):
+        # Create the base directory for all files and output created during this task execution
+        self.task.work_dir = f"{self.pipeline.work_dir}{self.task.id}/"
+        os.makedirs(self.task.work_dir, exist_ok=True)
+
+        # Create the scratch dir for files created in support of the task execution
+        self.task.scratch_dir = f"{self.task.work_dir}scratch/"
+        os.makedirs(self.task.scratch_dir, exist_ok=True)
+
+        # Create the output dir in which the output of the task execution will be stored
+        self.task.output_dir = f"{self.task.work_dir}output/"
+        os.makedirs(self.task.output_dir, exist_ok=True)        
+
     def cleanup(self):
+        logging.info(f"{TSTR} {self.task.id} [CLEANUP STARTED]")
+
         for resource in self._resources:
             # ConfigMaps
             if resource.type == ResourceType.configmap:
@@ -80,6 +102,8 @@ class TaskExecutor:
                     body=body,
                 )
                 continue
+
+        logging.info(f"{TSTR} {self.task.id} [CLEANUP COMPLETED]")
 
     def terminate(self):
         pass

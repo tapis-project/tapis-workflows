@@ -1,4 +1,4 @@
 from errors.base import WorkflowsBaseException
 
-class ArchiveError(WorkflowsBaseException):
+class ApplicationError(WorkflowsBaseException):
     pass

@@ -1,6 +1,5 @@
 import logging, os
 
-# NOTE TODO git lib not respecting the earlier directive to only 
 # log CRITICAL messages
 logging.getLogger("git").setLevel(logging.CRITICAL)
 import git

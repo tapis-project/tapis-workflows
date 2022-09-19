@@ -9,8 +9,8 @@ BASE_DIR = str(Path(__file__).resolve().parent.parent) + "/"
 MAX_CONNECTION_ATTEMPTS = 24
 RETRY_DELAY = 5
 
-STARTING_WORKERS = 3
-MAX_WORKERS = 10
+STARTING_WORKERS = 2
+MAX_WORKERS = 2
 
 # Exchanges
 WORKFLOWS_EXCHANGE = "workflows"
@@ -48,8 +48,10 @@ KUBERNETES_NAMESPACE = open("/var/run/secrets/kubernetes.io/serviceaccount/names
 # TODO PIPELINES_PVC = os.environ["WORKFLOWS_PIPELINES_PVC"]
 PIPELINES_PVC = "workflows-pipelines-pvc"
 
-# Default polling interval in seconds
+# Polling intervals in seconds
 DEFAULT_POLLING_INTERVAL = 1
+MIN_POLLING_INTERVAL = 1
+MAX_POLLING_INTERVAL = 3600
 
 # Image tags and urls
 KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"

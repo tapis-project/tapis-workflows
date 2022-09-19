@@ -8,7 +8,7 @@ class WorkerPool:
         self,
         worker_cls,
         starting_worker_count,
-        max_workers=1,
+        max_workers=3,
         worker_args=[],
         worker_kwargs={},
     ):
@@ -24,7 +24,7 @@ class WorkerPool:
         self.checked_out = []
 
     def check_out(self):
-        # Return a worker if one is pool
+        # Return a worker if one is in the pool
         if len(self.pool) > 0:
             worker = self.pool.pop()
             self.checked_out.append(worker)
@@ -53,7 +53,7 @@ class WorkerPool:
         
         if self.count() > self.max_workers:
             self.pool.remove(worker)
-            raise WorkerLimitExceed(f"This WorkerPool has exceed its maximum allowable number of workers ({self.max_workers})")
+            raise WorkerLimitExceed(f"This WorkerPool has exceed the maximum allowable number of workers ({self.max_workers})")
 
     def count(self):
         return len(self.checked_out) + len(self.pool)

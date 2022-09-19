@@ -12,7 +12,7 @@ from conf.configs import (
 
 
 class TapisJob:
-    def execute(self, task, _):
+    def execute(self, task):
         try:
             client = Tapis(
                 base_url=TAPIS_DEV_URL,

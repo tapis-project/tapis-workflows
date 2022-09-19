@@ -391,14 +391,14 @@ class CIPipeline(BasePipeline):
 # Pipeline runs and task executions
 class TaskExecution(BaseModel):
     task_id: str
-    ended_at: str = None
-    pipeline_run_id: str
-    status: str
+    started_at: str = None
+    last_modified: str = None
+    uuid: str
 
 class PipelineRun(BaseModel):
-    ended_at: str = None
+    last_modified: str = None
     pipeline_id: str
-    status: str
+    status: str = None
     uuid: str
 
 class PreparedRequest:

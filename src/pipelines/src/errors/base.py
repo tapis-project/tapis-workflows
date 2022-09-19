@@ -1,7 +1,7 @@
 from utils.Styles import styler
 
 
-class PipelinesBaseException(Exception):
+class WorkflowsBaseException(Exception):
     def __init__(self, message, hint=""):
         self.message = message
         self.hint = hint

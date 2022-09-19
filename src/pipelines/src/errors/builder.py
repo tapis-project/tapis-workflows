@@ -1,5 +1,5 @@
-from errors.base import PipelinesBaseException
+from errors.base import WorkflowsBaseException
 
 
-class InvalidBuilderError(PipelinesBaseException):
+class InvalidBuilderError(WorkflowsBaseException):
     pass
