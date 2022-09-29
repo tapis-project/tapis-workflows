@@ -1,6 +1,6 @@
 import json, os
 
-from conf.configs import (
+from conf.constants import (
     TAPIS_SERVICE_ACCOUNT,
     TAPIS_SERVICE_ACCOUNT_PASSWORD,
     TAPIS_SERVICE_SITE_ID,

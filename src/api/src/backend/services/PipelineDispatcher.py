@@ -15,7 +15,7 @@ class PipelineDispatcher:
         self.error = None
 
     def dispatch(self, service_request: dict, pipeline):
-        # Tell the workflow executors which backends and archives to use.
+        # Tell the workflow executors which backends and archivers to use.
         # Add the workflow executor access token to the request. This enables
         # the workflow executor to make calls to special endpoints on the API.
         service_request["middleware"] = {
@@ -28,6 +28,18 @@ class PipelineDispatcher:
                 "tapissystem": {}
             }
         }
+
+        service_request["meta"] = {}
+        # Properties to help uniquely identity a pipeline submission. If the workflow
+        # executor is currently running a pipeline with the same values as the
+        # properties provided in "unique_constraint", the workflow executor
+        # will then take the appropriate action dictated by the
+        # pipeline.duplicate_submission_policy (allow, allow_terminate, deny)
+        service_request["meta"]["unique_constraints"] = [
+            "group.id",
+            "group.tenant_id",
+            "pipeline.id"
+        ]
 
         service_request["pipeline_run"] = {}
         

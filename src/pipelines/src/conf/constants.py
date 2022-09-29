@@ -7,13 +7,22 @@ BASE_DIR = str(Path(__file__).resolve().parent.parent) + "/"
 
 # PipelineExecutor configs
 MAX_CONNECTION_ATTEMPTS = 24
-RETRY_DELAY = 5
+CONNECTION_RETRY_DELAY = 5
+
+INSUFFICIENT_WORKER_RETRY_DELAY = 10
 
 STARTING_WORKERS = 2
-MAX_WORKERS = 2
+MAX_WORKERS = 3
 
 # Exchanges
-WORKFLOWS_EXCHANGE = "workflows"
+INBOUND_EXCHANGE = "workflows"
+RETRY_EXCHANGE = "retry"
+DEAD_LETTER_EXCHANGE = "deadletter"
+
+# Queues
+INBOUND_QUEUE = "workflows"
+RETRY_QUEUE = "retry"
+DEAD_LETTER_QUEUE = "deadletter"
 
 BASE_WORK_DIR = "/mnt/pipelines/"
 
@@ -52,6 +61,18 @@ PIPELINES_PVC = "workflows-pipelines-pvc"
 DEFAULT_POLLING_INTERVAL = 1
 MIN_POLLING_INTERVAL = 1
 MAX_POLLING_INTERVAL = 3600
+
+# Duplicate submission policy enums
+DUPLICATE_SUBMISSION_POLICY_TERMINATE = "terminate"
+DUPLICATE_SUBMISSION_POLICY_ALLOW = "allow"
+DUPLICATE_SUBMISSION_POLICY_DENY = "deny"
+
+# Execution profile
+DEFAULT_MAX_EXEC_TIME = 86400 # 1 day TODO Consider higher
+DEFAULT_INVOCATION_MODE = "async"
+DEFAULT_RETRY_POLICY = "exponential_backoff"
+DEFAULT_DUPLICATE_SUBMISSION_POLICY = "terminate"
+DEFAULT_MAX_RETRIES = 0
 
 # Image tags and urls
 KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"

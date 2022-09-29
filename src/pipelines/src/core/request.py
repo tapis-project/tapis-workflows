@@ -1,43 +1,31 @@
-import re
+from typing import List, Dict, Annotated, Union, TypedDict, AnyStr, Literal
+from pydantic import BaseModel, root_validator, Field
 
-from typing import AnyStr, List, Union, Dict, TypedDict, Literal
-from typing_extensions import Annotated
-from pydantic import BaseModel, validator, root_validator, Field
-
-from backend.models import (
-    IMAGE_BUILDER_SINGULARITY,
-    CONTEXT_TYPE_DOCKERHUB,
-    VISIBILITY_PRIVATE,
-    DESTINATION_TYPE_LOCAL,
-    ARCHIVE_TYPE_IRODS,
-    ARCHIVE_TYPE_S3,
-    ARCHIVE_TYPE_SYSTEM,
-    DEFAULT_ARCHIVE_DIR,
-    DEFAULT_TASK_INVOCATION_MODE,
+from conf.constants import (
     DEFAULT_MAX_EXEC_TIME,
-    DEFAULT_MAX_RETRIES,
+    DEFAULT_INVOCATION_MODE,
     DEFAULT_RETRY_POLICY,
+    DEFAULT_MAX_RETRIES,
     DEFAULT_DUPLICATE_SUBMISSION_POLICY
 )
 
-ARCHIVE_TYPES = [ARCHIVE_TYPE_IRODS, ARCHIVE_TYPE_S3, ARCHIVE_TYPE_SYSTEM]
+class Archivers(Dict):
+    pass
 
-### Validators ###
-def validate_id(value):
-    pattern = re.compile(r"^[A-Z0-9\-_]+$")
-    if pattern.match(value) == None:
-        raise ValueError("`id` property must only contain alphanumeric characters, underscores, and hypens")
+class Backends(Dict):
+    pass
 
-    return value
+class Meta(BaseModel):
+    unique_constraints: List[str] = []
 
-def validate_ctx_dest_url(value):
-    pattern = re.compile(r"^[a-zA-Z0-9-_]+/[a-zA-Z0-9-_]+$")
-    if pattern.match(value) == None:
-        raise ValueError("`url` must follow the format:  `<username>/<name>`")
+class Middleware(BaseModel):
+    backends: Backends
+    archivers: Archivers
 
-    return value
-##################
+class PipelineRun:
+    uuid: str
 
+# ___________________________________________
 class S3Credentials(TypedDict):
     access_key: str
     access_secret: str
@@ -53,7 +41,6 @@ class BaseArchive(BaseModel):
         S3Credentials,
         IRODSCredentials
     ] = None
-    identity_uuid: str = None
     type: str
 
     # System archive
@@ -73,11 +60,10 @@ class BaseArchive(BaseModel):
 
 class SystemArchive(BaseArchive):
     system_id: str
-    archive_dir: str = DEFAULT_ARCHIVE_DIR # Relative to the system's RootDir
+    archive_dir: str
 
 class S3Archive(BaseArchive):
-    credentials: S3Credentials = None
-    identity_uuid: str = None
+    credentials: S3Credentials
     endpoint: str
     bucket: str
     region: str
@@ -85,10 +71,9 @@ class S3Archive(BaseArchive):
     @root_validator
     def validate_supported_types(cls, values):
         creds = values.get("credentials")
-        identity_uuid = values.get("identity_uuid")
 
-        if creds == None and identity_uuid == None:
-            raise ValueError("Archive of type `s3` must provide either an identity_uuid or credentials")
+        if creds == None:
+            raise ValueError("Archive of type `s3` must provide credentials")
 
         return values
 
@@ -97,17 +82,15 @@ class AddRemoveArchive(BaseModel):
 
 class IRODSArchive(BaseArchive):
     credentials: S3Credentials = None
-    identity_uuid: str = None
     host: str
     port: str
 
     @root_validator
     def validate_supported_types(cls, values):
         creds = values.get("credentials")
-        identity_uuid = values.get("identity_uuid")
 
-        if creds == None and identity_uuid == None:
-            raise ValueError("Archive of type `irods` must provide either an identity_uuid or credentials")
+        if creds == None:
+            raise ValueError("Archive of type `irods` must provide credentials")
 
         return values
 
@@ -141,7 +124,6 @@ class Context(BaseModel):
     credentials: ContextCredentialTypes = None
     branch: str = None
     build_file_path: str = None
-    identity_uuid: str = None
     sub_path: str = None
     tag: str = None
     type: str
@@ -158,74 +140,18 @@ class Destination(BaseModel):
     type: str
     tag: str = None
     credentials: DestinationCredentialTypes = None
-    identity_uuid: str = None
 
 class RegistryDestination(Destination):
     tag: str = None
     credentials: DestinationCredentialTypes = None
-    identity_uuid: str = None
     url: str
-
-    # Validators
-    # _validate_url = validator("url", allow_reuse=True)(validate_ctx_dest_url)
-
-    @root_validator
-    def creds_or_identity(csl, values):
-        creds, identity = values.get("credentials"), values.get("identity_uuid")
-        if creds == None and identity == None:
-            raise ValueError("Missing credentials and identity_uuid. Must provide at lease one.")
-
-        return values
 
 class LocalDestination(Destination):
     filename: str = None
 
-# Events
-class BaseEvent(BaseModel):
-    branch: str = None
-    directives: str = None
-    commit: str = None
-    commit_sha: str = None
-    context_url: str = None
-    pipeline_id: str = None
-    source: str = None
-    username: str = None
-
-class APIEvent(BaseEvent):
-    directives: List[str] = None
-
-class WebhookEvent(BaseEvent):
-    branch: str
-    commit: str
-    commit_sha: str
-    source: str
-    context_url: str
-    username: str
-    tenant_id: str
-
-# Groups and Users
-class GroupUserReq(BaseModel):
-    username: str
-    is_admin: bool = False
-
-GroupUserCreateRequest = GroupUserReq
-
-class GroupUserPutPatchRequest(BaseModel):
-    is_admin: bool
-
-class GroupCreateRequest(BaseModel):
-    id: str
-    users: List[GroupUserReq] = []
-
-    # Validators
-    # _validate_id = validator("id", allow_reuse=True)(validate_id) 
-
 class TaskDependency(BaseModel):
     id: str
     can_fail: bool = False
-
-    # Validators
-    # _validate_id = validator("id", allow_reuse=True)(validate_id)
 
 IOValueType = Union[AnyStr, Dict, List, bool]
 
@@ -251,7 +177,7 @@ class Auth(BaseModel):
 
 class ExecutionProfile(BaseModel):
     max_exec_time: int = DEFAULT_MAX_EXEC_TIME
-    invocation_mode: str = DEFAULT_TASK_INVOCATION_MODE
+    invocation_mode: str = DEFAULT_INVOCATION_MODE
     retry_policy: str = DEFAULT_RETRY_POLICY
     max_retries: int = DEFAULT_MAX_RETRIES
     duplicate_submission_policy: str = DEFAULT_DUPLICATE_SUBMISSION_POLICY
@@ -311,29 +237,16 @@ class ImageBuildTask(BaseTask):
         # Only allow context type of dockerhub when singularity is chosen
         # as a the image builder
         if (
-            context.type == CONTEXT_TYPE_DOCKERHUB
-            and builder != IMAGE_BUILDER_SINGULARITY
+            context.type == "dockerhub"
+            and builder != "singularity"
         ):
             raise ValueError("Context type 'dockerhub' can only be used in conjunction with a builder of type 'singularity'")
         
         if (
-            context.type == CONTEXT_TYPE_DOCKERHUB
-            and destination.type != DESTINATION_TYPE_LOCAL
+            context.type == "dockerhub"
+            and destination.type != "local"
         ):
             raise ValueError("Context type 'dockerhub' can only be used in conjunction with destination of type `local`")
-
-        return values
-    
-    @root_validator
-    def validate_ctx_authn(cls, values):
-        # Requester must provide an identity or credential in order
-        # to pull from a private repository
-        context = values.get("context")
-        if (
-            context.visibility == VISIBILITY_PRIVATE
-            and (context.identity_uuid == None and context.credentials == None)
-        ):
-            raise ValueError(f"Any Context of an image build task with visibilty `{VISIBILITY_PRIVATE}` must have an identity_uuid or credentials.")
 
         return values
 
@@ -369,51 +282,15 @@ class BasePipeline(BaseModel):
     type: str = "workflow"
     tasks: List[Task] = []
     execution_profile: ExecutionProfile = ExecutionProfile(
-        max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
+        max_exec_time=DEFAULT_MAX_EXEC_TIME)
     archive_ids: List[str] = []
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
+# ___________________________________________
 
-class CIPipeline(BasePipeline):
-    cache: bool = False
-    builder: str
-    context: Context
-    destination: Union[
-        RegistryDestination,
-        LocalDestination
-    ] = None
-    auth: dict = None
-    data: dict = None
-    headers: dict = None
-    http_method: str = None
-    query_params: dict = None
-    url: str = None
-
-# Pipeline runs and task executions
-class TaskExecution(BaseModel):
-    task_id: str
-    started_at: str = None
-    last_modified: str = None
-    uuid: str
-
-class PipelineRun(BaseModel):
-    last_modified: str = None
-    pipeline_id: str
-    status: str = None
-    uuid: str
-
-class PreparedRequest:
-    def __init__(
-        self,
-        is_valid=True,
-        body=None,
-        message=None,
-        failure_view=None
-    ):
-        self.is_valid = is_valid
-        self.body = body
-        self.message = message
-        self.failure_view = failure_view
-
-
+class BaseRequest(BaseModel):
+    pipeline: BasePipeline
+    pipeline_run: PipelineRun
+    middleware: Middleware
+    meta: Meta = Meta()

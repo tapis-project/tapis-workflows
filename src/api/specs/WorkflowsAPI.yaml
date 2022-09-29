@@ -1804,6 +1804,8 @@ components:
           $ref: '#/components/schemas/InvocationModeEnum'
         retry_policy:
           $ref: '#/components/schemas/RetryPolicyEnum'
+        duplicate_submission_policy:
+          $ref: '#/components/schemas/DuplicateSubmissionPolicyEnum'
 
     BaseArchive:
       type: object
@@ -2971,6 +2973,13 @@ components:
       type: string
       enum:
         - exponention_backoff
+
+    DuplicateSubmissionPolicyEnum:
+      type: string
+      enum:
+        - allow
+        - deny
+        - terminate
 
     TaskTypeEnum:
       type: string

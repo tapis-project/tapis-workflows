@@ -1,6 +1,8 @@
 
 import os, sys, time, asyncio, logging, threading
 
+from threading import Thread
+
 from typing import Literal, Union
 from functools import partial
 from json.decoder import JSONDecodeError
@@ -11,60 +13,85 @@ import pika
 from pika.exceptions import AMQPError
 from pika.exchange_type import ExchangeType
 
-from conf.configs import (
+from conf.constants import (
     MAX_CONNECTION_ATTEMPTS,
     STARTING_WORKERS,
     MAX_WORKERS,
-    RETRY_DELAY,
-    WORKFLOWS_EXCHANGE,
+    CONNECTION_RETRY_DELAY,
+    INSUFFICIENT_WORKER_RETRY_DELAY,
+    INBOUND_EXCHANGE,
+    RETRY_EXCHANGE,
+    DEAD_LETTER_EXCHANGE,
+    INBOUND_QUEUE,
+    RETRY_QUEUE,
+    DEAD_LETTER_QUEUE,
+    DUPLICATE_SUBMISSION_POLICY_TERMINATE,
+    DUPLICATE_SUBMISSION_POLICY_DENY,
 )
 
-from core.WorkflowExecutor import WorkflowExecutor
-from core.WorkerPool import WorkerPool
+from core.workers import Worker, WorkerThread, WorkerPool, WorkflowExecutor
 from utils import bytes_to_json, json_to_object, lbuffer_str as lbuf
+from errors import NoAvailableWorkers
 
 
 SSTR = lbuf("[SYSTEM]")
 
+# TODO Keep track of workflows submissions somehow so they can be terminated later
 class Application:
     def __init__(self):
-        # Attempt to connect to the message broker
+        self.active_workers = []
+        self.worker_pool = None
+
+    def __call__(self):
+        """Initializes the dynamic worker pool comprised of WorkflowExecutor
+        workers, establishes a connection with RabbitMQ, creates the channel, 
+        exchanges, and queues, and begins consuming from the inbound queue"""
+
         logging.info(f"{SSTR} Workflow Executor [STARTING]")
-        
-        # The pipelines that are currently running.
-        self.running_pipelines = []
 
         # Create a worker pool that consists of the workflow executors that will
         # run the pipelines
-        self.executors = WorkerPool(
+        # TODO catch error for worker classes that dont inherit from "Worker"
+        self.worker_pool = WorkerPool(
             worker_cls=WorkflowExecutor,
             starting_worker_count=STARTING_WORKERS,
             max_workers=MAX_WORKERS,
         )
+        logging.debug(f"{SSTR} Workflow Executor [WORKERS INITIALIZED] ({self.worker_pool.count()})")
 
-        logging.info(f"{SSTR} Workflow Executor [INITIALIZING WORKERS] ({self.executors.count()})")
-
-    def __call__(self):
         # Connect to the message broker
         connection = self._connect()
 
-        # Consume the messages on the workflows exchange.
-        # Create a channel and declare an exchange
+        # Create the channel, exchanges, and queues
         channel = connection.channel()
-        channel.exchange_declare(WORKFLOWS_EXCHANGE, exchange_type=ExchangeType.fanout)
 
-        # Declare the queue
-        queue = channel.queue_declare(queue="", exclusive=True)
+        # Inbound exchange and queue handles workflow submissions or resubmissions
+        channel.exchange_declare(INBOUND_EXCHANGE, exchange_type=ExchangeType.fanout)
+        inbound_queue = channel.queue_declare(queue=INBOUND_QUEUE, exclusive=True)
+        channel.queue_bind(exchange=INBOUND_EXCHANGE, queue=inbound_queue.method.queue)
+        
+        # TODO Implement
+        # Retry exchange and queue is a temporary hold for messages that havent been
+        # processed yet in the event that there are no workers available, or the workflow
+        # executor has an ApplicationError
+        channel.exchange_declare(RETRY_EXCHANGE, exchange_type=ExchangeType.fanout)
+        retry_queue = channel.queue_declare(queue=RETRY_QUEUE)
+        channel.queue_bind(exchange=RETRY_EXCHANGE, queue=retry_queue.method.queue)
+        
+        # TODO Implement
+        # Messages that are retried too many times get sent to the deadletter exchange
+        # for inspection
+        channel.exchange_declare(DEAD_LETTER_EXCHANGE, exchange_type=ExchangeType.fanout)
+        dead_letter_queue = channel.queue_declare(queue=DEAD_LETTER_QUEUE)
+        channel.queue_bind(exchange=DEAD_LETTER_EXCHANGE, queue=dead_letter_queue.method.queue)
 
-        # Bind the queue to the channel
-        channel.queue_bind(exchange=WORKFLOWS_EXCHANGE, queue=queue.method.queue)
-
-        # Start cosuming
+        # The threads that will be started within the on_message callback
         threads = []
 
+        # Start consuming the inbound queue
         try:
             channel.basic_consume(
-                queue=queue.method.queue,
+                queue=inbound_queue.method.queue,
                 auto_ack=False,
                 on_message_callback=partial(
                     self._on_message_callback,
@@ -74,88 +101,124 @@ class Application:
 
             channel.start_consuming()
 
-            logging.info(f"{SSTR} READY")
-
             # Wait for all to complete
             for thread in threads:
                 thread.join()
 
             connection.close()
 
-        # Occurs when basic consume recieveds the wrong args
+        # Occurs when basic_consume recieves the wrong args
         except ValueError as e:
             logging.critical(f"Critical Workflow Executor Error: {e}")
+
         # Cathes all ampq errors from .start_consuming()
         except AMQPError as e:
             logging.error(e)
+
         # Catch all other exceptions
         except Exception as e:
             logging.error(e)
 
+    def _start_worker(self, body, connection, channel, delivery_tag):
+        """Validates and prepares the message from the inbound exchange(and queue),
+        provisions a worker from the worker pool, acks the message, registers the 
+        active worker to the application, handles the termination of duplicate
+        workflow submissions and starts the worker."""
 
-    def _run(self, ctx, connection, channel, delivery_tag):
-        # NOTE Currently acking after the workflow executor runs.
-        acked = False
+        # Prepare the execution context. The execution context contains all the 
+        # information required to run a workflow
+        worker = None
+        acked = False # Indicates that the message as been acked
         try:
-            # Get the pipeline executor
-            executor = self.executors.check_out()
-            if executor != None:
-                # Ack the message before running the workflow executor
-                cb = partial(self._ack_nack, "ack", channel, delivery_tag)
-                connection.add_callback_threadsafe(cb)
-                
-                # Set the acked flag
-                acked = True
+            # Decode the message body, then convert to an object. (Because accessing
+            # properties of an object is nicer than a dictionary)
+            ctx = json_to_object(bytes_to_json(body))
 
-                # Run the workflow executor
-                asyncio.run(executor.run(ctx))
+            # Get a workflow executor worker. If there are none available,
+            # this will raise a "NoWorkersAvailabe" error which is handled
+            # an the exception block below
+            worker = self.worker_pool.check_out()
+            
+            # Ack the message before running the workflow executor
+            cb = partial(self._ack_nack, "ack", channel, delivery_tag)
+            connection.add_callback_threadsafe(cb)
+
+            # Set the acked flag to True(Used to nack the message if an exception
+            # occurs above)
+            acked = True
+
+            # Register the active worker to the application. If worker cannot 
+            # execute, check it back in.
+            worker = self._register_worker(ctx, worker)
+            if worker.can_start:
+                asyncio.run(worker.run(ctx))
+
+            # worker.can_start and worker.start(
+            #     target=lambda worker, ctx: asyncio.run(worker.run(ctx)),
+            #     args=(ctx, worker)
+            # )
+
+        # Thrown when decoding the message body. Reject the message
+        except JSONDecodeError as e:
+            logging.error(e)
+            channel.basic_reject(delivery_tag, requeue=False)
+            return
+
+        except NoAvailableWorkers:
+            logging.info(f"{SSTR} Insufficient workers available [RETRYING] (10s)")
+            connection.add_callback_threadsafe(
+                partial(
+                    self._ack_nack,
+                    "nack",
+                    channel,
+                    delivery_tag,
+                    delay=INSUFFICIENT_WORKER_RETRY_DELAY
+                )
+            )
+            return
 
         except Exception as e:
             logging.error(e)
 
             # Nack the message if it has not already been ack
+            # TODO Nack the message into a retry queue. 
+            # Or reject? Why would it not be rejected?
             if not acked:
                 cb = partial(self._ack_nack, "nack", channel, delivery_tag)
                 connection.add_callback_threadsafe(cb)
 
-        # Return the pipeline executor back to the worker pool
-        self.executors.check_in(executor)
+        # Deregister and return executor back to the worker pool
+        self._deregister_worker(worker)
+        self.worker_pool.check_in(worker)
 
     def _on_message_callback(self, channel, method, _, body, args):
-        # Prepare the message
-        try:
-            ctx = json_to_object(bytes_to_json(body))
-        except JSONDecodeError as e:
-            logging.error(e)
-            channel.basic_reject(method.delivery_tag, requeue=False)
-            return
-
-        # # Register the running pipeline
-        # self.running_pipelines.append(message.pipeline)
-        
         (connection, threads) = args
-        t = threading.Thread(
-            target=self._run,
-            args=(ctx, connection, channel, method.delivery_tag)
+
+        t = Thread(
+            target=self._start_worker,
+            args=(body, connection, channel, method.delivery_tag)
         )
         t.start()
         threads.append(t)
+
+        # Clean up the stopped threads
+        threads = [t for t in threads if t.is_alive()]
 
     def _ack_nack(
         self,
         ack_nack: Union[Literal["ack"], Literal["nack"]],
         channel,
-        delivery_tag
+        delivery_tag,
+        delay=0
     ):
         fn = channel.basic_ack if ack_nack == "ack" else channel.basic_nack
         if channel.is_open:
+            # Wait the delay if necessary
+            delay == 0 or time.sleep(abs(delay))
             fn(delivery_tag)
             return
         
         # TODO do something if channel is closed
-
-    def _pipeline_in_progress(self, pipeline):
-        return False
 
     def _connect(self):
         # Initialize connection parameters with plain credentials
@@ -178,7 +241,7 @@ class Application:
                 connected = True
             except Exception:
                 logging.info(f"{SSTR} Workflow Executor [CONNECTION FAILED] ({connection_attempts})")
-                time.sleep(RETRY_DELAY)
+                time.sleep(CONNECTION_RETRY_DELAY)
 
         # Kill the build service if unable to connect
         if connected == False:
@@ -190,6 +253,69 @@ class Application:
         logging.info(f"{SSTR} Workflow Executor [CONNECTED]")
 
         return connection
+
+    # TODO handle for the case of multiple active workers with same
+    # active worker key
+    def _register_worker(self, ctx, worker):
+        """Registers the worker to the Application. Handles duplicate workflow
+        submissions"""
+
+        # Returns a key based on user-defined unique constraints or pipeline
+        # run uuid if no unique constraints
+        worker.key = self._resolve_unique_constraint_key(ctx)
+
+        # Check if there are workers running that have the same unique constraint key
+        active_workers = self._get_active_workers(worker.key)
+
+        policy = ctx.pipeline.duplicate_submission_policy
+
+        if (
+            policy == DUPLICATE_SUBMISSION_POLICY_DENY
+            and len(active_workers) > 0
+        ):
+            return worker
+
+
+        if policy == DUPLICATE_SUBMISSION_POLICY_TERMINATE:
+            for active_worker in active_workers:
+                self._terminate_worker(active_worker)
+                self._deregister_worker(active_worker)
+
+        worker.can_start = True
+        self.active_workers.append(worker)
+
+        return worker
+
+    def _deregister_worker(self, worker):
+        worker.key = None
+        self.active_workers = [ w for w in self.active_workers if w.id != worker.id ]
+
+    def _get_active_workers(self, key):
+        return [worker for worker in self.active_workers if worker.key == key]
+        
+    def _terminate_worker(self, worker):
+        worker.terminate()
+
+    def _resolve_unique_constraint_key(self, ctx):
+        # Check the context's meta for a unique constraint. This will be used
+        # to help identify duplicate workflow submissions and handle them
+        # according to their duplicate submission policy.
+        #
+        # Defaults to the pipeline run uuid
+        if len(ctx.meta.unique_constraints) == 0:
+            return ctx.pipeline_run.uuid
+
+        try:
+            unique_constraint = ""
+            for constraint in ctx.meta.unique_constraints:
+                (obj, prop) = constraint.split(".")
+                unique_constraint = unique_constraint + str(getattr(getattr(ctx, obj), prop))
+
+            return unique_constraint
+        except (AttributeError, TypeError):
+            return ctx.pipeline_run.uuid
+
+            
 
 
     

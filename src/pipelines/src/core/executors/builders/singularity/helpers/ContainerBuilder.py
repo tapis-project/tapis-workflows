@@ -6,7 +6,7 @@ import git
 
 from kubernetes.client import V1Container, V1EnvVar
 
-from conf.configs import SINGULARITY_IMAGE_URL, SINGULARITY_IMAGE_TAG
+from conf.constants import SINGULARITY_IMAGE_URL, SINGULARITY_IMAGE_TAG
 
 
 class ContainerBuilder:

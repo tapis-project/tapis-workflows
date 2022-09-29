@@ -1,14 +1,15 @@
 from collections import deque
 
-from errors.workers import WorkerLimitExceed
+from errors import WorkerLimitExceed, NoAvailableWorkers
+from core.workers import Worker
 
 # TODO Does this need pessimistic locking?
 class WorkerPool:
     def __init__(
         self,
-        worker_cls,
+        worker_cls: Worker,
         starting_worker_count,
-        max_workers=3,
+        max_workers=10,
         worker_args=[],
         worker_kwargs={},
     ):
@@ -43,9 +44,9 @@ class WorkerPool:
             return worker
 
         # There are no more available workers
-        return None
+        raise NoAvailableWorkers(f"No available workers: Max Workers: {self.max_workers}")
 
-    def check_in(self, worker):
+    def check_in(self, worker) -> WorkerLimitExceed:
         if worker in self.checked_out:
             self.checked_out.remove(worker)
         

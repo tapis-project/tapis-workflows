@@ -168,6 +168,16 @@ RUN_STATUSES = [
 
 TASK_EXECUTION_STATUSES = RUN_STATUSES
 
+DUPLICATE_SUBMISSION_POLICY_ALLOW = "allow"
+DUPLICATE_SUBMISSION_POLICY_DENY = "deny"
+DUPLICATE_SUBMISSION_POLICY_TERMINATE = "terminate"
+DUPLICATE_SUBMISSION_POLICIES = [
+    (DUPLICATE_SUBMISSION_POLICY_ALLOW, "allow"),
+    (DUPLICATE_SUBMISSION_POLICY_DENY, "deny"),
+    (DUPLICATE_SUBMISSION_POLICY_TERMINATE, "terminate")
+]
+DEFAULT_DUPLICATE_SUBMISSION_POLICY = DUPLICATE_SUBMISSION_POLICY_ALLOW
+
 VISIBILITY_PUBLIC = "public"
 VISIBILITY_PRIVATE = "private"
 VISIBILITY_TYPES = [
@@ -320,6 +330,7 @@ class Pipeline(models.Model):
         validators=[MaxValueValidator(DEFAULT_MAX_WORKFLOW_EXEC_TIME), MinValueValidator(1)]
     )
     max_retries = models.IntegerField(default=DEFAULT_MAX_RETRIES)
+    duplicate_submission_policy = models.CharField(max_length=32, choices=DUPLICATE_SUBMISSION_POLICIES, default=DEFAULT_DUPLICATE_SUBMISSION_POLICY)
     owner = models.CharField(max_length=64)
     retry_policy = models.CharField(max_length=32, default=DEFAULT_RETRY_POLICY)
     updated_at = models.DateTimeField(auto_now=True)

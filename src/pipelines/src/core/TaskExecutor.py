@@ -4,11 +4,10 @@ from kubernetes import config, client
 
 from utils import lbuffer_str as lbuf
 from core.events import EventPublisher, EventExchange, Event
+from core.events.types import TASK_TERMINATED
 from core.resources import Resource, ResourceType
-from conf.configs import (
+from conf.constants import (
     DEFAULT_POLLING_INTERVAL,
-    MAX_POLLING_INTERVAL,
-    MIN_POLLING_INTERVAL,
     KUBERNETES_NAMESPACE,
 )
 
@@ -41,6 +40,10 @@ class TaskExecutor(EventPublisher):
         # Set the polling interval for the task executor based on the
         # the task max_exec_time
         self._set_polling_interval(task)
+
+        print("Sleeping...")
+        import time
+        time.sleep(5)
 
     def _set_polling_interval(self, task):
         # Default is already the DEFAULT_POLLING_INTERVAL
@@ -106,4 +109,8 @@ class TaskExecutor(EventPublisher):
         logging.info(f"{TSTR} {self.task.id} [CLEANUP COMPLETED]")
 
     def terminate(self):
-        pass
+        self.publish(Event(TASK_TERMINATED, self.ctx))
+        logging.info(f"{TSTR} {self.task.id} [TERMINATING] {self.__class__.__name__}")
+        self.cleanup()
+        logging.info(f"{TSTR} {self.task.id} [TERMINATING] {self.__class__.__name__}")
+

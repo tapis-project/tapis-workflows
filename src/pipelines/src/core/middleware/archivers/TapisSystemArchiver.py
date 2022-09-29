@@ -4,7 +4,7 @@ from tapipy.tapis import Tapis
 from tapipy.errors import InvalidInputError  
 
 from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
-from conf.configs import BASE_WORK_DIR
+from conf.constants import BASE_WORK_DIR
 from errors.archives import ArchiveError
 from core.events import Event, EventHandler
 from core.events.types import PIPELINE_COMPLETED, PIPELINE_TERMINATED, PIPELINE_FAILED
@@ -13,6 +13,10 @@ from utils import trunc_uuid
 
 class TapisSystemArchiver(EventHandler):
     def handle(self, event: Event):
+        # TODO REMOVE BELOW
+        logging.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING SKIPPED] {trunc_uuid(event.payload.pipeline.run_id)}")
+        return
+
         if event.type in [PIPELINE_COMPLETED, PIPELINE_TERMINATED, PIPELINE_FAILED]:
             logging.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING] {trunc_uuid(event.payload.pipeline.run_id)}")    
             try:

@@ -3,7 +3,7 @@ from time import time
 from tapipy.tapis import Tapis
 
 from core.TaskResult import TaskResult
-from conf.configs import (
+from conf.constants import (
     TAPIS_SERVICE_ACCOUNT,
     TAPIS_SERVICE_ACCOUNT_PASSWORD,
     TAPIS_DEV_URL,

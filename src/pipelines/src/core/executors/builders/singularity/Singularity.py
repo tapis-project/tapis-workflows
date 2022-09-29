@@ -14,7 +14,7 @@ from kubernetes.client import (
     V1ObjectMeta,
 )
 
-from conf.configs import KUBERNETES_NAMESPACE, PIPELINES_PVC
+from conf.constants import KUBERNETES_NAMESPACE, PIPELINES_PVC
 from core.TaskResult import TaskResult
 from core.resources import JobResource
 from core.executors.builders.BaseBuildExecutor import BaseBuildExecutor

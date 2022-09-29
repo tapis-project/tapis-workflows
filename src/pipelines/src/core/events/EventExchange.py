@@ -8,7 +8,7 @@ from core.events.ExchangeConfig import ExchangeConfig
 
 class EventExchange:
     def __init__(self, config: ExchangeConfig=None):
-        # If no config is provided use the default values
+        # If no config is provided use the default exchange config
         if config == None:
             config = ExchangeConfig()
 

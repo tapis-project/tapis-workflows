@@ -124,7 +124,12 @@ class Pipelines(RestrictedAPIView):
             pipeline = Pipeline.objects.create(
                 id=body.id,
                 group=group,
-                owner=request.username
+                owner=request.username,
+                duplicate_submission_policy=body.execution_profile.duplicate_submission_policy,
+                # max_exec_time=body.max_exec_time,
+                # invocation_mode=body.invocation_mode,
+                # retry_policy=body.retry_policy,
+                # max_retries=body.max_retries,
             )
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
