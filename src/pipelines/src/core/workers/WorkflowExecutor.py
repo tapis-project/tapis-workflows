@@ -1,11 +1,12 @@
-import asyncio, os, logging, threading
+import os, logging
+
+from threading import Thread, Lock
 
 from core.TaskExecutorFactory import task_executor_factory as factory
 from core.TaskResult import TaskResult
 from core.events import (
     Event,
     EventPublisher,
-    EventHandler,
     EventExchange,
     ExchangeConfig
 )
@@ -22,6 +23,7 @@ from errors.tasks import (
     InvalidDependenciesError,
     CycleDetectedError,
 )
+from errors import WorkflowTerminated
 from core.middleware.backends import TapisWorkflowsAPIBackend
 from core.middleware.archivers import (
     TapisSystemArchiver,
@@ -30,19 +32,31 @@ from core.middleware.archivers import (
 )
 from conf.constants import BASE_WORK_DIR
 from core.workers import Worker
+from core.state import ReactiveState, Hook, method_hook
 from utils import lbuffer_str as lbuf
 
 
-PSTR = lbuf('[PIPELINE]')
-TSTR = lbuf('[TASK]')
+def terminable(fn):
+    def wrapper(self, *args, **kwargs):
+        try:
+            # TODO figure out why setting reactive state in this decorator causes
+            # a threading.Lock issue!
+            # self.state.terminable_active = True
+            res = fn(self, *args, **kwargs)
+            # self.state.terminable_active = False
+            return res
+        except Exception as e:
+            # self.state.terminable_active = False
+            logging.debug(f"ID: {self.id} Exception in @terminable: {self.id} | Terminating:{self.state.terminating}/Terminated:{self.state.terminated} | {e}")
+            if self.state.terminating or self.state.terminated:
+                return
+            raise e
+        
+    return wrapper
 
-# NOTE TODO EventHandler Mixin is not necessary unless it is decided that a workflow
-# executor can both publish to and subscibe to the exchange. That might make things
-# a bit confusing.
-class WorkflowExecutor(Worker, EventPublisher, EventHandler):
+class WorkflowExecutor(Worker, EventPublisher):
     """The Workflow Executor is responsible for processing and executing tasks for
-    a single workflow. The entrypoint of Workflow Executor is a the asynchronous
-    'run' method.
+    a single workflow. The entrypoint of Workflow Executor is a the 'start' method.
     
     When initialized, the WorkflowExecutor creates an EventExchange to which
     EventPublishers can publish Events. EventHandlers can then be registered to the 
@@ -55,62 +69,107 @@ class WorkflowExecutor(Worker, EventPublisher, EventHandler):
     """
 
     def __init__(self, _id=None):
-        # Initialze the Worker class. This enables access to the current thread
-        # in which the WorkflowExecutor instance is running
+        # Initialze the Worker class
         Worker.__init__(self, _id)
 
-        # Initializes the primary(and only)event exchange, enabling
-        # publishers(the WorkflowExecutor and other event producers) to publish
-        # events to it, triggering subscribers to handle those events. 
-        config = ExchangeConfig(
-            reset_on=[PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED])
+        # Initializes the primary(and only)event exchange, enabling publishers
+        # (the WorkflowExecutor and other event producers) to publish events to it,
+        # triggering subscribers to handle those events. 
+        EventPublisher.__init__(
+            self,
+            EventExchange(
+                config=ExchangeConfig(
+                    reset_on=[PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED]
+                )
+            )
+        )
 
-        EventPublisher.__init__(self, EventExchange(config=config))
+        # Thread lock
+        self.lock = Lock()
 
-        # # Add the Workflow Executor to its own exchange. This allows the workflow
-        # # excutor to handle messages that it produces itself
-        # # TODO Consider the implications of below
-        # self.exchange.add_subscribers(
-        #     self,
-        #     [] # TODO add a handle method and all the callbacks
-        # )
+        self.state = ReactiveState(
+            hooks=[
+                Hook(
+                    self._on_change_state,
+                    attrs=[] # No attrs means all state gets/sets triggers this hook
+                ),
+                Hook(
+                    self._on_change_ready_task,
+                    attrs=["ready_tasks"]
+                ),
+                # Hook(
+                #     self._on_change_terminable_active,
+                #     attrs=["terminable_active"]
+                # )
+            ],
+            initial_state={
+                "threads": [],
+                "terminated": False,
+                "terminating": False,
+                "failed": [],
+                "succeeded": [],
+                "finished": [],
+                "queue": [],
+                "tasks": [],
+                "executors": {},
+                "dependency_graph": {},
+                "is_dry_run": False,
+                "ctx": None,
+
+                "ready_tasks": [],
+                
+                # TODO experimental
+                "terminable_count": 0,
+            },
+            lock=self.lock
+        )
 
         self._set_initial_state()
 
-    async def run(self, ctx):
+    # Logging formatters. Makes logs more useful and pretty
+    def PSTR(self): return f"ID: {self.id} {lbuf('[PIPELINE]')}"
+    def TSTR(self): return f"ID: {self.id} {lbuf('[TASK]')}"
+
+    @terminable
+    def start(self, ctx, threads):
         """This method is the entrypoint for a workflow exection. It's invoked
         by the main Application instance when a workflow submission is 
         recieved"""
+        self.state.threads = threads
 
-        # Prepare the workflow executor, temporary results storage,
-        # middleware(backends and archivers), queue the tasks, and generate 
-        # the coroutines for each of the initial tasks 
         try:
-            coroutines = self._pre_run(ctx)
+            # Prepare the workflow executor, temporary results storage,
+            # middleware(backends and archivers), queue the tasks
+            self._pre_run(ctx)
+
+            # Get the first tasks
+            unstarted_threads = self._fetch_ready_tasks()
             
-            # Trigger the PIPELINE_ACTIVE event
-            logging.info(f"{PSTR} {self.ctx.pipeline.id} [STARTED] {self.ctx.pipeline_run.uuid}")
-            self.publish(Event(PIPELINE_ACTIVE, self.ctx))
+            # NOTE Triggers the hook _on_change_ready_task
+            self.state.ready_tasks += unstarted_threads
         except Exception as e:
             # Trigger the terminal state callback.
             self._on_pipeline_terminal_state(event=PIPELINE_FAILED)
             raise e
-        # Run the coroutines
-        await asyncio.gather(*coroutines)
 
+    @terminable
     def _pre_run(self, ctx):
         # Resets the workflow executor to its initial state
         self._set_initial_state()
-        
+
         # Validates and sets the context. All subsequent references to the context
-        # should be made via 'self.ctx'
+        # should be made via 'self.state.ctx'
         self._set_context(ctx)
+
+        # Trigger the PIPELINE_ACTIVE event
+        logging.info(f"{self.PSTR()} {self.state.ctx.pipeline.id} [STARTED] {self.state.ctx.pipeline_run.uuid}")
+        self.publish(Event(PIPELINE_ACTIVE, self.state.ctx))
 
         # Prepare the file system for this pipeline
         self._prepare_fs()
 
         # Set the run id
-        self.ctx.pipeline.run_id = self.ctx.pipeline_run.uuid
+        self.state.ctx.pipeline.run_id = self.state.ctx.pipeline_run.uuid
 
         # Backends are used to relay/persist updates about a pipeline run
         # and its tasks to some external resource
@@ -123,30 +182,23 @@ class WorkflowExecutor(Worker, EventPublisher, EventHandler):
         # Validate the tasks. Kill the pipeline if it contains cycles
         # or invalid dependencies
         try:
-            self._set_tasks(self.ctx.pipeline.tasks)
+            self._set_tasks(self.state.ctx.pipeline.tasks)
         except Exception as e:
             raise e
 
-        # Execute the initial tasks
-        return self._fetch_executable_tasks()
-
-    async def _execute_task(self, task):
-        # NOTE The folowing line forces the async function to yield control to 
-        # the event loop, allowing other async functions to run concurrently
-        await asyncio.sleep(0)
-
-        logging.info(f"{TSTR} {task.id} [ACTIVE]")
+    @terminable
+    def _start_task(self, task):
+        logging.info(f"{self.TSTR()} {task.id} [ACTIVE]")
+        # create the task_execution object in Tapis
+        self.publish(Event(TASK_ACTIVE, self.state.ctx, task=task))
 
         try:
-            if not self.is_dry_run:
+            if not self.state.is_dry_run:
                 # Resolve the task executor and execute the task
-                executor = factory.build(task, self.ctx, self.exchange)
+                executor = factory.build(task, self.state.ctx, self.exchange)
 
                 # Register the task executor
-                self._register_executor(self.ctx.pipeline_run.uuid, task, executor)
-
-                # create the task_execution object in Tapis
-                self.publish(Event(TASK_ACTIVE, self.ctx, task=task))
+                self._register_executor(self.state.ctx.pipeline_run.uuid, task, executor)
 
                 task_result = executor.execute()
             else:
@@ -157,11 +209,82 @@ class WorkflowExecutor(Worker, EventPublisher, EventHandler):
             task_result = TaskResult(1, errors=[str(e)])
 
         # Get the next queued tasks if any
-        coroutines = self._on_task_finish(task, task_result)
+        unstarted_threads = self._on_task_finish(task, task_result)
 
-        # Await the coroutines to run them
-        await asyncio.gather(*coroutines)
+        # NOTE Triggers hook _on_change_ready_task
+        self.state.ready_tasks += unstarted_threads
 
+    @terminable
+    def _on_task_finish(self, task, task_result):
+        # Determine the correct callback to use
+        callback = self._on_task_completed if task_result.success else self._on_task_fail
+
+        # Call the callback. Marks task as completed or failed.
+        # Also publishes a TASK_COMPLETED or TASK_FAILED based on the result
+        callback(task, task_result)
+
+        # TODO Check to see if the task has any more "retries" available.
+        # If it does, requeue
+
+        # Deregister the task executor. This cleans up the resources that were created
+        # during the initialization and execution of the task executor
+        self._deregister_executor(self.state.ctx.pipeline_run.uuid, task)
+        
+        # Run the on_pipeline_terminal_state callback if all tasks are complete.
+        # NOTE to prevent this from more than once, we put a check to see if state
+        
+        if len(self.state.tasks) == len(self.state.finished):
+            self._on_pipeline_terminal_state()
+            return []
+
+        # Execute all possible queued tasks
+        return self._fetch_ready_tasks()
+
+    @terminable
+    def _on_pipeline_terminal_state(self, event=None):
+        # No event was provided. Determine if complete or failed from number
+        # of failed tasks
+        if event == None:
+            event = PIPELINE_FAILED if len(self.state.failed) > 0 else PIPELINE_COMPLETED
+    
+        msg = "COMPLETE"
+        if event == PIPELINE_FAILED: msg = "FAILED"
+        elif event == PIPELINE_TERMINATED: msg = "TERMINATED"
+
+        logging.info(f"{self.PSTR()} {self.state.ctx.pipeline.id} [{msg}] ")
+
+        # Publish the event. Triggers the archivers if there are any on ...COMPLETED
+        self.publish(Event(event, self.state.ctx))
+        
+        self._cleanup_run()
+
+        self._set_initial_state() 
+
+    @terminable
+    def _on_task_completed(self, task, task_result):
+        # Notify the subscribers that the task was completed
+        self.publish(Event(TASK_COMPLETED, self.state.ctx, task=task, result=task_result))
+
+        # Log the completion
+        logging.info(f"{self.TSTR()} {task.id} [COMPLETE]")
+
+        # Add the task to the finished list
+        self.state.finished.append(task.id)
+        self.state.succeeded.append(task.id)
+
+    @terminable
+    def _on_task_fail(self, task, task_result):
+        # Notify the subscribers that the task was completed
+        self.publish(Event(TASK_FAILED, self.state.ctx, task=task, result=task_result))
+
+        # Log the failure
+        logging.info(f"{self.TSTR()} {task.id} [FAILED]")
+
+        # Add the task to the finished list
+        self.state.finished.append(task.id)
+        self.state.failed.append(task.id)
+
+    @terminable
     def _get_initial_tasks(self, tasks):
         initial_tasks = [task for task in tasks if len(task.depends_on) == 0]
 
@@ -172,9 +295,7 @@ class WorkflowExecutor(Worker, EventPublisher, EventHandler):
 
         return initial_tasks
 
-    def _get_task(self, name):
-        return next(filter(lambda a: a.name == name, self.tasks), None)
-
+    @terminable
     def _set_tasks(self, tasks):
         # Create a list of the ids of the tasks
         task_ids = [task.id for task in tasks]
@@ -201,22 +322,22 @@ class WorkflowExecutor(Worker, EventPublisher, EventHandler):
         if invalid_deps > 0:
             raise InvalidDependenciesError(invalid_deps_message)
 
-        self.tasks = tasks
+        self.state.tasks = tasks
 
         # Build a mapping between each task and the tasks that depend on them.
         # Doing this here saves us from having to perform the dependency
         # look-ups when queueing tasks, improving performance
-        self.dependency_graph = {task.id: [] for task in self.tasks}
+        self.state.dependency_graph = {task.id: [] for task in self.state.tasks}
 
-        for task in self.tasks:
+        for task in self.state.tasks:
             for parent_task in task.depends_on:
-                self.dependency_graph[parent_task.id].append(task.id)
+                self.state.dependency_graph[parent_task.id].append(task.id)
 
         # Detect loops in the graph
         try:
-            initial_tasks = self._get_initial_tasks(self.tasks)
+            initial_tasks = self._get_initial_tasks(self.state.tasks)
             graph_validator = GraphValidator()
-            if graph_validator.has_cycle(self.dependency_graph, initial_tasks):
+            if graph_validator.has_cycle(self.state.dependency_graph, initial_tasks):
                 raise CycleDetectedError("Cyclic dependencies detected")
         except (
             InvalidDependenciesError, CycleDetectedError, MissingInitialTasksError
@@ -224,150 +345,107 @@ class WorkflowExecutor(Worker, EventPublisher, EventHandler):
             raise e
 
         # Add all tasks to the queue
-        self.queue = [ task for task in self.tasks ]
-
-    def _on_task_finish(self, task, task_result):
-        # Determine the correct callback to use
-        callback = self._on_task_completed if task_result.success else self._on_task_fail
-
-        # Call the callback. Marks task as completed or failed.
-        # Also publishes a TASK_COMPLETED or TASK_FAILED based on the result
-        callback(task, task_result)
-
-        # TODO Check to see if the task has any more "retries" available.
-        # If it does, requeue
-
-        # Deregister the task executor. This cleans up the resources that were created
-        # during the initialization and execution of the task executor
-        self._deregister_executor(self.ctx.pipeline_run.uuid, task)
-        
-        # Run the on_pipeline_terminal_state callback if all tasks are complete
-        if len(self.tasks) == len(self.finished):
-            self._on_pipeline_terminal_state()
-            return []
-
-        # Execute all possible queued tasks
-        return self._fetch_executable_tasks()
-
+        self.state.queue = [ task for task in self.state.tasks ]
+    
+    @terminable
     def _prepare_fs(self):
         """Creates all of the directories necessary to run the pipeline, store
         temp files, and cache data"""
         # The pipeline root dir. All files and directories produced by a workflow
         # execution will reside here
-        self.ctx.pipeline.root_dir = f"{BASE_WORK_DIR}{self.ctx.group.id}/{self.ctx.pipeline.id}/"
-        os.makedirs(f"{self.ctx.pipeline.root_dir}", exist_ok=True)
+        self.state.ctx.pipeline.root_dir = f"{BASE_WORK_DIR}{self.state.ctx.group.id}/{self.state.ctx.pipeline.id}/"
+        os.makedirs(f"{self.state.ctx.pipeline.root_dir}", exist_ok=True)
 
         # Create the directories in which data between pipeline runs will be stored. This
         # will allow data to be reused or cached between runs
-        self.ctx.pipeline.cache_dir = f"{self.ctx.pipeline.root_dir}cache/"
-        os.makedirs(f"{self.ctx.pipeline.cache_dir}", exist_ok=True)
+        self.state.ctx.pipeline.cache_dir = f"{self.state.ctx.pipeline.root_dir}cache/"
+        os.makedirs(f"{self.state.ctx.pipeline.cache_dir}", exist_ok=True)
 
         # The directory for this particular run of the workflow
-        self.ctx.pipeline.runs_dir = f"{self.ctx.pipeline.root_dir}runs/"
-        self.ctx.pipeline.work_dir = f"{self.ctx.pipeline.runs_dir}{self.ctx.pipeline_run.uuid}/"
-        os.makedirs(self.ctx.pipeline.work_dir, exist_ok=True)
+        self.state.ctx.pipeline.runs_dir = f"{self.state.ctx.pipeline.root_dir}runs/"
+        self.state.ctx.pipeline.work_dir = f"{self.state.ctx.pipeline.runs_dir}{self.state.ctx.pipeline_run.uuid}/"
+        os.makedirs(self.state.ctx.pipeline.work_dir, exist_ok=True)
 
-    def _fetch_executable_tasks(self):
-        coroutines = []
-        tasks = [] # TODO REMOVE
-        
-        tasks_to_execute = []
-        for task in self.queue:
+        # Set the work_dir to the WorkflowExecutor as well. Will be used for
+        # cleaning up all the temporary files/dirs after the state is reset.
+        # (Which means that ther will be no self.state.ctx.pipeline.work_dir)
+        self.work_dir = self.state.ctx.pipeline.work_dir
+
+    @terminable
+    def _fetch_ready_tasks(self):
+        ready_tasks = []
+        threads = []
+        for task in self.state.queue:
             if self._task_is_ready(task):
-                tasks_to_execute.append(task)
-                tasks.append(task.id) # TODO REMOVE
+                ready_tasks.append(task)
 
-        for task in tasks_to_execute:
+        for task in ready_tasks:
             self._remove_from_queue(task)
-            coroutines.append(self._execute_task(task))
+            t = Thread(
+                target=self._start_task,
+                args=(task,)
+            )
+            threads.append(t)
 
-        return coroutines
+        return threads
 
-    def _task_is_ready(self,task):
+    @terminable
+    def _task_is_ready(self, task):
         # All tasks without dependencies are ready immediately
         if len(task.depends_on) == 0: return True
 
         for dep in task.depends_on:
-            if dep.id not in self.finished:
+            if dep.id not in self.state.finished:
                 return False
 
         return True
 
-    def _on_pipeline_terminal_state(self, event=None):
-        # No event was provided. Determine if complete or failed from number
-        # of failed tasks
-        if event == None:
-            event = PIPELINE_FAILED if len(self.failed) > 0 else PIPELINE_COMPLETED
-    
-        msg = "COMPLETE"
-        if event == PIPELINE_FAILED: msg = "FAILED"
-        elif event == PIPELINE_TERMINATED: msg = "TERMINATED"
-
-        logging.info(f"{PSTR} {self.ctx.pipeline.id} [{msg}] ")
-
-        # Publish the event. Triggers the archivers if there are any on ...COMPLETED
-        self.publish(Event(event, self.ctx))
-
-        self._cleanup_run()
-
-    def _on_task_completed(self, task, task_result):
-        # Notify the subscribers that the task was completed
-        self.publish(Event(TASK_COMPLETED, self.ctx, task=task, result=task_result))
-
-        # Log the completion
-        logging.info(f"{TSTR} {task.id} [COMPLETE]")
-
-        # Add the task to the finished list
-        self.finished.append(task.id)
-        self.succeeded.append(task.id)
-
-    def _on_task_fail(self, task, task_result):
-        # Notify the subscribers that the task was completed
-        self.publish(Event(TASK_FAILED, self.ctx, task=task, result=task_result))
-
-        # Log the failure
-        logging.info(f"{TSTR} {task.id} [FAILED]")
-
-        # Add the task to the finished list
-        self.finished.append(task.id)
-        self.failed.append(task.id)
-
+    @terminable
     def _remove_from_queue(self, task):
-        self.queue.pop(self.queue.index(task))
+        len(self.state.queue) == 0 or self.state.queue.pop(self.state.queue.index(task))
 
+    @terminable
     def _register_executor(self, run_id, task, executor):
-        self.executors[f"{run_id}.{task.id}"] = executor
+        # TODO Might register an executor after termination in case of race condition
+        self.state.executors[f"{run_id}.{task.id}"] = executor
 
+    @terminable
     def _deregister_executor(self, run_id, task):
         # Clean up the resources created by the task executor
         executor = self._get_executor(run_id, task)
         executor.cleanup()
-        del self.executors[f"{run_id}.{task.id}"]
-        logging.debug(f"{TSTR} {task.id} [EXECUTOR DEREGISTERED] {run_id}.{task.id}")
+        del self.state.executors[f"{run_id}.{task.id}"]
+        logging.debug(f"{self.TSTR()} {task.id} [EXECUTOR DEREGISTERED] {run_id}.{task.id}")
 
+    @terminable
     def _get_executor(self, run_id, task):
-        return self.executors[f"{run_id}.{task.id}"]
-
-    def _cleanup_run(self):
-        logging.info(f"{PSTR} {self.ctx.pipeline.id} [CLEANUP STARTED]")
-        # os.system(f"rm -rf {self.ctx.pipeline.work_dir}")
-        logging.info(f"{PSTR} {self.ctx.pipeline.id} [CLEANUP COMPLETED]")
-        
-        self._set_initial_state()
+        return self.state.executors[f"{run_id}.{task.id}"]
     
-    # TODO Implement
+    def _cleanup_run(self):
+        logging.info(f"{self.PSTR()} ID: {self.id} [CLEANUP STARTED]")
+        # os.system(f"rm -rf {self.work_dir}")
+        logging.info(f"{self.PSTR()} ID: {self.id} [CLEANUP COMPLETED]")
+    
     def terminate(self):
-        logging.info(f"{PSTR} {self.ctx.pipeline.id} [TERMINATING PIPELINE] {self.ctx.pipeline_run.uuid}")
-        for _, executor in self.executors.items():
-            executor.terminate()
-        self._on_pipeline_terminal_state(event=PIPELINE_TERMINATED)
+        self.publish(Event(PIPELINE_TERMINATED, self))
+        # NOTE SIDE EFFECT. Triggers the _on_terminate_hook in the
+        # reactive state. Will prevent all gets and sets to self.state
+        # thereafter
+        self.state.terminating = True
 
+    def reset(self, terminated=False):
+        self.state.reset()
+        self._set_initial_state()
+        if terminated:
+            self.state.terminated = True
+        
 
+    @terminable
     def _initialize_backends(self):
         # Initialize the backends. Backends are used to persist updates about the
         # pipeline and its tasks
         try:
-            backend = TapisWorkflowsAPIBackend(self.ctx)
+            backend = TapisWorkflowsAPIBackend(self.state.ctx)
         except Exception as e:
             logging.error(f"Could not intialize backend. Updates about the pipeline and its task will not be persisited. Error: {str(e)}")
             return
@@ -384,12 +462,13 @@ class WorkflowExecutor(Worker, EventPublisher, EventHandler):
             ]
         )
 
+    @terminable
     def _initialize_archivers(self):
         # No archivers specified. Return
-        if len(self.ctx.pipeline.archives) < 1: return
+        if len(self.state.ctx.pipeline.archives) < 1: return
 
         # TODO Handle for multiple archives
-        self.ctx.archive = self.ctx.pipeline.archives[0]
+        self.state.ctx.archive = self.state.ctx.pipeline.archives[0]
 
         ARCHIVERS_BY_TYPE = {
             "system": TapisSystemArchiver,
@@ -398,7 +477,7 @@ class WorkflowExecutor(Worker, EventPublisher, EventHandler):
         }
 
         # Get and initialize the archiver
-        archiver = ARCHIVERS_BY_TYPE[self.ctx.archive.type]()
+        archiver = ARCHIVERS_BY_TYPE[self.state.ctx.archive.type]()
 
         # Add the backend as a subscriber to all events. When these events are "published"
         # by the workflow executor, the backend will be passed the message to handle it.
@@ -406,20 +485,57 @@ class WorkflowExecutor(Worker, EventPublisher, EventHandler):
             archiver,
             [PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED]
         )
-    
-    def _set_initial_state(self):
-        self.failed = []
-        self.succeeded = []
-        self.finished = []
-        self.queue = []
-        self.tasks = []
-        self.executors = {}
-        self.dependency_graph = {}
-        self.is_dry_run = False
-        self.subscribers = {}
-        self.ctx = None
 
+    def _set_initial_state(self):
+        # Non-reactive state
+        self.work_dir = None
+        self.can_start = False
+
+    @terminable
     def _set_context(self, ctx):
         # TODO validate the ctx here. Maybe pydantic
-        self.ctx = ctx
+        self.state.ctx = ctx
+
+    # Hooks
+    @method_hook
+    def _on_change_ready_task(self, state):
+        for t in state.ready_tasks:
+            t.start()
+            state.threads.append(t)
+
+        # Remove the ready tasks
+        state.ready_tasks = []
+
+
+    @method_hook
+    def _on_change_state(self, state):
+        """Cleans up the resources and state of the WorkflowExecutor when terminated.
+
+        This is invoked by the WorkflowExecutors ReactiveState object when the intercept 
+        condition is met, i.e. when the 'terminate' method changes 'self.state.terminated' 
+        to True.
+
+        NOTE
+        NO thread locking should occur here (self.lock.acquire()).
+        The ReactiveState object will acquire a thread lock with the WorkflowExecutor's
+        Lock object(self.lock that was passed to it during it's instantiation) and release it
+        once this function finishes
+        """
+        if not state.terminating or state.terminated:
+            return
+
+        logging.info(f"{self.PSTR()} {state.ctx.pipeline.id} [TERMINATING PIPELINE] {state.ctx.pipeline_run.uuid}")
+        for _, executor in state.executors.items():
+            executor.terminate()
     
+        self._cleanup_run()
+
+    # @method_hook
+    # def _on_change_terminable_active(self, state):
+    #     if state.terminable_active:
+    #         state.terminable_count += 1
+    #         print("Active terminables", state.terminable_count)
+    #         return
+
+    #     state.terminable_count -= 1
+    #     print("Active terminables", state.terminable_count)

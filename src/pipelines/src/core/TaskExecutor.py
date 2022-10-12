@@ -41,9 +41,7 @@ class TaskExecutor(EventPublisher):
         # the task max_exec_time
         self._set_polling_interval(task)
 
-        print("Sleeping...")
-        import time
-        time.sleep(5)
+        import time; print("sleeping"); time.sleep(5) # TODO REMOVE
 
     def _set_polling_interval(self, task):
         # Default is already the DEFAULT_POLLING_INTERVAL
@@ -112,5 +110,5 @@ class TaskExecutor(EventPublisher):
         self.publish(Event(TASK_TERMINATED, self.ctx))
         logging.info(f"{TSTR} {self.task.id} [TERMINATING] {self.__class__.__name__}")
         self.cleanup()
-        logging.info(f"{TSTR} {self.task.id} [TERMINATING] {self.__class__.__name__}")
+        logging.info(f"{TSTR} {self.task.id} [TERMINATED] {self.__class__.__name__}")
 

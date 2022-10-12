@@ -1,9 +1,10 @@
 from collections import deque
+from threading import Lock
 
 from errors import WorkerLimitExceed, NoAvailableWorkers
 from core.workers import Worker
 
-# TODO Does this need pessimistic locking?
+
 class WorkerPool:
     def __init__(
         self,
@@ -23,13 +24,22 @@ class WorkerPool:
             self.pool.append(worker_cls(*worker_args, _id=i, **worker_kwargs))
             
         self.checked_out = []
+        
+        # Pessimistic locking mechanism
+        self.lock = Lock()
 
     def check_out(self):
-        # Return a worker if one is in the pool
+        # To prevent other threads from checking out the same worker more than
+        # once, we lock it down using the threading.Lock thread locker
+        self.lock.acquire()
+        
+        # Return a worker if one or more in the pool
         if len(self.pool) > 0:
             worker = self.pool.pop()
             self.checked_out.append(worker)
-
+            print("CHECKING OUT", worker)
+            # Release the lock
+            self.lock.release()
             return worker
 
         # Calculate the total number of workers
@@ -40,13 +50,20 @@ class WorkerPool:
         if total_workers < self.max_workers:
             worker = self.worker_cls()
             self.checked_out.append(worker)
-
+            print("CHECKING OUT", worker)
+            print("CHECKED OUT", self.checked_out)
+            # Release the lock
+            self.lock.release()
             return worker
+
+        # Release the lock
+        self.lock.release()
 
         # There are no more available workers
         raise NoAvailableWorkers(f"No available workers: Max Workers: {self.max_workers}")
 
-    def check_in(self, worker) -> WorkerLimitExceed:
+    def check_in(self, worker):
+        print("CHECKING IN", worker)
         if worker in self.checked_out:
             self.checked_out.remove(worker)
         

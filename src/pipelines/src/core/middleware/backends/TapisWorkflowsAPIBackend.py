@@ -50,7 +50,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
         print("BACKEND: PIPELINE COMPLETED")
 
     def _pipeline_terminated(self, event):
-        print("BACKEND: PIPELINE TERMINATED")
+        print(f"BACKEND: PIPELINE TERMINATED: {event.payload.id}")
 
     def _pipeline_archiving(self, event):
         print("BACKEND: PIPELINE ARCHVING")

@@ -1,6 +1,5 @@
 
-import os, sys, time, asyncio, logging, threading
-
+import os, sys, time, logging
 from threading import Thread
 
 from typing import Literal, Union
@@ -29,9 +28,9 @@ from conf.constants import (
     DUPLICATE_SUBMISSION_POLICY_DENY,
 )
 
-from core.workers import Worker, WorkerThread, WorkerPool, WorkflowExecutor
+from core.workers import WorkerPool, WorkflowExecutor
 from utils import bytes_to_json, json_to_object, lbuffer_str as lbuf
-from errors import NoAvailableWorkers
+from errors import NoAvailableWorkers, WorkflowTerminated
 
 
 SSTR = lbuf("[SYSTEM]")
@@ -150,13 +149,14 @@ class Application:
             # Register the active worker to the application. If worker cannot 
             # execute, check it back in.
             worker = self._register_worker(ctx, worker)
-            if worker.can_start:
-                asyncio.run(worker.run(ctx))
 
-            # worker.can_start and worker.start(
-            #     target=lambda worker, ctx: asyncio.run(worker.run(ctx)),
-            #     args=(ctx, worker)
-            # )
+            threads = []
+            
+            if worker.can_start:
+                worker.start(ctx, threads)
+
+            for t in threads:
+                t.join()
 
         # Thrown when decoding the message body. Reject the message
         except JSONDecodeError as e:
@@ -176,6 +176,11 @@ class Application:
                 )
             )
             return
+
+        # TODO probably not needed
+        # except WorkflowTerminated as e:
+        #     logging.info(f"{SSTR} {e}")
+        #     worker.reset()
 
         except Exception as e:
             logging.error(e)
@@ -198,6 +203,7 @@ class Application:
             target=self._start_worker,
             args=(body, connection, channel, method.delivery_tag)
         )
+
         t.start()
         threads.append(t)
 
@@ -259,14 +265,12 @@ class Application:
     def _register_worker(self, ctx, worker):
         """Registers the worker to the Application. Handles duplicate workflow
         submissions"""
-
         # Returns a key based on user-defined unique constraints or pipeline
         # run uuid if no unique constraints
         worker.key = self._resolve_unique_constraint_key(ctx)
 
         # Check if there are workers running that have the same unique constraint key
         active_workers = self._get_active_workers(worker.key)
-
         policy = ctx.pipeline.duplicate_submission_policy
 
         if (
@@ -278,23 +282,24 @@ class Application:
 
         if policy == DUPLICATE_SUBMISSION_POLICY_TERMINATE:
             for active_worker in active_workers:
-                self._terminate_worker(active_worker)
-                self._deregister_worker(active_worker)
-
+                active_worker.terminate()
+                self._deregister_worker(active_worker, terminated=True)
+        
         worker.can_start = True
         self.active_workers.append(worker)
 
         return worker
 
-    def _deregister_worker(self, worker):
+    def _terminate_worker(self, worker):
+        worker.terminate()
+
+    def _deregister_worker(self, worker, terminated=False):
         worker.key = None
         self.active_workers = [ w for w in self.active_workers if w.id != worker.id ]
+        worker.reset(terminated=terminated)
 
     def _get_active_workers(self, key):
         return [worker for worker in self.active_workers if worker.key == key]
-        
-    def _terminate_worker(self, worker):
-        worker.terminate()
 
     def _resolve_unique_constraint_key(self, ctx):
         # Check the context's meta for a unique constraint. This will be used

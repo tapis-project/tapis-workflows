@@ -30,7 +30,7 @@ class ContainerBuilder:
         if task.destination.filename != None:
             filename = task.destination.filename
 
-        # Pull the image from dockerhub and generate the SIF file
+        # Pull the image from Dockerhub and generate the SIF file
         if task.context.type == "dockerhub":
             # Use latest tag if not specified
             tag = "latest"
@@ -45,6 +45,8 @@ class ContainerBuilder:
                 f"docker://{task.context.url}:{tag}"
             ]
 
+        # Pull the Singularity file from a github repository and then build the SIF
+        # file
         if task.context.type == "github":
             # Add the token to the repository url
             token = ""

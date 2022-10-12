@@ -13,6 +13,11 @@ class NoAvailableWorkers(ApplicationError):
 class WorkerLimitExceed(ApplicationError):
     pass
 
+class WorkflowTerminated(ApplicationError):
+    def __init__(self, msg="Terminated"):
+        ApplicationError.__init__(self, msg)
+
+
 # Execution-related Non-application errors. Results from failures in task
 # and pipeline executions–either from poorly configured task definitions, tasks entering
 # into some failure mode cascading into a pipeline failure mode, etc
