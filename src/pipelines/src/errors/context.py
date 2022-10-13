@@ -1,5 +1,4 @@
-from errors.base import PipelinesBaseException
+from errors.base import WorkflowsBaseException
 
-
-class ContextError(PipelinesBaseException):
+class ContextError(WorkflowsBaseException):
     pass

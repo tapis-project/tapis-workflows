@@ -24,7 +24,8 @@
                 "name": "rabbitmq",
                 "displayName": "RabbitMQ",
                 "image": "rabbitmq:3.9.11-management",
-                "startable": true
+                "startable": true,
+                "launchable": true
             }
         ],
         "database": [

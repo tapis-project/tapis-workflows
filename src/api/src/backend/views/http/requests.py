@@ -17,6 +17,7 @@ from backend.models import (
     DEFAULT_MAX_EXEC_TIME,
     DEFAULT_MAX_RETRIES,
     DEFAULT_RETRY_POLICY,
+    DEFAULT_DUPLICATE_SUBMISSION_POLICY
 )
 
 ARCHIVE_TYPES = [ARCHIVE_TYPE_IRODS, ARCHIVE_TYPE_S3, ARCHIVE_TYPE_SYSTEM]
@@ -253,6 +254,7 @@ class ExecutionProfile(BaseModel):
     invocation_mode: str = DEFAULT_TASK_INVOCATION_MODE
     retry_policy: str = DEFAULT_RETRY_POLICY
     max_retries: int = DEFAULT_MAX_RETRIES
+    duplicate_submission_policy: str = DEFAULT_DUPLICATE_SUBMISSION_POLICY
 
 class BaseTask(BaseModel):
     auth: Auth = None
@@ -391,14 +393,14 @@ class CIPipeline(BasePipeline):
 # Pipeline runs and task executions
 class TaskExecution(BaseModel):
     task_id: str
-    ended_at: str = None
-    pipeline_run_id: str
-    status: str
+    started_at: str = None
+    last_modified: str = None
+    uuid: str
 
 class PipelineRun(BaseModel):
-    ended_at: str = None
+    last_modified: str = None
     pipeline_id: str
-    status: str
+    status: str = None
     uuid: str
 
 class PreparedRequest:

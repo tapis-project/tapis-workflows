@@ -2,19 +2,19 @@ import time, logging
 
 from kubernetes import client
 
-from conf.configs import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL, KANIKO_IMAGE_TAG
+from conf.constants import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL, KANIKO_IMAGE_TAG
 from core.TaskResult import TaskResult
 from core.executors.builders.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
 
 
-class Kubernetes(BaseBuildExecutor):
+class Kaniko(BaseBuildExecutor):
     def __init__(self, task, message):
         BaseBuildExecutor.__init__(self, task, message)
 
         self.configmap = None
 
-    def execute(self, on_finish_callback) -> TaskResult:
+    def execute(self) -> TaskResult:
         # Create the kaniko job return a failed task result on exception
         # with the error message as the str value of the exception
         try: 
@@ -55,8 +55,6 @@ class Kubernetes(BaseBuildExecutor):
 
         # TODO Validate the jobs outputs against outputs in the task definition
 
-        # TODO implement on_finish_callback
-
         return TaskResult(status=0 if self._job_succeeded(job) else 1)
 
     def _create_job(self):
@@ -81,10 +79,17 @@ class Kubernetes(BaseBuildExecutor):
                 ),
                 # Volume mount for the output
                 client.V1VolumeMount(
-                    name="output",
+                    name="artifacts",
                     mount_path="/mnt/",
                     sub_path=self.task.output_dir.replace("/mnt/pipelines/", "") 
-                )
+                ),
+                # Volume mount for the cache
+                # NOTE Dunno if this works...
+                client.V1VolumeMount(
+                    name="artifacts",
+                    mount_path="/cache/",
+                    sub_path=self.pipeline.cache_dir.replace("/mnt/pipelines/", "") 
+                ),
             ]
 
         # Container object
@@ -108,10 +113,10 @@ class Kubernetes(BaseBuildExecutor):
                 )
             )
 
-        # Volume for mounting the output
+        # Volume for output and caching
         volumes.append(
             client.V1Volume(
-                name="output",
+                name="artifacts",
                 persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
                     claim_name=PIPELINES_PVC
                 ),
@@ -145,6 +150,7 @@ class Kubernetes(BaseBuildExecutor):
                 namespace=KUBERNETES_NAMESPACE, body=body
             )
         except Exception as e:
+            logging.critical(e)
             raise e
 
         # Register the job to be deleted after execution
@@ -160,8 +166,10 @@ class Kubernetes(BaseBuildExecutor):
         container_args = []
 
         # Enable image layer caching for imporved performance
-        can_cache = self.task.cache or hasattr(self.directives, "CACHE")
+        can_cache = hasattr(self.directives, "CACHE")
         container_args.append(f"--cache={'true' if can_cache else 'false'}")
+        if can_cache == True:
+            container_args.append(f"--cache-dir=/cache")
 
         # Source of dockerfile for image to be build
         context = self._resolve_context_string()

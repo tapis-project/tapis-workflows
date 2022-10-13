@@ -1,13 +1,12 @@
 import logging, os
 
-# NOTE TODO git lib not respecting the earlier directive to only 
 # log CRITICAL messages
 logging.getLogger("git").setLevel(logging.CRITICAL)
 import git
 
 from kubernetes.client import V1Container, V1EnvVar
 
-from conf.configs import SINGULARITY_IMAGE_URL, SINGULARITY_IMAGE_TAG
+from conf.constants import SINGULARITY_IMAGE_URL, SINGULARITY_IMAGE_TAG
 
 
 class ContainerBuilder:
@@ -31,7 +30,7 @@ class ContainerBuilder:
         if task.destination.filename != None:
             filename = task.destination.filename
 
-        # Pull the image from dockerhub and generate the SIF file
+        # Pull the image from Dockerhub and generate the SIF file
         if task.context.type == "dockerhub":
             # Use latest tag if not specified
             tag = "latest"
@@ -46,6 +45,8 @@ class ContainerBuilder:
                 f"docker://{task.context.url}:{tag}"
             ]
 
+        # Pull the Singularity file from a github repository and then build the SIF
+        # file
         if task.context.type == "github":
             # Add the token to the repository url
             token = ""

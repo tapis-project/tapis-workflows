@@ -1,5 +1,4 @@
-from errors.base import PipelinesBaseException
+from errors.base import WorkflowsBaseException
 
-
-class ArchiveError(PipelinesBaseException):
+class ArchiveError(WorkflowsBaseException):
     pass

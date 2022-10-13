@@ -7,16 +7,13 @@ from errors.builder import InvalidBuilderError
 
 
 class BuildTaskExecutorResolver:
-    def __init__(self):
-        self.deployment_type = self._to_class_name(os.environ["DEPLOYMENT_TYPE"])
-
     def resolve(self, task):
         builder_name = task.builder
         builder_ns = f"core.executors.builders.{builder_name}"
 
         if bool(find_spec(builder_ns)):
-            module = import_module(f"{builder_ns}.{self.deployment_type}", "./")
-            return getattr(module, self.deployment_type)
+            module = import_module(f"{builder_ns}.{self._to_class_name(builder_name)}", "./")
+            return getattr(module, self._to_class_name(builder_name))
 
         raise InvalidBuilderError(
             f"Build '{builder_name}' is not a valid image builder."

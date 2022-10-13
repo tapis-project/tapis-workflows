@@ -80,7 +80,7 @@ class RunPipelineWebhook(APIView):
             if identity_username == None: break
 
             if identity_username == body.username:
-                username = identity_username
+                username = identity.owner
                 break
 
         if username == None:
@@ -114,7 +114,7 @@ class RunPipelineWebhook(APIView):
         )
 
         # Dispatch the request
-        pipeline_dispatcher.dispatch(pipeline_dispatch_request)
+        pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline)
 
         # Respond with the event
         return ModelResponse(event)
