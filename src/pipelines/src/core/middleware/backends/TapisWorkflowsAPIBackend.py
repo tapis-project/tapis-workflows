@@ -1,3 +1,5 @@
+import time
+
 from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
 
 from core.events import Event, EventHandler
@@ -40,51 +42,115 @@ class TapisWorkflowsAPIBackend(EventHandler):
             TASK_TERMINATED:     self._task_terminated
         }
 
+        service_api_gateway = TapisServiceAPIGateway()
+        self.service_client = service_api_gateway.get_client()
+
     def handle(self, event: Event):
         self.handle_fn_mapping[event.type](event)
 
     def _pipeline_active(self, event):
-        print("BACKEND: PIPELINE ACTIVE")
+        print(f"BACKEND: PIPELINE_ACTIVE: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updatePipelineRun(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
+            status="active"
+        )
 
     def _pipeline_completed(self, event):
-        print("BACKEND: PIPELINE COMPLETED")
+        print(f"BACKEND: PIPELINE_COMPLETED: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updatePipelineRun(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
+            status="completed"
+        )
 
     def _pipeline_terminated(self, event):
-        print(f"BACKEND: PIPELINE TERMINATED: {event.payload.id}")
+        print(f"BACKEND: PIPELINE_TERMINATED: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updatePipelineRun(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
+            status="terminated"
+        )
 
     def _pipeline_archiving(self, event):
-        print("BACKEND: PIPELINE ARCHVING")
+        print(f"BACKEND: PIPELINE_ARCHIVING: NOT IMPLEMENTED")
 
     def _pipeline_failed(self, event):
-        print("BACKEND: PIPELINE FAILED")
+        print(f"BACKEND: PIPELINE_FAILED: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updatePipelineRun(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
+            status="failed"
+        )
 
     def _pipeline_pending(self, event):
-        print("BACKEND: PIPELINE PENDING")
+        print(f"BACKEND: PIPELINE_PENDING: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updatePipelineRun(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
+            status="pending"
+        )
 
     def _pipeline_suspended(self, event):
-        print("BACKEND: PIPELINE SUSPENDED")
+        print(f"BACKEND: PIPELINE_SUSPENDED: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updatePipelineRun(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
+            status="suspended"
+        )
 
     def _task_active(self, event):
-        print(f"BACKEND: TASK: ACTIVE")
+        print(f"BACKEND: TASK_ACTIVE: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updateTaskExecutor(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
+            task_id=event.task.id,
+            uuid=event.task.uuid
+        )
 
     def _task_archiving(self, event):
-        print(f"BACKEND: TASK: ARCHIVING")
+        print(f"BACKEND: TASK_ARCHIVING: NOT IMPLEMENTED")
 
     def _task_backoff(self, event):
-        print(f"BACKEND: TASK: BACKOFF")
+        print(f"BACKEND: TASK_BACKOFF: NOT IMPLEMENTED")
 
     def _task_completed(self, event):
-        print(f"BACKEND: TASK: COMPLETED")
+        print(f"BACKEND: TASK_COMPLETED: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updateTaskExecutor(
+            task_execution_uuid=event.payload.task.uuid,
+            status="completed"
+        )
 
     def _task_failed(self, event):
-        print(f"BACKEND: TASK: FAILED")
+        print(f"BACKEND: TASK_FAILED: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updateTaskExecutor(
+            task_execution_uuid=event.payload.task.uuid,
+            status="failed"
+        )
 
     def _task_suspended(self, event):
-        print(f"BACKEND: TASK: SUSPENDED")
+        print(f"BACKEND: TASK_SUSPENDED: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updateTaskExecutor(
+            task_execution_uuid=event.payload.task.uuid,
+            status="suspended"
+        )
 
     def _task_terminated(self, event):
-        print(f"BACKEND: TASK: TERMINATED")
+        print(f"BACKEND: TASK_TERMINATED: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updateTaskExecutor(
+            task_execution_uuid=event.payload.task.uuid,
+            status="terminated"
+        )
 
     def _task_pending(self, event):
-        print(f"BACKEND: TASK: PENDING")
+        print(f"BACKEND: TASK_PENDING: NOT IMPLEMENTED")
+        return
+        self.service_client.workflows.updateTaskExecutor(
+            task_execution_uuid=event.payload.task.uuid,
+            status="pending"
+        )
     

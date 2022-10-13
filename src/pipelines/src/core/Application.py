@@ -69,7 +69,7 @@ class Application:
         inbound_queue = channel.queue_declare(queue=INBOUND_QUEUE, exclusive=True)
         channel.queue_bind(exchange=INBOUND_EXCHANGE, queue=inbound_queue.method.queue)
         
-        # TODO Implement
+        # TODO Future Implementation
         # Retry exchange and queue is a temporary hold for messages that havent been
         # processed yet in the event that there are no workers available, or the workflow
         # executor has an ApplicationError
@@ -77,7 +77,7 @@ class Application:
         retry_queue = channel.queue_declare(queue=RETRY_QUEUE)
         channel.queue_bind(exchange=RETRY_EXCHANGE, queue=retry_queue.method.queue)
         
-        # TODO Implement
+        # TODO Future Implementation
         # Messages that are retried too many times get sent to the deadletter exchange
         # for inspection
         channel.exchange_declare(DEAD_LETTER_EXCHANGE, exchange_type=ExchangeType.fanout)
@@ -112,7 +112,7 @@ class Application:
 
         # Cathes all ampq errors from .start_consuming()
         except AMQPError as e:
-            logging.error(e)
+            logging.error(f"{e.__class__.__name__} - {e}")
 
         # Catch all other exceptions
         except Exception as e:

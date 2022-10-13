@@ -488,7 +488,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResourceUrlResp'
+                $ref: '#/components/schemas/ResourceURLResp'
         '400':
           description: Bad request. Invalid JSON.
           content:
@@ -995,6 +995,11 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
       responses:
         '200':
           description: Success.
@@ -1464,7 +1469,7 @@ paths:
   '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/runs':
     get:
       tags:
-        - PipelineRun
+        - PipelineRuns
       summary: Pipeline Runs
       description: |
         List runs for a pipeline
@@ -1491,7 +1496,7 @@ paths:
   '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/runs/{pipeline_run_uuid}':
     get:
       tags:
-        - PipelineRun
+        - PipelineRuns
       summary: Pipeline Runs
       description: |
         Get a pipeline run
@@ -2682,7 +2687,7 @@ components:
       properties:
         task_id:
           $ref: "#/components/schemas/ID"
-        created_at:
+        started_at:
           type: string
         last_modified:
           type: string
@@ -2726,9 +2731,9 @@ components:
               type: string
               default: 'created'
             result:
-              $ref: '#/components/schemas/ResourceUrlResult'
+              $ref: '#/components/schemas/ResourceURLResult'
 
-    ResourceUrlResult:
+    ResourceURLResult:
       type: object
       properties:
         url:
@@ -2743,11 +2748,11 @@ components:
               type: string
 
     ObjectResp:
-      $ref: "#/components/scheams/BaseResp"
+      $ref: "#/components/schemas/BaseResp"
 
     ListResp:
       allOf:
-        - $ref: "#/components/scheams/BaseResp"
+        - $ref: "#/components/schemas/BaseResp"
         - type: object
           properties:
             result:
@@ -2757,7 +2762,7 @@ components:
 
     ErrorResp:
       allOf:
-        - $ref: "#/components/scheams/BaseResp"
+        - $ref: "#/components/schemas/BaseResp"
         - type: object
           properties:
             status:
@@ -2961,6 +2966,7 @@ components:
         - completed
         - failed
         - suspended
+        - archiving
         - terminated
 
     InvocationModeEnum:

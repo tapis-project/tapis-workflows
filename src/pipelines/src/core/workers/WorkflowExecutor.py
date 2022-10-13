@@ -73,7 +73,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         Worker.__init__(self, _id)
 
         # Initializes the primary(and only)event exchange, enabling publishers
-        # (the WorkflowExecutor and other event producers) to publish events to it,
+        # (the WorkflowExecutor and other Event producers) to publish Events to it,
         # triggering subscribers to handle those events. 
         EventPublisher.__init__(
             self,
@@ -93,14 +93,14 @@ class WorkflowExecutor(Worker, EventPublisher):
                     self._on_change_state,
                     attrs=[] # No attrs means all state gets/sets triggers this hook
                 ),
+                # NOTE Not necessary to have this as a hook, but a good it's a good
+                # demonstration of how ReactiveState works. Move logic from 
+                # _on_change_ready_task to all spots where self.state.read_tasks
+                # is accessed or updated and remove this Hook
                 Hook(
                     self._on_change_ready_task,
                     attrs=["ready_tasks"]
-                ),
-                # Hook(
-                #     self._on_change_terminable_active,
-                #     attrs=["terminable_active"]
-                # )
+                )
             ],
             initial_state={
                 "threads": [],
@@ -117,9 +117,6 @@ class WorkflowExecutor(Worker, EventPublisher):
                 "ctx": None,
 
                 "ready_tasks": [],
-                
-                # TODO experimental
-                "terminable_count": 0,
             },
             lock=self.lock
         )
@@ -529,13 +526,3 @@ class WorkflowExecutor(Worker, EventPublisher):
             executor.terminate()
     
         self._cleanup_run()
-
-    # @method_hook
-    # def _on_change_terminable_active(self, state):
-    #     if state.terminable_active:
-    #         state.terminable_count += 1
-    #         print("Active terminables", state.terminable_count)
-    #         return
-
-    #     state.terminable_count -= 1
-    #     print("Active terminables", state.terminable_count)
