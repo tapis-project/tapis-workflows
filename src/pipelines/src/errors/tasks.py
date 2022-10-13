@@ -1,21 +1,21 @@
-from errors.base import PipelinesBaseException
+from errors.base import WorkflowsBaseException
 
 
-class InvalidTaskTypeError(PipelinesBaseException):
+class InvalidTaskTypeError(WorkflowsBaseException):
     pass
 
 
-class MissingInitialTasksError(PipelinesBaseException):
+class MissingInitialTasksError(WorkflowsBaseException):
     pass
 
 
-class InvalidDependenciesError(PipelinesBaseException):
+class InvalidDependenciesError(WorkflowsBaseException):
     pass
 
 
-class CycleDetectedError(PipelinesBaseException):
+class CycleDetectedError(WorkflowsBaseException):
     pass
 
 
-class FailedTaskError(PipelinesBaseException):
+class FailedTaskError(WorkflowsBaseException):
     pass
