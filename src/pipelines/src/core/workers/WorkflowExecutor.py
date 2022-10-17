@@ -1,5 +1,4 @@
 import os, logging
-from pprint import pprint
 
 from threading import Thread, Lock
 
@@ -185,6 +184,8 @@ class WorkflowExecutor(Worker, EventPublisher):
             self._set_tasks(self.state.ctx.pipeline.tasks)
         except Exception as e:
             raise e
+
+        logging.info(f"{self.PSTR()} {self.state.ctx.pipeline.id} [STAGING COMPLETED] {self.state.ctx.pipeline_run.uuid}")
 
     @terminable
     def _start_task(self, task):
