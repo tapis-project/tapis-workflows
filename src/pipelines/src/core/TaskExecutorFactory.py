@@ -28,7 +28,6 @@ class TaskExecutorFactory:
     def _request(self, task, ctx, exchange) -> TaskExecutor:
         return Request(task, ctx, exchange)
 
-
     def _container_run(self, task, ctx, exchange) -> TaskExecutor:
         return Request(task, ctx, exchange)
     
@@ -40,7 +39,5 @@ class TaskExecutorFactory:
 
     def _tapis_actor(self, task, ctx, exchange) -> TaskExecutor:
         return Request(task, ctx, exchange)
-
-
 
 task_executor_factory = TaskExecutorFactory()

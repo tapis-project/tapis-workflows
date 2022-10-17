@@ -59,7 +59,7 @@ six==1.16.0
 smmap==5.0.0
 sqlparse==0.4.2
 strict-rfc3339==0.7
-tapipy==1.2.8
+tapipy==1.2.12
 tapisservice==1.2.5
 tomli==2.0.1
 typing_extensions==4.0.1
