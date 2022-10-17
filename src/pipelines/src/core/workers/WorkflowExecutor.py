@@ -1,4 +1,5 @@
 import os, logging
+from pprint import pprint
 
 from threading import Thread, Lock
 
@@ -137,10 +138,14 @@ class WorkflowExecutor(Worker, EventPublisher):
         try:
             # Prepare the workflow executor, temporary results storage,
             # middleware(backends and archivers), queue the tasks
-            self._pre_run(ctx)
+            self._staging(ctx)
 
             # Get the first tasks
             unstarted_threads = self._fetch_ready_tasks()
+
+            # Trigger the PIPELINE_ACTIVE event and log
+            logging.info(f"{self.PSTR()} {self.state.ctx.pipeline.id} [STARTED] {self.state.ctx.pipeline_run.uuid}")
+            self.publish(Event(PIPELINE_ACTIVE, self.state.ctx))
             
             # NOTE Triggers the hook _on_change_ready_task
             self.state.ready_tasks += unstarted_threads
@@ -150,17 +155,15 @@ class WorkflowExecutor(Worker, EventPublisher):
             raise e
 
     @terminable
-    def _pre_run(self, ctx):
+    def _staging(self, ctx):
+        logging.info(f"{self.PSTR()} {ctx.pipeline.id} [STAGING] {ctx.pipeline_run.uuid}")
+        
         # Resets the workflow executor to its initial state
         self._set_initial_state()
 
         # Validates and sets the context. All subsequent references to the context
         # should be made via 'self.state.ctx'
         self._set_context(ctx)
-
-        # Trigger the PIPELINE_ACTIVE event
-        logging.info(f"{self.PSTR()} {self.state.ctx.pipeline.id} [STARTED] {self.state.ctx.pipeline_run.uuid}")
-        self.publish(Event(PIPELINE_ACTIVE, self.state.ctx))
 
         # Prepare the file system for this pipeline
         self._prepare_fs()

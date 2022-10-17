@@ -30,7 +30,7 @@ class RestrictedAPIView(View):
         if request.method != "GET":
             # Accept only application/json for all non get methods
             if request.content_type not in PERMITTED_CONTENT_TYPES:
-                return UnsupportedMediaType()
+                return UnsupportedMediaType(f"Unsupported media type. Received: {request.content_type} | Expected one of {PERMITTED_CONTENT_TYPES}")
 
             # Ensure the body of the request is correctly encoded json
             try:
