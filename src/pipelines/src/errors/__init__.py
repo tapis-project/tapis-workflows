@@ -29,3 +29,10 @@ class PipelineExecutionError(ExecutionError):
 
 class TaskExecutionError(ExecutionError):
     pass
+
+# Programming errors. Errors that can only come about from erroneous code
+class ProgrammingError(WorkflowsBaseException):
+    pass
+
+class InvalidFlavorError(ProgrammingError):
+    pass

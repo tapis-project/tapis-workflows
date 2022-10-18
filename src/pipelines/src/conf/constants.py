@@ -2,6 +2,8 @@ import os
 
 from pathlib import Path
 
+from core.Flavor import Flavor
+
 
 BASE_DIR = str(Path(__file__).resolve().parent.parent) + "/"
 
@@ -77,6 +79,23 @@ DEFAULT_MAX_RETRIES = 0
 # Image tags and urls
 KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"
 KANIKO_IMAGE_TAG = "debug"
+
+# Container Flavors - Image Builders
+FLAVOR_B1_LARGE = Flavor(cpu="4", memory="4G", disk="0")
+FLAVOR_B1_XLARGE = Flavor(cpu="4", memory="8G", disk="0")
+FLAVOR_B1_XXLARGE = Flavor(cpu="4", memory="16G", disk="0")
+
+# Container Flavors - Compute
+FLAVOR_C1_SMALL = Flavor(cpu="1", memory="1G", disk="20GB")
+FLAVOR_C1_MEDIUM = Flavor(cpu="2", memory="2G", disk="20GB")
+FLAVOR_C1_LARGE = Flavor(cpu="4", memory="4G", disk="20GB")
+FLAVOR_C1_XLARGE = Flavor(cpu="8", memory="8G", disk="20GB")
+FLAVOR_C1_XXLARGE = Flavor(cpu="16", memory="16G", disk="20GB")
+
+FLAVORS = [
+    FLAVOR_B1_LARGE, FLAVOR_B1_XLARGE, FLAVOR_B1_XLARGE,
+    FLAVOR_C1_SMALL, FLAVOR_C1_MEDIUM, FLAVOR_C1_LARGE, FLAVOR_C1_XLARGE, FLAVOR_C1_XXLARGE,
+]
 
 SINGULARITY_IMAGE_URL = "quay.io/singularity/singularity"
 SINGULARITY_IMAGE_TAG = "v3.10.0"
