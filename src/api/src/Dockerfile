@@ -21,6 +21,6 @@ COPY src/shared/conf/config.json /src/backend/config.json
 COPY src/shared/conf/configschema.json /src/backend/configschema.json
 
 # Shared utils and helpers
-COPY src/shared/GraphValidator.py /src/backend/helpers
-COPY src/shared/TapisServiceAPIGateway.py /src/backend/services
+COPY src/shared/GraphValidator.py /src/backend/helpers/GraphValidator.py
+COPY src/shared/TapisServiceAPIGateway.py /src/backend/services/TapisServiceAPIGateway.py
 
