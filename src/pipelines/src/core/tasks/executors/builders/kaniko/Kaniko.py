@@ -3,8 +3,8 @@ import time, logging
 from kubernetes import client
 
 from conf.constants import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL, KANIKO_IMAGE_TAG
-from core.TaskResult import TaskResult
-from core.executors.builders.BaseBuildExecutor import BaseBuildExecutor
+from core.tasks.TaskResult import TaskResult
+from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
 
 

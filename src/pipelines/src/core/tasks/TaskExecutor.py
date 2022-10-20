@@ -41,8 +41,6 @@ class TaskExecutor(EventPublisher):
         # the task max_exec_time
         self._set_polling_interval(task)
 
-        import time; print("sleeping"); time.sleep(5) # TODO REMOVE
-
     def _set_polling_interval(self, task):
         # Default is already the DEFAULT_POLLING_INTERVAL
         if task.max_exec_time <= 0: return

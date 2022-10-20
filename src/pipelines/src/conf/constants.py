@@ -2,7 +2,7 @@ import os
 
 from pathlib import Path
 
-from core.Flavor import Flavor
+from core.tasks.Flavor import Flavor
 
 
 BASE_DIR = str(Path(__file__).resolve().parent.parent) + "/"

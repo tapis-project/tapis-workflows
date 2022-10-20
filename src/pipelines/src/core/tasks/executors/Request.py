@@ -4,8 +4,8 @@ from typing import Any, Dict, Union
 
 from pydantic import BaseModel, ValidationError
 
-from core.TaskResult import TaskResult
-from core.TaskExecutor import TaskExecutor
+from core.tasks.TaskResult import TaskResult
+from core.tasks.TaskExecutor import TaskExecutor
 
 
 PERMITTED_HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]

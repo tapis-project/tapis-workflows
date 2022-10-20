@@ -2,8 +2,8 @@ import os, logging
 
 from threading import Thread, Lock
 
-from core.TaskExecutorFactory import task_executor_factory as factory
-from core.TaskResult import TaskResult
+from core.tasks.TaskExecutorFactory import task_executor_factory as factory
+from core.tasks.TaskResult import TaskResult
 from core.events import (
     Event,
     EventPublisher,
@@ -224,11 +224,15 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Also publishes a TASK_COMPLETED or TASK_FAILED based on the result
         callback(task, task_result)
 
+        print("TASK RESULT", vars(task_result))
+
         # TODO Check to see if the task has any more "retries" available.
         # If it does, requeue
 
         # Deregister the task executor. This cleans up the resources that were created
         # during the initialization and execution of the task executor
+        # TODO NOTE the line below will throw and exception if task 
+        # fails because before registering the executor
         self._deregister_executor(self.state.ctx.pipeline_run.uuid, task)
         
         # Run the on_pipeline_terminal_state callback if all tasks are complete.

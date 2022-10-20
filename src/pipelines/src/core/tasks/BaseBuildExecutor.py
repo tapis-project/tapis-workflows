@@ -1,13 +1,13 @@
 import json, base64, os
 
-from core.executors.builders.helpers.ContextResolver import context_resolver
+from core.tasks.executors.builders.helpers.ContextResolver import context_resolver
 from errors.credentials import CredentialsError
-from core.TaskExecutor import TaskExecutor
+from core.tasks.TaskExecutor import TaskExecutor
 
 
 class BaseBuildExecutor(TaskExecutor):
-    def __init__(self, task, message):
-        TaskExecutor.__init__(self, task, message)
+    def __init__(self, task, ctx, exchange):
+        TaskExecutor.__init__(self, task, ctx, exchange)
 
     def _resolve_context_string(self):
         # Resolve the repository from which the code containing the Dockerfile

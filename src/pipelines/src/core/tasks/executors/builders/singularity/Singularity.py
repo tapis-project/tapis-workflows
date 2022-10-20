@@ -15,10 +15,10 @@ from kubernetes.client import (
 )
 
 from conf.constants import KUBERNETES_NAMESPACE, PIPELINES_PVC
-from core.TaskResult import TaskResult
 from core.resources import JobResource
-from core.executors.builders.BaseBuildExecutor import BaseBuildExecutor
-from core.executors.builders.singularity.helpers.ContainerBuilder import container_builder
+from core.tasks.TaskResult import TaskResult
+from core.tasks.BaseBuildExecutor import BaseBuildExecutor
+from core.tasks.executors.builders.singularity.helpers.ContainerBuilder import container_builder
 
 
 class Singularity(BaseBuildExecutor):

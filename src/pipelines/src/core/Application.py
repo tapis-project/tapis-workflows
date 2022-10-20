@@ -28,7 +28,8 @@ from conf.constants import (
     DUPLICATE_SUBMISSION_POLICY_DENY,
 )
 
-from core.workers import WorkerPool, WorkflowExecutor
+from core.workers import WorkerPool
+from core.workflows.executors import WorkflowExecutor
 from utils import bytes_to_json, json_to_object, lbuffer_str as lbuf
 from errors import NoAvailableWorkers, WorkflowTerminated
 

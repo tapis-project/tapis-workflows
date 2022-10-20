@@ -1,7 +1,7 @@
-from core.BuildTaskExecutorResolver import build_task_executor_resolver
-from core.TaskExecutor import TaskExecutor
+from core.tasks.BuildTaskExecutorResolver import build_task_executor_resolver
+from core.tasks.TaskExecutor import TaskExecutor
 from core.events import EventExchange
-from core.executors.Request import Request
+from core.tasks.executors.Request import Request
 from errors.tasks import InvalidTaskTypeError
 
 

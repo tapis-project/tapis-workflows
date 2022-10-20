@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from kubernetes import client
 
-from core.TaskExecutor import TaskExecutor
+from core.tasks.TaskExecutor import TaskExecutor
 from conf.constants import PIPELINES_PVC, KUBERNETES_NAMESPACE, FLAVOR_C1_MEDIUM
 from core.resources import PodResource
 from utils.k8s import flavor_to_limits
