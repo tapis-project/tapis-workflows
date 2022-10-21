@@ -1,7 +1,5 @@
 import time, logging
 
-from typing import List
-
 from kubernetes.client.rest import ApiException
 from kubernetes.client import (
     V1Job,
@@ -19,7 +17,7 @@ from core.resources import JobResource
 from core.tasks.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.tasks.executors.builders.singularity.helpers.ContainerBuilder import container_builder
-
+from errors import WorkflowTerminated
 
 class Singularity(BaseBuildExecutor):
     def execute(self) -> TaskResult:
@@ -30,11 +28,16 @@ class Singularity(BaseBuildExecutor):
         
             # Poll the job status until the job is in a terminal state
             while not self._job_in_terminal_state(job):
+                if self.terminating:
+                    raise WorkflowTerminated()
                 job = self.batch_v1_api.read_namespaced_job(
                     job.metadata.name, KUBERNETES_NAMESPACE
                 )
 
                 time.sleep(self.polling_interval)
+        except WorkflowTerminated as e:
+            self.cleanup(terminating=True)
+            return TaskResult(status=2, errors=[e])
         except ApiException as e:
             return TaskResult(status=1, errors=[str(e)])
 

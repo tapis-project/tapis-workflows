@@ -6,7 +6,12 @@ from conf.constants import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL
 from core.tasks.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
+from utils import lbuffer_str as lbuf
+from errors import WorkflowTerminated
 
+
+PSTR = lbuf('[PIPELINE]')
+TSTR = lbuf('[TASK]')
 
 class Kaniko(BaseBuildExecutor):
     def __init__(self, task, message):
@@ -22,11 +27,16 @@ class Kaniko(BaseBuildExecutor):
 
             # Poll the job status until the job is in a terminal state
             while not self._job_in_terminal_state(job):
+                if self.terminating:
+                    raise WorkflowTerminated()
                 job = self.batch_v1_api.read_namespaced_job(
                     job.metadata.name, KUBERNETES_NAMESPACE
                 )
 
                 time.sleep(self.polling_interval)
+        except WorkflowTerminated as e:
+            self.cleanup(terminating=True)
+            return TaskResult(status=2, errors=[e])
         except Exception as e:
             return TaskResult(status=1, errors=[e])
 
@@ -37,7 +47,7 @@ class Kaniko(BaseBuildExecutor):
         )
 
         pod_name = pod_list.items[0].metadata.name
-        
+
         # Get the logs(stdout) from this job's pod
         logs = None
         try:

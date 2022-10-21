@@ -12,7 +12,6 @@ from conf.constants import (
 )
 
 
-PSTR = lbuf('[PIPELINE]')
 TSTR = lbuf('[TASK]')
 
 class TaskExecutor(EventPublisher):
@@ -28,6 +27,7 @@ class TaskExecutor(EventPublisher):
         self.directives = self.ctx.directives
         self.polling_interval = DEFAULT_POLLING_INTERVAL
         self._resources: list[Resource] = []
+        self.terminating == False
 
         # Initialize the file system
         self._initialize_fs()
@@ -40,6 +40,12 @@ class TaskExecutor(EventPublisher):
         # Set the polling interval for the task executor based on the
         # the task max_exec_time
         self._set_polling_interval(task)
+
+    def __getattr__(self, __name):
+        if __name != "terminating":
+            raise AttributeError(f"Attribute '{__name}' does not exist")
+
+        return self._terminating()
 
     def _set_polling_interval(self, task):
         # Default is already the DEFAULT_POLLING_INTERVAL
@@ -80,10 +86,22 @@ class TaskExecutor(EventPublisher):
         self.task.output_dir = f"{self.task.work_dir}output/"
         os.makedirs(self.task.output_dir, exist_ok=True)        
 
-    def cleanup(self):
+    def cleanup(self, terminating=False):
+        if terminating: 
+            logging.info(f"{TSTR} {self.task.id} [TERMINATING] {self.__class__.__name__}")
+            
         logging.info(f"{TSTR} {self.task.id} [CLEANUP STARTED]")
 
         for resource in self._resources:
+            # Jobs and Job Pods
+            if resource.type == ResourceType.job:
+                self.batch_v1_api.delete_namespaced_job(
+                    name=resource.job.metadata.name,
+                    namespace=KUBERNETES_NAMESPACE,
+                    body=client.V1DeleteOptions(propagation_policy="Background"),
+                )
+                continue
+
             # ConfigMaps
             if resource.type == ResourceType.configmap:
                 self.core_v1_api.delete_namespaced_config_map(
@@ -92,21 +110,13 @@ class TaskExecutor(EventPublisher):
                 )
                 continue
 
-            # Jobs and Job Pods
-            if resource.type == ResourceType.job:
-                body = client.V1DeleteOptions(propagation_policy="Background")
-                self.batch_v1_api.delete_namespaced_job(
-                    name=resource.job.metadata.name,
-                    namespace=KUBERNETES_NAMESPACE,
-                    body=body,
-                )
-                continue
 
         logging.info(f"{TSTR} {self.task.id} [CLEANUP COMPLETED]")
 
+        if terminating:
+            logging.info(f"{TSTR} {self.task.id} [TERMINATED] {self.__class__.__name__}")
+
     def terminate(self):
+        self.terminating = True
         self.publish(Event(TASK_TERMINATED, self.ctx))
-        logging.info(f"{TSTR} {self.task.id} [TERMINATING] {self.__class__.__name__}")
-        self.cleanup()
-        logging.info(f"{TSTR} {self.task.id} [TERMINATED] {self.__class__.__name__}")
 

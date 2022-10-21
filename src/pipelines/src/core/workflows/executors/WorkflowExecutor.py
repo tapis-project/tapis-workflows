@@ -23,7 +23,6 @@ from errors.tasks import (
     InvalidDependenciesError,
     CycleDetectedError,
 )
-from errors import WorkflowTerminated
 from core.middleware.backends import TapisWorkflowsAPIBackend
 from core.middleware.archivers import (
     TapisSystemArchiver,
@@ -356,6 +355,7 @@ class WorkflowExecutor(Worker, EventPublisher):
     def _prepare_fs(self):
         """Creates all of the directories necessary to run the pipeline, store
         temp files, and cache data"""
+        logging.debug(f"{self.PSTR()} ID: {self.id} [FILESYSTEM PREP STARTED]")
         # The pipeline root dir. All files and directories produced by a workflow
         # execution will reside here
         self.state.ctx.pipeline.root_dir = f"{BASE_WORK_DIR}{self.state.ctx.group.id}/{self.state.ctx.pipeline.id}/"
@@ -375,6 +375,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         # cleaning up all the temporary files/dirs after the state is reset.
         # (Which means that ther will be no self.state.ctx.pipeline.work_dir)
         self.work_dir = self.state.ctx.pipeline.work_dir
+        logging.debug(f"{self.PSTR()} ID: {self.id} [FILESYSTEM PREP COMPLETED]")
 
     @terminable
     def _fetch_ready_tasks(self):
@@ -420,7 +421,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         executor = self._get_executor(run_id, task)
         executor.cleanup()
         del self.state.executors[f"{run_id}.{task.id}"]
-        logging.debug(f"{self.TSTR()} {task.id} [EXECUTOR DEREGISTERED] {run_id}.{task.id}")
+        logging.debug(f"{self.TSTR()} {task.id} [TASK EXECUTOR DEREGISTERED] {run_id}.{task.id}")
 
     @terminable
     def _get_executor(self, run_id, task):
