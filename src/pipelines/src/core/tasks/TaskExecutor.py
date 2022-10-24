@@ -18,7 +18,7 @@ class TaskExecutor(EventPublisher):
     def __init__(self, task, ctx, exchange: EventExchange):
         # Enabling task executors to publish events to the exchange. 
         EventPublisher.__init__(self, exchange)
-
+        
         self.ctx = ctx
         self.task = task
         self.pipeline = self.ctx.pipeline
@@ -27,7 +27,7 @@ class TaskExecutor(EventPublisher):
         self.directives = self.ctx.directives
         self.polling_interval = DEFAULT_POLLING_INTERVAL
         self._resources: list[Resource] = []
-        self.terminating == False
+        self.terminating = False
 
         # Initialize the file system
         self._initialize_fs()
@@ -40,12 +40,6 @@ class TaskExecutor(EventPublisher):
         # Set the polling interval for the task executor based on the
         # the task max_exec_time
         self._set_polling_interval(task)
-
-    def __getattr__(self, __name):
-        if __name != "terminating":
-            raise AttributeError(f"Attribute '{__name}' does not exist")
-
-        return self._terminating()
 
     def _set_polling_interval(self, task):
         # Default is already the DEFAULT_POLLING_INTERVAL

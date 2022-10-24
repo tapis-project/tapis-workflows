@@ -20,11 +20,11 @@ class Kaniko(BaseBuildExecutor):
         self.configmap = None
 
     def execute(self) -> TaskResult:
-        # Create the kaniko job return a failed task result on exception
+        # Create the kaniko job. Return a failed task result on exception
         # with the error message as the str value of the exception
         try: 
             job = self._create_job()
-
+            
             # Poll the job status until the job is in a terminal state
             while not self._job_in_terminal_state(job):
                 if self.terminating:
