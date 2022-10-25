@@ -3,7 +3,7 @@ import logging
 from core.tasks.BuildTaskExecutorResolver import build_task_executor_resolver
 from core.tasks.TaskExecutor import TaskExecutor
 from core.events import EventExchange
-from core.tasks.executors.Request import Request
+from core.tasks.executors.requesters import HTTP
 from errors.tasks import InvalidTaskTypeError
 
 
@@ -28,18 +28,18 @@ class TaskExecutorFactory:
         return executor(task, ctx, exchange)
 
     def _request(self, task, ctx, exchange) -> TaskExecutor:
-        return Request(task, ctx, exchange)
+        return HTTP(task, ctx, exchange)
 
     def _container_run(self, task, ctx, exchange) -> TaskExecutor:
-        return Request(task, ctx, exchange)
+        return HTTP(task, ctx, exchange)
     
     def _function(self, task, ctx, exchange) -> TaskExecutor:
-        return Request(task, ctx, exchange)
+        return HTTP(task, ctx, exchange)
 
     def _tapis_job(self, task, ctx, exchange) -> TaskExecutor:
-        return Request(task, ctx, exchange)
+        return HTTP(task, ctx, exchange)
 
     def _tapis_actor(self, task, ctx, exchange) -> TaskExecutor:
-        return Request(task, ctx, exchange)
+        return HTTP(task, ctx, exchange)
 
 task_executor_factory = TaskExecutorFactory()

@@ -45,7 +45,7 @@ class EventExchange:
                     try:
                         subscriber["handler"].handle(e)
                     except Exception as exception:
-                        logging.error(f"ERROR: {str(exception)}")
+                        logging.error(f"EVENT EXCHANGE ERROR: {str(exception)}")
 
         # Reset on the configured reset event
         if e.type in self._config.reset_on:

@@ -84,7 +84,7 @@ class TaskExecutor(EventPublisher):
         if terminating: 
             logging.info(f"{TSTR} {self.task.id} [TERMINATING] {self.__class__.__name__}")
             
-        logging.info(f"{TSTR} {self.task.id} [CLEANUP STARTED]")
+        logging.info(f"{TSTR} {self.task.id} [TASK EXECUTOR CLEANUP]")
 
         for resource in self._resources:
             # Jobs and Job Pods
@@ -103,9 +103,6 @@ class TaskExecutor(EventPublisher):
                     namespace=KUBERNETES_NAMESPACE,
                 )
                 continue
-
-
-        logging.info(f"{TSTR} {self.task.id} [CLEANUP COMPLETED]")
 
         if terminating:
             logging.info(f"{TSTR} {self.task.id} [TERMINATED] {self.__class__.__name__}")

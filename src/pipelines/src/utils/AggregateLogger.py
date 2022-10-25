@@ -1,0 +1,2 @@
+class AggregateLogger:
+    pass

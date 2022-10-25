@@ -1,6 +1,8 @@
-import requests, json, logging
+import json, logging
 
 from typing import Any, Dict, Union
+
+import requests
 
 from pydantic import BaseModel, ValidationError
 
@@ -32,7 +34,7 @@ class RequestModel(BaseModel):
 
 
 # TODO Request Task needs to be containerized
-class Request(TaskExecutor):
+class HTTP(TaskExecutor):
     def __init__(self, task, ctx, exchange):
         TaskExecutor.__init__(self, task, ctx, exchange)
 

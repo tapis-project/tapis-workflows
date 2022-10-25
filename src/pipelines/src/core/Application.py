@@ -291,9 +291,6 @@ class Application:
 
         return worker
 
-    def _terminate_worker(self, worker):
-        worker.terminate()
-
     def _deregister_worker(self, worker, terminated=False):
         worker.key = None
         self.active_workers = [ w for w in self.active_workers if w.id != worker.id ]
