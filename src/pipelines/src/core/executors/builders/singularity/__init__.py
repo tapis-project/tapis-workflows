@@ -1,1 +1,0 @@
-from core.executors.builders.singularity.Singularity import Singularity

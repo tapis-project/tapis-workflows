@@ -1,4 +1,4 @@
-from core.TaskExecutorFactory import task_executor_factory as factory
+from core.tasks.TaskExecutorFactory import task_executor_factory as factory
 
 
 class Task:

@@ -14,7 +14,7 @@ class WorkerLimitExceed(ApplicationError):
     pass
 
 class WorkflowTerminated(ApplicationError):
-    def __init__(self, msg="Terminated"):
+    def __init__(self, msg="Workflow Terminated"):
         ApplicationError.__init__(self, msg)
 
 
@@ -28,4 +28,11 @@ class PipelineExecutionError(ExecutionError):
     pass
 
 class TaskExecutionError(ExecutionError):
+    pass
+
+# Programming errors. Errors that can only come about from erroneous code
+class ProgrammingError(WorkflowsBaseException):
+    pass
+
+class InvalidFlavorError(ProgrammingError):
     pass
