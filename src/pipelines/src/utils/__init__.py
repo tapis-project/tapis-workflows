@@ -26,3 +26,4 @@ def bytes_to_json(bytestring):
     data = json.loads(value)
 
     return json.dumps(data)
+

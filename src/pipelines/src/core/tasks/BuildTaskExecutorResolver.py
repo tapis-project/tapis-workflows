@@ -9,7 +9,7 @@ from errors.builder import InvalidBuilderError
 class BuildTaskExecutorResolver:
     def resolve(self, task):
         builder_name = task.builder
-        builder_ns = f"core.executors.builders.{builder_name}"
+        builder_ns = f"core.tasks.executors.builders.{builder_name}"
 
         if bool(find_spec(builder_ns)):
             module = import_module(f"{builder_ns}.{self._to_class_name(builder_name)}", "./")

@@ -25,25 +25,27 @@ class ContainerBuilder:
         return container
 
     def resolve_command(self, task, directives=None):
-        # Save to image.sif if no file name provided
-        filename = "image.sif"
-        if task.destination.filename != None:
-            filename = task.destination.filename
 
         # Pull the image from Dockerhub and generate the SIF file
         if task.context.type == "dockerhub":
+            cmd = [
+                "singularity",
+                "pull",
+                "--dir=/mnt/output/",
+            ]
+
+            # Save to image.sif if no file name provided
+            if task.destination.filename != None:
+                cmd.append(task.destination.filename)
+
             # Use latest tag if not specified
             tag = "latest"
             if task.context.tag != None:
                 tag = task.context.tag
+
+            cmd.append(f"docker://{task.context.url}:{tag}")
             
-            return [
-                "singularity",
-                "pull",
-                "--dir=/mnt/output/",
-                filename,
-                f"docker://{task.context.url}:{tag}"
-            ]
+            return cmd
 
         # Pull the Singularity file from a github repository and then build the SIF
         # file
@@ -73,7 +75,7 @@ class ContainerBuilder:
             command = [
                 "singularity",
                 "build",
-                f"/mnt/output/{filename}",
+                f"/mnt/output/{task.destination.filename or ''}",
                 recipe_file_path
             ]
 

@@ -28,7 +28,8 @@ from conf.constants import (
     DUPLICATE_SUBMISSION_POLICY_DENY,
 )
 
-from core.workers import WorkerPool, WorkflowExecutor
+from core.workers import WorkerPool
+from core.workflows.executors import WorkflowExecutor
 from utils import bytes_to_json, json_to_object, lbuffer_str as lbuf
 from errors import NoAvailableWorkers, WorkflowTerminated
 
@@ -289,9 +290,6 @@ class Application:
         self.active_workers.append(worker)
 
         return worker
-
-    def _terminate_worker(self, worker):
-        worker.terminate()
 
     def _deregister_worker(self, worker, terminated=False):
         worker.key = None
