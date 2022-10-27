@@ -34,7 +34,9 @@ from utils import bytes_to_json, json_to_object, lbuffer_str as lbuf
 from errors import NoAvailableWorkers, WorkflowTerminated
 
 
-SSTR = lbuf("[SYSTEM]")
+logger = logging.getLogger("application")
+
+SSTR = lbuf("[APPLICATION]")
 
 # TODO Keep track of workflows submissions somehow so they can be terminated later
 class Application:
@@ -47,7 +49,7 @@ class Application:
         workers, establishes a connection with RabbitMQ, creates the channel, 
         exchanges, and queues, and begins consuming from the inbound queue"""
 
-        logging.info(f"{SSTR} Workflow Executor [STARTING]")
+        logger.info(f"{SSTR} STARTING")
 
         # Create a worker pool that consists of the workflow executors that will
         # run the pipelines
@@ -57,7 +59,7 @@ class Application:
             starting_worker_count=STARTING_WORKERS,
             max_workers=MAX_WORKERS,
         )
-        logging.debug(f"{SSTR} Workflow Executor [WORKERS INITIALIZED] ({self.worker_pool.count()})")
+        logger.debug(f"{SSTR} WORKERS INITIALIZED ({self.worker_pool.count()})")
 
         # Connect to the message broker
         connection = self._connect()
@@ -109,15 +111,15 @@ class Application:
 
         # Occurs when basic_consume recieves the wrong args
         except ValueError as e:
-            logging.critical(f"Critical Workflow Executor Error: {e}")
+            logger.critical(f"Critical Workflow Executor Error: {e}")
 
         # Cathes all ampq errors from .start_consuming()
         except AMQPError as e:
-            logging.error(f"{e.__class__.__name__} - {e}")
+            logger.error(f"{e.__class__.__name__} - {e}")
 
         # Catch all other exceptions
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
 
     def _start_worker(self, body, connection, channel, delivery_tag):
         """Validates and prepares the message from the inbound exchange(and queue),
@@ -161,12 +163,12 @@ class Application:
 
         # Thrown when decoding the message body. Reject the message
         except JSONDecodeError as e:
-            logging.error(e)
+            logger.error(e)
             channel.basic_reject(delivery_tag, requeue=False)
             return
 
         except NoAvailableWorkers:
-            logging.info(f"{SSTR} Insufficient workers available [RETRYING] (10s)")
+            logger.info(f"{SSTR} Insufficient workers available. RETRYING (10s)")
             connection.add_callback_threadsafe(
                 partial(
                     self._ack_nack,
@@ -180,11 +182,11 @@ class Application:
 
         # TODO probably not needed
         # except WorkflowTerminated as e:
-        #     logging.info(f"{SSTR} {e}")
+        #     logger.info(f"{SSTR} {e}")
         #     worker.reset()
 
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
 
             # Nack the message if it has not already been ack
             # TODO Nack the message into a retry queue. 
@@ -237,7 +239,7 @@ class Application:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        logging.info(f"{SSTR} Workflow Executor [CONNECTING]")
+        logger.info(f"{SSTR} CONNECTING")
 
         connected = False
         connection_attempts = 0
@@ -247,17 +249,17 @@ class Application:
                 connection = pika.BlockingConnection(connection_parameters)
                 connected = True
             except Exception:
-                logging.info(f"{SSTR} Workflow Executor [CONNECTION FAILED] ({connection_attempts})")
+                logger.info(f"{SSTR} [CONNECTION FAILED] ({connection_attempts})")
                 time.sleep(CONNECTION_RETRY_DELAY)
 
         # Kill the build service if unable to connect
         if connected == False:
-            logging.critical(
+            logger.critical(
                 f"\nError: Maximum connection attempts reached({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker."
             )
             sys.exit(1)
 
-        logging.info(f"{SSTR} Workflow Executor [CONNECTED]")
+        logger.info(f"{SSTR} CONNECTED")
 
         return connection
 
