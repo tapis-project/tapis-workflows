@@ -54,7 +54,6 @@ class TaskService(Service):
             context = None
             if request.context != None:
                 context = self._create_context(request, pipeline)
-            
             # Create the destination
             destination = None
             if request.destination != None:
@@ -63,6 +62,7 @@ class TaskService(Service):
         except Exception as e:
             self.rollback()
             raise e
+
 
         # Create task
         try:
@@ -102,12 +102,16 @@ class TaskService(Service):
             self.rollback()
             raise e
 
+        except Exception as e:
+            print("Generic Exception", request.id, flush=True)
+            raise e
+
         return task
 
     def _resolve_authn_source(self, request, pipeline, accessor):
         """Determines whether the authn source will come and identity
         or credentials directly"""
-
+        
         # Accessor is either "context" or "destination", and "target" is
         # the context or destination object of the task
         target = getattr(request, accessor)
@@ -132,7 +136,7 @@ class TaskService(Service):
             cred_data = {}
             for key, value in dict(credentials).items():
                 if value != None:
-                    cred_data[key] = getattr(credentials, key)
+                    cred_data[key] = credentials.get(key)
             
             try:
                 cred = secret_service.save(f"pipeline:{pipeline.id}", cred_data)

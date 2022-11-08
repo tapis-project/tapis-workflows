@@ -32,10 +32,15 @@ class RestrictedAPIView(View):
             if request.content_type not in PERMITTED_CONTENT_TYPES:
                 return UnsupportedMediaType(f"Unsupported media type. Received: {request.content_type} | Expected one of {PERMITTED_CONTENT_TYPES}")
 
+            # Handle for requests that are non-GET and no request body sent
+            request_body = request.body
+            if request.content_type == None:
+                request_body = b""
+
             # Ensure the body of the request is correctly encoded json
             try:
                 self.request_body = json.loads(
-                    b"{}" if request.body == b"" else request.body)
+                    b"{}" if request_body == b"" else request_body)
             except json.JSONDecodeError:
                 return BadRequest(message="Could not decode request body")
         

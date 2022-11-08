@@ -268,9 +268,9 @@ class Application:
     def _register_worker(self, ctx, worker):
         """Registers the worker to the Application. Handles duplicate workflow
         submissions"""
-        # Returns a key based on user-defined unique constraints or pipeline
-        # run uuid if no unique constraints
-        worker.key = self._resolve_unique_constraint_key(ctx)
+        # Returns a key based on user-defined idempotency key or pipeline
+        # run uuid if no idempotency key is provided
+        worker.key = self._resolve_idempotency_key(ctx)
 
         # Check if there are workers running that have the same unique constraint key
         active_workers = self._get_active_workers(worker.key)
@@ -301,22 +301,22 @@ class Application:
     def _get_active_workers(self, key):
         return [worker for worker in self.active_workers if worker.key == key]
 
-    def _resolve_unique_constraint_key(self, ctx):
-        # Check the context's meta for a unique constraint. This will be used
+    def _resolve_idempotency_key(self, ctx):
+        # Check the context's meta for a idempotency key. This will be used
         # to help identify duplicate workflow submissions and handle them
         # according to their duplicate submission policy.
         #
         # Defaults to the pipeline run uuid
-        if len(ctx.meta.unique_constraints) == 0:
+        if len(ctx.meta.idempotency_key) == 0:
             return ctx.pipeline_run.uuid
 
         try:
-            unique_constraint = ""
-            for constraint in ctx.meta.unique_constraints:
+            idempotency_key = ""
+            for constraint in ctx.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
-                unique_constraint = unique_constraint + str(getattr(getattr(ctx, obj), prop))
+                idempotency_key = idempotency_key + str(getattr(getattr(ctx, obj), prop))
 
-            return unique_constraint
+            return idempotency_key
         except (AttributeError, TypeError):
             return ctx.pipeline_run.uuid
 

@@ -32,10 +32,10 @@ class PipelineDispatcher:
         service_request["meta"] = {}
         # Properties to help uniquely identity a pipeline submission. If the workflow
         # executor is currently running a pipeline with the same values as the
-        # properties provided in "unique_constraint", the workflow executor
+        # properties provided in "idempotency_key", the workflow executor
         # will then take the appropriate action dictated by the
         # pipeline.duplicate_submission_policy (allow, allow_terminate, deny)
-        service_request["meta"]["unique_constraints"] = [
+        service_request["meta"]["idempotency_key"] = [
             "group.id",
             "group.tenant_id",
             "pipeline.id"

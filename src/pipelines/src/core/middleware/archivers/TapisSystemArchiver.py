@@ -16,7 +16,7 @@ class TapisSystemArchiver(EventHandler):
         self.logger = event.payload.logger
         # TODO REMOVE BELOW
         self.logger.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING SKIPPED] {trunc_uuid(event.payload.pipeline.run_id)}")
-        return
+        # return
 
         if event.type in [PIPELINE_COMPLETED, PIPELINE_TERMINATED, PIPELINE_FAILED]:
             self.logger.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING] {trunc_uuid(event.payload.pipeline.run_id)}")    
