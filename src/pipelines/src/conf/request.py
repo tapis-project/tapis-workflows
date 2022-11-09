@@ -16,7 +16,7 @@ class Backends(Dict):
     pass
 
 class Meta(BaseModel):
-    unique_constraints: List[str] = []
+    idempotency_key: List[str] = []
 
 class Middleware(BaseModel):
     backends: Backends

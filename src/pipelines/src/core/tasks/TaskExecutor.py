@@ -1,4 +1,4 @@
-import os, logging
+import os
 
 from kubernetes import config, client
 
@@ -28,6 +28,7 @@ class TaskExecutor(EventPublisher):
         self.polling_interval = DEFAULT_POLLING_INTERVAL
         self._resources: list[Resource] = []
         self.terminating = False
+        self.logger = self.ctx.logger
 
         # Initialize the file system
         self._initialize_fs()
@@ -82,9 +83,9 @@ class TaskExecutor(EventPublisher):
 
     def cleanup(self, terminating=False):
         if terminating: 
-            logging.info(f"{TSTR} {self.task.id} [TERMINATING] {self.__class__.__name__}")
+            self.logger.info(f"{TSTR} {self.task.id} [TERMINATING] {self.__class__.__name__}")
             
-        logging.info(f"{TSTR} {self.task.id} [TASK EXECUTOR CLEANUP]")
+        self.logger.info(f"{TSTR} {self.task.id} [TASK EXECUTOR CLEANUP]")
 
         for resource in self._resources:
             # Jobs and Job Pods
@@ -105,7 +106,7 @@ class TaskExecutor(EventPublisher):
                 continue
 
         if terminating:
-            logging.info(f"{TSTR} {self.task.id} [TERMINATED] {self.__class__.__name__}")
+            self.logger.info(f"{TSTR} {self.task.id} [TERMINATED] {self.__class__.__name__}")
 
     def terminate(self):
         self.terminating = True

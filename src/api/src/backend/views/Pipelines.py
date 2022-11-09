@@ -13,7 +13,7 @@ from backend.views.http.responses.errors import (
 )
 from backend.views.http.responses.models import ModelListResponse
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
-from backend.views.http.requests import BasePipeline, CIPipeline, ImageBuildTask
+from backend.views.http.requests import WorkflowPipeline, CIPipeline, ImageBuildTask
 from backend.models import (
     Pipeline,
     Archive,
@@ -96,12 +96,8 @@ class Pipelines(RestrictedAPIView):
         ):
             return BadRequest(f"Request body must inlcude a 'type' property with one of the following values: {PIPELINE_TYPES}")
 
-        # Determine the proper request type. Default will be a BasePipeline request
-        # TODO Remove note below once addressed
-        # NOTE Validation is not fully complete but works for now. It is difficult
-        # to validate the many different Task models. Currently something like
-        # Union[...task_models] is being used as the type for the "tasks" property
-        PipelineCreateRequest = BasePipeline
+        # Determine the proper request type. Default will be a WorkflowPipeline request
+        PipelineCreateRequest = WorkflowPipeline
         if self.request_body["type"] == PIPELINE_TYPE_CI:
             PipelineCreateRequest = CIPipeline
 
@@ -125,14 +121,12 @@ class Pipelines(RestrictedAPIView):
                 id=body.id,
                 group=group,
                 owner=request.username,
-                duplicate_submission_policy=body.execution_profile.duplicate_submission_policy,
-                # max_exec_time=body.max_exec_time,
-                # invocation_mode=body.invocation_mode,
-                # retry_policy=body.retry_policy,
-                # max_retries=body.max_retries,
+                duplicate_submission_policy=body.execution_profile.duplicate_submission_policy
             )
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
+        except Exception as e:
+            return ServerErrorResp(f"{e}")
 
         # Fetch the archives specified in the request then create relations
         # between them and the pipline
@@ -183,6 +177,7 @@ class Pipelines(RestrictedAPIView):
             group=group
         ).prefetch_related("tasks").first()
 
+
         if pipeline == None:
             return NotFound(f"Pipeline not found with id '{pipeline_id}'")
 
@@ -192,8 +187,6 @@ class Pipelines(RestrictedAPIView):
 
         # Delete the pipeline
         try:
-            pipeline.delete()
-
             # Delete the tasks
             tasks = pipeline.tasks.all()
             task_service.delete(tasks)
@@ -201,6 +194,8 @@ class Pipelines(RestrictedAPIView):
             return ServerErrorResp(message=e.__cause__)
         except ServerError as e:
             return ServerErrorResp(message=e)
+        
+        pipeline.delete()
 
         msg = f"Pipeline '{pipeline_id}' deleted. {len(tasks)} task(s) deleted."
         return BaseResponse(message=msg, result=msg)

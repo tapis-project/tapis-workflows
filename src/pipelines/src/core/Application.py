@@ -34,7 +34,9 @@ from utils import bytes_to_json, json_to_object, lbuffer_str as lbuf
 from errors import NoAvailableWorkers, WorkflowTerminated
 
 
-SSTR = lbuf("[SYSTEM]")
+logger = logging.getLogger("application")
+
+SSTR = lbuf("[APPLICATION]")
 
 # TODO Keep track of workflows submissions somehow so they can be terminated later
 class Application:
@@ -47,7 +49,7 @@ class Application:
         workers, establishes a connection with RabbitMQ, creates the channel, 
         exchanges, and queues, and begins consuming from the inbound queue"""
 
-        logging.info(f"{SSTR} Workflow Executor [STARTING]")
+        logger.info(f"{SSTR} STARTING")
 
         # Create a worker pool that consists of the workflow executors that will
         # run the pipelines
@@ -57,7 +59,7 @@ class Application:
             starting_worker_count=STARTING_WORKERS,
             max_workers=MAX_WORKERS,
         )
-        logging.debug(f"{SSTR} Workflow Executor [WORKERS INITIALIZED] ({self.worker_pool.count()})")
+        logger.debug(f"{SSTR} WORKERS INITIALIZED ({self.worker_pool.count()})")
 
         # Connect to the message broker
         connection = self._connect()
@@ -109,15 +111,15 @@ class Application:
 
         # Occurs when basic_consume recieves the wrong args
         except ValueError as e:
-            logging.critical(f"Critical Workflow Executor Error: {e}")
+            logger.critical(f"Critical Workflow Executor Error: {e}")
 
         # Cathes all ampq errors from .start_consuming()
         except AMQPError as e:
-            logging.error(f"{e.__class__.__name__} - {e}")
+            logger.error(f"{e.__class__.__name__} - {e}")
 
         # Catch all other exceptions
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
 
     def _start_worker(self, body, connection, channel, delivery_tag):
         """Validates and prepares the message from the inbound exchange(and queue),
@@ -161,12 +163,12 @@ class Application:
 
         # Thrown when decoding the message body. Reject the message
         except JSONDecodeError as e:
-            logging.error(e)
+            logger.error(e)
             channel.basic_reject(delivery_tag, requeue=False)
             return
 
         except NoAvailableWorkers:
-            logging.info(f"{SSTR} Insufficient workers available [RETRYING] (10s)")
+            logger.info(f"{SSTR} Insufficient workers available. RETRYING (10s)")
             connection.add_callback_threadsafe(
                 partial(
                     self._ack_nack,
@@ -180,11 +182,11 @@ class Application:
 
         # TODO probably not needed
         # except WorkflowTerminated as e:
-        #     logging.info(f"{SSTR} {e}")
+        #     logger.info(f"{SSTR} {e}")
         #     worker.reset()
 
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
 
             # Nack the message if it has not already been ack
             # TODO Nack the message into a retry queue. 
@@ -237,7 +239,7 @@ class Application:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        logging.info(f"{SSTR} Workflow Executor [CONNECTING]")
+        logger.info(f"{SSTR} CONNECTING")
 
         connected = False
         connection_attempts = 0
@@ -247,17 +249,17 @@ class Application:
                 connection = pika.BlockingConnection(connection_parameters)
                 connected = True
             except Exception:
-                logging.info(f"{SSTR} Workflow Executor [CONNECTION FAILED] ({connection_attempts})")
+                logger.info(f"{SSTR} [CONNECTION FAILED] ({connection_attempts})")
                 time.sleep(CONNECTION_RETRY_DELAY)
 
         # Kill the build service if unable to connect
         if connected == False:
-            logging.critical(
+            logger.critical(
                 f"\nError: Maximum connection attempts reached({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker."
             )
             sys.exit(1)
 
-        logging.info(f"{SSTR} Workflow Executor [CONNECTED]")
+        logger.info(f"{SSTR} CONNECTED")
 
         return connection
 
@@ -266,9 +268,9 @@ class Application:
     def _register_worker(self, ctx, worker):
         """Registers the worker to the Application. Handles duplicate workflow
         submissions"""
-        # Returns a key based on user-defined unique constraints or pipeline
-        # run uuid if no unique constraints
-        worker.key = self._resolve_unique_constraint_key(ctx)
+        # Returns a key based on user-defined idempotency key or pipeline
+        # run uuid if no idempotency key is provided
+        worker.key = self._resolve_idempotency_key(ctx)
 
         # Check if there are workers running that have the same unique constraint key
         active_workers = self._get_active_workers(worker.key)
@@ -299,22 +301,22 @@ class Application:
     def _get_active_workers(self, key):
         return [worker for worker in self.active_workers if worker.key == key]
 
-    def _resolve_unique_constraint_key(self, ctx):
-        # Check the context's meta for a unique constraint. This will be used
+    def _resolve_idempotency_key(self, ctx):
+        # Check the context's meta for a idempotency key. This will be used
         # to help identify duplicate workflow submissions and handle them
         # according to their duplicate submission policy.
         #
         # Defaults to the pipeline run uuid
-        if len(ctx.meta.unique_constraints) == 0:
+        if len(ctx.meta.idempotency_key) == 0:
             return ctx.pipeline_run.uuid
 
         try:
-            unique_constraint = ""
-            for constraint in ctx.meta.unique_constraints:
+            idempotency_key = ""
+            for constraint in ctx.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
-                unique_constraint = unique_constraint + str(getattr(getattr(ctx, obj), prop))
+                idempotency_key = idempotency_key + str(getattr(getattr(ctx, obj), prop))
 
-            return unique_constraint
+            return idempotency_key
         except (AttributeError, TypeError):
             return ctx.pipeline_run.uuid
 
