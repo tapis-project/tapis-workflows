@@ -375,6 +375,9 @@ class BasePipeline(BaseModel):
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
 
+class WorkflowPipeline(BasePipeline):
+    pass
+
 class CIPipeline(BasePipeline):
     cache: bool = False
     builder: str

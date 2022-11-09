@@ -32,27 +32,10 @@ from core.middleware.archivers import (
 from conf.constants import BASE_WORK_DIR
 from core.workers import Worker
 from core.state import ReactiveState, Hook, method_hook
-from utils import lbuffer_str as lbuf
+from utils import lbuffer_str as lbuf, CompositeLogger
 
 
-# Decorator for intercepting
-# def interceptable(fn):
-#     def wrapper(self, *args, **kwargs):
-#         try:
-#             # TODO figure out why setting reactive state in this decorator causes
-#             # a threading.Lock issue!
-#             # self.state.terminable_active = True
-#             res = fn(self, *args, **kwargs)
-#             # self.state.terminable_active = False
-#             return res
-#         except Exception as e:
-#             # self.state.terminable_active = False
-#             logging.debug(f"ID: {self.id} Exception in @interceptable(rollback=""): {self.id} | Terminating:{self.state.terminating}/Terminated:{self.state.terminated} | {e}")
-#             if self.state.terminating or self.state.terminated:
-#                 return
-#             raise e
-        
-#     return wrapper
+app_logger = logging.getLogger("application")
 
 def interceptable(rollback=None): # Decorator factory
     def interceptable_decorator(fn): # Decorator
@@ -67,7 +50,7 @@ def interceptable(rollback=None): # Decorator factory
 
                 return res
             except Exception as e:
-                logging.debug(f"ID: {self.id} Exception in @interceptable: {self.id} | Terminating:{self.state.terminating}/Terminated:{self.state.terminated} | {e}")
+                app_logger.debug(f"ID: {self.id} Exception in @interceptable: {self.id} | Terminating:{self.state.terminating}/Terminated:{self.state.terminated} | {e}")
                 if self.state.terminating or self.state.terminated:
                     # Run the rollback function by the name provided in the
                     # interceptable decorator factory args
@@ -140,7 +123,6 @@ class WorkflowExecutor(Worker, EventPublisher):
                 "dependency_graph": {},
                 "is_dry_run": False,
                 "ctx": None,
-
                 "ready_tasks": [],
             },
             lock=self.lock
@@ -149,11 +131,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         self._set_initial_state()
 
     # Logging formatters. Makes logs more useful and pretty
-    def PSTR(self): return f"ID: {self.id} {lbuf('[PIPELINE]')}"
-    def TSTR(self): return f"ID: {self.id} {lbuf('[TASK]')}"
-
-    def test(self):
-        print("This is the test method passed from the decorator factory")
+    def p_str(self, status): return f"worker{self.id} {lbuf('[PIPELINE]')} {status} {self.state.ctx.pipeline.id}.{self.state.ctx.pipeline_run.uuid}"
+    def t_str(self, task, status): return f"worker{self.id} {lbuf('[TASK]')} {status} {task.id}.{self.state.ctx.pipeline.id}.{self.state.ctx.pipeline_run.uuid}"
 
     @interceptable()
     def start(self, ctx, threads):
@@ -171,7 +150,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             unstarted_threads = self._fetch_ready_tasks()
 
             # Trigger the PIPELINE_ACTIVE event and log
-            logging.info(f"{self.PSTR()} {self.state.ctx.pipeline.id} [STARTED] {self.state.ctx.pipeline_run.uuid}")
+            self.state.ctx.logger.info(self.p_str("STARTED"))
             self.publish(Event(PIPELINE_ACTIVE, self.state.ctx))
             
             # NOTE Triggers the hook _on_change_ready_task
@@ -183,17 +162,20 @@ class WorkflowExecutor(Worker, EventPublisher):
 
     @interceptable()
     def _staging(self, ctx):
-        logging.info(f"{self.PSTR()} {ctx.pipeline.id} [STAGING] {ctx.pipeline_run.uuid}")
-        
         # Resets the workflow executor to its initial state
         self._set_initial_state()
 
         # Validates and sets the context. All subsequent references to the context
         # should be made via 'self.state.ctx'
         self._set_context(ctx)
-
+        
         # Prepare the file system for this pipeline
         self._prepare_fs()
+
+        # Setup the application and the pipeline run loggers
+        self._setup_loggers()
+
+        self.state.ctx.logger.info(self.p_str("STAGING"))
 
         # Set the run id
         self.state.ctx.pipeline.run_id = self.state.ctx.pipeline_run.uuid
@@ -213,11 +195,9 @@ class WorkflowExecutor(Worker, EventPublisher):
         except Exception as e:
             raise e
 
-        logging.info(f"{self.PSTR()} {self.state.ctx.pipeline.id} [STAGING COMPLETED] {self.state.ctx.pipeline_run.uuid}")
-
     @interceptable()
     def _start_task(self, task):
-        logging.info(f"{self.TSTR()} {task.id} [ACTIVE]")
+        self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
         # create the task_execution object in Tapis
         self.publish(Event(TASK_ACTIVE, self.state.ctx, task=task))
 
@@ -281,7 +261,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         if event == PIPELINE_FAILED: msg = "FAILED"
         elif event == PIPELINE_TERMINATED: msg = "TERMINATED"
 
-        logging.info(f"{self.PSTR()} {self.state.ctx.pipeline.id} [{msg}] ")
+        self.state.ctx.logger.info(self.p_str(msg))
 
         # Publish the event. Triggers the archivers if there are any on ...COMPLETED
         self.publish(Event(event, self.state.ctx))
@@ -296,7 +276,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.publish(Event(TASK_COMPLETED, self.state.ctx, task=task, result=task_result))
 
         # Log the completion
-        logging.info(f"{self.TSTR()} {task.id} [COMPLETE]")
+        self.state.ctx.logger.info(self.t_str(task, "COMPLETED"))
 
         # Add the task to the finished list
         self.state.finished.append(task.id)
@@ -308,7 +288,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.publish(Event(TASK_FAILED, self.state.ctx, task=task, result=task_result))
 
         # Log the failure
-        logging.info(f"{self.TSTR()} {task.id} [FAILED]")
+        self.state.ctx.logger.info(self.t_str(task, "FAILED"))
 
         # Add the task to the finished list
         self.state.finished.append(task.id)
@@ -381,7 +361,8 @@ class WorkflowExecutor(Worker, EventPublisher):
     def _prepare_fs(self):
         """Creates all of the directories necessary to run the pipeline, store
         temp files, and cache data"""
-        logging.debug(f"{self.PSTR()} ID: {self.id} [PREPPING FILESYSTEM]")
+        app_logger.debug(self.p_str("PREPPING FILESYSTEM"))
+        # Set the directories
         # The pipeline root dir. All files and directories produced by a workflow
         # execution will reside here
         self.state.ctx.pipeline.root_dir = f"{BASE_WORK_DIR}{self.state.ctx.group.id}/{self.state.ctx.pipeline.id}/"
@@ -392,12 +373,12 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.state.ctx.pipeline.cache_dir = f"{self.state.ctx.pipeline.root_dir}cache/"
         os.makedirs(f"{self.state.ctx.pipeline.cache_dir}", exist_ok=True)
 
-        # The directory for this particular run of the workflow
-        self.state.ctx.pipeline.runs_dir = f"{self.state.ctx.pipeline.root_dir}runs/"
-        self.state.ctx.pipeline.work_dir = f"{self.state.ctx.pipeline.runs_dir}{self.state.ctx.pipeline_run.uuid}/"
-        os.makedirs(self.state.ctx.pipeline.work_dir, exist_ok=True)
 
-        # Set the work_dir to the WorkflowExecutor as well. Will be used for
+        # The directory for this particular run of the workflow
+        self.state.ctx.pipeline.work_dir = f"{self.state.ctx.pipeline.root_dir}runs/{self.state.ctx.pipeline_run.uuid}/"
+        os.makedirs(self.state.ctx.pipeline.work_dir, exist_ok=True)
+        
+        # Set the work_dir on the WorkflowExecutor as well. Will be used for
         # cleaning up all the temporary files/dirs after the state is reset.
         # (Which means that ther will be no self.state.ctx.pipeline.work_dir)
         self.work_dir = self.state.ctx.pipeline.work_dir
@@ -446,14 +427,14 @@ class WorkflowExecutor(Worker, EventPublisher):
         executor = self._get_executor(run_id, task)
         executor.cleanup()
         del self.state.executors[f"{run_id}.{task.id}"]
-        logging.debug(f"{self.TSTR()} {task.id} [TASK EXECUTOR DEREGISTERED] {run_id}.{task.id}")
+        self.state.ctx.logger.debug(self.t_str(task, "EXECUTOR DEREGISTERED"))
 
     @interceptable()
     def _get_executor(self, run_id, task):
         return self.state.executors[f"{run_id}.{task.id}"]
     
     def _cleanup_run(self):
-        logging.info(f"{self.PSTR()} ID: {self.id} [WORKFLOW EXECUTOR CLEANUP]")
+        self.state.ctx.logger.info(self.p_str("WORKFLOW EXECUTOR CLEANUP"))
         # os.system(f"rm -rf {self.work_dir}")
     
     def terminate(self):
@@ -467,17 +448,32 @@ class WorkflowExecutor(Worker, EventPublisher):
         self._set_initial_state()
         if terminated:
             self.state.terminated = True
-        
 
+    @interceptable()
+    def _setup_loggers(self):
+        # Create the logger. NOTE Directly instantiating a Logger object
+        # is recommended against in the documentation, however it makes sense
+        # in this using getLogger method will create a new Logger for each
+        # pipeline run
+        run_logger = logging.Logger(self.state.ctx.pipeline_run.uuid)
+
+        handler = logging.FileHandler(f"{self.state.ctx.pipeline.work_dir}logs.txt")
+        handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
+
+        run_logger.setLevel(logging.DEBUG)
+        run_logger.addHandler(handler)
+
+        self.state.ctx.logger = CompositeLogger([app_logger, run_logger])
+        
     @interceptable(rollback="_reset_event_exchange")
     def _initialize_backends(self):
-        logging.debug(f"{self.PSTR()} ID: {self.id} [INITIALIZING BACKENDS]")
+        self.state.ctx.logger.debug(self.p_str("INITIALIZING BACKENDS"))
         # Initialize the backends. Backends are used to persist updates about the
         # pipeline and its tasks
         try:
             backend = TapisWorkflowsAPIBackend(self.state.ctx)
         except Exception as e:
-            logging.error(f"Could not intialize backend. Updates about the pipeline and its task will not be persisited. Error: {str(e)}")
+            self.state.ctx.logger.error(f"Could not intialize backend. Updates about the pipeline and its task will not be persisited. Error: {str(e)}")
             return
 
         # Add the backend as a subscriber to all events. When these events are "published"
@@ -494,7 +490,7 @@ class WorkflowExecutor(Worker, EventPublisher):
 
     @interceptable(rollback="_reset_event_exchange")
     def _initialize_archivers(self):
-        logging.debug(f"{self.PSTR()} ID: {self.id} [INITIALIZING ARCHIVERS]")
+        self.state.ctx.logger.debug(self.p_str("INITIALIZING ARCHIVERS"))
         # No archivers specified. Return
         if len(self.state.ctx.pipeline.archives) < 1: return
 
@@ -528,7 +524,6 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.state.ctx = ctx
 
     def _reset_event_exchange(self):
-        print("EVENT ECHANGE RESET - DECORATOR FACTORY FUNCTION")
         self.exchange.reset()
 
     # Hooks
@@ -559,9 +554,9 @@ class WorkflowExecutor(Worker, EventPublisher):
         if not state.terminating or state.terminated:
             return
 
-        self.publish(Event(PIPELINE_TERMINATED, self))
+        self.publish(Event(PIPELINE_TERMINATED, self.state.ctx))
 
-        logging.info(f"{self.PSTR()} {state.ctx.pipeline.id} [TERMINATING PIPELINE] {state.ctx.pipeline_run.uuid}")
+        self.state.ctx.logger.info(self.p_str("TERMINATING"))
         for _, executor in state.executors.items():
             executor.terminate()
     

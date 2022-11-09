@@ -13,12 +13,13 @@ from utils import trunc_uuid
 
 class TapisSystemArchiver(EventHandler):
     def handle(self, event: Event):
+        self.logger = event.payload.logger
         # TODO REMOVE BELOW
-        logging.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING SKIPPED] {trunc_uuid(event.payload.pipeline.run_id)}")
-        return
+        self.logger.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING SKIPPED] {trunc_uuid(event.payload.pipeline.run_id)}")
+        # return
 
         if event.type in [PIPELINE_COMPLETED, PIPELINE_TERMINATED, PIPELINE_FAILED]:
-            logging.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING] {trunc_uuid(event.payload.pipeline.run_id)}")    
+            self.logger.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING] {trunc_uuid(event.payload.pipeline.run_id)}")    
             try:
                 self.archive(
                     event.payload.archive,
@@ -27,13 +28,13 @@ class TapisSystemArchiver(EventHandler):
                     event.payload.base_url
                 )
             except ArchiveError as e:
-                logging.error(f"[PIPELINE] {event.payload.pipeline.id} [ERROR] {trunc_uuid(event.payload.pipeline.run_id)}: {e.message}")
+                self.logger.error(f"[PIPELINE] {event.payload.pipeline.id} [ERROR] {trunc_uuid(event.payload.pipeline.run_id)}: {e.message}")
                 return
             except Exception as e:
-                logging.error(f"[PIPELINE] {event.payload.pipeline.id} [ERROR] {trunc_uuid(event.payload.pipeline.run_id)}: {e}")
+                self.logger.error(f"[PIPELINE] {event.payload.pipeline.id} [ERROR] {trunc_uuid(event.payload.pipeline.run_id)}: {e}")
                 return
 
-            logging.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING COMPLETED] {trunc_uuid(event.payload.pipeline.run_id)}")
+            self.logger.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING COMPLETED] {trunc_uuid(event.payload.pipeline.run_id)}")
         
 
     def archive(self, archive, pipeline, group, base_url):
@@ -77,7 +78,7 @@ class TapisSystemArchiver(EventHandler):
                     _x_tapis_user=archive.owner
                 )
             except Exception as e:
-                logging.error(e)
+                self.logger.error(e)
 
             # The location in the pipeline service where the outputs for this
             # task are stored
@@ -102,6 +103,6 @@ class TapisSystemArchiver(EventHandler):
                                 "X-Tapis-Token": service_client.service_tokens["admin"]["access_token"].access_token
                             }
                         )
-                        logging.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {path_to_file}")
+                        self.logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {path_to_file}")
                     except Exception as e:
-                        logging.error(e)
+                        self.logger.error(e)
