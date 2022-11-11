@@ -79,10 +79,12 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.staticfiles',
     'rest_framework',
+    # 'corsheaders',
     'backend',
 ]
 
 MIDDLEWARE = [
+    # 'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -91,6 +93,22 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# TODO make more restrictive by implementing the CORS_ORIGIN_WHITELIST
+# CORS_ALLOW_ALL_ORIGINS = True
+
+# CORS_ORIGIN_WHITELIST = ()
+# # that are not located at .tapis.io to run this api
+# if ENV == "LOCAL":
+#     CORS_ORIGIN_WHITELIST = ("localhost", "127.0.0.1")
+# elif ENV == "DEV":
+#     CORS_ORIGIN_WHITELIST = ("localhost", "127.0.0.1")
+# elif ENV == "STAGE":
+#     CORS_ORIGIN_WHITELIST  = ("localhost", "127.0.0.1")
+# elif ENV == "PROD":
+#     CORS_ORIGIN_WHITELIST = ("localhost", "127.0.0.1")
+# else:
+#     raise Exception(f"Invalid ENV set. Recieved '{ENV}' Expected oneOf: {ENVS}")
 
 ROOT_URLCONF = 'workflows.urls'
 
