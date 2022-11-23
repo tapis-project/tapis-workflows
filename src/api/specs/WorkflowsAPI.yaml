@@ -1909,7 +1909,7 @@ components:
           $ref: "#/components/schemas/EnumRunStatus"
         started_at:
           type: string
-        ended_at:
+        last_modified:
           type: string
     
     TaskExecution:
@@ -1928,7 +1928,7 @@ components:
           $ref: "#/components/schemas/EnumRunStatus"
         started_at:
           type: string
-        ended_at:
+        last_modified:
           type: string
 
     # --- Task ---
@@ -3002,6 +3002,7 @@ components:
       type: string
       enum:
         - active
+        - submitted
         - pending
         - backoff
         - completed
@@ -3009,6 +3010,7 @@ components:
         - suspended
         - archiving
         - terminated
+        - terminating
 
     EnumInvocationMode:
       type: string

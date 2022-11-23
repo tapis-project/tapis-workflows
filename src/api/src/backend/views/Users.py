@@ -118,7 +118,7 @@ class Users(RestrictedAPIView):
             return Forbidden(message="You cannot delete users from this group")
 
         # Owners cannot be deleted
-        if group_service.user_owns_group(username, group_id):
+        if group_service.user_owns_group(username, group_id, request.tenant_id):
             return UnprocessableEntity("Users that own groups cannot be removed. Group owner must first be changed")
 
         group_user = GroupUser.objects.filter(
@@ -130,7 +130,7 @@ class Users(RestrictedAPIView):
         # Only group owners can delete group admins
         if (
             group_user.is_admin 
-            and not group_service.user_owns_group(request.username, group_id)
+            and not group_service.user_owns_group(request.username, group_id, request.tenant_id)
         ):
             return Forbidden("Only group owners can delete admin users")
 
