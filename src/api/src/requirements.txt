@@ -1,5 +1,4 @@
 amqp==5.0.9
-# asgiref==3.4.1
 asgiref==3.5.2
 atomicwrites==1.4.0
 attrs==21.4.0
@@ -16,9 +15,12 @@ coverage==6.4.1
 cryptography==3.4.8
 Deprecated==1.2.13
 Django==4.1.2
+django-cors-headers==3.13.0
 django-debug-toolbar==3.2.2
 djangorestframework==3.13.1
 djantic==0.7.0
+gevent==21.12.0
+greenlet==1.1.2
 gunicorn==20.1.0
 idna==3.3
 isodate==0.6.1
@@ -52,8 +54,5 @@ urllib3==1.26.8
 vine==5.0.0
 wcwidth==0.2.5
 wrapt==1.14.1
-gevent==21.12.0
-greenlet==1.1.2
 zope.event==4.5.0
 zope.interface==5.4.0
-

@@ -124,10 +124,13 @@ class Archives(RestrictedAPIView):
 
     def system(self, request, body, group):
         client = self.tapis_api_gateway.get_client()
-
+        is_owner = False
         try:
+            system = client.systems.getSystem(systemId=body.system_id)
+            is_owner = system.owner == request.username
+
             res = client.systems.getUserPerms(
-                systemId=body.system_id,
+                systemId=system.id,
                 userName=request.username
             )
         except InvalidInputError as e:
@@ -135,8 +138,8 @@ class Archives(RestrictedAPIView):
         except Exception as e:
             return ServerError(message=e)
 
-        # Check that the requesting user had modify permissons on this system
-        if "MODIFY" not in res.names:
+        # Check that the requesting user had modify permissons
+        if "MODIFY" not in res.names and not is_owner:
             return Forbidden(f"You do not have 'MODIFY' permissions for system '{body.system_id}'")
 
         # Persist the archive to the db

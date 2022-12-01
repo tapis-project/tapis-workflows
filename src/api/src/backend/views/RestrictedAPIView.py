@@ -6,6 +6,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest, Unauthorized
+from backend.views.http.responses import NoContentResponse
 from backend.views.http.requests import PreparedRequest
 from backend.services.TapisAPIGateway import TapisAPIGateway
 from backend.utils import one_in
@@ -26,6 +27,12 @@ class RestrictedAPIView(View):
         # Restrict to a set of http methods
         if request.method not in PERMITTED_HTTP_METHODS:
             return MethodNotAllowed()
+
+        # NOTE CORS preflight check entails a request and OPTIONS method to
+        # ensure CORS is enabled. Sending a 204 content enables the preflight
+        # request to succeed
+        if request.method == "OPTIONS":
+            return NoContentResponse(message="No content")
 
         if request.method != "GET":
             # Accept only application/json for all non get methods
@@ -84,12 +91,12 @@ class RestrictedAPIView(View):
         try:
             request_object = request_schema(**self.request_body)
         except ValidationError as e:
-            print(e)
             # NOTE : {'.'.join(error['loc'])} <-- Causes errors
             errors = [ f"{str(error['type'])}. {str(error['msg'])}" for error in json.loads(e.json())]
             failure_view = BadRequest(message="\n".join(errors))
 
             self.prepared_request = PreparedRequest(is_valid=False, failure_view=failure_view)
+
             return self.prepared_request
 
         self.prepared_request = PreparedRequest(body=request_object)
