@@ -13,7 +13,7 @@ from backend.models import Pipeline, PipelineRun, TaskExecution
 
 
 class TaskExecutions(RestrictedAPIView):
-    def get(self, request, group_id, pipeline_id, pipeline_run_uuid, task_execution_uuid, *_,  **__):
+    def get(self, request, group_id, pipeline_id, pipeline_run_uuid, task_execution_uuid=None, *_,  **__):
         try:
             # Get the group
             group = group_service.get(group_id, request.tenant_id)
@@ -63,7 +63,7 @@ class TaskExecutions(RestrictedAPIView):
 
     def list(self, run):
         try:
-            executions = TaskExecutions.objects.filter(pipeline_run=run)
+            executions = TaskExecution.objects.filter(pipeline_run=run)
             return ModelListResponse(executions)
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return ServerError(message=e.__cause__)
