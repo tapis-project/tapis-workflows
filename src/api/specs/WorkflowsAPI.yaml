@@ -3021,7 +3021,7 @@ components:
     EnumRetryPolicy:
       type: string
       enum:
-        - exponention_backoff
+        - exponential_backoff
 
     EnumDuplicateSubmissionPolicy:
       type: string
