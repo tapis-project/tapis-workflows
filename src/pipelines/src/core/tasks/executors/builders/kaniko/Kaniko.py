@@ -14,8 +14,8 @@ PSTR = lbuf('[PIPELINE]')
 TSTR = lbuf('[TASK]')
 
 class Kaniko(BaseBuildExecutor):
-    def __init__(self, task, message):
-        BaseBuildExecutor.__init__(self, task, message)
+    def __init__(self, task, ctx, exchange):
+        BaseBuildExecutor.__init__(self, task, ctx, exchange)
 
         self.configmap = None
 
@@ -24,7 +24,6 @@ class Kaniko(BaseBuildExecutor):
         # with the error message as the str value of the exception
         try: 
             job = self._create_job()
-            
             # Poll the job status until the job is in a terminal state
             while not self._job_in_terminal_state(job):
                 if self.terminating:
@@ -193,7 +192,8 @@ class Kaniko(BaseBuildExecutor):
         # The branch to be pulled
         container_args.append(f'--git="branch={self.task.context.branch}"')
 
-        # path to the Dockerfile in the repository
+        # Path to the Dockerfile in the repository. All paths prefixed with "/" will
+        # have the forward slash removed
         container_args.append(f"--dockerfile={self.task.context.recipe_file_path}")
 
         # the image registry that the image will be pushed to
