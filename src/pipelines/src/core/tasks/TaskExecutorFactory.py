@@ -3,7 +3,7 @@ import logging
 from core.tasks.BuildTaskExecutorResolver import build_task_executor_resolver
 from core.tasks.TaskExecutor import TaskExecutor
 from core.events import EventExchange
-from core.tasks.executors.requesters import HTTP
+from core.tasks.executors.requesters.HTTP import HTTP
 from errors.tasks import InvalidTaskTypeError
 
 
