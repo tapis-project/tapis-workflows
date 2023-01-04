@@ -5,7 +5,7 @@
 # here=$(dirname $0)
 
 # Apply secrets
-kubectl apply -f ".//src/secrets/secrets.yml"
+kubectl apply -f "./src/secrets/secrets.yml"
 
 ### Services ###
 

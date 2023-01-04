@@ -1,6 +1,6 @@
 import time, logging
 
-from kubernetes import client
+from kubernetes import client, watch
 
 from conf.constants import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL, KANIKO_IMAGE_TAG
 from core.tasks.TaskResult import TaskResult
@@ -14,8 +14,8 @@ PSTR = lbuf('[PIPELINE]')
 TSTR = lbuf('[TASK]')
 
 class Kaniko(BaseBuildExecutor):
-    def __init__(self, task, message):
-        BaseBuildExecutor.__init__(self, task, message)
+    def __init__(self, task, ctx, exchange):
+        BaseBuildExecutor.__init__(self, task, ctx, exchange)
 
         self.configmap = None
 
@@ -24,7 +24,6 @@ class Kaniko(BaseBuildExecutor):
         # with the error message as the str value of the exception
         try: 
             job = self._create_job()
-            
             # Poll the job status until the job is in a terminal state
             while not self._job_in_terminal_state(job):
                 if self.terminating:
@@ -51,14 +50,20 @@ class Kaniko(BaseBuildExecutor):
         # Get the logs(stdout) from this job's pod
         logs = None
         try:
-            logs = self.core_v1_api.read_namespaced_pod_log(
+            for line in watch.stream(
+                self.core_v1_api.read_namespaced_pod_log,
                 name=pod_name,
-                namespace=KUBERNETES_NAMESPACE,
-                _return_http_data_only=True,
-                _preload_content=False,
-            ).data  # .decode("utf-8")
-            # logging.debug(f"{logs}\n") # TODO Remove
-            self._store_result(".stdout", logs)
+                namespace=KUBERNETES_NAMESPACE
+            ):
+               self._store_result(".stdout", line, flag="ab")
+
+            # logs = self.core_v1_api.read_namespaced_pod_log(
+            #     name=pod_name,
+            #     namespace=KUBERNETES_NAMESPACE,
+            #     _return_http_data_only=True,
+            #     _preload_content=False,
+            # ).data  # .decode("utf-8")
+            # self._store_result(".stdout", logs)
 
         except client.rest.ApiException as e:
             logging.error(f"Exception reading pod log: {e}")
@@ -93,13 +98,13 @@ class Kaniko(BaseBuildExecutor):
                     mount_path="/mnt/",
                     sub_path=self.task.output_dir.replace("/mnt/pipelines/", "") 
                 ),
-                # Volume mount for the cache
-                # NOTE Dunno if this works...
-                client.V1VolumeMount(
-                    name="artifacts",
-                    mount_path="/cache/",
-                    sub_path=self.pipeline.cache_dir.replace("/mnt/pipelines/", "") 
-                ),
+                # # Volume mount for the cache
+                # # NOTE Dunno if this works...
+                # client.V1VolumeMount(
+                #     name="artifacts",
+                #     mount_path="/cache/",
+                #     sub_path=self.pipeline.cache_dir.replace("/mnt/pipelines/", "") 
+                # ),
             ]
 
         # Container object
@@ -179,7 +184,8 @@ class Kaniko(BaseBuildExecutor):
         can_cache = hasattr(self.directives, "CACHE")
         container_args.append(f"--cache={'true' if can_cache else 'false'}")
         if can_cache == True:
-            container_args.append(f"--cache-dir=/cache")
+            container_args.append(f"--cache-dir={self.pipeline.cache_dir.replace('/mnt/pipelines/', '')}")
+            # container_args.append(f"--cache-dir={self.pipeline.cache_dir}")
 
         # Source of dockerfile for image to be build
         context = self._resolve_context_string()
@@ -193,7 +199,8 @@ class Kaniko(BaseBuildExecutor):
         # The branch to be pulled
         container_args.append(f'--git="branch={self.task.context.branch}"')
 
-        # path to the Dockerfile in the repository
+        # Path to the Dockerfile in the repository. All paths prefixed with "/" will
+        # have the forward slash removed
         container_args.append(f"--dockerfile={self.task.context.recipe_file_path}")
 
         # the image registry that the image will be pushed to
