@@ -184,7 +184,8 @@ class Kaniko(BaseBuildExecutor):
         can_cache = hasattr(self.directives, "CACHE")
         container_args.append(f"--cache={'true' if can_cache else 'false'}")
         if can_cache == True:
-            container_args.append(f"--cache-dir=/cache")
+            container_args.append(f"--cache-dir={self.pipeline.cache_dir.replace('/mnt/pipelines/', '')}")
+            # container_args.append(f"--cache-dir={self.pipeline.cache_dir}")
 
         # Source of dockerfile for image to be build
         context = self._resolve_context_string()
