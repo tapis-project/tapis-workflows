@@ -4,48 +4,43 @@
     "projectPattern": "monorepo",
     "prodImageTag": "1.2",
     "deploymentType": "minikube",
-    "categories": {
-        "api": [
-            {
-                "name": "api",
-                "displayName": "API",
-                "language": "python",
-                "framework": "django",
-                "image": "tapis/workflows-api",
-                "buildable": true,
-                "startable": true,
-                "launchable": true,
-                "uses": ["database.mysql", "broker.rabbitmq"]
-            }
-        ],
-        "frontend": [],
-        "broker": [
-            {
-                "name": "rabbitmq",
-                "displayName": "RabbitMQ",
-                "image": "rabbitmq:3.9.11-management",
-                "startable": true,
-                "launchable": true
-            }
-        ],
-        "database": [
-            {
-                "name": "mysql",
-                "displayName": "MySQL database",
-                "image": "mysql:8"
-            }
-        ],
-        "proxy": [],
-        "service": [
-            {
-                "name": "pipelines",
-                "displayName": "Workflow Executor",
-                "language": "python",
-                "framework": null,
-                "image": "tapis/workflows-pipelines",
-                "buildable": true,
-                "uses": ["broker.rabbitmq"]
-            }
-        ]
-    } 
+    "defaultVersion": "dev",
+    "services": [
+        {
+            "type": "api",
+            "name": "api",
+            "displayName": "API",
+            "language": "python",
+            "framework": "django",
+            "image": "tapis/workflows-api",
+            "buildable": true,
+            "startable": true,
+            "exposeable": true,
+            "uses": ["database.mysql", "broker.rabbitmq"]
+        },
+        {
+            "type": "broker",
+            "name": "rabbitmq",
+            "displayName": "RabbitMQ",
+            "image": "rabbitmq:3.9.11-management",
+            "startable": true,
+            "exposeable": true
+        },
+        {
+            "type": "database",
+            "name": "mysql",
+            "displayName": "MySQL database",
+            "image": "mysql:8"
+        },
+        {
+            "type": "service",
+            "name": "pipelines",
+            "displayName": "Workflow Executor",
+            "language": "python",
+            "framework": null,
+            "image": "tapis/workflows-pipelines",
+            "buildable": true,
+            "uses": ["broker.rabbitmq"]
+        }
+    ]
 }
