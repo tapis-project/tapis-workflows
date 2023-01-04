@@ -39,7 +39,6 @@ jobs:
     - name: Build Production Workflows Pipelines Docker image
       if: ${{ contains(steps.extract_branch.outputs.branch, 'release-') }}
       run: docker build -f src/pipelines/src/Dockerfile -t tapis/workflows-pipelines:${{ steps.extract_version.outputs.version }} .
-
     - name: Push the image to dockerhub with latest tag
       run: docker push --all-tags tapis/workflows-pipelines
 
