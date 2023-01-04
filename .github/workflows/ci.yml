@@ -34,7 +34,7 @@ jobs:
     - name: Extract version of production release
       if: ${{ contains(steps.extract_branch.outputs.branch, 'release-') }}
       shell: bash
-      run: echo "##[set-output name=version;]$(echo ${release##${{ steps.extract_branch.outputs.branch }}})"
+      run: echo "##[set-output name=version;]$(if [[ ${{ steps.extract_branch.outputs.branch }} == 'release-'* ]]; then echo ${{ steps.extract_branch.outputs.branch }} | sed -e 's!release-!!'; fi;)"
       id: extract_version
     - name: Build Production Workflows Pipelines Docker image
       if: ${{ contains(steps.extract_branch.outputs.branch, 'release-') }}
