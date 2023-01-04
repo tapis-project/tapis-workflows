@@ -2,9 +2,9 @@ name: Workflows CI
 
 on:
   push:
-    branches: [ test, dev, staging, release-* ]
+    branches: [ dev, staging, release-* ]
   pull_request:
-    branches: [ test, dev, staging, release-* ]
+    branches: [ dev, staging, release-* ]
 
 jobs:
   api-tests:
@@ -36,6 +36,9 @@ jobs:
       shell: bash
       run: echo "##[set-output name=version;]$(if [[ ${{ steps.extract_branch.outputs.branch }} == 'release-'* ]]; then echo ${{ steps.extract_branch.outputs.branch }} | sed -e 's!release-!!'; fi;)"
       id: extract_version
+    ## TODO Only push the images related to the current branch or prodcution version
+    # - name: Set Image Tag
+    #   run: echo "${{ steps.extract_version.outputs.version }}" >> $IMAGE_TAG
     - name: Build Production Workflows Pipelines Docker image
       if: ${{ contains(steps.extract_branch.outputs.branch, 'release-') }}
       run: docker build -f src/pipelines/src/Dockerfile -t tapis/workflows-pipelines:${{ steps.extract_version.outputs.version }} .
@@ -57,10 +60,16 @@ jobs:
       with:
         username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
         password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
-    - name: Build the Workflows API Docker image
+    - name: Build Non-production Workflows API Docker image
+      if: ${{ !contains(steps.extract_branch.outputs.branch, 'release-') }}
       run: docker build -f src/api/src/Dockerfile -t tapis/workflows-api:${{ steps.extract_branch.outputs.branch }} .
-    # - name: Build the Workflows API Docker image with latest tag
-    #   if: ${{ steps.extract_branch.outputs.branch == 'prod' }}
-    #   run: docker build -f src/api/src/Dockerfile -t tapis/workflows-api:latest .
-    - name: Push the image to dockerhub with latest tag
+    - name: Extract version of production release
+      if: ${{ contains(steps.extract_branch.outputs.branch, 'release-') }}
+      shell: bash
+      run: echo "##[set-output name=version;]$(if [[ ${{ steps.extract_branch.outputs.branch }} == 'release-'* ]]; then echo ${{ steps.extract_branch.outputs.branch }} | sed -e 's!release-!!'; fi;)"
+      id: extract_version
+    - name: Build Production Workflows Pipelines Docker image
+      if: ${{ contains(steps.extract_branch.outputs.branch, 'release-') }}
+      run: docker build -f src/api/src/Dockerfile -t tapis/workflows-api:${{ steps.extract_version.outputs.version }} .
+    - name: Push the image to dockerhub
       run: docker push --all-tags tapis/workflows-api
