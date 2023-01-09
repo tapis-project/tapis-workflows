@@ -1,6 +1,6 @@
 import sys, logging
 
-from core.Application import Application
+from core.Dispatcher import Dispatcher
 
 
 # Set all lib loggers to critical
@@ -8,11 +8,11 @@ for name in logging.root.manager.loggerDict:
     logging.getLogger(name).setLevel(logging.CRITICAL)
 
 
-app_logger = logging.getLogger("application")
+dispatcher_logger = logging.getLogger("dispatcher")
 handler = logging.StreamHandler(stream=sys.stdout)
 handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
-app_logger.setLevel(logging.DEBUG)
-app_logger.addHandler(handler)
+dispatcher_logger.setLevel(logging.DEBUG)
+dispatcher_logger.addHandler(handler)
 # logging.basicConfig(
 #     # filename=LOG_FILE,
 #     stream=sys.stdout,
@@ -21,6 +21,6 @@ app_logger.addHandler(handler)
 #     format="[%(asctime)s] %(message)s",
 # )
 
-app = Application()
-app()
+dispatcher = Dispatcher()
+dispatcher()
 

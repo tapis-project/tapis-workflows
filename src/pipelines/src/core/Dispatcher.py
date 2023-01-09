@@ -1,6 +1,5 @@
 
 import os, sys, time, logging
-from pprint import pprint
 from threading import Thread
 
 from typing import Literal, Union
@@ -32,15 +31,13 @@ from conf.constants import (
 from core.workers import WorkerPool
 from core.workflows.executors import WorkflowExecutor
 from utils import bytes_to_json, json_to_object, lbuffer_str as lbuf
-from errors import NoAvailableWorkers, WorkflowTerminated
+from errors import NoAvailableWorkers#, WorkflowTerminated
 
 
-logger = logging.getLogger("application")
-
-SSTR = lbuf("[APPLICATION]")
+logger = logging.getLogger("dispatcher")
 
 # TODO Keep track of workflows submissions somehow so they can be terminated later
-class Application:
+class Dispatcher:
     def __init__(self):
         self.active_workers = []
         self.worker_pool = None
@@ -50,7 +47,7 @@ class Application:
         workers, establishes a connection with RabbitMQ, creates the channel, 
         exchanges, and queues, and begins consuming from the inbound queue"""
 
-        logger.info(f"{SSTR} STARTING")
+        logger.info(f"{lbuf('[DISPATCHER]')} STARTING")
 
         # Create a worker pool that consists of the workflow executors that will
         # run the pipelines
@@ -60,7 +57,7 @@ class Application:
             starting_worker_count=STARTING_WORKERS,
             max_workers=MAX_WORKERS,
         )
-        logger.debug(f"{SSTR} WORKERS INITIALIZED ({self.worker_pool.count()})")
+        logger.debug(f"{lbuf('[DISPATCHER]')} WORKERS INITIALIZED ({self.worker_pool.count()})")
 
         # Connect to the message broker
         connection = self._connect()
@@ -125,7 +122,7 @@ class Application:
     def _start_worker(self, body, connection, channel, delivery_tag):
         """Validates and prepares the message from the inbound exchange(and queue),
         provisions a worker from the worker pool, acks the message, registers the 
-        active worker to the application, handles the termination of duplicate
+        active worker to the dispatcher, handles the termination of duplicate
         workflow submissions and starts the worker."""
 
         # Prepare the execution context. The execution context contains all the 
@@ -136,8 +133,6 @@ class Application:
             # Decode the message body, then convert to an object. (Because accessing
             # properties of an object is nicer than a dictionary)
             ctx = json_to_object(bytes_to_json(body))
-
-            pprint(ctx)
 
             # Get a workflow executor worker. If there are none available,
             # this will raise a "NoWorkersAvailabe" error which is handled
@@ -152,7 +147,7 @@ class Application:
             # occurs above)
             acked = True
 
-            # Register the active worker to the application. If worker cannot 
+            # Register the active worker to the dispatcher. If worker cannot 
             # execute, check it back in.
             worker = self._register_worker(ctx, worker)
 
@@ -171,7 +166,7 @@ class Application:
             return
 
         except NoAvailableWorkers:
-            logger.info(f"{SSTR} Insufficient workers available. RETRYING (10s)")
+            logger.info(f"{lbuf('[DISPATCHER]')} Insufficient workers available. RETRYING (10s)")
             connection.add_callback_threadsafe(
                 partial(
                     self._ack_nack,
@@ -185,7 +180,7 @@ class Application:
 
         # TODO probably not needed
         # except WorkflowTerminated as e:
-        #     logger.info(f"{SSTR} {e}")
+        #     logger.info(f"{lbuf('[DISPATCHER]')} {e}")
         #     worker.reset()
 
         except Exception as e:
@@ -242,7 +237,7 @@ class Application:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        logger.info(f"{SSTR} CONNECTING")
+        logger.info(f"{lbuf('[DISPATCHER]')} CONNECTING")
 
         connected = False
         connection_attempts = 0
@@ -252,7 +247,7 @@ class Application:
                 connection = pika.BlockingConnection(connection_parameters)
                 connected = True
             except Exception:
-                logger.info(f"{SSTR} [CONNECTION FAILED] ({connection_attempts})")
+                logger.info(f"{lbuf('[DISPATCHER]')} [CONNECTION FAILED] ({connection_attempts})")
                 time.sleep(CONNECTION_RETRY_DELAY)
 
         # Kill the build service if unable to connect
@@ -262,14 +257,14 @@ class Application:
             )
             sys.exit(1)
 
-        logger.info(f"{SSTR} CONNECTED")
+        logger.info(f"{lbuf('[DISPATCHER]')} CONNECTED")
 
         return connection
 
     # TODO handle for the case of multiple active workers with same
     # active worker key
     def _register_worker(self, ctx, worker):
-        """Registers the worker to the Application. Handles duplicate workflow
+        """Registers the worker to the Dispatcher. Handles duplicate workflow
         submissions"""
         # Returns a key based on user-defined idempotency key or pipeline
         # run uuid if no idempotency key is provided
