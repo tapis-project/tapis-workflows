@@ -85,9 +85,7 @@ class Events(RestrictedAPIView):
         )
 
         # Dispatch the request
-        pipeline_dispatcher.dispatch(
-            pipeline_dispatch_request, pipeline)
-
+        pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline)
 
         # Respond with the event
         return ModelResponse(event)
