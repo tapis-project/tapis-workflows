@@ -2,9 +2,9 @@ name: Workflows CI
 
 on:
   push:
-    branches: [ dev, staging, release-* ]
+    branches: [ dev, stage, release-* ]
   pull_request:
-    branches: [ dev, staging, release-* ]
+    branches: [ dev, stage, release-* ]
 
 jobs:
   api-tests:
