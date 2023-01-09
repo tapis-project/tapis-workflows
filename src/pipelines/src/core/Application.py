@@ -1,5 +1,6 @@
 
 import os, sys, time, logging
+from pprint import pprint
 from threading import Thread
 
 from typing import Literal, Union
@@ -135,6 +136,8 @@ class Application:
             # Decode the message body, then convert to an object. (Because accessing
             # properties of an object is nicer than a dictionary)
             ctx = json_to_object(bytes_to_json(body))
+
+            pprint(ctx)
 
             # Get a workflow executor worker. If there are none available,
             # this will raise a "NoWorkersAvailabe" error which is handled
