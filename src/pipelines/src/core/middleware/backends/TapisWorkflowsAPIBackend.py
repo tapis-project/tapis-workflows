@@ -24,8 +24,8 @@ class TapisWorkflowsAPIBackend(EventHandler):
             # "_x_tapis_user": ctx.pipeline.owner,
             "headers": {
                 "X-WORKFLOW-EXECUTOR-TOKEN": access_token,
-                "X-TAPIS-TENANT": ctx.group.tenant_id,
-                "X-TAPIS-USER": ctx.pipeline.owner
+                "X-Tapis-Tenant": ctx.group.tenant_id,
+                "X-Tapis-User": ctx.pipeline.owner
             }
         }
 
