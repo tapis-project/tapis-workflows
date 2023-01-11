@@ -31,13 +31,13 @@ from conf.constants import (
 from core.workers import WorkerPool
 from core.workflows.executors import WorkflowExecutor
 from utils import bytes_to_json, json_to_object, lbuffer_str as lbuf
-from errors import NoAvailableWorkers#, WorkflowTerminated
+from errors import NoAvailableWorkers, WorkflowTerminated
 
 
-logger = logging.getLogger("dispatcher")
+logger = logging.getLogger("server")
 
 # TODO Keep track of workflows submissions somehow so they can be terminated later
-class Dispatcher:
+class Server:
     def __init__(self):
         self.active_workers = []
         self.worker_pool = None
@@ -47,7 +47,7 @@ class Dispatcher:
         workers, establishes a connection with RabbitMQ, creates the channel, 
         exchanges, and queues, and begins consuming from the inbound queue"""
 
-        logger.info(f"{lbuf('[DISPATCHER]')} STARTING")
+        logger.info(f"{lbuf('[SERVER]')} STARTING")
 
         # Create a worker pool that consists of the workflow executors that will
         # run the pipelines
@@ -57,7 +57,7 @@ class Dispatcher:
             starting_worker_count=STARTING_WORKERS,
             max_workers=MAX_WORKERS,
         )
-        logger.debug(f"{lbuf('[DISPATCHER]')} WORKERS INITIALIZED ({self.worker_pool.count()})")
+        logger.debug(f"{lbuf('[SERVER]')} WORKERS INITIALIZED ({self.worker_pool.count()})")
 
         # Connect to the message broker
         connection = self._connect()
@@ -122,7 +122,7 @@ class Dispatcher:
     def _start_worker(self, body, connection, channel, delivery_tag):
         """Validates and prepares the message from the inbound exchange(and queue),
         provisions a worker from the worker pool, acks the message, registers the 
-        active worker to the dispatcher, handles the termination of duplicate
+        active worker to the server, handles the termination of duplicate
         workflow submissions and starts the worker."""
 
         # Prepare the execution context. The execution context contains all the 
@@ -147,7 +147,7 @@ class Dispatcher:
             # occurs above)
             acked = True
 
-            # Register the active worker to the dispatcher. If worker cannot 
+            # Register the active worker to the server. If worker cannot 
             # execute, check it back in.
             worker = self._register_worker(ctx, worker)
 
@@ -166,7 +166,7 @@ class Dispatcher:
             return
 
         except NoAvailableWorkers:
-            logger.info(f"{lbuf('[DISPATCHER]')} Insufficient workers available. RETRYING (10s)")
+            logger.info(f"{lbuf('[SERVER]')} Insufficient workers available. RETRYING (10s)")
             connection.add_callback_threadsafe(
                 partial(
                     self._ack_nack,
@@ -180,7 +180,7 @@ class Dispatcher:
 
         # TODO probably not needed
         # except WorkflowTerminated as e:
-        #     logger.info(f"{lbuf('[DISPATCHER]')} {e}")
+        #     logger.info(f"{lbuf('[SERVER]')} {e}")
         #     worker.reset()
 
         except Exception as e:
@@ -237,7 +237,7 @@ class Dispatcher:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        logger.info(f"{lbuf('[DISPATCHER]')} CONNECTING")
+        logger.info(f"{lbuf('[SERVER]')} CONNECTING")
 
         connected = False
         connection_attempts = 0
@@ -247,7 +247,7 @@ class Dispatcher:
                 connection = pika.BlockingConnection(connection_parameters)
                 connected = True
             except Exception:
-                logger.info(f"{lbuf('[DISPATCHER]')} [CONNECTION FAILED] ({connection_attempts})")
+                logger.info(f"{lbuf('[SERVER]')} [CONNECTION FAILED] ({connection_attempts})")
                 time.sleep(CONNECTION_RETRY_DELAY)
 
         # Kill the build service if unable to connect
@@ -257,14 +257,14 @@ class Dispatcher:
             )
             sys.exit(1)
 
-        logger.info(f"{lbuf('[DISPATCHER]')} CONNECTED")
+        logger.info(f"{lbuf('[SERVER]')} CONNECTED")
 
         return connection
 
     # TODO handle for the case of multiple active workers with same
     # active worker key
     def _register_worker(self, ctx, worker):
-        """Registers the worker to the Dispatcher. Handles duplicate workflow
+        """Registers the worker to the Server. Handles duplicate workflow
         submissions"""
         # Returns a key based on user-defined idempotency key or pipeline
         # run uuid if no idempotency key is provided

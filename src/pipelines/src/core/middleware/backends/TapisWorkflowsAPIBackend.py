@@ -34,7 +34,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
             PIPELINE_PENDING:    self._pipeline_pending,
             PIPELINE_SUSPENDED:  self._pipeline_suspended,
             PIPELINE_TERMINATED: self._pipeline_terminated,
-            PIPELINE_SKIPPED:    self._pipeline_skipeed,
+            PIPELINE_SKIPPED:    self._pipeline_skipped,
             TASK_ACTIVE:         self._task_active,
             TASK_ARCHIVING:      self._task_archiving,
             TASK_BACKOFF:        self._task_backoff,
