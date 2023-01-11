@@ -56,6 +56,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
             raise e
 
     def _pipeline_active(self, event):
+        print("RAN PIPELINE ACTIVE")
         self.service_client.workflows.updatePipelineRunStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             status="active",
