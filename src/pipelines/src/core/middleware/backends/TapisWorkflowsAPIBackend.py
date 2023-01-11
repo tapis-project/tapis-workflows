@@ -34,7 +34,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
             PIPELINE_PENDING:    self._pipeline_pending,
             PIPELINE_SUSPENDED:  self._pipeline_suspended,
             PIPELINE_TERMINATED: self._pipeline_terminated,
-            PIPELINE_SKIPPED:    self._pipeline_skipped,
+            # PIPELINE_SKIPPED:    self._pipeline_skipped,
             TASK_ACTIVE:         self._task_active,
             TASK_ARCHIVING:      self._task_archiving,
             TASK_BACKOFF:        self._task_backoff,
@@ -43,7 +43,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
             TASK_PENDING:        self._task_pending,
             TASK_SUSPENDED:      self._task_suspended,
             TASK_TERMINATED:     self._task_terminated,
-            TASK_SKIPPED:        self._task_skipped
+            # TASK_SKIPPED:        self._task_skipped
         }
 
         service_api_gateway = TapisServiceAPIGateway()
