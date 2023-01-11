@@ -20,9 +20,17 @@ class TapisWorkflowsAPIBackend(EventHandler):
             raise Exception("Workflow Executor Token missing in request")
 
         self._headers = {
-            "_x_tapis_tenant": ctx.group.tenant_id,
-            "_x_tapis_user": ctx.pipeline.owner,
-            "_tapis_headers": {"X-WORKFLOW-EXECUTOR-TOKEN": access_token}
+            # "_x_tapis_tenant": ctx.group.tenant_id,
+            # "_x_tapis_user": ctx.pipeline.owner,
+            "headers": {
+                "X-WORKFLOW-EXECUTOR-TOKEN": access_token,
+                "X-TAPIS-TENANT": ctx.group.tenant_id,
+                "X-TAPIS-USER": ctx.pipeline.owner
+            }
+        }
+
+        self._kwargs = {
+            "_tapis_set_x_headers_from_service": True
         }
 
         # Create a mapping of functions to events
@@ -56,11 +64,11 @@ class TapisWorkflowsAPIBackend(EventHandler):
             raise e
 
     def _pipeline_active(self, event):
-        print("RAN PIPELINE ACTIVE")
         self.service_client.workflows.updatePipelineRunStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             status="active",
-            **self._headers
+            **self._headers,
+            **self._kwargs
         )
 
     def _pipeline_completed(self, event):
