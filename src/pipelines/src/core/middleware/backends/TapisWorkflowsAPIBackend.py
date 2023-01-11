@@ -30,7 +30,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
         }
 
         self._kwargs = {
-            "_tapis_set_x_headers_from_service": True
+            # "_tapis_set_x_headers_from_service": True
         }
 
         # Create a mapping of functions to events
