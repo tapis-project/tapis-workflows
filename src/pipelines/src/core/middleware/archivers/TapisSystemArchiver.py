@@ -20,7 +20,6 @@ class TapisSystemArchiver(EventHandler):
                     event.payload.archive,
                     event.payload.pipeline,
                     event.payload.group,
-                    event.payload.base_url,
                     event.payload.logger
                 )
             except ArchiveError as e:

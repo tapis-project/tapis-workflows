@@ -13,7 +13,7 @@ from backend.helpers import resource_url_builder
 from backend.utils import executor_request_is_valid
 
 class CreateTaskExecution(RestrictedAPIView):
-    def post(self, request, pipeline_run_uuid, *__,  **___):
+    def post(self, request, pipeline_run_uuid, *_,  **__):
         if not executor_request_is_valid(request):
             return BadRequest(message=f"X-WORKFLOW-EXECUTOR-TOKEN header is invalid")
 
