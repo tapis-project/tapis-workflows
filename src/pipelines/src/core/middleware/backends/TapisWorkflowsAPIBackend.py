@@ -45,10 +45,10 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
         self._kwargs = {
             "_tapis_set_x_headers_from_service": True,
+            "_x_tapis_tenant": ctx.group.tenant_id,
+            "_x_tapis_user": ctx.pipeline.user,
             "_tapis_headers": {
-                "X-WORKFLOW-EXECUTOR-TOKEN": access_token,
-                "X-Tapis-Tenant": ctx.group.tenant_id,
-                "X-Tapis-User": ctx.pipeline.owner
+                "X-WORKFLOW-EXECUTOR-TOKEN": access_token
             }
         }
 
@@ -64,8 +64,6 @@ class TapisWorkflowsAPIBackend(EventHandler):
             status="active",
             **self._kwargs
         )
-
-        
 
     def _pipeline_completed(self, event):
         self.service_client.workflows.updatePipelineRunStatus(

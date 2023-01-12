@@ -48,3 +48,21 @@ DIRECTIVE_KEY_VAL_DELIMITER = ":"
 PERMITTED_HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
 PERMITTED_CONTENT_TYPES = ["application/json", None, ""]
+
+# TODO Move to deployment files
+PERMITTED_SERVICES = [
+    "workflows",
+    "systems",
+    "files",
+    "apps",
+    "jobs",
+    "abaco",
+    "pods",
+    "meta",
+    "authenticator",
+    "tenants",
+    "tokens",
+    "notifications",
+    "sk",
+    "streams"
+]

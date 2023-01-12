@@ -1,6 +1,7 @@
 import json
 
 from pydantic import ValidationError
+from tapisservice import errors
 
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
@@ -8,7 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest, Unauthorized
 from backend.views.http.responses import NoContentResponse
 from backend.views.http.requests import PreparedRequest
-from backend.services.TapisAPIGateway import TapisAPIGateway
+from backend.services.TapisAPIGateway import TapisAPIGateway, TapisServiceAPIGateway
+from backend.errors.api import AuthenticationError
 from backend.utils import one_in
 from backend.conf.constants import (
     TAPIS_TOKEN_HEADER,
@@ -17,6 +19,7 @@ from backend.conf.constants import (
     PERMITTED_HTTP_METHODS,
     TAPIS_DEV_URL,
     LOCAL_DEV_HOSTS,
+    PERMITTED_SERVICES
 )
 
 
@@ -68,20 +71,39 @@ class RestrictedAPIView(View):
 
         # Initialize the tapis API Gateway based on the tenant provided
         self.tapis_api_gateway = TapisAPIGateway(request.base_url)
-
-        # Authenticate the user and get the account
-        request.authenticated = self.tapis_api_gateway.authenticate(
-            {"jwt": request.META[DJANGO_TAPIS_TOKEN_HEADER]}, auth_method="jwt")
-
+        
+        # Set the tenant_id on the request
         request.tenant_id = self.tapis_api_gateway.tenant_id
 
-        if not request.authenticated:
-            return Unauthorized(self.tapis_api_gateway.error)
+        # Authenticate the user and get the account
+        jwt = request.META[DJANGO_TAPIS_TOKEN_HEADER]
+        request.authenticated = self.tapis_api_gateway.authenticate(
+            {"jwt": jwt},
+            auth_method="jwt"
+        )
 
-        request.username = str(self.tapis_api_gateway.get_username())
+        # Try to authenticate as a service
+        username = None
+        if not request.authenticated:
+            try:
+                service_client = TapisServiceAPIGateway(jwt=jwt).get_client()
+                claims = service_client.validate_token()
+            except errors.AuthenticationError as e:
+                return Unauthorized(f"Unable to validate the Tapis token; details: {e}")
+            except Exception as e:
+                return Unauthorized(f"Unable to validate the Tapis token; details: {e}")
+            
+            # Verify the the validate service request is from one of the permitted services
+            username = claims["tapis/username"] if claims["tapis/username"] in PERMITTED_SERVICES else None
+
+        if username == None:
+            return Unauthorized(f"Authentication Error")
+
+        # Set the request username to the service's username. If service request,
+        # set as service username
+        request.username = username or str(self.tapis_api_gateway.get_username())
 
         ### Auth end ###
-
         return super(RestrictedAPIView, self).dispatch(request, *args, **kwargs)
 
     # Takes a pydantic base model and tries to validate it.
@@ -101,8 +123,5 @@ class RestrictedAPIView(View):
 
         self.prepared_request = PreparedRequest(body=request_object)
         return self.prepared_request
-
-    
-
         
 
