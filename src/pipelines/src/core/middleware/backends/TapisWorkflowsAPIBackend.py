@@ -134,14 +134,14 @@ class TapisWorkflowsAPIBackend(EventHandler):
         self.service_client.workflows.createTaskExecution(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_id=event.task.id,
-            uuid=event.task.uuid
+            uuid=event.task.uuid,
             **self._kwargs
         )
 
         self.service_client.workflows.updateTaskExecutionStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_execution_uuid=event.task.uuid,
-            status="active"
+            status="active",
             **self._kwargs
         )
 
