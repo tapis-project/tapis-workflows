@@ -10,7 +10,7 @@ from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMed
 from backend.views.http.responses import NoContentResponse
 from backend.views.http.requests import PreparedRequest
 from backend.services.TapisAPIGateway import TapisAPIGateway
-from backend.service.TapisServiceAPIGateway import TapisServiceAPIGateway
+from backend.services.TapisServiceAPIGateway import TapisServiceAPIGateway
 from backend.utils import one_in
 from backend.conf.constants import (
     TAPIS_TOKEN_HEADER,
