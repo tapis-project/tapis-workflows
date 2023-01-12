@@ -129,58 +129,58 @@ class TapisWorkflowsAPIBackend(EventHandler):
     #         **self._kwargs
     #     )
 
-    def _task_active(self, event, task=None):
+    def _task_active(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
-            task_id=task.id,
-            uuid=task.uuid,
+            task_id=event.task.id,
+            uuid=event.task.uuid,
             **self._kwargs
         )
 
-    def _task_archiving(self, event, task=None):
+    def _task_archiving(self, event):
         print(f"BACKEND: TASK_ARCHIVING: NOT IMPLEMENTED")
 
-    def _task_backoff(self, event, task=None):
+    def _task_backoff(self, event):
         print(f"BACKEND: TASK_BACKOFF: NOT IMPLEMENTED")
 
-    def _task_completed(self, event, task=None):
+    def _task_completed(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
-            task_execution_uuid=task.uuid,
+            task_execution_uuid=event.task.uuid,
             status="completed",
             **self._kwargs
         )
 
-    def _task_failed(self, event, task=None):
+    def _task_failed(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
-            task_execution_uuid=task.uuid,
+            task_execution_uuid=event.task.uuid,
             status="failed",
             **self._kwargs
         )
 
-    def _task_suspended(self, event, task=None):
+    def _task_suspended(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
-            task_execution_uuid=task.uuid,
+            task_execution_uuid=event.task.uuid,
             status="suspended",
             **self._kwargs
         )
     
-    # def _task_skipped(self, event, task=None):
+    # def _task_skipped(self, event):
     #     self.service_client.workflows.updateTaskExecutionStatus(
-    #         task_execution_uuid=task.uuid,
+    #         task_execution_uuid=event.task.uuid,
     #         status="skipped",
     #         **self._kwargs
     #     )
 
-    def _task_terminated(self, event, task=None):
+    def _task_terminated(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
-            task_execution_uuid=task.uuid,
+            task_execution_uuid=event.task.uuid,
             status="terminated",
             **self._kwargs
         )
 
-    def _task_pending(self, event, task=None):
+    def _task_pending(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
-            task_execution_uuid=task.uuid,
+            task_execution_uuid=event.task.uuid,
             status="pending",
             **self._kwargs
         )
