@@ -96,12 +96,12 @@ class RestrictedAPIView(View):
             # Verify the the validate service request is from one of the permitted services
             username = claims["tapis/username"] if claims["tapis/username"] in PERMITTED_SERVICES else None
 
-        if username == None:
-            return Unauthorized(f"Authentication Error")
-
         # Set the request username to the service's username. If service request,
         # set as service username
         request.username = username or str(self.tapis_api_gateway.get_username())
+        
+        if username == None:
+            return Unauthorized(f"Authentication Error")
 
         ### Auth end ###
         return super(RestrictedAPIView, self).dispatch(request, *args, **kwargs)
