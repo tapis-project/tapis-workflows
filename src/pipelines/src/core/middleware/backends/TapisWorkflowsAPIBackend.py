@@ -19,19 +19,15 @@ class TapisWorkflowsAPIBackend(EventHandler):
         if access_token == None:
             raise Exception("Workflow Executor Token missing in request")
 
-        self._headers = {
-            "_x_tapis_tenant": ctx.group.tenant_id,
-            "_x_tapis_user": ctx.pipeline.owner,
-            # "headers": {
-            #     "X-WORKFLOW-EXECUTOR-TOKEN": access_token,
-            #     "X-Tapis-Tenant": ctx.group.tenant_id,
-            #     "X-Tapis-User": ctx.pipeline.owner
-            # }
-        }
-
-        self._kwargs = {
-            # "_tapis_set_x_headers_from_service": True
-        }
+        # self._headers = {
+        #     "_x_tapis_tenant": ctx.group.tenant_id,
+        #     "_x_tapis_user": ctx.pipeline.owner,
+        #     # "headers": {
+        #     #     "X-WORKFLOW-EXECUTOR-TOKEN": access_token,
+        #     #     "X-Tapis-Tenant": ctx.group.tenant_id,
+        #     #     "X-Tapis-User": ctx.pipeline.owner
+        #     # }
+        # }
 
         # Create a mapping of functions to events
         self.handle_fn_mapping = {
@@ -56,6 +52,15 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
         service_api_gateway = TapisServiceAPIGateway()
         self.service_client = service_api_gateway.get_client()
+
+        self._kwargs = {
+            "_tapis_set_x_headers_from_service": True,
+            "headers": {
+                "X-WORKFLOW-EXECUTOR-TOKEN": access_token,
+                "X-Tapis-Tenant": ctx.group.tenant_id,
+                "X-Tapis-User": ctx.pipeline.owner
+            }
+        }
 
         # self._headers={
         #     "X-Tapis-Tenant": ctx.group.tenant_id,
@@ -84,14 +89,14 @@ class TapisWorkflowsAPIBackend(EventHandler):
         self.service_client.workflows.updatePipelineRunStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             status="completed",
-            **self._headers
+            **self._kwargs
         )
 
     def _pipeline_terminated(self, event):
         self.service_client.workflows.updatePipelineRunStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             status="terminated",
-            **self._headers
+            **self._kwargs
         )
 
     def _pipeline_archiving(self, event):
@@ -101,28 +106,28 @@ class TapisWorkflowsAPIBackend(EventHandler):
         self.service_client.workflows.updatePipelineRunStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             status="failed",
-            **self._headers
+            **self._kwargs
         )
 
     def _pipeline_pending(self, event):
         self.service_client.workflows.updatePipelineRunStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             status="pending",
-            **self._headers
+            **self._kwargs
         )
 
     def _pipeline_suspended(self, event):
         self.service_client.workflows.updatePipelineRunStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             status="suspended",
-            **self._headers
+            **self._kwargs
         )
 
     # def _pipeline_skipped(self, event):
     #     self.service_client.workflows.updatePipelineRunStatus(
     #         pipeline_run_uuid=event.payload.pipeline_run.uuid,
     #         status="skipped",
-    #         **self._headers
+    #         **self._kwargs
     #     )
 
     def _task_active(self, event):
@@ -130,7 +135,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_id=event.task.id,
             uuid=event.task.uuid,
-            **self._headers
+            **self._kwargs
         )
 
     def _task_archiving(self, event):
@@ -143,41 +148,41 @@ class TapisWorkflowsAPIBackend(EventHandler):
         self.service_client.workflows.updateTaskExecutionStatus(
             task_execution_uuid=event.payload.task.uuid,
             status="completed",
-            **self._headers
+            **self._kwargs
         )
 
     def _task_failed(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
             task_execution_uuid=event.payload.task.uuid,
             status="failed",
-            **self._headers
+            **self._kwargs
         )
 
     def _task_suspended(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
             task_execution_uuid=event.payload.task.uuid,
             status="suspended",
-            **self._headers
+            **self._kwargs
         )
     
     # def _task_skipped(self, event):
     #     self.service_client.workflows.updateTaskExecutionStatus(
     #         task_execution_uuid=event.payload.task.uuid,
     #         status="skipped",
-    #         **self._headers
+    #         **self._kwargs
     #     )
 
     def _task_terminated(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
             task_execution_uuid=event.payload.task.uuid,
             status="terminated",
-            **self._headers
+            **self._kwargs
         )
 
     def _task_pending(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
             task_execution_uuid=event.payload.task.uuid,
             status="pending",
-            **self._headers
+            **self._kwargs
         )
     
