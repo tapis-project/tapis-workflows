@@ -20,7 +20,8 @@ class TapisSystemArchiver(EventHandler):
                     event.payload.archive,
                     event.payload.pipeline,
                     event.payload.group,
-                    event.payload.base_url
+                    event.payload.base_url,
+                    event.payload.logger
                 )
             except ArchiveError as e:
                 event.payload.logger.error(f"[PIPELINE] {event.payload.pipeline.id} [ERROR] {trunc_uuid(event.payload.pipeline.run_id)}: {e.message}")
@@ -32,7 +33,7 @@ class TapisSystemArchiver(EventHandler):
             event.payload.logger.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING COMPLETED] {trunc_uuid(event.payload.pipeline.run_id)}")
         
 
-    def archive(self, archive, pipeline, group, base_url):
+    def archive(self, archive, pipeline, group, logger):
         try:
             tapis_service_api_gateway = TapisServiceAPIGateway()
             service_client = tapis_service_api_gateway.get_client()
@@ -49,7 +50,7 @@ class TapisSystemArchiver(EventHandler):
             raise e
         
         # Check that the requesting user had modify permissons on this system
-        if "MODIFY" not in perms.names:
+        if "MODIFY" not in perms.names and perms.names.length != 0:
             raise ArchiveError(f"You do not have 'MODIFY' permissions for system '{archive.system_id}'")
         
         # The base archive directory on the system for this pipeline work.
@@ -73,7 +74,7 @@ class TapisSystemArchiver(EventHandler):
                     _x_tapis_user=archive.owner
                 )
             except Exception as e:
-                event.payload.logger.error(e)
+                logger.error(e)
 
             # The location in the pipeline service where the outputs for this
             # task are stored
@@ -98,6 +99,6 @@ class TapisSystemArchiver(EventHandler):
                                 "X-Tapis-Token": service_client.service_tokens["admin"]["access_token"].access_token
                             }
                         )
-                        event.payload.logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {path_to_file}")
+                        logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {path_to_file}")
                     except Exception as e:
-                        event.payload.logger.error(e)
+                        logger.error(e)
