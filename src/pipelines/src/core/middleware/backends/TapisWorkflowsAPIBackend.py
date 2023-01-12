@@ -19,15 +19,15 @@ class TapisWorkflowsAPIBackend(EventHandler):
         if access_token == None:
             raise Exception("Workflow Executor Token missing in request")
 
-        self._headers = {
-            # "_x_tapis_tenant": ctx.group.tenant_id,
-            # "_x_tapis_user": ctx.pipeline.owner,
-            "headers": {
-                "X-WORKFLOW-EXECUTOR-TOKEN": access_token,
-                "X-Tapis-Tenant": ctx.group.tenant_id,
-                "X-Tapis-User": ctx.pipeline.owner
-            }
-        }
+        # self._headers = {
+        #     "_x_tapis_tenant": ctx.group.tenant_id,
+        #     "_x_tapis_user": ctx.pipeline.owner,
+        #     "headers": {
+        #         "X-WORKFLOW-EXECUTOR-TOKEN": access_token,
+        #         "X-Tapis-Tenant": ctx.group.tenant_id,
+        #         "X-Tapis-User": ctx.pipeline.owner
+        #     }
+        # }
 
         self._kwargs = {
             # "_tapis_set_x_headers_from_service": True
@@ -57,6 +57,12 @@ class TapisWorkflowsAPIBackend(EventHandler):
         service_api_gateway = TapisServiceAPIGateway()
         self.service_client = service_api_gateway.get_client()
 
+        self._headers={
+            "X-Tapis-Tenant": ctx.group.tenant_id,
+            "X-Tapis-User": ctx.pipeline.owner,
+            "X-Tapis-Token": self.service_client.service_tokens["admin"]["access_token"].access_token
+        }
+
     def handle(self, event: Event):
         try:
             self.handle_fn_mapping[event.type](event)
@@ -70,6 +76,8 @@ class TapisWorkflowsAPIBackend(EventHandler):
             **self._headers,
             **self._kwargs
         )
+
+        
 
     def _pipeline_completed(self, event):
         self.service_client.workflows.updatePipelineRunStatus(
