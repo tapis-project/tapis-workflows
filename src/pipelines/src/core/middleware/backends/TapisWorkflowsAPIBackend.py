@@ -132,8 +132,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
     def _task_active(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
-            task_id=event.task.id,
-            uuid=event.task.uuid,
+            task_execution_uuid=event.task.uuid,
             **self._kwargs
         )
 
