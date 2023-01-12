@@ -133,6 +133,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
         self.service_client.workflows.updateTaskExecutionStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_execution_uuid=event.task.uuid,
+            status="active"
             **self._kwargs
         )
 
@@ -144,6 +145,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
     def _task_completed(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_execution_uuid=event.task.uuid,
             status="completed",
             **self._kwargs
@@ -151,6 +153,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
     def _task_failed(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_execution_uuid=event.task.uuid,
             status="failed",
             **self._kwargs
@@ -158,6 +161,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
     def _task_suspended(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_execution_uuid=event.task.uuid,
             status="suspended",
             **self._kwargs
@@ -165,6 +169,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
     
     # def _task_skipped(self, event):
     #     self.service_client.workflows.updateTaskExecutionStatus(
+    #         pipeline_run_uuid=event.payload.pipeline_run.uuid,
     #         task_execution_uuid=event.task.uuid,
     #         status="skipped",
     #         **self._kwargs
@@ -172,6 +177,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
     def _task_terminated(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_execution_uuid=event.task.uuid,
             status="terminated",
             **self._kwargs
@@ -179,6 +185,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
     def _task_pending(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_execution_uuid=event.task.uuid,
             status="pending",
             **self._kwargs
