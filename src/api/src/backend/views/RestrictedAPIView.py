@@ -87,7 +87,7 @@ class RestrictedAPIView(View):
         if not request.authenticated:
             try:
                 service_client = TapisServiceAPIGateway(jwt=jwt).get_client()
-                claims = service_client.validate_token()
+                claims = service_client.validate_token(jwt)
             except errors.AuthenticationError as e:
                 return Unauthorized(f"Unable to validate the Tapis token; details: {e}")
             except Exception as e:
