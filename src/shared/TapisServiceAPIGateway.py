@@ -9,15 +9,10 @@ class TapisServiceAPIGateway:
         tenants=TenantCache(),
         jwt=None
     ):  
-        kwargs = {}
-        if jwt != None:
-            kwargs.update({"jwt": jwt})
-        elif jwt == None:
-            kwargs.update({"tenants": tenants})
         
         self.client = None
         try:
-            self.client = get_service_tapis_client(**kwargs)
+            self.client = get_service_tapis_client(tenants=tenants, jwt=jwt)
         except Exception as e:
             logging.error(f'Could not instantiate tapisservice client. Exception: {e}')
 
