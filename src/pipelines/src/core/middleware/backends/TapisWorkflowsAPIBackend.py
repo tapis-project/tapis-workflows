@@ -78,8 +78,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
         self.service_client.workflows.updatePipelineRunStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             status="active",
-            _x_tapis_tenant=event.payload.group.tenant_id,
-            _x_tapis_user=event.payload.pipeline.owner,
+            **self._kwargs
         )
         print("AFTER ACTIVE")
 
@@ -133,8 +132,8 @@ class TapisWorkflowsAPIBackend(EventHandler):
     def _task_active(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
-            task_id=event.task.id,
-            uuid=event.task.uuid,
+            task_id=event.payload.task.id,
+            uuid=event.payload.task.uuid,
             **self._kwargs
         )
 
