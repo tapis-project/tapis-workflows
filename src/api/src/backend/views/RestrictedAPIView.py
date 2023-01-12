@@ -83,7 +83,7 @@ class RestrictedAPIView(View):
         )
 
         # Try to authenticate as a service
-        username = None
+        service_username = None
         if not request.authenticated:
             try:
                 service_client = TapisServiceAPIGateway(jwt=jwt).get_client()
@@ -94,13 +94,13 @@ class RestrictedAPIView(View):
                 return Unauthorized(f"Unable to validate the Tapis token; details: {e}")
             
             # Verify the the validate service request is from one of the permitted services
-            username = claims["tapis/username"] if claims["tapis/username"] in PERMITTED_SERVICES else None
+            service_username = claims["tapis/username"] if claims["tapis/username"] in PERMITTED_SERVICES else None
 
         # Set the request username to the service's username. If service request,
         # set as service username
-        request.username = username or str(self.tapis_api_gateway.get_username())
-        
-        if username == None:
+        request.username = service_username or str(self.tapis_api_gateway.get_username())
+
+        if request.username == None:
             return Unauthorized(f"Authentication Error")
 
         ### Auth end ###
