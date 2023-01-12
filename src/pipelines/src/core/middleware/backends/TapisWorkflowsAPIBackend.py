@@ -19,6 +19,8 @@ class TapisWorkflowsAPIBackend(EventHandler):
         if access_token == None:
             raise Exception("Workflow Executor Token missing in request")
 
+        print("TENANT", ctx.group.tenant_id)
+        print("GROUP", ctx.pipeline.owner)
         self._headers = {
             "_x_tapis_tenant": ctx.group.tenant_id,
             "_x_tapis_user": ctx.pipeline.owner,
