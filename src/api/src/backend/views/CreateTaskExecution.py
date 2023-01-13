@@ -55,7 +55,7 @@ class CreateTaskExecution(RestrictedAPIView):
             url=resource_url_builder(
                 request.url.replace(
                     f"executor/runs/{pipeline_run_uuid}/executions",
-                    f"groups/{pipeline.group}/pipelines/{pipeline.id}/runs/{run.uuid}/executions"
+                    f"groups/{pipeline.group.id}/pipelines/{pipeline.id}/runs/{run.uuid}/executions"
                 ),
                 body.uuid
             )
