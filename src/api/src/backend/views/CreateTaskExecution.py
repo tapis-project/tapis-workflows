@@ -12,12 +12,9 @@ from backend.models import Pipeline, Task, PipelineRun, TaskExecution
 from backend.helpers import resource_url_builder
 from backend.utils import executor_request_is_valid
 
-from backend.conf.constants import (
-    DJANGO_TAPIS_TOKEN_HEADER
-)
+
 class CreateTaskExecution(RestrictedAPIView):
     def post(self, request, pipeline_run_uuid, *_,  **__):
-        print("SERVICE_JWT:", request.META[DJANGO_TAPIS_TOKEN_HEADER])
         if not executor_request_is_valid(request):
             return BadRequest(message=f"X-WORKFLOW-EXECUTOR-TOKEN header is invalid")
 
@@ -34,7 +31,7 @@ class CreateTaskExecution(RestrictedAPIView):
             if run == None: return BadRequest(message=f"Pipeline run with uuid {pipeline_run_uuid} not found")
             
             # Get the pipeline
-            pipeline = Pipeline.objects.filter(uuid=run.pipeline).first()
+            pipeline = Pipeline.objects.filter(uuid=run.pipeline.uuid).first()
             if pipeline == None: return BadRequest(message=f"Pipeline with uuid {run.pipeline} not found") 
 
             # Get the task
