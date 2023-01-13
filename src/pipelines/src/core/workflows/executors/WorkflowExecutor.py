@@ -2,6 +2,8 @@ import os, logging
 
 from threading import Thread, Lock
 
+from uuid import uuid4
+
 from core.tasks.TaskExecutorFactory import task_executor_factory as factory
 from core.tasks.TaskResult import TaskResult
 from core.events import (
@@ -197,6 +199,9 @@ class WorkflowExecutor(Worker, EventPublisher):
 
     @interceptable()
     def _start_task(self, task):
+        # Create a uuid for this task execution
+        task.execution_uuid = str(uuid4())
+
         self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
         # create the task_execution object in Tapis
         self.publish(Event(TASK_ACTIVE, self.state.ctx, task=task))
