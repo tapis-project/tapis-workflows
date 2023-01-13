@@ -49,7 +49,7 @@ class TapisSystemArchiver(EventHandler):
             raise e
         
         # Check that the requesting user had modify permissons on this system
-        if "MODIFY" not in perms.names and perms.names.length != 0:
+        if "MODIFY" not in perms.names and len(perms.names) != 0:
             raise ArchiveError(f"You do not have 'MODIFY' permissions for system '{archive.system_id}'")
         
         # The base archive directory on the system for this pipeline work.
