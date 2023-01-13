@@ -56,7 +56,7 @@ class PipelineDispatcher:
                 status=RUN_STATUS_PENDING,
                 uuid=uuid,
                 started_at=now,
-                modified_at=now
+                last_modified=now
             )
 
             # Update the pipeline object with the pipeline run
