@@ -3,6 +3,7 @@ import json, logging
 from uuid import UUID, uuid4
 
 from django.db import IntegrityError, DatabaseError, OperationalError
+from django.utils import timezone
 
 from backend.services.MessageBroker import service as broker
 from backend.models import Pipeline, PipelineRun, RUN_STATUS_PENDING
@@ -47,12 +48,15 @@ class PipelineDispatcher:
         uuid = uuid4()
         service_request["pipeline_run"]["uuid"] = uuid
 
+        now = timezone.now()
         try: 
             # Create the pipeline run object
             pipeline_run = PipelineRun.objects.create(
                 pipeline=pipeline,
                 status=RUN_STATUS_PENDING,
                 uuid=uuid,
+                started_at=now,
+                modified_at=now
             )
 
             # Update the pipeline object with the pipeline run

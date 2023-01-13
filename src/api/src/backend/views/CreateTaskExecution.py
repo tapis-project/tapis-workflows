@@ -43,8 +43,8 @@ class CreateTaskExecution(RestrictedAPIView):
             TaskExecution.objects.create(
                 task=task,
                 pipeline_run=run,
-                started_at=body.started_at or now,
-                last_modified=body.last_modified or now,
+                started_at=now,
+                last_modified=now,
                 uuid=body.uuid
             )
 
