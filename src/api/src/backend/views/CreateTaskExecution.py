@@ -2,7 +2,7 @@ from django.db import DatabaseError, IntegrityError, OperationalError
 from django.utils import timezone
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.requests import TaskExecution
+from backend.views.http.requests import TaskExecution as ReqTaskExecution
 from backend.views.http.responses import ResourceURLResponse
 from backend.views.http.responses.errors import (
     ServerError,
@@ -17,7 +17,7 @@ class CreateTaskExecution(RestrictedAPIView):
         if not executor_request_is_valid(request):
             return BadRequest(message=f"X-WORKFLOW-EXECUTOR-TOKEN header is invalid")
 
-        prepared_request = self.prepare(TaskExecution)
+        prepared_request = self.prepare(ReqTaskExecution)
 
         if not prepared_request.is_valid:
             return prepared_request.failure_view
