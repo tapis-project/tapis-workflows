@@ -315,7 +315,8 @@ class Server:
             idempotency_key = ""
             for constraint in ctx.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
-                idempotency_key = idempotency_key + "." + str(getattr(getattr(ctx, obj), prop))
+                delimiter = "." if idempotency_key != "" else ""
+                idempotency_key = idempotency_key + delimiter + str(getattr(getattr(ctx, obj), prop))
 
             return idempotency_key
         except (AttributeError, TypeError):
