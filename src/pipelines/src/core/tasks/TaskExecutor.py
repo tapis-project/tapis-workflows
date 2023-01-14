@@ -83,9 +83,9 @@ class TaskExecutor(EventPublisher):
 
     def cleanup(self, terminating=False):
         if terminating: 
-            self.logger.info(f"{TSTR} {self.task.id} [TERMINATING] {self.__class__.__name__}")
+            self.logger.info(f"{TSTR} {self.ctx.idempotency_key} {self.task.id} [TERMINATING] {self.__class__.__name__}")
             
-        self.logger.info(f"{TSTR} {self.task.id} [TASK EXECUTOR CLEANUP]")
+        self.logger.info(f"{TSTR} {self.ctx.idempotency_key} {self.task.id} [TASK EXECUTOR CLEANUP]")
 
         for resource in self._resources:
             # Jobs and Job Pods
@@ -106,7 +106,7 @@ class TaskExecutor(EventPublisher):
                 continue
 
         if terminating:
-            self.logger.info(f"{TSTR} {self.task.id} [TERMINATED] {self.__class__.__name__}")
+            self.logger.info(f"{TSTR} {self.ctx.idempotency_key} {self.task.id} [TERMINATED] {self.__class__.__name__}")
 
     def terminate(self):
         self.terminating = True

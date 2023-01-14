@@ -133,8 +133,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         self._set_initial_state()
 
     # Logging formatters. Makes logs more useful and pretty
-    def p_str(self, status): return f"worker{self.id} {lbuf('[PIPELINE]')} {status} {self.state.ctx.pipeline.id}.{self.state.ctx.pipeline_run.uuid}"
-    def t_str(self, task, status): return f"worker{self.id} {lbuf('[TASK]')} {status} {task.id}.{self.state.ctx.pipeline.id}.{self.state.ctx.pipeline_run.uuid}"
+    def p_str(self, status): return f"worker{self.id} {self.state.ctx.idempotency_key} {lbuf('[PIPELINE]')} {status} {self.state.ctx.pipeline.id}"
+    def t_str(self, task, status): return f"worker{self.id} {self.state.ctx.idempotency_key} {lbuf('[TASK]')} {status} {task.id}.{self.state.ctx.pipeline.id}"
 
     @interceptable()
     def start(self, ctx, threads):

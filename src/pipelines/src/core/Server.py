@@ -270,6 +270,9 @@ class Server:
         # run uuid if no idempotency key is provided
         worker.key = self._resolve_idempotency_key(ctx)
 
+        # Set the idempotency key on the context
+        ctx.idempotency_key = worker.key
+
         # Check if there are workers running that have the same unique constraint key
         active_workers = self._get_active_workers(worker.key)
         policy = ctx.pipeline.duplicate_submission_policy
