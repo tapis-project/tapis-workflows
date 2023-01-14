@@ -37,7 +37,6 @@ class WorkerPool:
         if len(self.pool) > 0:
             worker = self.pool.pop()
             self.checked_out.append(worker)
-            print("CHECKING OUT", worker)
             # Release the lock
             self.lock.release()
             return worker
@@ -50,8 +49,6 @@ class WorkerPool:
         if total_workers < self.max_workers:
             worker = self.worker_cls()
             self.checked_out.append(worker)
-            print("CHECKING OUT", worker)
-            print("CHECKED OUT", self.checked_out)
             # Release the lock
             self.lock.release()
             return worker

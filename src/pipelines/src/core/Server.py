@@ -303,9 +303,9 @@ class Server:
         return [worker for worker in self.active_workers if worker.key == key]
 
     def _resolve_idempotency_key(self, ctx):
-        # Check the context's meta for a idempotency key. This will be used
-        # to help identify duplicate workflow submissions and handle them
-        # according to their duplicate submission policy.
+        # Check the context's meta for an idempotency key. This will be used
+        # to identify duplicate workflow submissions and handle them according
+        # to their duplicate submission policy.
         #
         # Defaults to the pipeline run uuid
         if len(ctx.meta.idempotency_key) == 0:
@@ -315,7 +315,7 @@ class Server:
             idempotency_key = ""
             for constraint in ctx.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
-                idempotency_key = idempotency_key + str(getattr(getattr(ctx, obj), prop))
+                idempotency_key = idempotency_key + "." + str(getattr(getattr(ctx, obj), prop))
 
             return idempotency_key
         except (AttributeError, TypeError):
