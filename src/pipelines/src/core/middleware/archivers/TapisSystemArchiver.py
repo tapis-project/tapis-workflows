@@ -92,7 +92,7 @@ class TapisSystemArchiver(EventHandler):
                             dest_file_path=os.path.join(archive_output_dir, filename),
                             # _x_tapis_tenant=group.tenant_id,
                             # _x_tapis_user=archive.owner,
-                            _tapis_headers={
+                            headers={
                                 "X-Tapis-Tenant": group.tenant_id,
                                 "X-Tapis-User": archive.owner,
                                 "X-Tapis-Token": service_client.service_tokens["admin"]["access_token"].access_token
