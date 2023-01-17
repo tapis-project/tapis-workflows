@@ -54,7 +54,7 @@ class EventExchange:
                 subscriber = self.subscribers[key]
                 if e.type in subscriber["events"]:
                     try:
-                        print(e)
+                        print("HANDLING", e.type)
                         subscriber["handler"].handle(e)
                     except Exception as exception:
                         logging.error(f"EVENT EXCHANGE ERROR: {str(exception)}")
