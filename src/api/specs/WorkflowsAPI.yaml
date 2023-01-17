@@ -3024,6 +3024,7 @@ components:
         - archiving
         - terminated
         - terminating
+        - skipped
 
     EnumInvocationMode:
       type: string

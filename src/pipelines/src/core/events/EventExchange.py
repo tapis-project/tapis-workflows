@@ -1,6 +1,7 @@
 import logging
 
 from typing import List, Union
+from threading import Lock
 
 from core.events import EventHandler, Event
 from core.events.ExchangeConfig import ExchangeConfig
@@ -13,6 +14,8 @@ class EventExchange:
             config = ExchangeConfig()
 
         self._set_config(config)
+
+        self.lock = Lock()
 
     def add_subscribers(
         self,
@@ -40,6 +43,14 @@ class EventExchange:
     def publish(self, events: List[Event]):
         for e in events:
             for key in self.subscribers:
+                # Ensure allow_once events are only handled once
+                self.lock.acquire()
+                if e.type in self._config.allow_once and {key: e.type} in self.handled_events:
+                    self.lock.release()
+                    return
+                self.handled_events.append({key: e.type})
+                self.lock.release()
+
                 subscriber = self.subscribers[key]
                 if e.type in subscriber["events"]:
                     try:
@@ -60,3 +71,4 @@ class EventExchange:
 
     def _set_initial_state(self):
         self.subscribers = {}
+        self.handled_events = []

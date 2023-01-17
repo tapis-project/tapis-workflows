@@ -34,12 +34,10 @@ from utils import bytes_to_json, json_to_object, lbuffer_str as lbuf
 from errors import NoAvailableWorkers, WorkflowTerminated
 
 
-logger = logging.getLogger("application")
-
-SSTR = lbuf("[APPLICATION]")
+logger = logging.getLogger("server")
 
 # TODO Keep track of workflows submissions somehow so they can be terminated later
-class Application:
+class Server:
     def __init__(self):
         self.active_workers = []
         self.worker_pool = None
@@ -49,7 +47,7 @@ class Application:
         workers, establishes a connection with RabbitMQ, creates the channel, 
         exchanges, and queues, and begins consuming from the inbound queue"""
 
-        logger.info(f"{SSTR} STARTING")
+        logger.info(f"{lbuf('[SERVER]')} STARTING")
 
         # Create a worker pool that consists of the workflow executors that will
         # run the pipelines
@@ -59,7 +57,7 @@ class Application:
             starting_worker_count=STARTING_WORKERS,
             max_workers=MAX_WORKERS,
         )
-        logger.debug(f"{SSTR} WORKERS INITIALIZED ({self.worker_pool.count()})")
+        logger.debug(f"{lbuf('[SERVER]')} WORKERS INITIALIZED ({self.worker_pool.count()})")
 
         # Connect to the message broker
         connection = self._connect()
@@ -124,7 +122,7 @@ class Application:
     def _start_worker(self, body, connection, channel, delivery_tag):
         """Validates and prepares the message from the inbound exchange(and queue),
         provisions a worker from the worker pool, acks the message, registers the 
-        active worker to the application, handles the termination of duplicate
+        active worker to the server, handles the termination of duplicate
         workflow submissions and starts the worker."""
 
         # Prepare the execution context. The execution context contains all the 
@@ -149,7 +147,7 @@ class Application:
             # occurs above)
             acked = True
 
-            # Register the active worker to the application. If worker cannot 
+            # Register the active worker to the server. If worker cannot 
             # execute, check it back in.
             worker = self._register_worker(ctx, worker)
 
@@ -168,7 +166,7 @@ class Application:
             return
 
         except NoAvailableWorkers:
-            logger.info(f"{SSTR} Insufficient workers available. RETRYING (10s)")
+            logger.info(f"{lbuf('[SERVER]')} Insufficient workers available. RETRYING (10s)")
             connection.add_callback_threadsafe(
                 partial(
                     self._ack_nack,
@@ -182,7 +180,7 @@ class Application:
 
         # TODO probably not needed
         # except WorkflowTerminated as e:
-        #     logger.info(f"{SSTR} {e}")
+        #     logger.info(f"{lbuf('[SERVER]')} {e}")
         #     worker.reset()
 
         except Exception as e:
@@ -239,7 +237,7 @@ class Application:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        logger.info(f"{SSTR} CONNECTING")
+        logger.info(f"{lbuf('[SERVER]')} CONNECTING")
 
         connected = False
         connection_attempts = 0
@@ -249,7 +247,7 @@ class Application:
                 connection = pika.BlockingConnection(connection_parameters)
                 connected = True
             except Exception:
-                logger.info(f"{SSTR} [CONNECTION FAILED] ({connection_attempts})")
+                logger.info(f"{lbuf('[SERVER]')} [CONNECTION FAILED] ({connection_attempts})")
                 time.sleep(CONNECTION_RETRY_DELAY)
 
         # Kill the build service if unable to connect
@@ -259,18 +257,21 @@ class Application:
             )
             sys.exit(1)
 
-        logger.info(f"{SSTR} CONNECTED")
+        logger.info(f"{lbuf('[SERVER]')} CONNECTED")
 
         return connection
 
     # TODO handle for the case of multiple active workers with same
     # active worker key
     def _register_worker(self, ctx, worker):
-        """Registers the worker to the Application. Handles duplicate workflow
+        """Registers the worker to the Server. Handles duplicate workflow
         submissions"""
         # Returns a key based on user-defined idempotency key or pipeline
         # run uuid if no idempotency key is provided
         worker.key = self._resolve_idempotency_key(ctx)
+
+        # Set the idempotency key on the context
+        ctx.idempotency_key = worker.key
 
         # Check if there are workers running that have the same unique constraint key
         active_workers = self._get_active_workers(worker.key)
@@ -302,9 +303,9 @@ class Application:
         return [worker for worker in self.active_workers if worker.key == key]
 
     def _resolve_idempotency_key(self, ctx):
-        # Check the context's meta for a idempotency key. This will be used
-        # to help identify duplicate workflow submissions and handle them
-        # according to their duplicate submission policy.
+        # Check the context's meta for an idempotency key. This will be used
+        # to identify duplicate workflow submissions and handle them according
+        # to their duplicate submission policy.
         #
         # Defaults to the pipeline run uuid
         if len(ctx.meta.idempotency_key) == 0:
@@ -314,7 +315,8 @@ class Application:
             idempotency_key = ""
             for constraint in ctx.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
-                idempotency_key = idempotency_key + str(getattr(getattr(ctx, obj), prop))
+                delimiter = "." if idempotency_key != "" else ""
+                idempotency_key = idempotency_key + delimiter + str(getattr(getattr(ctx, obj), prop))
 
             return idempotency_key
         except (AttributeError, TypeError):

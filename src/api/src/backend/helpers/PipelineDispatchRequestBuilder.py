@@ -99,3 +99,19 @@ class PipelineDispatchRequestBuilder:
     def _container_run(self, task):
         task_request = model_to_dict(task)
         return task_request
+
+    def _tapis_job(self, task):
+        task_request = model_to_dict(task)
+        return task_request
+
+    def _tapis_actor(self, task):
+        task_request = model_to_dict(task)
+        return task_request
+
+    def _function(self, task):
+        task_request = model_to_dict(task)
+        return task_request
+
+    def _container_run(self, task):
+        task_request = model_to_dict(task)
+        return task_request

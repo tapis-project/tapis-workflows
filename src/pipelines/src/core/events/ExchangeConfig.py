@@ -9,6 +9,10 @@ from core.events.types import (
 class ExchangeConfig:
     def __init__(
         self,
+        # The allow once list will permit handling of specific events only once
+        # per subscriber
+        allow_once: List[str] = [PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED], # TODO Maybe remove terminated
         reset_on: List[Union[str, int]] = [PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED]
     ):
-        self.reset_on=[*reset_on]
+        self.allow_once = [*allow_once]
+        self.reset_on = [*reset_on]
