@@ -1,7 +1,7 @@
 import logging
 
 from typing import List, Union
-from threading import lock
+from threading import Lock
 
 from corevent.events import EventHandler, Event
 from corevent.events.ExchangeConfig import ExchangeConfig
@@ -14,6 +14,8 @@ class EventExchange:
             config = ExchangeConfig()
 
         self._set_config(config)
+
+        self.lock = Lock()
 
     
 
@@ -43,12 +45,12 @@ class EventExchange:
     def publish(self, event: List[Event]):
         for key in self.subscribers:
             # Prevent allow once events to only be called once
-            lock.acquire()
+            self.lock.acquire()
             if event.type in self._config.allow_once and event.type in self.handled_events:
                 return
 
             self.handled_events.append(event.type)
-            lock.release()
+            self.lock.release()
 
         subscriber = self.subscribers[key]
         if event.type in subscriber["events"]:
