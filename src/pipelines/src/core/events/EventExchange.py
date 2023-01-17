@@ -45,16 +45,15 @@ class EventExchange:
             for key in self.subscribers:
                 # Ensure allow_once events are only handled once
                 self.lock.acquire()
-                if e.type in self._config.allow_once and e.type in self.handled_events:
+                if e.type in self._config.allow_once and {key: e.type} in self.handled_events:
                     self.lock.release()
                     return
-                self.handled_events.append(e.type)
+                self.handled_events.append({key: e.type})
                 self.lock.release()
 
                 subscriber = self.subscribers[key]
                 if e.type in subscriber["events"]:
                     try:
-                        print("HANDLING", e.type)
                         subscriber["handler"].handle(e)
                     except Exception as exception:
                         logging.error(f"EVENT EXCHANGE ERROR: {str(exception)}")
