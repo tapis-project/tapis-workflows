@@ -54,6 +54,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
     def handle(self, event: Event):
         try:
+            print("Handling Event in Backend:", event.type)
             self.handle_fn_mapping[event.type](event)
         except Exception as e:
             raise e

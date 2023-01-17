@@ -13,6 +13,7 @@ from utils import trunc_uuid
 
 class TapisSystemArchiver(EventHandler):
     def handle(self, event: Event):
+        print("Handling Event in Archiver:", event.type)
         if event.type in [PIPELINE_COMPLETED, PIPELINE_TERMINATED, PIPELINE_FAILED]:
             event.payload.logger.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING] {trunc_uuid(event.payload.pipeline.run_id)}")    
             try:
