@@ -47,6 +47,7 @@ class EventExchange:
             # Prevent allow once events to only be called once
             self.lock.acquire()
             if event.type in self._config.allow_once and event.type in self.handled_events:
+                self.lock.release()
                 return
 
             self.handled_events.append(event.type)
