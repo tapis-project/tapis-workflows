@@ -268,7 +268,7 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         self.state.ctx.logger.info(self.p_str(msg))
 
-        # Publish the event. Triggers the archivers if there are any on ...COMPLETED
+        # Publish the event. Triggers the archivers if there are any on ...COMPLETE
         self.publish(Event(event, self.state.ctx))
         
         self._cleanup_run()

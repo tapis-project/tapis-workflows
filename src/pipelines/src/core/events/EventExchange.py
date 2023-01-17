@@ -45,21 +45,20 @@ class EventExchange:
     def publish(self, events: List[Event]):
         for e in events:
             for key in self.subscribers:
-                # Prevent allow once events to only be called once
+                # Ensure allow_once events are only handled once
                 self.lock.acquire()
                 if e.type in self._config.allow_once and e.type in self.handled_events:
                     self.lock.release()
                     return
-
                 self.handled_events.append(e.type)
                 self.lock.release()
 
-            subscriber = self.subscribers[key]
-            if e.type in subscriber["events"]:
-                try:
-                    subscriber["handler"].handle(e)
-                except Exception as exception:
-                    logging.error(f"EVENT EXCHANGE ERROR: {str(exception)}")
+                subscriber = self.subscribers[key]
+                if e.type in subscriber["events"]:
+                    try:
+                        subscriber["handler"].handle(e)
+                    except Exception as exception:
+                        logging.error(f"EVENT EXCHANGE ERROR: {str(exception)}")
 
         # Reset on the configured reset event
         if e.type in self._config.reset_on:
