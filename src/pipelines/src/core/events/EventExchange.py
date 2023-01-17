@@ -17,8 +17,6 @@ class EventExchange:
 
         self.lock = Lock()
 
-    
-
     def add_subscribers(
         self,
         subscribers: Union[
@@ -56,6 +54,7 @@ class EventExchange:
                 subscriber = self.subscribers[key]
                 if e.type in subscriber["events"]:
                     try:
+                        print(e)
                         subscriber["handler"].handle(e)
                     except Exception as exception:
                         logging.error(f"EVENT EXCHANGE ERROR: {str(exception)}")
