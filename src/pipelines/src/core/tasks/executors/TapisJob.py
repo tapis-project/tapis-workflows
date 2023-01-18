@@ -20,25 +20,27 @@ class TapisJob(TaskExecutor):
 
             # Recursively convert nested simple namespace objects to dict
             job_def = json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: s.__dict__))
-            print(job_def)
-
 
             # Submit the job
-            print("STARTING TAPIS JOB")
-            job = service_client.jobs.submitJob(**job_def)
-            print(job)
+            job = service_client.jobs.submitJob(
+                **job_def,
+                _x_tapis_tenant=self.ctx.group.tenant_id,
+                _x_tapis_user=self.ctx.pipeline.owner
+            )
 
             # Get the initial job status
             job_status = job.status
 
             if self.task.poll:
-                print("POLLING TAPIS JOB")
                 # Keep polling until the job is complete
                 while job_status not in ["FINISHED", "CANCELLED", "FAILED"]:
                     # Wait the polling frequency time then try poll again
                     time.sleep(TAPIS_JOB_POLLING_FREQUENCY)
-                    job_status = service_client.jobs.getJobStatus(jobUuid=job.uuid).status
-                    print("JOB STATUS: POLL:", job_status)
+                    job_status = service_client.jobs.getJobStatus(
+                        jobUuid=job.uuid,
+                        _x_tapis_tenant=self.ctx.group.tenant_id,
+                        _x_tapis_user=self.ctx.pipeline.owner
+                    ).status
 
                 job_data = {"jobUuid": job.uuid, "status": job_status}
                 print("JOB DATA:", job_data)
