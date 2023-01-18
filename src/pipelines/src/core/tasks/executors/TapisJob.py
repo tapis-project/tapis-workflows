@@ -40,16 +40,15 @@ class TapisJob(TaskExecutor):
                         _x_tapis_user=self.ctx.pipeline.owner
                     ).status
 
-                job_data = {"jobUuid": job.uuid, "status": job_status}
-                print("JOB DATA:", job_data)
+                output = {"jobUuid": job.uuid, "status": job_status}
 
                 # Return a task result based on the final status of the tapis job
                 if job_status == "FINISHED":
-                    return TaskResult(0, data=job_data)
+                    return TaskResult(0, output=output)
 
-                return TaskResult(1, data=job_data)
+                return TaskResult(1, output=output)
             print("NOT POLLING TAPIS JOB")
-            return TaskResult(0, data={"jobUuid": job.uuid, "status": job_status})
+            return TaskResult(0, output={"jobUuid": job.uuid, "status": job_status})
 
         except Exception as e:
             print("ERROR IN TAPIS JOB", str(e))
