@@ -1,3 +1,5 @@
+import json
+
 from time import time
 
 from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
@@ -16,11 +18,14 @@ class TapisJob(TaskExecutor):
             tapis_service_api_gateway = TapisServiceAPIGateway()
             service_client = tapis_service_api_gateway.get_client()
 
+            # Recursively convert nested simple namespace objects to dict
+            job_def = json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: s.__dict__))
+            print(job_def)
+
+
             # Submit the job
             print("STARTING TAPIS JOB")
-            print(self.task.__dict__.items())
-            print(dict(self.task.__dict__.items()))
-            job = service_client.jobs.submitJob(**self.task.__dict__["tapis_job_def"])
+            job = service_client.jobs.submitJob(**job_def)
             print(job)
 
             # Get the initial job status
