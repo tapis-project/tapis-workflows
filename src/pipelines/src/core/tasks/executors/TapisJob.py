@@ -18,7 +18,7 @@ class TapisJob(TaskExecutor):
 
             # Submit the job
             print("STARTING TAPIS JOB")
-            job = service_client.jobs.submitJob(**vars(self.task.tapis_job_def))
+            job = service_client.jobs.submitJob(**self.task.__dict__["tapis_job_def"])
             print(job)
 
             # Get the initial job status
