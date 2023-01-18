@@ -47,9 +47,8 @@ class TapisJob(TaskExecutor):
                     return TaskResult(0, output=output)
 
                 return TaskResult(1, output=output)
-            print("NOT POLLING TAPIS JOB")
+                
             return TaskResult(0, output={"jobUuid": job.uuid, "status": job_status})
 
         except Exception as e:
-            print("ERROR IN TAPIS JOB", str(e))
             return TaskResult(1, errors=[str(e)])
