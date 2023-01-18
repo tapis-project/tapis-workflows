@@ -3,10 +3,14 @@ from time import time
 from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
 
 from core.tasks.TaskResult import TaskResult
+from core.tasks.TaskExecutor import TaskExecutor
 from conf.constants import TAPIS_JOB_POLLING_FREQUENCY
 
 
-class TapisJob:
+class TapisJob(TaskExecutor):
+    def __init__(self, task, ctx, exchange):
+        TaskExecutor.__init__(self, task, ctx, exchange)
+
     def execute(self, task):
         try:
             tapis_service_api_gateway = TapisServiceAPIGateway()
@@ -37,6 +41,3 @@ class TapisJob:
 
         except Exception as e:
             return TaskResult(1, errors=[str(e)])
-
-
-executor = TapisJob()
