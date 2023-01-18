@@ -37,10 +37,11 @@ class TapisJob(TaskExecutor):
                 # Return a task result based on the final status of the tapis job
                 if job_status == "FINISHED":
                     return TaskResult(0, data=job_data)
-            
+
                 return TaskResult(1, data=job_data)
 
             return TaskResult(0, data={"jobUuid": job.uuid, "status": job_status})
 
         except Exception as e:
+            print(str(e))
             return TaskResult(1, errors=[str(e)])
