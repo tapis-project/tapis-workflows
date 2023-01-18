@@ -18,11 +18,8 @@ class TapisJob(TaskExecutor):
 
             # Submit the job
             print("STARTING TAPIS JOB")
-            type(self.task.__dict__)
-            type(vars(self.task.__dict__))
-            type(self.task.__dict__.items())
-            type(dict(self.task))
-            type(dict(self.task.__dict__.items()))
+            print(self.task.__dict__.items())
+            print(dict(self.task.__dict__.items()))
             job = service_client.jobs.submitJob(**self.task.__dict__["tapis_job_def"])
             print(job)
 
