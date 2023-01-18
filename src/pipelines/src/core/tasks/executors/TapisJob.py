@@ -1,6 +1,4 @@
-import json
-
-from time import time
+import json, time
 
 from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
 
