@@ -5,6 +5,7 @@ from core.tasks.TaskExecutor import TaskExecutor
 from core.events import EventExchange
 from core.tasks.executors.requesters.HTTP import HTTP
 from core.tasks.executors.TapisJob import TapisJob
+from core.tasks.executors.TapisActor import TapisActor
 from errors.tasks import InvalidTaskTypeError
 
 
@@ -41,6 +42,6 @@ class TaskExecutorFactory:
         return TapisJob(task, ctx, exchange)
 
     def _tapis_actor(self, task, ctx, exchange) -> TaskExecutor:
-        return HTTP(task, ctx, exchange)
+        return TapisActor(task, ctx, exchange)
 
 task_executor_factory = TaskExecutorFactory()
