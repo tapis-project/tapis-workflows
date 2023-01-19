@@ -58,9 +58,11 @@ class TapisActor(TaskExecutor):
             execution = self._get_execution(execution.actor_id, execution.id)
             execution_status = execution.status
 
+        # Add the execution to the executions list
+        self.executions.append(execution)
+
         # If there is an error with the execution return from the loop
         if execution.status == "ERROR":
-            self.executions.append(execution)
             return 
         
         # Get the logs of the execution and store them
