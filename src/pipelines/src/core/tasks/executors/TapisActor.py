@@ -16,16 +16,15 @@ class TapisActor(TaskExecutor):
         try:
             tapis_service_api_gateway = TapisServiceAPIGateway()
             self.service_client = tapis_service_api_gateway.get_client()
-            print(self.task.poll)
-            # Submit the job
+            
+            # Submit the message to abaco
             res = self.service_client.actors.send_message(
                 actor_id=self.task.tapis_actor_id,
                 message="This is a word count test",
+                _tapis_set_x_headers_from_service=True,
                 _x_tapis_tenant=self.ctx.group.tenant_id,
                 _x_tapis_user=self.ctx.pipeline.owner
             )
-
-            print("EXECUTION", res.execution_id)
             
             # End the task successfully with empty output
             if not self.task.poll:
@@ -33,12 +32,10 @@ class TapisActor(TaskExecutor):
 
             # Fetch the execution
             execution = self._get_execution(self.task.tapis_actor_id, res.execution_id)
-            print(execution)
             
             # Polls the execution until it reaches a terminal state, then polls
             # the execution of linked actors recursively.
             # NOTE Actors can have only a single child
-            print("POLLING START")
             self._poll_executions_recursively(execution)
 
             # Check for any failed executions and return failed task accordingly
