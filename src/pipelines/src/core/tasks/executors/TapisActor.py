@@ -19,20 +19,20 @@ class TapisActor(TaskExecutor):
             print(self.task.poll)
             # Submit the job
             res = self.service_client.actors.send_message(
-                actor_id=self.task.actor_id,
+                actor_id=self.task.tapis_actor_id,
                 message=self.task.message,
                 _x_tapis_tenant=self.ctx.group.tenant_id,
                 _x_tapis_user=self.ctx.pipeline.owner
             )
 
-            print(res.execution_id)
+            print("EXECUTION", res.execution_id)
             
             # End the task successfully with empty output
             if not self.task.poll:
                 return TaskResult(0)
 
             # Fetch the execution
-            execution = self._get_execution(self.task.actor_id, res.execution_id)
+            execution = self._get_execution(self.task.tapis_actor_id, res.execution_id)
             print(execution)
             
             # Polls the execution until it reaches a terminal state, then polls
