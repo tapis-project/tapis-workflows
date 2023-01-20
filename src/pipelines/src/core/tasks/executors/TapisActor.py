@@ -18,7 +18,7 @@ class TapisActor(TaskExecutor):
             self.service_client = tapis_service_api_gateway.get_client()
             
             # Submit the message to abaco
-            res = self.service_client.actors.send_message(
+            res = self.service_client.actors.sendMessage(
                 actor_id=self.task.tapis_actor_id,
                 message="This is a word count test",
                 _tapis_set_x_headers_from_service=True,
@@ -46,7 +46,7 @@ class TapisActor(TaskExecutor):
             # TODO set outputs on the task result
             return TaskResult(0)
         except Exception as e:
-            print("ERROR IN TAPIS ACTOR:", str(e))
+            self.ctx.logger.error(f"ERROR IN TAPIS ACTOR: {str(e)}")
             return TaskResult(1, errors=[str(e)])
 
     def _poll_executions_recursively(self, execution):
@@ -68,7 +68,7 @@ class TapisActor(TaskExecutor):
             return 
         
         # Get the logs of the execution and store them
-        logs = self.service_client.actors.get_execution_logs(
+        logs = self.service_client.actors.getExecution_logs(
             actor_id=execution.actor_id,
             execution_id=execution.id,
             _x_tapis_tenant=self.ctx.group.tenant_id,
@@ -77,7 +77,7 @@ class TapisActor(TaskExecutor):
 
         self._store_result(f"actors/{execution.actor_id}/.stdout", logs)
 
-        execution_result = self.service_client.actors.get_execution_result(
+        execution_result = self.service_client.actors.getExecutionResult(
             actor_id=execution.actor_id,
             execution_id=execution.id,
             _x_tapis_tenant=self.ctx.group.tenant_id,
@@ -92,7 +92,7 @@ class TapisActor(TaskExecutor):
             self._poll_executions_recursively(execution)
 
     def _get_execution(self, actor_id, execution_id):
-        return self.service_client.actors.get_execution(
+        return self.service_client.actors.getExecution(
             actor_id=actor_id,
             execution_id=execution_id,
             _x_tapis_tenant=self.ctx.group.tenant_id,
