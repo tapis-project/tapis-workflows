@@ -20,7 +20,7 @@ class TapisActor(TaskExecutor):
             # Submit the job
             res = self.service_client.actors.send_message(
                 actor_id=self.task.tapis_actor_id,
-                message=self.task.message,
+                message="This is a word count test",
                 _x_tapis_tenant=self.ctx.group.tenant_id,
                 _x_tapis_user=self.ctx.pipeline.owner
             )
