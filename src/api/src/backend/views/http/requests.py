@@ -280,6 +280,7 @@ class BaseTask(BaseModel):
     depends_on: List[TaskDependency] = []
     retries: int = 0
     tapis_actor_id: str = None
+    tapis_actor_message: Union[str, dict] = None
     tapis_job_def: dict = None
     url: str = None
 
@@ -340,6 +341,8 @@ class ImageBuildTask(BaseTask):
 class TapisActorTask(BaseTask):
     type: Literal["tapis_actor"]
     tapis_actor_id: str
+    poll: bool = True
+    tapis_actor_message: str = None
 
 class TapisJobTask(BaseTask):
     type: Literal["tapis_job"]

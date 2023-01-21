@@ -9,7 +9,7 @@ from backend.views.http.responses.errors import (
     BadRequest
 )
 from backend.services.GroupService import service as group_service
-from backend.models import Pipeline, PipelineRun, TaskExecution
+from backend.models import Pipeline, PipelineRun, TaskExecution, Task
 
 
 class TaskExecutions(RestrictedAPIView):
@@ -63,7 +63,16 @@ class TaskExecutions(RestrictedAPIView):
 
     def list(self, run):
         try:
-            executions = TaskExecution.objects.filter(pipeline_run=run)
+            executions = TaskExecution.objects.filter(
+                pipeline_run=run
+            ).prefetch_related(
+                "task"
+            )
+
+            for execution in executions:
+                execution.task_id = execution.task.id
+                del execution.task
+
             return ModelListResponse(executions)
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return ServerError(message=e.__cause__)

@@ -18,8 +18,9 @@ class TapisActor(TaskExecutor):
             self.service_client = tapis_service_api_gateway.get_client()
             
             # Submit the message to abaco
-            res = self.service_client.actors.sendMessage(
+            res = self.service_client.actors.send_message(
                 actor_id=self.task.tapis_actor_id,
+                # message=self.task.tapis_actor_message or "", # Send empty message
                 message="This is a word count test",
                 _tapis_set_x_headers_from_service=True,
                 _x_tapis_tenant=self.ctx.group.tenant_id,
@@ -68,7 +69,7 @@ class TapisActor(TaskExecutor):
             return 
         
         # Get the logs of the execution and store them
-        logs = self.service_client.actors.getExecution_logs(
+        logs = self.service_client.actors.get_execution_logs(
             actor_id=execution.actor_id,
             execution_id=execution.id,
             _x_tapis_tenant=self.ctx.group.tenant_id,
@@ -77,7 +78,7 @@ class TapisActor(TaskExecutor):
 
         self._store_result(f"actors/{execution.actor_id}/.stdout", logs)
 
-        execution_result = self.service_client.actors.getExecutionResult(
+        execution_result = self.service_client.actors.get_execution_result(
             actor_id=execution.actor_id,
             execution_id=execution.id,
             _x_tapis_tenant=self.ctx.group.tenant_id,
@@ -92,7 +93,7 @@ class TapisActor(TaskExecutor):
             self._poll_executions_recursively(execution)
 
     def _get_execution(self, actor_id, execution_id):
-        return self.service_client.actors.getExecution(
+        return self.service_client.actors.get_execution(
             actor_id=actor_id,
             execution_id=execution_id,
             _x_tapis_tenant=self.ctx.group.tenant_id,

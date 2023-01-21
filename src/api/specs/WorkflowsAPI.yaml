@@ -1921,9 +1921,8 @@ components:
         pipeline_run:
           type: string
           format: uuid
-        task:
+        task_id:
           type: string
-          format: uuid
         status:
           $ref: "#/components/schemas/EnumRunStatus"
         started_at:

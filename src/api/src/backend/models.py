@@ -408,6 +408,7 @@ class Task(models.Model):
 
     # Tapis actor specific properties
     tapis_actor_id = models.CharField(max_length=128, null=True)
+    tapis_actor_message = models.TextField(null=True)
 
     class Meta:
         constraints = [
