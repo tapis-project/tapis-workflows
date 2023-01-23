@@ -66,7 +66,7 @@ class PipelineDispatcher:
             if pipeline.current_run != None:
                 kwargs["previous_run"] = pipeline.current_run
 
-            pipeline.objects.update(
+            pipeline.update(
                 current_run=pipeline_run
             )
 
