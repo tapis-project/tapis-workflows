@@ -61,6 +61,7 @@ class PipelineDispatcher:
 
             # Update the pipeline object with the pipeline run
             pipeline = Pipeline.objects.filter(pk=pipeline.uuid)
+            print("PIPELINE", pipeline.__dict__)
 
             kwargs = {}
             if pipeline.current_run != None:
