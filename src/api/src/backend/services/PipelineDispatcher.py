@@ -61,6 +61,7 @@ class PipelineDispatcher:
 
             # Update the pipeline object with the pipeline run
             pipeline = Pipeline.objects.filter(pk=pipeline.uuid)
+            print("PIPELINE ID", pipeline.current_run)
             print("PIPELINE CURRENT RUN", pipeline.current_run)
 
             kwargs = {}
