@@ -60,7 +60,7 @@ class PipelineDispatcher:
             )
 
             # Update the pipeline object with the pipeline run
-            pipeline = Pipeline.objects.filter(pk=pipeline.uuid)
+            pipeline = Pipeline.objects.filter(pk=pipeline.uuid).first()
             print("PIPELINE ID", pipeline.current_run)
             print("PIPELINE CURRENT RUN", pipeline.current_run)
 
@@ -70,6 +70,7 @@ class PipelineDispatcher:
 
             pipeline.update(
                 current_run=pipeline_run
+                **kwargs
             )
 
         except (IntegrityError, DatabaseError, OperationalError) as e:
