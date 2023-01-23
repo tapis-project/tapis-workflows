@@ -1,6 +1,7 @@
 import json, logging
+from pprint import pprint
 
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from django.db import IntegrityError, DatabaseError, OperationalError
 from django.utils import timezone
@@ -8,7 +9,6 @@ from django.utils import timezone
 from backend.services.MessageBroker import service as broker
 from backend.models import Pipeline, PipelineRun, RUN_STATUS_PENDING
 from backend.errors.api import ServerError
-from backend.conf.constants import WORKFLOW_EXECUTOR_ACCESS_TOKEN
 
 
 class PipelineDispatcher:
@@ -16,37 +16,6 @@ class PipelineDispatcher:
         self.error = None
 
     def dispatch(self, service_request: dict, pipeline):
-        # Tell the workflow executors which backends and archivers to use.
-        # Add the workflow executor access token to the request. This enables
-        # the workflow executor to make calls to special endpoints on the API.
-        service_request["middleware"] = {
-            "backends": {
-                "tapisworkflowsapi": {
-                    "access_token": WORKFLOW_EXECUTOR_ACCESS_TOKEN
-                }
-            },
-            "archivers": {
-                "tapissystem": {}
-            }
-        }
-
-        service_request["meta"] = {}
-        # Properties to help uniquely identity a pipeline submission. If the workflow
-        # executor is currently running a pipeline with the same values as the
-        # properties provided in "idempotency_key", the workflow executor
-        # will then take the appropriate action dictated by the
-        # pipeline.duplicate_submission_policy (allow, allow_terminate, deny)
-        service_request["meta"]["idempotency_key"] = [
-            "group.id",
-            "group.tenant_id",
-            "pipeline.id"
-        ]
-
-        service_request["pipeline_run"] = {}
-        
-        # Generate the uuid for this pipeline run
-        uuid = uuid4()
-        service_request["pipeline_run"]["uuid"] = uuid
 
         now = timezone.now()
         try: 
@@ -54,7 +23,7 @@ class PipelineDispatcher:
             pipeline_run = PipelineRun.objects.create(
                 pipeline=pipeline,
                 status=RUN_STATUS_PENDING,
-                uuid=uuid,
+                uuid=service_request["pipeline_run"]["uuid"],
                 started_at=now,
                 last_modified=now
             )
@@ -70,6 +39,7 @@ class PipelineDispatcher:
 
             service_request["pipeline"].update(kwargs)
 
+            pprint(service_request)
 
         except (IntegrityError, DatabaseError, OperationalError) as e:
             message = f"Failed to create PipelineRun: {e.__cause__}"

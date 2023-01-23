@@ -1894,7 +1894,7 @@ components:
         current_run:
           type: string
           format: uuid
-        previous_run:
+        last_run:
           type: string
           format: uuid
         tasks:
