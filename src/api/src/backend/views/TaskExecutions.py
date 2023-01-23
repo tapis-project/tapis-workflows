@@ -66,8 +66,6 @@ class TaskExecutions(RestrictedAPIView):
         try:
             executions = TaskExecution.objects.filter(
                 pipeline_run=run
-            ).prefetch_related(
-                "task"
             )
 
             models = []
