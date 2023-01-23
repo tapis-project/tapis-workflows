@@ -1,7 +1,8 @@
 from django.db import DatabaseError, IntegrityError, OperationalError
+from django.forms.models import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses.models import ModelListResponse, ModelResponse
+from backend.views.http.responses.models import ModelListResponse, ModelResponse, BaseResponse
 from backend.views.http.responses.errors import (
     ServerError,
     Forbidden,
@@ -69,11 +70,18 @@ class TaskExecutions(RestrictedAPIView):
                 "task"
             )
 
+            models = []
             for execution in executions:
-                execution.task_id = execution.task.id
-                del execution.task
-
-            return ModelListResponse(executions)
+                model = model_to_dict(execution)
+                model.task_id = execution.task.id
+                del model.task
+                models.append(model)
+            
+            return BaseResponse.__init__(
+                self,
+                message="success",
+                result=models
+            )
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return ServerError(message=e.__cause__)
         except Exception as e:

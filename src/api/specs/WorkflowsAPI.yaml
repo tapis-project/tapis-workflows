@@ -2036,6 +2036,12 @@ components:
               default: true
             tapis_actor_id:
               type: string
+            tapis_actor_message:
+              oneOf:
+                - type: string
+                - type: object
+                - type: array
+
 
     FunctionTask:
       allOf:
@@ -2455,7 +2461,11 @@ components:
               default: true
             tapis_actor_id:
               type: string
-              default: null
+            tapis_actor_message:
+              oneOf:
+                - type: string
+                - type: object
+                - type: array
     
     ReqFunctionTask:
       allOf:
