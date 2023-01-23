@@ -73,7 +73,7 @@ class TaskExecutions(RestrictedAPIView):
             models = []
             for execution in executions:
                 model = model_to_dict(execution)
-                model.task_id = execution.task.id
+                model["task_id"] = execution.task.id
                 del model.task
                 models.append(model)
             
