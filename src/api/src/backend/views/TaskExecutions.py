@@ -1,8 +1,7 @@
 from django.db import DatabaseError, IntegrityError, OperationalError
-from django.forms.models import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.responses.models import ModelListResponse, ModelResponse, BaseResponse
+from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import (
     ServerError,
     Forbidden,
@@ -10,7 +9,7 @@ from backend.views.http.responses.errors import (
     BadRequest
 )
 from backend.services.GroupService import service as group_service
-from backend.models import Pipeline, PipelineRun, TaskExecution, Task
+from backend.models import Pipeline, PipelineRun, TaskExecution
 
 
 class TaskExecutions(RestrictedAPIView):
@@ -64,21 +63,10 @@ class TaskExecutions(RestrictedAPIView):
 
     def list(self, run):
         try:
-            executions = TaskExecution.objects.filter(
-                pipeline_run=run
-            )
-
-            models = []
+            executions = TaskExecution.objects.filter(pipeline_run=run)
             for execution in executions:
-                model = model_to_dict(execution)
-                model["task_id"] = execution.task.id
-                models.append(model)
-            
-            return BaseResponse.__init__(
-                self,
-                message="success",
-                result=models
-            )
+                execution.task_id = execution.task.id
+            return ModelListResponse(executions)
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return ServerError(message=e.__cause__)
         except Exception as e:
