@@ -61,17 +61,17 @@ class PipelineDispatcher:
 
             # Update the pipeline object with the pipeline run
             pipeline = Pipeline.objects.filter(pk=pipeline.uuid).first()
-            print("PIPELINE ID", pipeline.current_run)
-            print("PIPELINE CURRENT RUN", pipeline.current_run)
 
             kwargs = {}
             if pipeline.current_run != None:
                 kwargs["previous_run"] = pipeline.current_run
 
-            pipeline.update(
+            Pipeline.objects.filter(pk=pipeline.uuid).update(
                 current_run=pipeline_run
                 **kwargs
             )
+
+            print(now)
 
         except (IntegrityError, DatabaseError, OperationalError) as e:
             message = f"Failed to create PipelineRun: {e.__cause__}"
