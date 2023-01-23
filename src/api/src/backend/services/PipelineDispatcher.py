@@ -71,12 +71,13 @@ class PipelineDispatcher:
                 **kwargs
             )
 
-            print(now)
-
         except (IntegrityError, DatabaseError, OperationalError) as e:
             message = f"Failed to create PipelineRun: {e.__cause__}"
             logging.error(message)
             raise ServerError(message=message)
+        except Exception as e:
+            logging.error(str(e))
+            raise ServerError(message=str(e))
 
         try:
             broker.publish(
