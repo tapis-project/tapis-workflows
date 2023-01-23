@@ -1891,6 +1891,12 @@ components:
           format: uuid
         execution_profile:
           $ref: '#/components/schemas/ExecutionProfile'
+        current_run:
+          type: string
+          format: uuid
+        previous_run:
+          type: string
+          format: uuid
         tasks:
           type: array
           items:
