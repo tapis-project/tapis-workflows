@@ -63,9 +63,9 @@ class TaskExecutions(RestrictedAPIView):
 
     def list(self, run):
         try:
-            executions = TaskExecution.objects.filter(pipeline_run=run)
-            for execution in executions:
-                execution.task_id = execution.task.id
+            executions = TaskExecution.objects.filter(pipeline_run=run).prefetch_related("task")
+            # for execution in executions:
+            #     execution.task_id = execution.task.id
             return ModelListResponse(executions)
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return ServerError(message=e.__cause__)
