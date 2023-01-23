@@ -67,7 +67,7 @@ class PipelineDispatcher:
                 kwargs["previous_run"] = pipeline.current_run
 
             Pipeline.objects.filter(pk=pipeline.uuid).update(
-                current_run=pipeline_run
+                current_run=pipeline_run,
                 **kwargs
             )
 
