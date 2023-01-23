@@ -31,13 +31,15 @@ class PipelineDispatcher:
             # Update the pipeline object with the pipeline run
             pipeline = Pipeline.objects.filter(pk=pipeline.uuid).first()
 
-            kwargs = {"current_run": pipeline_run}
+            model_update = {"current_run": pipeline_run}
+            service_request_update = {"current_run": pipeline_run.uuid}
             if pipeline.current_run != None:
-                kwargs["last_run"] = pipeline.current_run
+                model_update["last_run"] = pipeline.current_run
+                service_request_update = {"last_run": pipeline.current_run.uuid}
 
-            Pipeline.objects.filter(pk=pipeline.uuid).update(**kwargs)
+            Pipeline.objects.filter(pk=pipeline.uuid).update(**model_update)
 
-            service_request["pipeline"].update(kwargs)
+            service_request["pipeline"].update(service_request_update)
 
             pprint(service_request)
 
