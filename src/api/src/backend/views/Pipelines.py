@@ -57,6 +57,8 @@ class Pipelines(RestrictedAPIView):
             group=group
         ).prefetch_related("tasks").first()
 
+        print(pipeline.__dict__)
+
         if pipeline == None:
             return NotFound(f"Pipeline not found with id '{pipeline_id}'")
 
