@@ -1,4 +1,3 @@
-from pprint import pprint
 from django.db import DatabaseError, IntegrityError, OperationalError
 from django.forms.models import model_to_dict
 
@@ -50,7 +49,7 @@ class PipelineRuns(RestrictedAPIView):
 
             # Format the started at and last_modified
             run = model_to_dict(run)
-            pprint(run)
+            
             run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S") if run["started_at"] else None
             run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S") if run["last_modified"] else None
 
@@ -74,7 +73,7 @@ class PipelineRuns(RestrictedAPIView):
             run_models = PipelineRun.objects.filter(pipeline=pipeline)
             for run_model in run_models:
                 run = model_to_dict(run_model)
-                pprint(run)
+                
                 run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S") if run["started_at"] else None
                 run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S")  if run["last_modified"] else None
                 runs.append(run)

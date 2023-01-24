@@ -1,5 +1,4 @@
 import json, logging
-from pprint import pprint
 
 from uuid import UUID
 
