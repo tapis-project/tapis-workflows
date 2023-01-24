@@ -2043,10 +2043,13 @@ components:
             tapis_actor_id:
               type: string
             tapis_actor_message:
+              nullable: true
               oneOf:
                 - type: string
                 - type: object
                 - type: array
+                  items: {}
+                  
 
 
     FunctionTask:
@@ -2468,10 +2471,13 @@ components:
             tapis_actor_id:
               type: string
             tapis_actor_message:
+              nullable: true
               oneOf:
                 - type: string
                 - type: object
                 - type: array
+                  items: {}
+                    
     
     ReqFunctionTask:
       allOf:

@@ -28,6 +28,7 @@ class PipelineDispatcher:
                 last_modified=now
             )
 
+            pprint(pipeline_run.__dict__)
             # Update the pipeline object with the pipeline run
             pipeline = Pipeline.objects.filter(pk=pipeline.uuid).first()
 
@@ -41,7 +42,6 @@ class PipelineDispatcher:
 
             service_request["pipeline"].update(service_request_update)
 
-            pprint(service_request)
 
         except (IntegrityError, DatabaseError, OperationalError) as e:
             message = f"Failed to create PipelineRun: {e.__cause__}"
