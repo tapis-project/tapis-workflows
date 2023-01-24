@@ -51,8 +51,8 @@ class PipelineRuns(RestrictedAPIView):
             # Format the started at and last_modified
             run = model_to_dict(run)
             pprint(run)
-            run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S")
-            run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S")
+            run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S") if run["started_at"] else None
+            run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S") if run["last_modified"] else None
 
             return BaseResponse(
                 status=200,
@@ -75,8 +75,8 @@ class PipelineRuns(RestrictedAPIView):
             for run_model in run_models:
                 run = model_to_dict(run_model)
                 pprint(run)
-                run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S")
-                run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S")
+                run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S") if run["started_at"] else None
+                run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S")  if run["last_modified"] else None
                 runs.append(run)
 
             return BaseResponse(
