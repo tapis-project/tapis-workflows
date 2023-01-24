@@ -28,7 +28,6 @@ class PipelineDispatcher:
                 last_modified=now
             )
 
-            pprint(pipeline_run.__dict__)
             # Update the pipeline object with the pipeline run
             pipeline = Pipeline.objects.filter(pk=pipeline.uuid).first()
 
