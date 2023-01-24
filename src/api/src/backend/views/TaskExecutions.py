@@ -51,14 +51,24 @@ class TaskExecutions(RestrictedAPIView):
             if task_execution_uuid == None:
                 return self.list(run)
 
-            execution = TaskExecution.objects.filter(
+            execution_model = TaskExecution.objects.filter(
                 uuid=task_execution_uuid
             ).first()
 
-            if execution == None:
-                return BadRequest
+            if execution_model == None:
+                return NotFound()
 
-            return ModelResponse(execution)
+            # Convert the model to a dict and set the task id
+            task_id = execution_model.task.id
+            execution = model_to_dict(execution_model)
+            execution.task_id = task_id
+
+            return BaseResponse(
+                status=200,
+                success=True,
+                message="success",
+                result=execution
+            )
 
         # TODO catch the specific error thrown by the group service
         except (DatabaseError, IntegrityError, OperationalError) as e:
@@ -71,12 +81,10 @@ class TaskExecutions(RestrictedAPIView):
             execution_models = TaskExecution.objects.filter(pipeline_run=run).prefetch_related("task")
             executions = []
             for execution_model in execution_models:
-                # Fetch the task associated with this execution
-                task = Task.objects.filter(pk=execution_model.task)
-
                 # Convert the model to a dict and set the task id
+                task_id = execution_model.task.id
                 execution = model_to_dict(execution_model)
-                execution.task_id = task.id
+                execution.task_id = task_id
 
                 executions.append(execution)
 
