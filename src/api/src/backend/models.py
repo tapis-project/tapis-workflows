@@ -360,10 +360,10 @@ class PipelineArchive(models.Model):
         ]
 
 class PipelineRun(models.Model):
-    last_modified = models.DateField(null=True)
+    last_modified = models.DateTimeField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="runs", on_delete=models.CASCADE)
     status = models.CharField(max_length=16, choices=RUN_STATUSES, default=RUN_STATUS_PENDING)
-    started_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True)
     uuid = models.UUIDField(primary_key=True)
 
 class Task(models.Model):
@@ -422,9 +422,9 @@ class Task(models.Model):
         ]
 
 class TaskExecution(models.Model):
-    last_modified = models.DateField(null=True)
+    last_modified = models.DateTimeField(null=True)
     pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="task_executions", on_delete=models.CASCADE)
-    started_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True)
     status = models.CharField(max_length=16, choices=TASK_EXECUTION_STATUSES, default=RUN_STATUS_PENDING)
     task = models.ForeignKey("backend.Task", related_name="task_executions", on_delete=models.CASCADE)
     uuid = models.UUIDField(primary_key=True)
