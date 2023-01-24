@@ -14,7 +14,7 @@ from backend.views.http.responses.errors import (
     BadRequest
 )
 from backend.services.GroupService import service as group_service
-from backend.models import Pipeline, PipelineRun, TaskExecution
+from backend.models import Pipeline, PipelineRun, TaskExecution, Task
 
 
 class TaskExecutions(RestrictedAPIView):
@@ -71,12 +71,16 @@ class TaskExecutions(RestrictedAPIView):
             execution_models = TaskExecution.objects.filter(pipeline_run=run).prefetch_related("task")
             executions = []
             for execution_model in execution_models:
+                # Fetch the task associated with this execution
+                task = Task.objects.filter(pk=execution_model.task)
+
+                # Convert the model to a dict and set the task id
                 execution = model_to_dict(execution_model)
-                pprint(execution)
+                execution.task_id = task.id
+
                 executions.append(execution)
 
             return BaseResponse(
-                self,
                 status=200,
                 success=True,
                 message="success",
