@@ -61,7 +61,7 @@ class TaskExecutions(RestrictedAPIView):
             # Convert the model to a dict and set the task id
             task_id = execution_model.task.id
             execution = model_to_dict(execution_model)
-            execution.task_id = task_id
+            execution["task_id"] = task_id
 
             return BaseResponse(
                 status=200,
@@ -84,7 +84,7 @@ class TaskExecutions(RestrictedAPIView):
                 # Convert the model to a dict and set the task id
                 task_id = execution_model.task.id
                 execution = model_to_dict(execution_model)
-                execution.task_id = task_id
+                execution["task_id"] = task_id
 
                 executions.append(execution)
 
