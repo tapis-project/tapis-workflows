@@ -51,4 +51,5 @@ class TapisJob(TaskExecutor):
             return TaskResult(0, output={"jobUuid": job.uuid, "status": job_status})
 
         except Exception as e:
+            self.ctx.logger.error(f"ERROR IN TAPIS ACTOR: {str(e)}")
             return TaskResult(1, errors=[str(e)])

@@ -1,5 +1,4 @@
 import json
-from pprint import pprint
 
 from typing import List
 
@@ -63,8 +62,6 @@ class TaskService(Service):
         except Exception as e:
             self.rollback()
             raise e
-
-        pprint(request.tapis_job_def)
 
         # Create task
         try:
