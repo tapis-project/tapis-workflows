@@ -4,12 +4,13 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.requests import APIEvent
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import (
-    ServerError,
+    ServerError as ServerErrorResp,
     MethodNotAllowed,
     Forbidden,
     NotFound,
     BadRequest
 )
+from backend.errors.api import ServerError
 from backend.helpers.PipelineDispatchRequestBuilder import PipelineDispatchRequestBuilder
 from backend.services.PipelineDispatcher import service as pipeline_dispatcher
 from backend.services.GroupService import service as group_service
@@ -69,7 +70,7 @@ class Events(RestrictedAPIView):
                 username=request.username,
             )
         except (IntegrityError, OperationalError, DatabaseError) as e:
-            return ServerError(message=e.__cause__)
+            return ServerErrorResp(message=e.__cause__)
 
         # Return the event if there is no pipeline matching the event
         if pipeline == None:
@@ -85,7 +86,10 @@ class Events(RestrictedAPIView):
         )
 
         # Dispatch the request
-        pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline)
+        try:
+            pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline)
+        except ServerError as e:
+            return ServerErrorResp(message=str(e))
 
         # Respond with the event
         return ModelResponse(event)

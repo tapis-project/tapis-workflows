@@ -1,4 +1,4 @@
-import logging, json
+import json
 
 from typing import List
 
@@ -63,7 +63,6 @@ class TaskService(Service):
             self.rollback()
             raise e
 
-
         # Create task
         try:
             task = Task.objects.create(
@@ -87,6 +86,9 @@ class TaskService(Service):
                 depends_on=[ dict(item) for item in request.depends_on ],
                 tapis_job_def=request.tapis_job_def,
                 tapis_actor_id=request.tapis_actor_id,
+                tapis_actor_message=self._tapis_actor_message_to_str(
+                    request.tapis_actor_message
+                ),
                 url=request.url,
                 # Exection profile
                 max_exec_time=request.execution_profile.max_exec_time,
@@ -239,6 +241,15 @@ class TaskService(Service):
 
     def get_task_request_types(self):
         return TASK_REQUEST_TYPES
+
+    def _tapis_actor_message_to_str(self, message):
+        # Simply pass the message back if already a string
+        if type(message) == str:
+            return message
+
+        # Message is a dictionary. Convert to string and return
+        return json.dumps(message)
+
 
     def delete(self, tasks: List[Task]):
         for task in tasks:

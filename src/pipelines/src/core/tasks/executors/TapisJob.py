@@ -1,53 +1,55 @@
-from time import time
+import json, time
 
-from tapipy.tapis import Tapis
+from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
 
 from core.tasks.TaskResult import TaskResult
-from conf.constants import (
-    TAPIS_SERVICE_ACCOUNT,
-    TAPIS_SERVICE_ACCOUNT_PASSWORD,
-    TAPIS_DEV_URL,
-    TAPIS_JOB_POLLING_FREQUENCY,
-)
+from core.tasks.TaskExecutor import TaskExecutor
+from conf.constants import TAPIS_JOB_POLLING_FREQUENCY
 
 
-class TapisJob:
-    def execute(self, task):
+class TapisJob(TaskExecutor):
+    def __init__(self, task, ctx, exchange):
+        TaskExecutor.__init__(self, task, ctx, exchange)
+
+    def execute(self):
         try:
-            client = Tapis(
-                base_url=TAPIS_DEV_URL,
-                username=TAPIS_SERVICE_ACCOUNT,
-                password=TAPIS_SERVICE_ACCOUNT_PASSWORD,
-            )
+            tapis_service_api_gateway = TapisServiceAPIGateway()
+            service_client = tapis_service_api_gateway.get_client()
 
-            # TODO Cache the jwt
-            client.get_tokens()
+            # Recursively convert nested simple namespace objects to dict
+            job_def = json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: s.__dict__))
 
             # Submit the job
-            job = client.jobs.submitJob(**task.tapis_job_def)
+            job = service_client.jobs.submitJob(
+                **job_def,
+                _x_tapis_tenant=self.ctx.group.tenant_id,
+                _x_tapis_user=self.ctx.pipeline.owner
+            )
 
             # Get the initial job status
             job_status = job.status
 
-            if task.poll:
+            if self.task.poll:
                 # Keep polling until the job is complete
                 while job_status not in ["FINISHED", "CANCELLED", "FAILED"]:
                     # Wait the polling frequency time then try poll again
                     time.sleep(TAPIS_JOB_POLLING_FREQUENCY)
-                    job_status = client.jobs.getJobStatus(jobUuid=job.uuid).status
+                    job_status = service_client.jobs.getJobStatus(
+                        jobUuid=job.uuid,
+                        _x_tapis_tenant=self.ctx.group.tenant_id,
+                        _x_tapis_user=self.ctx.pipeline.owner
+                    ).status
 
-                job_data = {"jobUuid": job.uuid, "status": job_status}
+                output = {"jobUuid": job.uuid, "status": job_status}
 
                 # Return a task result based on the final status of the tapis job
                 if job_status == "FINISHED":
-                    return TaskResult(0, data=job_data)
+                    return TaskResult(0, output=output)
 
-                return TaskResult(1, data=job_data)
-
-            return TaskResult(0, data={"jobUuid": job.uuid, "status": job_status})
+                return TaskResult(1, output=output)
+                
+            return TaskResult(0, output={"jobUuid": job.uuid, "status": job_status})
 
         except Exception as e:
+            self.ctx.logger.error(f"ERROR IN TAPIS ACTOR: {str(e)}")
             return TaskResult(1, errors=[str(e)])
-
-
-executor = TapisJob()
