@@ -34,9 +34,11 @@ class Kaniko(BaseBuildExecutor):
 
                 time.sleep(self.polling_interval)
         except WorkflowTerminated as e:
+            self.ctx.logger.error(str(e))
             self.cleanup(terminating=True)
             return TaskResult(status=2, errors=[e])
         except Exception as e:
+            self.ctx.logger.error(str(e))
             return TaskResult(status=1, errors=[e])
 
         # Get the job's pod name
@@ -50,23 +52,25 @@ class Kaniko(BaseBuildExecutor):
         # Get the logs(stdout) from this job's pod
         logs = None
         try:
-            for line in watch.stream(
-                self.core_v1_api.read_namespaced_pod_log,
-                name=pod_name,
-                namespace=KUBERNETES_NAMESPACE
-            ):
-               self._store_result(".stdout", line, flag="ab")
-
-            # logs = self.core_v1_api.read_namespaced_pod_log(
+            # for line in watch.stream(
+            #     self.core_v1_api.read_namespaced_pod_log,
             #     name=pod_name,
-            #     namespace=KUBERNETES_NAMESPACE,
-            #     _return_http_data_only=True,
-            #     _preload_content=False,
-            # ).data  # .decode("utf-8")
-            # self._store_result(".stdout", logs)
+            #     namespace=KUBERNETES_NAMESPACE
+            # ):
+            #    self._store_result(".stdout", line, flag="ab")
+
+            logs = self.core_v1_api.read_namespaced_pod_log(
+                name=pod_name,
+                namespace=KUBERNETES_NAMESPACE,
+                _return_http_data_only=True,
+                _preload_content=False,
+            ).data  # .decode("utf-8")
+            self._store_result(".stdout", logs, flag="ab")
 
         except client.rest.ApiException as e:
-            logging.error(f"Exception reading pod log: {e}")
+            self.ctx.logger.error(f"Exception reading pod log: {e}")
+        except Exception as e:
+            self.ctx.logger.error(str(e))
 
         # TODO Validate the jobs outputs against outputs in the task definition
 
@@ -75,7 +79,7 @@ class Kaniko(BaseBuildExecutor):
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
         # Set the name for the k8 job metadata
-        job_name = f"{self.group.id}.{self.pipeline.id}.{self.pipeline.run_id}.{self.task.id}"
+        job_name = f"wf.{self.pipeline.run_id}.{self.task.id}"
 
         # Create a list of the container args based on task properties.
         # A by-product of this process is the creation of the dockerhub configmap
