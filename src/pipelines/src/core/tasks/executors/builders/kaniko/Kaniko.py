@@ -52,23 +52,25 @@ class Kaniko(BaseBuildExecutor):
         # Get the logs(stdout) from this job's pod
         logs = None
         try:
-            for line in watch.stream(
-                self.core_v1_api.read_namespaced_pod_log,
-                name=pod_name,
-                namespace=KUBERNETES_NAMESPACE
-            ):
-               self._store_result(".stdout", line, flag="ab")
-
-            # logs = self.core_v1_api.read_namespaced_pod_log(
+            # for line in watch.stream(
+            #     self.core_v1_api.read_namespaced_pod_log,
             #     name=pod_name,
-            #     namespace=KUBERNETES_NAMESPACE,
-            #     _return_http_data_only=True,
-            #     _preload_content=False,
-            # ).data  # .decode("utf-8")
-            # self._store_result(".stdout", logs)
+            #     namespace=KUBERNETES_NAMESPACE
+            # ):
+            #    self._store_result(".stdout", line, flag="ab")
+
+            logs = self.core_v1_api.read_namespaced_pod_log(
+                name=pod_name,
+                namespace=KUBERNETES_NAMESPACE,
+                _return_http_data_only=True,
+                _preload_content=False,
+            ).data  # .decode("utf-8")
+            self._store_result(".stdout", logs, flag="ab")
 
         except client.rest.ApiException as e:
-            logging.error(f"Exception reading pod log: {e}")
+            self.ctx.logger.error(f"Exception reading pod log: {e}")
+        except Exception as e:
+            self.ctx.logger.error(str(e))
 
         # TODO Validate the jobs outputs against outputs in the task definition
 
