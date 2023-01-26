@@ -37,7 +37,7 @@ class Kaniko(BaseBuildExecutor):
             self.cleanup(terminating=True)
             return TaskResult(status=2, errors=[e])
         except Exception as e:
-            self.ctx.logger(str(e))
+            self.ctx.logger.error(str(e))
             return TaskResult(status=1, errors=[e])
 
         # Get the job's pod name
