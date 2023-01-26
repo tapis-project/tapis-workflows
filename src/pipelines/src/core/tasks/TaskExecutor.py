@@ -1,4 +1,5 @@
 import os
+from pprint import pprint
 
 from kubernetes import config, client
 
@@ -53,6 +54,7 @@ class TaskExecutor(EventPublisher):
         self.polling_interval = interval if interval >= 1 else self.polling_interval
 
     def _job_in_terminal_state(self, job):
+        pprint(job.status)
         return (self._job_failed(job) or self._job_succeeded(job)) and job.status.active == None
 
     def _job_failed(self, job):

@@ -34,6 +34,7 @@ class Kaniko(BaseBuildExecutor):
 
                 time.sleep(self.polling_interval)
         except WorkflowTerminated as e:
+            self.ctx.logger.error(str(e))
             self.cleanup(terminating=True)
             return TaskResult(status=2, errors=[e])
         except Exception as e:
