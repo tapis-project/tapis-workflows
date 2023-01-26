@@ -217,8 +217,10 @@ class WorkflowExecutor(Worker, EventPublisher):
             else:
                 task_result = TaskResult(0, data={"task": task.id})
         except InvalidTaskTypeError as e:
+            self.logger.error(str(e))
             task_result = TaskResult(1, errors=[str(e)])
         except Exception as e:
+            self.logger.error(str(e))
             task_result = TaskResult(1, errors=[str(e)])
 
         # Get the next queued tasks if any
