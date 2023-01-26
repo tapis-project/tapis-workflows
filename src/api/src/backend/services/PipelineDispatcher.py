@@ -1,6 +1,6 @@
 import json, logging
 
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from django.db import IntegrityError, DatabaseError, OperationalError
 from django.utils import timezone
@@ -8,7 +8,6 @@ from django.utils import timezone
 from backend.services.MessageBroker import service as broker
 from backend.models import Pipeline, PipelineRun, RUN_STATUS_PENDING
 from backend.errors.api import ServerError
-from backend.conf.constants import WORKFLOW_EXECUTOR_ACCESS_TOKEN
 
 
 class PipelineDispatcher:
@@ -16,37 +15,6 @@ class PipelineDispatcher:
         self.error = None
 
     def dispatch(self, service_request: dict, pipeline):
-        # Tell the workflow executors which backends and archivers to use.
-        # Add the workflow executor access token to the request. This enables
-        # the workflow executor to make calls to special endpoints on the API.
-        service_request["middleware"] = {
-            "backends": {
-                "tapisworkflowsapi": {
-                    "access_token": WORKFLOW_EXECUTOR_ACCESS_TOKEN
-                }
-            },
-            "archivers": {
-                "tapissystem": {}
-            }
-        }
-
-        service_request["meta"] = {}
-        # Properties to help uniquely identity a pipeline submission. If the workflow
-        # executor is currently running a pipeline with the same values as the
-        # properties provided in "idempotency_key", the workflow executor
-        # will then take the appropriate action dictated by the
-        # pipeline.duplicate_submission_policy (allow, allow_terminate, deny)
-        service_request["meta"]["idempotency_key"] = [
-            "group.id",
-            "group.tenant_id",
-            "pipeline.id"
-        ]
-
-        service_request["pipeline_run"] = {}
-        
-        # Generate the uuid for this pipeline run
-        uuid = uuid4()
-        service_request["pipeline_run"]["uuid"] = uuid
 
         now = timezone.now()
         try: 
@@ -54,19 +22,32 @@ class PipelineDispatcher:
             pipeline_run = PipelineRun.objects.create(
                 pipeline=pipeline,
                 status=RUN_STATUS_PENDING,
-                uuid=uuid,
+                uuid=service_request["pipeline_run"]["uuid"],
                 started_at=now,
                 last_modified=now
             )
 
             # Update the pipeline object with the pipeline run
-            Pipeline.objects.filter(
-                pk=pipeline.uuid).update(current_run=pipeline_run)
+            pipeline = Pipeline.objects.filter(pk=pipeline.uuid).first()
+
+            model_update = {"current_run": pipeline_run}
+            service_request_update = {"current_run": pipeline_run.uuid}
+            if pipeline.current_run != None:
+                model_update["last_run"] = pipeline.current_run
+                service_request_update = {"last_run": pipeline.current_run.uuid}
+
+            Pipeline.objects.filter(pk=pipeline.uuid).update(**model_update)
+
+            service_request["pipeline"].update(service_request_update)
+
 
         except (IntegrityError, DatabaseError, OperationalError) as e:
             message = f"Failed to create PipelineRun: {e.__cause__}"
             logging.error(message)
             raise ServerError(message=message)
+        except Exception as e:
+            logging.error(str(e))
+            raise ServerError(message=str(e))
 
         try:
             broker.publish(

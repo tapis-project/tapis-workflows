@@ -1,6 +1,8 @@
+from uuid import UUID, uuid4
 from django.forms import model_to_dict
 
 from backend.utils.parse_directives import parse_directives as parse
+from backend.conf.constants import WORKFLOW_EXECUTOR_ACCESS_TOKEN
 
 
 class PipelineDispatchRequestBuilder:
@@ -36,6 +38,38 @@ class PipelineDispatchRequestBuilder:
         # TODO Implement model and request object.
         request["pipeline"]["tasks"] = tasks_request
         request["pipeline"]["archives"] = archives
+
+        # Tell the workflow executors which backends and archivers to use.
+        # Add the workflow executor access token to the request. This enables
+        # the workflow executor to make calls to special endpoints on the API.
+        request["middleware"] = {
+            "backends": {
+                "tapisworkflowsapi": {
+                    "access_token": WORKFLOW_EXECUTOR_ACCESS_TOKEN
+                }
+            },
+            "archivers": {
+                "tapissystem": {}
+            }
+        }
+
+        request["meta"] = {}
+        # Properties to help uniquely identity a pipeline submission. If the workflow
+        # executor is currently running a pipeline with the same values as the
+        # properties provided in "idempotency_key", the workflow executor
+        # will then take the appropriate action dictated by the
+        # pipeline.duplicate_submission_policy (allow, allow_terminate, deny)
+        request["meta"]["idempotency_key"] = [
+            "group.id",
+            "group.tenant_id",
+            "pipeline.id"
+        ]
+
+        request["pipeline_run"] = {}
+        
+        # Generate the uuid for this pipeline run
+        uuid = uuid4()
+        request["pipeline_run"]["uuid"] = uuid
 
         # Parse the directives from the commit message
         directives_request = {}

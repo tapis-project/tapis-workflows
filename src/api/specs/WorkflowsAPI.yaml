@@ -1891,6 +1891,12 @@ components:
           format: uuid
         execution_profile:
           $ref: '#/components/schemas/ExecutionProfile'
+        current_run:
+          type: string
+          format: uuid
+        last_run:
+          type: string
+          format: uuid
         tasks:
           type: array
           items:
@@ -1921,9 +1927,8 @@ components:
         pipeline_run:
           type: string
           format: uuid
-        task:
+        task_id:
           type: string
-          format: uuid
         status:
           $ref: "#/components/schemas/EnumRunStatus"
         started_at:
@@ -2037,6 +2042,15 @@ components:
               default: true
             tapis_actor_id:
               type: string
+            tapis_actor_message:
+              nullable: true
+              oneOf:
+                - type: string
+                - type: object
+                - type: array
+                  items: {}
+                  
+
 
     FunctionTask:
       allOf:
@@ -2456,7 +2470,14 @@ components:
               default: true
             tapis_actor_id:
               type: string
-              default: null
+            tapis_actor_message:
+              nullable: true
+              oneOf:
+                - type: string
+                - type: object
+                - type: array
+                  items: {}
+                    
     
     ReqFunctionTask:
       allOf:
