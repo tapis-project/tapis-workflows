@@ -72,7 +72,7 @@ class Singularity(BaseBuildExecutor):
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
         # Set the name for the k8 job metadata
-        job_name = f"{self.group.id}.{self.pipeline.id}.{self.pipeline.run_id}.{self.task.id}"
+        job_name = f"wf.{self.pipeline.run_id}.{self.task.id}"
         
         # List of volume mount objects for the container 
         volume_mounts = [
