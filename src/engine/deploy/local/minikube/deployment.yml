@@ -2,19 +2,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: workflows-pipelines-deployment
-  name: workflows-pipelines-deployment
+    app: workflows-engine-deployment
+  name: workflows-engine-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: workflows-pipelines-deployment
+      app: workflows-engine-deployment
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: workflows-pipelines-deployment
+        app: workflows-engine-deployment
     spec:
       serviceAccountName: task-executors
       containers:
@@ -79,6 +79,10 @@ spec:
               mountPath: /mnt/pipelines/
       volumes:
         - name: pipelines-mount
-          persistentVolumeClaim:
-            claimName: workflows-pipelines-pvc      
+          nfs: 
+            server: 10.99.53.12
+            path: /
+        # - name: pipelines-mount
+        #   persistentVolumeClaim:
+        #     claimName: workflows-engine-pvc      
       restartPolicy: Always

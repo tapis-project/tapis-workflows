@@ -10,13 +10,13 @@ RUN apt-get install -y vim git
 
 RUN mkdir src
 
-COPY src/pipelines/src/requirements.txt /src/requirements.txt
+COPY src/engine/src/requirements.txt /src/requirements.txt
 
 WORKDIR /src
 
 RUN pip install -r requirements.txt
 
-COPY src/pipelines/src /src
+COPY src/engine/src /src
 
 # Tapisservice config and configschema
 COPY src/shared/conf/config.json /src/config.json

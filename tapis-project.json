@@ -34,13 +34,33 @@
         },
         {
             "type": "service",
-            "name": "pipelines",
-            "displayName": "Workflow Executor",
+            "name": "nfs-server",
+            "displayName": "Workflow Engine",
+            "language": null,
+            "framework": null,
+            "buildable": false,
+            "uses": ["broker.rabbitmq"]
+        },
+        {
+            "type": "service",
+            "name": "engine",
+            "displayName": "Workflow Engine",
             "language": "python",
             "framework": null,
             "image": "tapis/workflows-pipelines",
             "buildable": true,
-            "uses": ["broker.rabbitmq"]
+            "uses": ["broker.rabbitmq", "service.nfs-server"]
+        },
+        {
+            "type": "service",
+            "name": "engine-streams",
+            "displayName": "Workflow Engine Streams",
+            "language": "node",
+            "framework": null,
+            "image": "tapis/workflow-engine-streams",
+            "buildable": true,
+            "exposeable": true,
+            "uses": ["nfs-server"]
         }
     ]
 }

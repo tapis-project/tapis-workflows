@@ -1,0 +1,178 @@
+name: Workflows CI
+
+on:
+  push:
+    branches: [ dev, stage, test, release-** ]
+  pull_request:
+    branches: [ dev, stage, test, release-** ]
+
+jobs:
+  api-tests:
+    name: Run API Tests
+    runs-on: ubuntu-latest
+    steps:
+      - run: "echo 'running API tests'"
+
+  Resolve_Image_Tag:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set_image_tag.outputs.image_tag }}
+    steps:
+      - name: Extract_Branch_Name
+        # Map a step output to a job output
+        shell: bash
+        run: echo "branch_name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+        id: extract_branch
+      - name: Check_Is_Production_Release
+        id: check_is_production_release
+        shell: bash
+        run: |
+          if [ "${{ contains(steps.extract_branch.outputs.branch_name, 'release-') }}" = true ]; then
+            echo "is_production_release=true" >> $GITHUB_OUTPUT;
+          else
+            echo "is_production_release=false" >> $GITHUB_OUTPUT;
+          fi
+      - name: Extract Production Release Version
+        if: ${{ steps.check_is_production_release.outputs.is_production_release == 'true' }}
+        shell: bash
+        run: echo version=$(echo ${{ steps.extract_branch.outputs.branch_name }} | sed -e 's!release-!!') >> $GITHUB_OUTPUT
+        id: extract_version
+      - name: Extract_Image_Tag
+        shell: bash
+        run: |
+          if [ "${{ steps.check_is_production_release.outputs.is_production_release }}" == true ]; then
+            echo "image_tag=${{ steps.extract_version.outputs.version }}" >> $GITHUB_OUTPUT;
+          else
+            echo "image_tag=${{ steps.extract_branch.outputs.branch_name }}" >> $GITHUB_OUTPUT;
+          fi
+        id: set_image_tag
+
+  Build_Push_Image_Api:
+    needs:
+      - Resolve_Image_Tag
+    runs-on: ubuntu-latest
+    name: Build_Push_Api_Image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
+      - name: Build_Tapis_Workflows_Api_Image
+        run: |
+          BRANCH="${{ needs.Resolve_Image_Tag.outputs.image_tag }}"
+          if [ "${{ contains(needs.Resolve_Image_Tag.outputs.image_tag, 'refs/pull/') }}" == true ]; then
+            BRANCH=dev
+          fi
+          docker build -f src/api/src/Dockerfile -t tapis/workflows-api:$BRANCH .
+      - name: Push_All_Tags
+        run: docker push --all-tags tapis/workflows-api
+
+  Build_Push_Image_Engine:
+    needs:
+      - Resolve_Image_Tag
+    runs-on: ubuntu-latest
+    name: Build_Push_Engine_Image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
+      - name: Build_Tapis_Workflows_Engine_Image
+        run: |
+          BRANCH="${{ needs.Resolve_Image_Tag.outputs.image_tag }}"
+          if [ "${{ contains(needs.Resolve_Image_Tag.outputs.image_tag, 'refs/pull/') }}" == true ]; then
+            BRANCH=dev
+          fi
+          docker build -f src/engine/src/Dockerfile -t tapis/workflows-pipelines:$BRANCH .
+      - name: Push_All_Tags
+        run: docker push --all-tags tapis/workflows-pipelines
+  
+  Build_Push_Image_Engine_Streams:
+    needs:
+      - Resolve_Image_Tag
+    runs-on: ubuntu-latest
+    name: Build_Push_Engine_Streams_Image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
+      - name: Build_Tapis_Workflows_Engine_Streams_Image
+        run: |
+          BRANCH="${{ needs.Resolve_Image_Tag.outputs.image_tag }}"
+          if [ "${{ contains(needs.Resolve_Image_Tag.outputs.image_tag, 'refs/pull/') }}" == true ]; then
+            BRANCH=dev
+          fi
+          docker build -f src/engine-streams/src/Dockerfile -t tapis/workflow-engine-streams:$BRANCH .
+      - name: Push_All_Tags
+        run: docker push --all-tags tapis/workflow-engine-streams
+
+  # build-push-workflows-engine:
+  #   name: Build/Test/Push Engine Image
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Extract branch name
+  #     shell: bash
+  #     run: echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+  #     id: extract_branch
+  #   - name: Checkout
+  #     uses: actions/checkout@v3
+  #   - name: Login to Docker Hub
+  #     uses: docker/login-action@v1
+  #     with:
+  #       username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
+  #       password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
+  #   - name: Build Non-production Workflows Engine Docker image
+  #     if: ${{ !contains(steps.extract_branch.outputs.branch, 'release-') }}
+  #     run: docker build -f src/engine/src/Dockerfile -t tapis/workflows-pipelines:${{ steps.extract_branch.outputs.branch }} .
+  #   - name: Extract version of production release
+  #     if: ${{ contains(steps.extract_branch.outputs.branch, 'release-') }}
+  #     shell: bash
+  #     run: echo "##[set-output name=version;]$(if [[ ${{ steps.extract_branch.outputs.branch }} == 'release-'* ]]; then echo ${{ steps.extract_branch.outputs.branch }} | sed -e 's!release-!!'; fi;)"
+  #     id: extract_version
+  #   ## TODO Only push the images related to the current branch or prodcution version
+  #   # - name: Set Image Tag
+  #   #   run: echo "${{ steps.extract_version.outputs.version }}" >> $IMAGE_TAG
+  #   - name: Build Production Workflows Engine Docker image
+  #     if: ${{ contains(steps.extract_branch.outputs.branch, 'release-') }}
+  #     run: docker build -f src/engine/src/Dockerfile -t tapis/workflows-pipelines:${{ steps.extract_version.outputs.version }} .
+  #   - name: Push the image to dockerhub with latest tag
+  #     run: docker push --all-tags tapis/workflows-pipelines
+
+  # build-push-workflows-api:
+  #   name: Build/Test/Push API Image
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Extract branch name
+  #     shell: bash
+  #     run: echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+  #     id: extract_branch
+  #   - name: Checkout
+  #     uses: actions/checkout@v3
+  #   - name: Login to Docker Hub
+  #     uses: docker/login-action@v1
+  #     with:
+  #       username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
+  #       password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
+  #   - name: Build Non-production Workflows API Docker image
+  #     if: ${{ !contains(steps.extract_branch.outputs.branch, 'release-') }}
+  #     run: docker build -f src/api/src/Dockerfile -t tapis/workflows-api:${{ steps.extract_branch.outputs.branch }} .
+  #   - name: Extract version of production release
+  #     if: ${{ contains(steps.extract_branch.outputs.branch, 'release-') }}
+  #     shell: bash
+  #     run: echo "##[set-output name=version;]$(if [[ ${{ steps.extract_branch.outputs.branch }} == 'release-'* ]]; then echo ${{ steps.extract_branch.outputs.branch }} | sed -e 's!release-!!'; fi;)"
+  #     id: extract_version
+  #   - name: Build Production Workflows API Docker image
+  #     if: ${{ contains(steps.extract_branch.outputs.branch, 'release-') }}
+  #     run: docker build -f src/api/src/Dockerfile -t tapis/workflows-api:${{ steps.extract_version.outputs.version }} .
+  #   - name: Push the image to dockerhub
+  #     run: docker push --all-tags tapis/workflows-api

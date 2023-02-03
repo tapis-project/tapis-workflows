@@ -23,5 +23,5 @@ chmod +x ./src/api/deploy/local/minikube/burnup
 
 # pipelines
 chmod +x ./src/pipelines/deploy/local/minikube/burnup
-./src/pipelines/deploy/local/minikube/burnup
+./src/engine/deploy/local/minikube/burnup
 
