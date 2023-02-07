@@ -2,7 +2,7 @@ import time, logging
 
 from kubernetes import client, watch
 
-from conf.constants import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL, KANIKO_IMAGE_TAG
+from conf.constants import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL, KANIKO_IMAGE_TAG, FLAVOR_B1_XXLARGE
 from core.tasks.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
@@ -117,6 +117,12 @@ class Kaniko(BaseBuildExecutor):
             image=f"{KANIKO_IMAGE_URL}:{KANIKO_IMAGE_TAG}",
             args=container_args,
             volume_mounts=volume_mounts,
+            resources=client.V1ResourceRequirements(
+                requests={
+                    "memory": FLAVOR_B1_XXLARGE.memory,
+                    "cpu": FLAVOR_B1_XXLARGE.cpu
+                }
+            )
         )
 
         # List of volume objects

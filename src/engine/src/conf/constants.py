@@ -81,9 +81,9 @@ KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"
 KANIKO_IMAGE_TAG = "debug"
 
 # Container Flavors - Image Builders
-FLAVOR_B1_LARGE = Flavor(cpu="4", memory="4G", disk="0")
-FLAVOR_B1_XLARGE = Flavor(cpu="4", memory="8G", disk="0")
-FLAVOR_B1_XXLARGE = Flavor(cpu="4", memory="16G", disk="0")
+FLAVOR_B1_LARGE = Flavor(cpu="4", memory="4G", disk="20GB")
+FLAVOR_B1_XLARGE = Flavor(cpu="4", memory="8G", disk="20GB")
+FLAVOR_B1_XXLARGE = Flavor(cpu="4", memory="16G", disk="20GB")
 
 # Container Flavors - Compute
 FLAVOR_C1_SMALL = Flavor(cpu="1", memory="1G", disk="20GB")
