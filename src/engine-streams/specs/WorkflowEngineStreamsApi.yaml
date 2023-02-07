@@ -1,0 +1,49 @@
+asyncapi: 2.5.0
+info:
+  title: Workflow Engine Streams API
+  version: '1.0.0'
+  description: |
+    A WebSockets API for streaming log files and task executions results produced by 
+    the Tapis Workflow Engine
+servers:
+  public:
+    url: http://localhost:8999
+    protocol: ws
+    description: local server
+  private:
+    url: 'https://dev.develop.tapis.io/v3/engine-streams'
+    protocol: wss
+    description: Development environment
+defaultContentType: application/json
+channels:
+  '/group/{groupId}/pipeline/{pipelineId}/run/{pipelineRunUuid}':
+    parameters:
+      groupId: string
+      pipelineId: string
+      pipelineRunUuid:
+        - type: string
+          format: uuid
+    publish:
+      operationId: pubGetPipelineRunLogs
+      message:
+        oneOf:
+          - $ref: '#/components/messages/TapisAuth'
+    # subscribe:
+    #   operationId: subGetPipelineRunLogs
+    #   message:
+    #     oneOf:
+    #       - $ref: '#/components/messages/pong'
+
+components:
+  messages:
+    TapisAuth:
+      type: object
+      properties:
+        jwt:
+          type: string
+
+
+
+  schemas:
+
+  

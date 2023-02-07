@@ -9,7 +9,7 @@ type CreateStreamFn = (
 ) => fs.ReadStream
 
 
-export const createStream: CreateStreamFn = (context, params) => {
+const createReadStream: CreateStreamFn = (context, params) => {
     let filename = null
     switch (context) {
         case "run":
@@ -22,3 +22,5 @@ export const createStream: CreateStreamFn = (context, params) => {
     
     return fs.createReadStream(filename, "utf-8")
 }
+
+export default createReadStream
