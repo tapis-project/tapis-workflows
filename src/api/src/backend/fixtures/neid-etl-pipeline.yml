@@ -1,0 +1,124 @@
+---
+id: neid-etl-pipeline
+execution_profile:
+  max_exec_time: 86400
+
+env:
+  TAPIS_USERNAME: "${{ secrets('tapis-sk', 'my+tapis+username') }}"
+  TAPIS_PASSWORD: "${{ secrets('tapis-sk', 'my+tapis+username') }}"
+  TAPIS_SYSTEM_ID: "my_tapis_system"
+  MANIFEST_FILES_PATH: "/"
+
+parameters:
+  base_url:
+    type: string
+
+tasks:
+- id: generate-manifests-and-process-next
+  type: function
+  description: |
+    Python script that creates manifest files and outputs a
+    tapis file inputs array to stdout
+  runtime: python3.9
+  # Use the command to install tapipy or specify the install
+  installer: pip # poetry
+  command: pip install tapipy==1.2.20
+  packages: 
+    - tapipy==1.2.20
+  code: Iy0tLS0tLS0tIFdvcmtmbG93IENvbnRleHQgc3RhcnQ6IERPIE5PVCBSRU1PVkUgLS0tLS0tLS0tLS0tLS0tLQpmcm9tIHdmIGltcG9ydCBleGVjdXRpb25fY29udGV4dCBhcyBjdHgKIy0tLS0tLS0tIFdvcmtmbG93IENvbnRleHQgZW5kOiBETyBOT1QgUkVNT1ZFIC0tLS0tLS0tLS0tLS0tLS0tLQoKaW1wb3J0IG50cGF0aAppbXBvcnQganNvbgppbXBvcnQgdGltZQppbXBvcnQgb3MKCmZyb20gdGFwaXB5LnRhcGlzIGltcG9ydCBUYXBpcwoKQ0hFQ0tfRklMRV9FWFQgPSAibWQ1IgpEQVRBX0ZJTEVfRVhUID0gInRhciIKCmNsYXNzIE1hbmlmZXN0KCk6CiAgICBkZWYgX19pbml0X18oc2VsZiwgZmlsZW5hbWUsIHBhdGgsIGZpbGVzPVtdLCBpc19wcm9jZXNzaW5nPUZhbHNlKToKICAgICAgICBzZWxmLmZpbGVuYW1lID0gZmlsZW5hbWUKICAgICAgICBzZWxmLnBhdGggPSBwYXRoCiAgICAgICAgc2VsZi5maWxlcyA9IGZpbGVzCiAgICAgICAgc2VsZi5pc19wcm9jZXNzaW5nID0gaXNfcHJvY2Vzc2luZwoKICAgIGRlZiBzYXZlKHNlbGYsIGN0eCwgY2xpZW50KToKICAgICAgICAjIENyZWF0ZSB0aGUgbG9jYWwgbWFuaWZlc3QgZmlsZSB0byBiZSB1cGxvYWRlZAogICAgICAgIGxvY2FsX21hbmlmZXN0X3BhdGggPSBvcy5wYXRoLmpvaW4oY3R4LnNjcmF0Y2hfZGlyLCBtYW5pZmVzdC5maWxlbmFtZSkKICAgICAgICB3aXRoIG9wZW4obG9jYWxfbWFuaWZlc3RfcGF0aCwgInciKSBhcyBmaWxlOgogICAgICAgICAgICBmaWxlLndyaXRlKGpzb24uZHVtcHMobWFuaWZlc3QuX19kaWN0X18pKQoKICAgICAgICAjIFVwbG9hZCB0aGUgbG9jYWwgbWFuaWZlc3QgZmlsZSB0byB0aGUgdGFwaXMgc3lzdGVtCiAgICAgICAgY2xpZW50LnVwbG9hZCgKICAgICAgICAgICAgc3lzdGVtSWQ9Y3R4LmdldF9pbnB1dCgiVEFQSVNfU1lTVEVNX0lEIiksCiAgICAgICAgICAgIHNvdXJjZV9maWxlX3BhdGg9bG9jYWxfbWFuaWZlc3RfcGF0aCwKICAgICAgICAgICAgZGVzdGluYXRpb25fZmlsZV9wYXRoPW1hbmlmZXN0LnBhdGgKICAgICAgICApCgogICAgICAgIHJldHVybiBtYW5pZmVzdAoKIyBHZXQgZmlsZW5hbWUgZnJvbSBwYXRoLiBPUyBhZ25vc3RpYwpkZWYgZ2V0X2ZpbGVuYW1lKHBhdGgpOgogICAgaGVhZCwgdGFpbCA9IG50cGF0aC5zcGxpdChwYXRoKQogICAgcmV0dXJuIHRhaWwgb3IgbnRwYXRoLmJhc2VuYW1lKGhlYWQpCgpkZWYgaXNfY2hlY2tfZmlsZShwYXRoKToKICAgIGlmIGdldF9maWxlbmFtZShwYXRoKS5zcGxpdCgiLiIpWy0xXSA9PSBDSEVDS19GSUxFX0VYVDoKICAgICAgICByZXR1cm4gVHJ1ZQogICAgcmV0dXJuIEZhbHNlCgpkZWYgYnVpbGRfbWFuaWZlc3QoZGF0YV9maWxlKToKICAgICMgV3JpdGUgYSBsb2NhbCBmaWxlIHdpdGggdGhlIGNvbnRlbnRzIG9mIHRoZSBtYW5pZmVzdAogICAgbWFuaWZlc3RfZmlsZW5hbWUgPSAiTUFOSUZFU1QtIiArIHN0cih0aW1lLnRpbWUpCiAgICByZW1vdGVfbWFuaWZlc3RfcGF0aCA9IG9zLnBhdGguam9pbihjdHguZ2V0X2lucHV0KCJNQU5JRkVTVFMiKSwgbWFuaWZlc3RfZmlsZW5hbWUpCgogICAgIyBDcmVhdGUgdGhlIG1hbmlmZXN0IG9iamVjdCAKICAgIG1hbmlmZXN0ID0gTWFuaWZlc3QoCiAgICAgICAgZmlsZW5hbWU9bWFuaWZlc3RfZmlsZW5hbWUsCiAgICAgICAgcGF0aD1yZW1vdGVfbWFuaWZlc3RfcGF0aCwKICAgICAgICBmaWxlcz1bZGF0YV9maWxlXSwKICAgICAgICBpc19wb2Nlc3Npbmc9RmFsc2UKICAgICkKICAgIHJldHVybiBtYW5pZmVzdAoKZGVmIGdldF90YXBpc19maWxlX2NvbnRlbnRzX2pzb24ocGF0aCk6CiAgICBjb250ZW50cyA9IHQuZ2V0Q29udGVudHMoCiAgICAgICAgc3lzdGVtSWQ9Y3R4LmdldF9pbnB1dCgiVEFQSVNfU1lTVEVNX0lEIiksCiAgICAgICAgcGF0aD1wYXRoCiAgICApLmRlY29kZSgidXRmOCIpCgogICAgIyBMb2FkIHRoZSBtYW5pZmVzdCBvYmplY3QgYW5kIHBvcHVsYXRlIHRoZSBzdGFnZWRfZmlsZXMgbGlzdAogICAgcmV0dXJuIGpzb24ubG9hZHMoY29udGVudHMpCgojIFRoaXMgbGlzdCBpcyB1c2VkIHRvIHN0b3JlIGV4aXN0aW5nIG1hbmlmZXN0cy4gT25jZSBhbGwgbWFuZmVzdHMgYXJlIHBvcHVsYXRlZCwKIyB0aGUgZmlyc3QgbWFuaWZlc3QgaW4gdGhlIGxpc3Qgd2l0aCBwcm9wZXJ0eSAiaXNfcHJvY2Vzc2luZyIgPT0gRmFsc2Ugd2lsbCBiZSBwcm9jZXNzZWQKbWFuaWZlc3RzID0gW10KCiMgRmV0Y2ggZXhpc3RpbmcgbWFuaWZlc3RzIGFuZCBjcmVhdGUgbmV3IG1hbmlmZXN0cwp0cnk6IAogICAgIyBOT1RFIFRoZSAiYmFzZV91cmwiIHBhcmFtIHNob3VsZCBiZSBwYXNzZWQgaW4gdGhlICJwYXJhbXMiIG9iamVjdCBvZiBhIAogICAgIyB3b3JrZmxvdyBzdWJtaXNzaW9uIHJlcXVlc3QKICAgIHQgPSBUYXBpcygKICAgICAgICBiYXNlX3VybD1jdHguZ2V0X2lucHV0KCJUQVBJU19CQVNFX1VSTCIpLAogICAgICAgIHVzZXJuYW1lPWN0eC5nZXRfaW5wdXQoIlRBUElTX1VTRVJOQU1FIiksCiAgICAgICAgcGFzc3dvcmQ9Y3R4LmdldF9pbnB1dCgiVEFQSVNfUEFTU1dPUkQiKQogICAgKQoKICAgICMgQ3JlYXRlIHRoZSBtYW5pZmVzdHMgZGlyZWN0b3J5IGlmIGl0IGRvZXNuJ3QgZXhpc3QuIEVxdWl2YWxlbnQKICAgICMgdG8gYG1rZGlyIC1wYAogICAgdC5maWxlcy5ta2RpcigKICAgICAgICBzeXN0ZW1JZD1jdHguZ2V0X2lucHV0KCJUQVBJU19TWVNURU1fSUQiKSwKICAgICAgICBwYXRoPWN0eC5nZXRfaW5wdXQoIk1BTklGRVNUUyIpCiAgICApCgogICAgIyBGZXRjaCB0aGUgYWxsIG1hbmlmZXN0IGZpbGVzCiAgICBmaWxlcyA9IHQuZmlsZXMubGlzdEZpbGVzKAogICAgICAgIHN5c3RlbUlkPWN0eC5nZXRfaW5wdXQoIlRBUElTX1NZU1RFTV9JRCIpLAogICAgICAgIHBhdGg9Y3R4LmdldF9pbnB1dCgiTUFOSUZFU1RTIikKICAgICkKCiAgICBtYW5pZmVzdF9maWxlcyA9IFsgZmlsZS5wYXRoIGZvciBmaWxlIGluIGZpbGVzIF0KICAgICMgQ3JlYXRlIGEgbGlzdCBvZiBhbGwgcGF0aHMgdG8gZGF0YSBmaWxlcyBpbiB0aGUgbWFuaWZlc3QgZmlsZXMKICAgIHN0YWdlZF9kYXRhX2ZpbGVzID0gW10KICAgIGZvciBwYXRoIGluIG1hbmlmZXN0X2ZpbGVzOgogICAgICAgICMgTG9hZCB0aGUgbWFuaWZlc3Qgb2JqZWN0IGFuZCBwb3B1bGF0ZSB0aGUgc3RhZ2VkX2ZpbGVzIGxpc3QKICAgICAgICBtYW5pZmVzdCA9IE1hbmlmZXN0KCoqanNvbi5sb2FkcyhnZXRfdGFwaXNfZmlsZV9jb250ZW50c19qc29uKHBhdGgpKSkKICAgICAgICBzdGFnZWRfZGF0YV9maWxlcyArPSBtYW5pZmVzdC5maWxlcwogICAgICAgIG1hbmlmZXN0cy5hcHBlbmQobWFuaWZlc3QpCgogICAgIyBGZXRjaCB0aGUgYWxsIGZpbGVzIGZyb20gdGhlIGluYm94IG9uIHRoZSB0YXJnZXQgc3lzdGVtCiAgICBpbmJveF9maWxlcyA9IHQubGlzdEZpbGVzKAogICAgICAgIHN5c3RlbUlkPWN0eC5nZXRfaW5wdXQoIlRBUElTX1NZU1RFTV9JRCIpLAogICAgICAgIHBhdGg9Y3R4LmdldF9pbnB1dCgiSU5CT1giKQogICAgKQoKICAgICMgQ3JlYXRlcyBuZXcgbWFuaWZlc3RzIGZvciB0aGUgZGF0YSBmaWxlcyBpbiB0aGUgaW5ib3gKICAgIGZvciBmaWxlIGluIGluYm94X2ZpbGVzOgogICAgICAgICMgT25seSBjcmVhdGUgbWFuaWZlc3RzIGZvciBkYXRhIGZpbGVzCiAgICAgICAgaWYgbm90IGlzX2NoZWNrX2ZpbGUoZmlsZS5wYXRoKToKICAgICAgICAgICAgY29udGludWUKICAgICAgICAKICAgICAgICAjIFVzZSB0aGUgY2hlY2sgZmlsZSB0byBidWlsZCB0aGUgcGF0aCB0byB0aGUgZGF0YSBmaWxlCiAgICAgICAgY2hlY2tfZmlsZW5hbWUgPSBnZXRfZmlsZW5hbWUoZmlsZS5wYXRoKQogICAgICAgIGRhdGFfZmlsZW5hbWUgPSBnZXRfZmlsZW5hbWUoZmlsZS5wYXRoKS5yZXBsYWNlKENIRUNLX0ZJTEVfRVhULCBEQVRBX0ZJTEVfRVhUKQogICAgICAgIGRhdGFfZmlsZSA9IGZpbGUucGF0aC5yZXBsYWNlKGNoZWNrX2ZpbGVuYW1lLCBkYXRhX2ZpbGVuYW1lKQoKICAgICAgICAjIENyZWF0ZSBhbmQgcGVyc2lzdCBtYW5pZmVzdHMgdG8gdGhlIHRhcGlzIHN5c3RlbQogICAgICAgIGlmIGRhdGFfZmlsZSBub3QgaW4gc3RhZ2VkX2RhdGFfZmlsZXM6CiAgICAgICAgICAgIG1hbmlmZXN0ID0gYnVpbGRfbWFuaWZlc3QoZGF0YV9maWxlKQogICAgICAgICAgICBtYW5pZmVzdC5zYXZlKGN0eCwgdCkKICAgICAgICAgICAgbWFuaWZlc3RzLmFwcGVuZChtYW5pZmVzdC5wYXRoKQoKZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgY3R4LnNldF9zdGRlcnIoMSwgZiJGYWxpZWQgdG8gY3JlYXRlIG5ldyBtYW5pZmVzdDoge3N0cihlKX0iKQoKIyBGaW5kIGFuZCB1cGRhdGUgdGhlIG1hbmlmZXN0IGlzX3Byb2Nlc3NpbmcgcHJvcGVydHkgdG8gdHJ1ZQp0cnk6CiAgICAjIEdldCB0aGUgZmlyc3QgbWFuaWZlc3QgaW4gdGhlIGxpc3QgdGhhdCBpcyBpbiBwcm9jZXNzaW5nCiAgICBuZXh0X21hbmlmZXN0ID0gTm9uZQogICAgZm9yIG1hbmlmZXN0IGluIG1hbmlmZXN0czoKICAgICAgICBpZiBtYW5pZmVzdC5pc19wcm9jZXNzaW5nID09IEZhbHNlOgogICAgICAgICAgICBuZXh0X21hbmlmZXN0ID0gbWFuaWZlc3QKICAgICAgICAgICAgYnJlYWsKICAgIAogICAgaWYgbmV4dF9tYW5pZmVzdCA9PSBOb25lOgogICAgICAgIGN0eC50YXNrcy5za2lwX25leHQoKQoKICAgICMgVXBkYXRlIHRoZSBtYW5pZmVzdCBvbiB0aGUgdGFwaXMgc3lzdGVtIHRvICJpc19wcm9jZXNzaW5nIgogICAgbmV4dF9tYW5pZmVzdC5pc19wcm9jZXNzaW5nID0gVHJ1ZQogICAgbmV4dF9tYW5pZmVzdC5zYXZlKGN0eCwgdCkKCmV4Y2VwdCBFeGNlcHRpb24gYXMgZToKICAgIGN0eC5zZXRfc3RkZXJyKGYiRmFpbGVkIHRvIHVwZGF0ZSBtYW5pZmVzdCB0byAnaXNfcHJvY2Vzc2luZyc6IHtlfSIpCgoKIyBDb252ZXJ0IGZpbGVfaW5wdXRfYXJyYXlzIGRpY3QgdG8gc3RyaW5nCmZpbGVfaW5wdXRfYXJyYXlzID0ganNvbi5kdW1wcygKICAgIFsKICAgICAgICB7CiAgICAgICAgICAgICJuYW1lIjogImRhdGEtZmlsZSIsCiAgICAgICAgICAgICJkZXNjcmlwdGlvbiI6ICJEYXRhIGZpbGVzIHRvIGJlIHByb2Nlc3Nlc3NlZCIsCiAgICAgICAgICAgICJzb3VyY2VVcmxzIjogbmV4dF9tYW5pZmVzdC5maWxlcywKICAgICAgICAgICAgInRhcmdldERpciI6IGN0eC5nZXRfaW5wdXQoIlRBUkdFVF9ESVIiKQogICAgICAgIH0KICAgIF0KKQoKIyBTZXQgdGhlIGZpbGVfaW5wdXRfYXJyYXlzIHRvIG91dHB1dApjdHguc2V0X291dHB1dCgiZmlsZUlucHV0QXJyYXlzIiwgZmlsZV9pbnB1dF9hcnJheXMpCgojIFNldCB0aGUgbWFuaWZlc3QgZmlsZSBwYXRoIGFzIG91dHB1dApjdHguc2V0X291dHB1dCgibWFuaWZlc3RGaWxQYXRoIiwgbmV4dF9tYW5pZmVzdC5wYXRoKQo=
+  input:
+    TAPIS_USERNAME:
+      type: string
+      value: "${{ $TAPIS_USERNAME }}"
+    TAPIS_PASSWORD:
+      type: string
+      value: "${{ $TAPIS_PASSWORD }}"
+    TAPIS_SYSTEM_ID:
+      type: string
+      value: "some-system-id"
+    TARGET_DIR:
+      type: string
+      value: target/dir/for/file-input-array
+    INBOX:
+      type: string
+      value: "/scratch/08294/jplneid/tacc_ep/INBOX"
+    MANIFESTS:
+      type: string
+      value: "/scratch/08294/jplneid/tacc_ep/MANIFESTS"
+    TAPIS_BASE_URL:
+      type: string
+      value: "${{ $PARAMS.base_url }}"
+  output:
+    fileInputArrays:
+      type: "tapis_file_input_arrays"
+    manifestFilePath:
+      type: "string"
+
+- id: extraction-and-str-replacement
+  type: tapis_job
+  system_id: my_system_id
+  input:
+    fileInputArrays:
+      type: tapis_file_input_arrays
+      value:
+        task_id: "generate-manifests-and-process-next"
+        output_id: "fileInputArrays"
+  tapis_job_def:
+    name: extract-str-replace
+    appId: someAppId
+    appVersion: someAppVersion
+    fileInputArrays: ${{ $fileInputArrays }}
+  depends_on:
+  - id: extraction-and-str-replacement
+    can_fail: false
+
+- id: transform-data
+  _if: "${{ boolean(stdout('generate-manifests-and-process-next')) == true }}"
+  type: tapis_job
+  system_id: my_system_id
+  tapis_job_def:
+    name: transform-data
+    appId: someAppId
+    appVersion: someAppVersion
+    fileInputArrays: ${{ $preparedFileInputArrays }}
+  input:
+    preparedFileInputArrays:
+      type: file_input_arrays
+      value:
+        task_id: generate-manifests-and-process-next
+        output_id: fileInputArrays
+  depends_on:
+  - id: generate-manifests-and-process-next
+    can_fail: false
+  - id: extraction-and-str-replacement
+    can_fail: false
+
+- id: delete-processed-mainfests
+  type: function
+  description: |
+    Python script deletes the manifest file after successful processing
+  runtime: python3.9
+  # Use the command to install tapipy or specify the install
+  installer: pip # poetry
+  command: pip install tapipy==1.2.20
+  packages: 
+    - tapipy==1.2.20
+  code: Iy0tLS0tLS0tIFdvcmtmbG93IENvbnRleHQgc3RhcnQ6IERPIE5PVCBSRU1PVkUgLS0tLS0tLS0tLS0tLS0tLQpmcm9tIHdmIGltcG9ydCBleGVjdXRpb25fY29udGV4dCBhcyBjdHgKIy0tLS0tLS0tIFdvcmtmbG93IENvbnRleHQgZW5kOiBETyBOT1QgUkVNT1ZFIC0tLS0tLS0tLS0tLS0tLS0tLQoKZnJvbSB0YXBpcHkudGFwaXMgaW1wb3J0IFRhcGlzCgp0cnk6IAogICAgIyBOT1RFIFRoZSAiYmFzZV91cmwiIHBhcmFtIHNob3VsZCBiZSBwYXNzZWQgaW4gdGhlICJwYXJhbXMiIG9iamVjdCBvZiBhIAogICAgIyB3b3JrZmxvdyBzdWJtaXNzaW9uIHJlcXVlc3QKICAgIHQgPSBUYXBpcygKICAgICAgICBiYXNlX3VybD1jdHguZ2V0X2lucHV0KCJUQVBJU19CQVNFX1VSTCIpLAogICAgICAgIHVzZXJuYW1lPWN0eC5nZXRfaW5wdXQoIlRBUElTX1VTRVJOQU1FIiksCiAgICAgICAgcGFzc3dvcmQ9Y3R4LmdldF9pbnB1dCgiVEFQSVNfUEFTU1dPUkQiKQogICAgKQoKICAgIG1hbmlmZXN0X2ZpbGVfcGF0aCA9IGN0eC5nZXRfaW5wdXQoIm1hbmZpZXN0RmlsZVBhdGgiKQoKICAgIHQuZmlsZXMuZGVsZXRlKAogICAgICAgIHN5c3RlbUlkPWN0eC5nZXRfaW5wdXQoIlRBUElTX1NZU1RFTV9JRCIpLAogICAgICAgIHBhdGg9bWFuaWZlc3RfZmlsZV9wYXRoCiAgICApCgogICAgY3R4LnN0ZG91dCgwLCBmIk1hbmZpZXN0IGZpbGUgc3VjY2Vzc2Z1bGx5IGRlbGV0ZWQ6IHttYW5pZmVzdF9maWxlX3BhdGh9IikKCmV4Y2VwdCBFeGNlcHRpb24gYXMgZToKICAgICMgU2F2ZXMgc3RhY2sgdHJhY2UgdG8gc3RkZXJyIGFuZCBleGl0cyB3aXRoIGNvZGUgMQogICAgY3R4LmVycm9yKDEsIHN0cihlKSk=
+  input:
+    TAPIS_USERNAME:
+      type: string
+      value: "${{ $TAPIS_USERNAME }}"
+    TAPIS_PASSWORD:
+      type: string
+      value: "${{ $TAPIS_PASSWORD }}"
+    TAPIS_SYSTEM_ID:
+      type: string
+      value: "some-system-id"
+    TAPIS_BASE_URL:
+      type: string
+      value: "${{ $PARAMS.base_url }}"
+    MANIFEST_FILE_PATH:
+      type: string
+      value:
+        task_id: generate-manifests-and-process-next
+        output: manifestFilePath

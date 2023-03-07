@@ -74,7 +74,7 @@ class HTTP(TaskExecutor):
                 params=request_task.query_params,
             )
 
-            self._store_result(".stdout", response.content)
+            self._stdout(response.content)
 
             return TaskResult(
                 status=0

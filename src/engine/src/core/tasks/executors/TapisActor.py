@@ -76,7 +76,7 @@ class TapisActor(TaskExecutor):
             _x_tapis_user=self.ctx.pipeline.owner
         ).logs
 
-        self._store_result(f"actors/{execution.actor_id}/.stdout", logs)
+        self._set_output(f"actors/{execution.actor_id}/.stdout", logs)
 
         execution_result = self.service_client.actors.get_execution_result(
             actor_id=execution.actor_id,
@@ -85,7 +85,7 @@ class TapisActor(TaskExecutor):
             _x_tapis_user=self.ctx.pipeline.owner
         )
 
-        self._store_result(f"actors/{execution.actor_id}/.result", execution_result)
+        self._set_output(f"actors/{execution.actor_id}/.result", execution_result)
 
         # Get linked actors' executions recursively
         if getattr(execution, "link", False) and getattr(execution, "next_execution_id", False):
@@ -100,6 +100,6 @@ class TapisActor(TaskExecutor):
             _x_tapis_user=self.ctx.pipeline.owner
         )
 
-    def _store_result(self, filename, value, flag="wb"):
+    def _set_output(self, filename, value, flag="wb"):
         with open(f"{self.task.output_dir}{filename.lstrip('/')}", flag) as file:
             file.write(value)

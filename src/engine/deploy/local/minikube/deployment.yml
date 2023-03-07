@@ -58,6 +58,10 @@ spec:
               value: tacc
             - name: TAPIS_SERVICE_TENANT_ID
               value: admin
+            - name: WORKFLOW_NFS_SERVER
+              value: 10.99.53.12
+            - name: IS_LOCAL
+              value: 'true'
             - name: WORKFLOWS_SERVICE_URL
               value: https://admin.develop.tapis.io
             - name: WORKFLOWS_SERVICE_ACCOUNT

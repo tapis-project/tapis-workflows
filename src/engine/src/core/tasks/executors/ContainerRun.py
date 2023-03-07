@@ -7,7 +7,7 @@ from kubernetes import client
 from core.tasks.TaskExecutor import TaskExecutor
 from conf.constants import PIPELINES_PVC, KUBERNETES_NAMESPACE, FLAVOR_C1_MEDIUM
 from core.resources import PodResource
-from utils.k8s import flavor_to_limits
+from utils.k8s import get_k8s_resource_reqs
 
 
 # TODO Review the Kubernetes attack surface guide.
@@ -32,9 +32,7 @@ class ContainerRun(TaskExecutor):
             image=self._resovle_image(),
             args=self._resolve_args(),
             volume_mounts=volume_mounts,
-            resources=client.V1ResourceRequirements(
-                limits=flavor_to_limits(FLAVOR_C1_MEDIUM)
-            )
+            resources=get_k8s_resource_reqs(FLAVOR_C1_MEDIUM)
         )
 
         # Volume for output and caching

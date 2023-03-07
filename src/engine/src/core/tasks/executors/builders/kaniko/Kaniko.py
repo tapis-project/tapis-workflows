@@ -1,12 +1,19 @@
 import time, logging
 
-from kubernetes import client, watch
+from kubernetes import client, watch # TODO watch.Watch?
 
-from conf.constants import KUBERNETES_NAMESPACE, PIPELINES_PVC, KANIKO_IMAGE_URL, KANIKO_IMAGE_TAG, FLAVOR_B1_XXLARGE
+from conf.constants import (
+    KUBERNETES_NAMESPACE,
+    WORKFLOW_NFS_SERVER,
+    KANIKO_IMAGE_URL,
+    KANIKO_IMAGE_TAG,
+    FLAVOR_B1_XXLARGE
+)
 from core.tasks.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
 from utils import lbuffer_str as lbuf
+from utils.k8s import get_k8s_resource_reqs
 from errors import WorkflowTerminated
 
 
@@ -57,7 +64,7 @@ class Kaniko(BaseBuildExecutor):
             #     name=pod_name,
             #     namespace=KUBERNETES_NAMESPACE
             # ):
-            #    self._store_result(".stdout", line, flag="ab")
+            #    self._stdout(line, flag="ab")
 
             logs = self.core_v1_api.read_namespaced_pod_log(
                 name=pod_name,
@@ -65,7 +72,7 @@ class Kaniko(BaseBuildExecutor):
                 _return_http_data_only=True,
                 _preload_content=False,
             ).data  # .decode("utf-8")
-            self._store_result(".stdout", logs, flag="ab")
+            self._stdout(logs, flag="ab")
 
         except client.rest.ApiException as e:
             self.ctx.logger.error(f"Exception reading pod log: {e}")
@@ -88,7 +95,7 @@ class Kaniko(BaseBuildExecutor):
 
         # List of volume mount objects for the container
         volume_mounts = []
-        if self.configmap is not None:
+        if self.configmap != None:
             volume_mounts = [
                 # Volume mount for the registry credentials config map
                 client.V1VolumeMount(
@@ -96,19 +103,16 @@ class Kaniko(BaseBuildExecutor):
                     mount_path="/kaniko/.docker/config.json",
                     sub_path="config.json",
                 ),
-                # Volume mount for the output
+                # Volume mount the workdir
                 client.V1VolumeMount(
-                    name="artifacts",
-                    mount_path="/mnt/",
-                    sub_path=self.task.output_dir.replace("/mnt/pipelines/", "") 
+                    name="workdir",
+                    mount_path=self.task.container_work_dir,
                 ),
-                # # Volume mount for the cache
-                # # NOTE Dunno if this works...
-                # client.V1VolumeMount(
-                #     name="artifacts",
-                #     mount_path="/cache/",
-                #     sub_path=self.pipeline.cache_dir.replace("/mnt/pipelines/", "") 
-                # ),
+                # Volume mount the cache dir
+                client.V1VolumeMount(
+                    name="cache",
+                    mount_path=self.pipeline.container_cache_dir,
+                )
             ]
 
         # Container object
@@ -117,17 +121,12 @@ class Kaniko(BaseBuildExecutor):
             image=f"{KANIKO_IMAGE_URL}:{KANIKO_IMAGE_TAG}",
             args=container_args,
             volume_mounts=volume_mounts,
-            resources=client.V1ResourceRequirements(
-                requests={
-                    "memory": FLAVOR_B1_XXLARGE.memory,
-                    "cpu": FLAVOR_B1_XXLARGE.cpu
-                }
-            )
+            resources=get_k8s_resource_reqs(FLAVOR_B1_XXLARGE)
         )
 
         # List of volume objects
         volumes = []
-        if self.configmap is not None:
+        if self.configmap != None:
             volumes.append(
                 # Volume for mounting the registry credentials
                 client.V1Volume(
@@ -137,13 +136,23 @@ class Kaniko(BaseBuildExecutor):
                     ),
                 )
             )
-
-        # Volume for output and caching
+            
+        # Volumes for output and caching
         volumes.append(
             client.V1Volume(
-                name="artifacts",
-                persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
-                    claim_name=PIPELINES_PVC
+                name="workdir",
+                nfs=client.V1NFSVolumeSource(
+                    server=WORKFLOW_NFS_SERVER,
+                    path=self.task.work_dir.replace("/mnt/pipelines/", "/")
+                ),
+            )
+        )
+        volumes.append(
+            client.V1Volume(
+                name="cache",
+                nfs=client.V1NFSVolumeSource(
+                    server=WORKFLOW_NFS_SERVER,
+                    path=self.pipeline.cache_dir.replace("/mnt/pipelines/", "/")
                 ),
             )
         )
@@ -191,11 +200,8 @@ class Kaniko(BaseBuildExecutor):
         container_args = []
 
         # Enable image layer caching for imporved performance
-        can_cache = hasattr(self.directives, "CACHE")
-        container_args.append(f"--cache={'true' if can_cache else 'false'}")
-        if can_cache == True:
-            container_args.append(f"--cache-dir={self.pipeline.cache_dir.replace('/mnt/pipelines/', '')}")
-            # container_args.append(f"--cache-dir={self.pipeline.cache_dir}")
+        container_args.append(f"--cache=true")
+        container_args.append(f"--cache-dir={self.pipeline.container_cache_dir}")
 
         # Source of dockerfile for image to be build
         context = self._resolve_context_string()
@@ -203,7 +209,7 @@ class Kaniko(BaseBuildExecutor):
 
         # Useful when your context is, for example, a git repository,
         #  and you want to build one of its subfolders instead of the root folder
-        if self.task.context.sub_path is not None:
+        if self.task.context.sub_path != None:
             container_args.append(f"--context-sub-path={self.task.context.sub_path}")
 
         # The branch to be pulled
@@ -230,7 +236,7 @@ class Kaniko(BaseBuildExecutor):
         container_args.append(destination_arg)
 
         # Create the dockerhub config map that will be mounted into the kaniko job container
-        if destination is not None:
+        if destination != None:
             self.configmap = self._create_dockerhub_configmap(job_name)
 
         return container_args

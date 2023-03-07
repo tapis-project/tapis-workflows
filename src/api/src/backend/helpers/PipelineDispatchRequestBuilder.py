@@ -31,7 +31,11 @@ class PipelineDispatchRequestBuilder:
 
         # Convert pipleline to a dict and build the request
         request = {}
-        request["base_url"] = base_url
+
+        # Populate the params for this request
+        request["params"] = {}
+        request["params"]["base_url"] = base_url
+
         request["group"] = model_to_dict(group)
         request["event"] = model_to_dict(event)
         request["pipeline"] = model_to_dict(pipeline)

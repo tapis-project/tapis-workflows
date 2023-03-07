@@ -227,19 +227,40 @@ class TaskDependency(BaseModel):
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
 
-IOValueType = Union[AnyStr, Dict, List, bool]
+# Task I/O Types ---------------------------------------------------------
+
+TaskIOTypes = Union[
+    Literal["null"],
+    Literal["string"],
+    Literal["number"],
+    Literal["boolean"],
+    Literal["string_array"],
+    Literal["number_array"],
+    Literal["boolean_array"],
+    Literal["mixed_array"],
+    Literal["tapis_file_input"],
+    Literal["tapis_file_input_array"]
+]
+
+class TaskOutputRef(BaseModel):
+    task_id: str
+    output_id: str
+
+class BaseInputValue(BaseModel):
+    type: TaskIOTypes
+    value: Union[str, int, float, bytes, TaskOutputRef]
+
+class BaseOutputValue(BaseModel):
+    type: TaskIOTypes
+    value: Union[str, int, float, bytes]
 
 class Input(BaseModel):
-    type: str
-    value: IOValueType
-
-InputType = Dict[str, Input]
+    __root__: Dict[str, BaseInputValue]
 
 class Output(BaseModel):
-    type: str
-    value: IOValueType
+    __root__: Dict[str, BaseOutputValue]
 
-OutputType = Dict[str, Output]
+# ------------------------------------------------------------------------
 
 class HTTPBasicAuthCreds(BaseModel):
     username: str = None
@@ -271,9 +292,10 @@ class BaseTask(BaseModel):
     headers: dict = None
     http_method: str = None
     image: str = None
-    input: InputType = None
+    input: Input = None
     id: str
-    output: OutputType = None
+    _if: str = None
+    output: Output = None
     poll: bool = None
     query_params: str = None
     type: str
@@ -354,15 +376,24 @@ class RequestTask(BaseTask):
     http_method: str
     url: str
 
+class FunctionTask(BaseTask):
+    type: Literal["function"]
+    runtime: str
+    packages: List[str] = []
+    installer: str
+    code: str
+    command: str = None
+
 # Pipelines
 
 Task = Annotated[
     Union[
         ContainerRunTask,
         ImageBuildTask,
+        FunctionTask,
+        RequestTask,
         TapisActorTask,
         TapisJobTask,
-        RequestTask
     ],
     Field(discriminator="type")
 ]
@@ -373,6 +404,7 @@ class BasePipeline(BaseModel):
     tasks: List[Task] = []
     execution_profile: ExecutionProfile = ExecutionProfile(
         max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
+    cron: str = None
     archive_ids: List[str] = []
 
     # Validators
@@ -395,6 +427,15 @@ class CIPipeline(BasePipeline):
     http_method: str = None
     query_params: dict = None
     url: str = None
+
+class TapisRemoteIOBox(BaseModel):
+    system_id: str
+    path: str
+
+class ETLPipeline(BasePipeline):
+    source: TapisRemoteIOBox
+    destination: TapisRemoteIOBox
+    jobs: List[object]
 
 # Pipeline runs and task executions
 class TaskExecution(BaseModel):

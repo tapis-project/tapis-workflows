@@ -4,6 +4,7 @@ from typing import List
 
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
+from django.core.exceptions import ValidationError as ModelValidationError
 
 from backend.models import Task, Context, Destination, Identity
 from backend.models import (
@@ -12,6 +13,7 @@ from backend.models import (
     TASK_TYPE_CONTAINER_RUN,
     TASK_TYPE_TAPIS_JOB,
     TASK_TYPE_TAPIS_ACTOR,
+    TASK_TYPE_FUNCTION,
     DESTINATION_TYPE_LOCAL,
     DESTINATION_TYPE_DOCKERHUB,
 )
@@ -21,6 +23,7 @@ from backend.views.http.requests import (
     ContainerRunTask,
     TapisJobTask,
     TapisActorTask,
+    FunctionTask,
     RegistryDestination,
     LocalDestination
 )
@@ -35,6 +38,7 @@ TASK_TYPE_REQUEST_MAPPING = {
     TASK_TYPE_CONTAINER_RUN: ContainerRunTask,
     TASK_TYPE_TAPIS_JOB: TapisJobTask,
     TASK_TYPE_TAPIS_ACTOR: TapisActorTask,
+    TASK_TYPE_FUNCTION: FunctionTask
 }
 
 DESTINATION_TYPE_REQUEST_MAPPING = {
@@ -69,6 +73,8 @@ class TaskService(Service):
                 auth=request.auth,
                 builder=request.builder,
                 cache=request.cache,
+                code=request.code,
+                command=request.command,
                 context=context,
                 data=request.data,
                 description=request.description,
@@ -77,11 +83,14 @@ class TaskService(Service):
                 http_method=request.http_method,
                 image=request.image,
                 input=request.input,
+                installer=request.installer,
                 id=request.id,
                 output=request.output,
+                packages=request.packages,
                 pipeline=pipeline,
                 poll=request.poll,
                 query_params=request.query_params,
+                runtime=request.runtime,
                 type=request.type,
                 depends_on=[ dict(item) for item in request.depends_on ],
                 tapis_job_def=request.tapis_job_def,
@@ -96,11 +105,18 @@ class TaskService(Service):
                 invocation_mode=request.execution_profile.invocation_mode,
                 retry_policy=request.execution_profile.retry_policy
             )
+
+            # TODO Calls the validators on the task model
+            # task.clean()
         except (IntegrityError, OperationalError, DatabaseError) as e:
             self.rollback()
             raise e
 
         except BadRequestError as e:
+            self.rollback()
+            raise e
+
+        except ModelValidationError as e:
             self.rollback()
             raise e
 
