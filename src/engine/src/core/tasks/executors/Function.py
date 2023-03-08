@@ -1,4 +1,4 @@
-import logging, os, base64, time
+import logging, os, base64, time, shutil
 
 from uuid import uuid4
 
@@ -6,7 +6,12 @@ from kubernetes import client
 
 from core.tasks.TaskExecutor import TaskExecutor
 from core.tasks.TaskResult import TaskResult
-from conf.constants import WORKFLOW_NFS_SERVER, KUBERNETES_NAMESPACE, FLAVOR_C1_SMALL
+from conf.constants import (
+    WORKFLOW_NFS_SERVER,
+    KUBERNETES_NAMESPACE,
+    FLAVOR_C1_SMALL,
+    OWE_PYTHON_SDK_DIR
+)
 from core.resources import JobResource
 from utils.k8s import get_k8s_resource_reqs
 from errors import WorkflowTerminated
@@ -16,11 +21,13 @@ class ContainerDetails:
         self,
         image,
         command,
-        args
+        args,
+        env
     ):
         self.image = image
         self.command = command
         self.args = args
+        self.env = env
 
 
 # TODO Review the Kubernetes attack surface guide.
@@ -39,7 +46,7 @@ class Function(TaskExecutor):
             )
         ]
 
-        # Set up the container details for the task's specified runtime
+        # Set up the container details for the task"s specified runtime
         container_details = self._setup_container()
         
         # Container object
@@ -49,6 +56,7 @@ class Function(TaskExecutor):
             args=container_details.args,
             image=container_details.image,
             volume_mounts=volume_mounts,
+            env=container_details.env,
             resources=get_k8s_resource_reqs(FLAVOR_C1_SMALL)
         )
 
@@ -93,7 +101,7 @@ class Function(TaskExecutor):
             )
 
             # Register the job to be deleted after execution
-            self._register_resource(JobResource(job=job))
+            # self._register_resource(JobResource(job=job))
         except Exception as e:
             logging.critical(e)
             raise e
@@ -141,7 +149,7 @@ class Function(TaskExecutor):
         # the necessary python packages
         requirements_filename = "requirements.txt"
         local_requirements_file_path = f"{self.task.scratch_dir}requirements.txt"
-        has_packages = len(self.tasks.packages) > 0
+        has_packages = len(self.task.packages) > 0
         if has_packages:
             with open(local_requirements_file_path, "w") as file:
                 file.write("\n".join(self.task.packages))
@@ -151,30 +159,45 @@ class Function(TaskExecutor):
 
         # NOTE Only supporting pip for now
         # Requirements file
-        requirements_txt = os.path.join(self.task.container_work_dir, 'scratch', requirements_filename)
+        requirements_txt = os.path.join(self.task.container_work_dir, "scratch", requirements_filename)
         
         # Entrypoint file
-        entrypoint_py = os.path.join(self.task.container_work_dir, 'scratch', entrypoint_filename)
+        entrypoint_py = os.path.join(self.task.container_work_dir, "scratch", entrypoint_filename)
         
         # Install output file
-        dot_install = os.path.join(self.task.container_work_dir, 'output', ".install")
+        dot_install = os.path.join(self.task.container_work_dir, "output", ".install")
 
         # .stderr
-        stderr = os.path.join(self.task.container_work_dir, 'output', ".stderr")
+        stderr = os.path.join(self.task.container_work_dir, "output", ".stderr")
 
         # .stdout
-        stdout = os.path.join(self.task.container_work_dir, 'output', ".stdout")
+        stdout = os.path.join(self.task.container_work_dir, "output", ".stdout")
 
         install_cmd = ""
         if has_packages:
             install_cmd = f"pip install -r {requirements_txt} 2> {stderr} 1> {dot_install} &&"
 
+        # TODO handle for "command" property
+
+        # Copy the owe-python-sdk files to the scratch directory
+        owe_python_sdk_local_path = os.path.join(self.task.work_dir, "scratch")
+        shutil.copytree(OWE_PYTHON_SDK_DIR, owe_python_sdk_local_path, dirs_exist_ok=True)
+
         entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
         args = [f"{install_cmd} {entrypoint_cmd}"]
+
+        # Set up env vars for the container
+        env = [
+            client.V1EnvVar(
+                name="OWE_OUTPUT_DIR",
+                value=os.path.join(self.task.container_work_dir, "output")
+            ),
+        ]
 
         return ContainerDetails(
             image=self.task.runtime,
             command=command,
             args=args,
+            env=env
         )
 

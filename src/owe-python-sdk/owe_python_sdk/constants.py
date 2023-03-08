@@ -1,0 +1,2 @@
+STDOUT = ".stdout"
+STDERR = ".stderr"
