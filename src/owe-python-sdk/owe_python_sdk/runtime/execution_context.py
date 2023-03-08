@@ -11,7 +11,10 @@ class ExecutionContext:
         with open(os.path.join(self.runtime.output_dir, _id), "w") as file:
             file.write(value)
 
-    def stderr(self, code, message):
+    def stderr(self, code: int, message):
+        if code < 1:
+            raise Exception("Exit code provided must be an int with a value >= 1")
+
         with open(self.runtime.stderr, "w") as file:
             file.write(message)
 
