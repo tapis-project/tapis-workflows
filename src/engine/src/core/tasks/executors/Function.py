@@ -13,7 +13,7 @@ from conf.constants import (
     OWE_PYTHON_SDK_DIR
 )
 from core.resources import JobResource
-from utils.k8s import get_k8s_resource_reqs
+from utils.k8s import get_k8s_resource_reqs, input_to_k8s_env_vars
 from errors import WorkflowTerminated
 
 class ContainerDetails:
@@ -193,6 +193,15 @@ class Function(TaskExecutor):
                 value=os.path.join(self.task.container_work_dir, "output")
             ),
         ]
+
+        # Convert defined workflow inputs into the function containers env vars with
+        # the open workflow engine input prefix
+        env = env + input_to_k8s_env_vars(
+            self.task.input,
+            self.ctx.env,
+            self.ctx.params,
+            prefix="_OWE_WORKFLOW_INPUT_"
+        )
 
         return ContainerDetails(
             image=self.task.runtime,

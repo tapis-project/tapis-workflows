@@ -4,8 +4,12 @@ execution_profile:
   max_exec_time: 86400
 
 env:
-  TAPIS_USERNAME: "${{ secrets('tapis-sk', 'my+tapis+username') }}"
-  TAPIS_PASSWORD: "${{ secrets('tapis-sk', 'my+tapis+username') }}"
+  TAPIS_USERNAME:
+    value_from: 
+      tapis-security-kernal: "sk+id+of+username"        
+  TAPIS_PASSWORD:
+    value_from: 
+      tapis-security-kernal: "sk+id+of+password"
   TAPIS_SYSTEM_ID: "my_tapis_system"
   MANIFEST_FILES_PATH: "/"
 
@@ -29,10 +33,12 @@ tasks:
   input:
     TAPIS_USERNAME:
       type: string
-      value: "${{ $TAPIS_USERNAME }}"
+      value_from:
+        env: TAPIS_USERNAME
     TAPIS_PASSWORD:
       type: string
-      value: "${{ $TAPIS_PASSWORD }}"
+      value_from:
+        env: TAPIS_PASSWORD
     TAPIS_SYSTEM_ID:
       type: string
       value: "some-system-id"
@@ -47,7 +53,8 @@ tasks:
       value: "/scratch/08294/jplneid/tacc_ep/MANIFESTS"
     TAPIS_BASE_URL:
       type: string
-      value: "${{ $PARAMS.base_url }}"
+      value_from:
+        params: base_url
   output:
     fileInputArrays:
       type: "tapis_file_input_arrays"
@@ -60,14 +67,15 @@ tasks:
   input:
     fileInputArrays:
       type: tapis_file_input_arrays
-      value:
-        task_id: "generate-manifests-and-process-next"
-        output_id: "fileInputArrays"
+      value_from:
+        task_output:
+          task_id: "generate-manifests-and-process-next"
+          output_id: "fileInputArrays"
   tapis_job_def:
     name: extract-str-replace
     appId: someAppId
     appVersion: someAppVersion
-    fileInputArrays: ${{ $fileInputArrays }}
+    fileInputArrays: ${{ $INPUT.fileInputArrays }}
   depends_on:
   - id: extraction-and-str-replacement
     can_fail: false
@@ -80,13 +88,14 @@ tasks:
     name: transform-data
     appId: someAppId
     appVersion: someAppVersion
-    fileInputArrays: ${{ $preparedFileInputArrays }}
+    fileInputArrays: ${{ INPUT.preparedFileInputArrays }}
   input:
     preparedFileInputArrays:
       type: file_input_arrays
-      value:
-        task_id: generate-manifests-and-process-next
-        output_id: fileInputArrays
+      value_from:
+        task_output:
+          task_id: generate-manifests-and-process-next
+          output_id: fileInputArrays
   depends_on:
   - id: generate-manifests-and-process-next
     can_fail: false
@@ -107,18 +116,22 @@ tasks:
   input:
     TAPIS_USERNAME:
       type: string
-      value: "${{ $TAPIS_USERNAME }}"
+      value_from:
+        env: TAPIS_USERNAME
     TAPIS_PASSWORD:
       type: string
-      value: "${{ $TAPIS_PASSWORD }}"
+      value_from:
+        env: TAPIS_PASSWORD
     TAPIS_SYSTEM_ID:
       type: string
       value: "some-system-id"
     TAPIS_BASE_URL:
       type: string
-      value: "${{ $PARAMS.base_url }}"
+      value_from:
+        params: base_url
     MANIFEST_FILE_PATH:
       type: string
-      value:
-        task_id: generate-manifests-and-process-next
-        output: manifestFilePath
+      value_from:
+        task_output:
+          task_id: generate-manifests-and-process-next
+          output_id: manifestFilePath

@@ -1,6 +1,6 @@
 import re
 
-from typing import AnyStr, List, Union, Dict, TypedDict, Literal
+from typing import AnyStr, List, Union, Dict, TypedDict, Literal, Optional
 from typing_extensions import Annotated
 from pydantic import BaseModel, validator, root_validator, Field
 
@@ -230,7 +230,6 @@ class TaskDependency(BaseModel):
 # Task I/O Types ---------------------------------------------------------
 
 TaskIOTypes = Union[
-    Literal["null"],
     Literal["string"],
     Literal["number"],
     Literal["boolean"],
@@ -242,23 +241,47 @@ TaskIOTypes = Union[
     Literal["tapis_file_input_array"]
 ]
 
+task_input_value_types = [
+    "string",
+    "number",
+    "boolean",
+    "string_array",
+    "number_array",
+    "boolean_array",
+    "mixed_array",
+    "tapis_file_input",
+    "tapis_file_input_array"
+]
+task_input_value_from_keys = ["env", "params", "task_output"]
+
 class TaskOutputRef(BaseModel):
     task_id: str
     output_id: str
 
+# Input -----------------------------------------------------------------
+
+TaskInputValueFromKey = Union[
+    Literal["env"],
+    Literal["params"],
+]
+
 class BaseInputValue(BaseModel):
     type: TaskIOTypes
-    value: Union[str, int, float, bytes, TaskOutputRef]
+    value: Union[str, int, float, bytes] = None
+    value_from: Union[
+        Dict[TaskInputValueFromKey, str],
+        Dict[Literal["task_output"], TaskOutputRef]
+    ] = None
+
+Input = Dict # TODO move validation logic to pydantic model
+
+# Output -----------------------------------------------------------------
 
 class BaseOutputValue(BaseModel):
     type: TaskIOTypes
     value: Union[str, int, float, bytes]
 
-class Input(BaseModel):
-    __root__: Dict[str, BaseInputValue]
-
-class Output(BaseModel):
-    __root__: Dict[str, BaseOutputValue]
+Output = Dict[str, BaseOutputValue]
 
 # ------------------------------------------------------------------------
 
@@ -292,10 +315,10 @@ class BaseTask(BaseModel):
     headers: dict = None
     http_method: str = None
     image: str = None
-    input: Input = None
+    input: Input = {}
     id: str
     _if: str = None
-    output: Output = None
+    output: Output = {}
     poll: bool = None
     query_params: str = None
     type: str
@@ -398,6 +421,10 @@ Task = Annotated[
     Field(discriminator="type")
 ]
 
+EnvValue = Union[str, int, float]
+
+Env = Dict[str, EnvValue]
+
 class BasePipeline(BaseModel):
     id: str
     type: str = "workflow"
@@ -406,6 +433,7 @@ class BasePipeline(BaseModel):
         max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
     cron: str = None
     archive_ids: List[str] = []
+    env: Env = {}
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)

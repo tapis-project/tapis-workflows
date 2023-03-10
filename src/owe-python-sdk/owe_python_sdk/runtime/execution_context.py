@@ -1,11 +1,17 @@
 import os, sys
 
-from owe_python_sdk.runtime.runtime import Runtime
+from owe_python_sdk.runtime.Runtime import Runtime
+from owe_python_sdk.constants import INPUT_PREFIX
 
 
 class ExecutionContext:
     def __init__(self, runtime: Runtime):
         self.runtime = runtime
+
+    def get_input(self, key, default=None):
+        input_var = os.environ.get(INPUT_PREFIX + key, default=default)
+
+        return input_var
 
     def set_output(self, _id, value):
         with open(os.path.join(self.runtime.output_dir, _id), "w") as file:

@@ -1,2 +1,3 @@
 STDOUT = ".stdout"
 STDERR = ".stderr"
+INPUT_PREFIX = "_OWE_WORKFLOW_INPUT_"

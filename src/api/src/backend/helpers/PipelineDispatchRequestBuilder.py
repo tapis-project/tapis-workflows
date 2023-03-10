@@ -32,16 +32,19 @@ class PipelineDispatchRequestBuilder:
         # Convert pipleline to a dict and build the request
         request = {}
 
-        # Populate the params for this request
-        request["params"] = {}
-        request["params"]["base_url"] = base_url
-
         request["group"] = model_to_dict(group)
         request["event"] = model_to_dict(event)
         request["pipeline"] = model_to_dict(pipeline)
         # TODO Implement model and request object.
         request["pipeline"]["tasks"] = tasks_request
         request["pipeline"]["archives"] = archives
+
+        # Populate the env for this request
+        request["env"] = request["pipeline"]["env"]
+
+        # Populate the params for this request
+        request["params"] = {}
+        request["params"]["base_url"] = base_url
 
         # Tell the workflow executors which backends and archivers to use.
         # Add the workflow executor access token to the request. This enables

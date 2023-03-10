@@ -1796,6 +1796,10 @@ components:
     # ------------------------------------------------------------------------------
     
     # --- Pipelines ---
+    Env:
+      type: object
+      additionalProperties: true
+        
 
     ExecutionProfile:
       type: object
@@ -1881,6 +1885,8 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/ID'
+        env:
+          $ref: "#/components/schemas/Env"
         group:
           type: string
           format: uuid
@@ -2362,6 +2368,8 @@ components:
             $ref: "#/components/schemas/ID"
         description:
           $ref: '#/components/schemas/DescriptionString'
+        env:
+          $ref: "#/components/schemas/Env"
         type:
           $ref: '#/components/schemas/EnumPipelineType'
         execution_profile:
@@ -2749,6 +2757,9 @@ components:
     ReqRunPipeline:
       type: object
       properties:
+        params:
+          type: object
+          additionalProperties: true
         directives:
           type: array
           items:
