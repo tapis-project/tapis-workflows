@@ -1,6 +1,6 @@
 import re
 
-from typing import AnyStr, List, Union, Dict, TypedDict, Literal
+from typing import AnyStr, List, Union, Dict, TypedDict, Literal, Optional
 from typing_extensions import Annotated
 from pydantic import BaseModel, validator, root_validator, Field
 
@@ -227,19 +227,63 @@ class TaskDependency(BaseModel):
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
 
-IOValueType = Union[AnyStr, Dict, List, bool]
+# Task I/O Types ---------------------------------------------------------
 
-class Input(BaseModel):
-    type: str
-    value: IOValueType
+TaskIOTypes = Union[
+    Literal["string"],
+    Literal["number"],
+    Literal["boolean"],
+    Literal["string_array"],
+    Literal["number_array"],
+    Literal["boolean_array"],
+    Literal["mixed_array"],
+    Literal["tapis_file_input"],
+    Literal["tapis_file_input_array"]
+]
 
-InputType = Dict[str, Input]
+task_input_value_types = [
+    "string",
+    "number",
+    "boolean",
+    "string_array",
+    "number_array",
+    "boolean_array",
+    "mixed_array",
+    "tapis_file_input",
+    "tapis_file_input_array"
+]
+task_input_value_from_keys = ["env", "params", "task_output"]
 
-class Output(BaseModel):
-    type: str
-    value: IOValueType
+class TaskOutputRef(BaseModel):
+    task_id: str
+    output_id: str
 
-OutputType = Dict[str, Output]
+# Input -----------------------------------------------------------------
+
+TaskInputValueFromKey = Union[
+    Literal["env"],
+    Literal["params"],
+]
+
+class BaseInputValue(BaseModel):
+    type: TaskIOTypes
+    value: Union[str, int, float, bytes] = None
+    value_from: Union[
+        Dict[TaskInputValueFromKey, str],
+        Dict[Literal["task_output"], TaskOutputRef]
+    ] = None
+
+Input = Dict # TODO move validation logic to pydantic model
+
+# Output -----------------------------------------------------------------
+
+class BaseOutputValue(BaseModel):
+    type: TaskIOTypes
+    value: Union[str, int, float, bytes]
+
+Output = Dict[str, BaseOutputValue]
+
+# ------------------------------------------------------------------------
 
 class HTTPBasicAuthCreds(BaseModel):
     username: str = None
@@ -271,9 +315,10 @@ class BaseTask(BaseModel):
     headers: dict = None
     http_method: str = None
     image: str = None
-    input: InputType = None
+    input: Input = {}
     id: str
-    output: OutputType = None
+    _if: str = None
+    output: Output = {}
     poll: bool = None
     query_params: str = None
     type: str
@@ -354,18 +399,31 @@ class RequestTask(BaseTask):
     http_method: str
     url: str
 
+class FunctionTask(BaseTask):
+    type: Literal["function"]
+    runtime: str
+    packages: List[str] = []
+    installer: str
+    code: str
+    command: str = None
+
 # Pipelines
 
 Task = Annotated[
     Union[
         ContainerRunTask,
         ImageBuildTask,
+        FunctionTask,
+        RequestTask,
         TapisActorTask,
         TapisJobTask,
-        RequestTask
     ],
     Field(discriminator="type")
 ]
+
+EnvValue = Union[str, int, float]
+
+Env = Dict[str, EnvValue]
 
 class BasePipeline(BaseModel):
     id: str
@@ -373,7 +431,9 @@ class BasePipeline(BaseModel):
     tasks: List[Task] = []
     execution_profile: ExecutionProfile = ExecutionProfile(
         max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
+    cron: str = None
     archive_ids: List[str] = []
+    env: Env = {}
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
@@ -395,6 +455,15 @@ class CIPipeline(BasePipeline):
     http_method: str = None
     query_params: dict = None
     url: str = None
+
+class TapisRemoteIOBox(BaseModel):
+    system_id: str
+    path: str
+
+class ETLPipeline(BasePipeline):
+    source: TapisRemoteIOBox
+    destination: TapisRemoteIOBox
+    jobs: List[object]
 
 # Pipeline runs and task executions
 class TaskExecution(BaseModel):

@@ -1,0 +1,62 @@
+{
+    "id": "use-file-refs",
+    "type": "function",
+    "poll": true,
+    "description": "creates outputs of references to files on a tapis system",
+    "installer": "pip",
+    "runtime": "python:3.9",
+    "packages": [
+        "tapipy==1.2.20"
+    ],
+    "input": {
+        "TAPIS_USERNAME": {
+            "type": "string",
+            "value_from": {
+                "task_output": {
+                    "task_id": "create-file-refs",
+                    "output_id": "username"
+                }
+            }
+        },
+        "TAPIS_PASSWORD": {
+            "type": "string",
+            "value_from": {
+                "task_output": {
+                    "task_id": "create-file-refs",
+                    "output_id": "password"
+                }
+            }
+        },
+        "TAPIS_SYSTEM_ID": {
+            "type": "string",
+            "value_from": {
+                "task_output": {
+                    "task_id": "create-file-refs",
+                    "output_id": "tapis_system_id"
+                }
+            }
+        },
+        "TAPIS_BASE_URL": {
+            "type": "string",
+            "value_from": {
+                "task_output": {
+                    "task_id": "create-file-refs",
+                    "output_id": "tapis_base_url"
+                }
+            }
+        },
+        "TAPIS_FILE_REF": {
+            "type": "string",
+            "value_from": {
+                "task_output": {
+                    "task_id": "create-file-refs",
+                    "output_id": "file0"
+                }
+            }
+        }
+    },
+    "code": "aW1wb3J0IGpzb24KCmZyb20gdGFwaXB5LnRhcGlzIGltcG9ydCBUYXBpcwpmcm9tIG93ZV9weXRob25fc2RrLnJ1bnRpbWUgaW1wb3J0IGV4ZWN1dGlvbl9jb250ZXh0IGFzIGN0eAoKc3lzdGVtX2lkID0gY3R4LmdldF9pbnB1dCgiVEFQSVNfU1lTVEVNX0lEIikKdXNlcm5hbWUgPSBjdHguZ2V0X2lucHV0KCJUQVBJU19VU0VSTkFNRSIpCnBhc3N3b3JkID0gY3R4LmdldF9pbnB1dCgiVEFQSVNfUEFTU1dPUkQiKQpiYXNlX3VybCA9IGN0eC5nZXRfaW5wdXQoIlRBUElTX0JBU0VfVVJMIikKZmlsZV9yZWYgPSBjdHguZ2V0X2lucHV0KCJUQVBJU19GSUxFX1JFRiIpCgp0cnk6CiAgICB0ID0gVGFwaXMoCiAgICAgICAgYmFzZV91cmw9YmFzZV91cmwsCiAgICAgICAgdXNlcm5hbWU9dXNlcm5hbWUsCiAgICAgICAgcGFzc3dvcmQ9cGFzc3dvcmQKICAgICkKCiAgICB0LmdldF90b2tlbnMoKQpleGNlcHQgRXhjZXB0aW9uIGFzIGU6CiAgICBjdHguc3RkZXJyKDEsIGUubWVzc2FnZSkKCmZpbGVfcmVmX29iaiA9IGpzb24ubG9hZHMoZmlsZV9yZWYpCgpjb250ZW50cyA9IHQuZmlsZXMuZ2V0Q29udGVudHMoc3lzdGVtSWQ9c3lzdGVtX2lkLCBwYXRoPWZpbGVfcmVmX29ialsicGF0aCJdKQoKY3R4LnNldF9vdXRwdXQoZiJjb250ZW50cyIsIGNvbnRlbnRzKQoKY3R4LnN0ZG91dCgiSGVsbG8gc3Rkb3V0IC0gdXNlIGZpbGUgcmVmcyIp",
+    "depends_on": [
+        {"id": "create-file-refs", "can_fail": false}
+    ]
+}

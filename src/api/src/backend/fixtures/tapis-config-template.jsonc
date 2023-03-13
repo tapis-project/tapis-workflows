@@ -1,0 +1,80 @@
+{
+    "tapisApiVersion": "1.3.0",
+    "name": "workflows-service",
+    "displayName": "Tapis Workflows",
+    "repo": "tapis-project/tapis-workflows",
+    "envs": {
+        "dev": {
+            "scripts": {
+                "burnup": "src/deploy/burnup",
+                "burndown": "src/deploy/burndown",
+                "delete-old-pipelines-pvc": "src/deploy/src/engine/delete-old-pipelines-pvc.sh"
+            },
+            "templateDirs": [
+                "src/api/src/deploy/dev",
+                "src/engine/src/deploy/dev",
+                "src/engine-streams/src/deploy/dev",
+                "src/nfs-server/src/deploy/dev",
+                "etc/etc"
+            ],
+            "vars": {
+                "workflows-api-image-tag": {
+                    "desc": "api image tag",
+                    "value": "dev"
+                },
+                "workflows-engine-image-tag": {
+                    "desc": "engine image tag",
+                    "value": "dev"
+                },
+                "etc": {"etc": "etc"}
+            }
+        },
+        "staging": {
+            "scripts": {
+                "burnup": "src/deploy/burnup",
+                "burndown": "src/deploy/burndown"
+            },
+            "templateDirs": [
+                "src/api/src/deploy/stage",
+                "src/engine/src/deploy/stage",
+                "src/engine-streams/src/deploy/stage",
+                "src/nfs-server/src/deploy/stage",
+                "etc/etc/stage"
+            ],
+            "vars": {
+                "workflows-api-image-tag": {
+                    "desc": "api image tag",
+                    "value": "stage"
+                },
+                "workflows-engine-image-tag": {
+                    "desc": "engine image tag",
+                    "value": "stage"
+                }
+            }
+            
+        },
+        "prod": {
+            "scripts": {
+                "burnup": "src/deploy/burnup",
+                "burndown": "src/deploy/burndown"
+            },
+            "templateDirs": [
+                "src/api/src/deploy/prod",
+                "src/engine/src/deploy/prod",
+                "src/engine-streams/src/deploy/prod",
+                "src/nfs-server/src/deploy/prod",
+                "etc/etc"
+            ],
+            "vars": {
+                "workflows-api-image-tag": {
+                    "desc": "api image tag",
+                    "value": "1.1.1" // Note that the service's image version is not coupled to tapis'
+                },
+                "workflows-engine-image-tag": {
+                    "desc": "api image tag",
+                    "value": "1.5.6" // Same as above
+                }
+            }
+        }
+    }
+}

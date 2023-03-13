@@ -7,6 +7,8 @@ import git
 from kubernetes.client import V1Container, V1EnvVar, V1ResourceRequirements
 
 from conf.constants import SINGULARITY_IMAGE_URL, SINGULARITY_IMAGE_TAG, FLAVOR_B1_XXLARGE
+from utils.k8s import get_k8s_resource_reqs
+
 
 
 class ContainerBuilder:
@@ -20,12 +22,7 @@ class ContainerBuilder:
             image=f"{SINGULARITY_IMAGE_URL}:{SINGULARITY_IMAGE_TAG}",
             command=command,
             volume_mounts=volume_mounts,
-            resources=V1ResourceRequirements(
-                requests={
-                    "memory": FLAVOR_B1_XXLARGE.memory,
-                    "cpu": FLAVOR_B1_XXLARGE.cpu
-                }
-            )
+            resources=get_k8s_resource_reqs(FLAVOR_B1_XXLARGE)
         )
 
         return container
@@ -37,7 +34,7 @@ class ContainerBuilder:
             cmd = [
                 "singularity",
                 "pull",
-                "--dir=/mnt/output/",
+                f"--dir={task.container_work_dir}/output",
             ]
 
             # Save to image.sif if no file name provided
@@ -73,7 +70,7 @@ class ContainerBuilder:
             # Recipe file path is the scratch dir + recipe file path specified
             # in the context
             recipe_file_path = os.path.join(
-                "/mnt/scratch/",
+                f"{task.container_work_dir}/scratch/",
                 task.context.recipe_file_path
             )
 
@@ -81,7 +78,7 @@ class ContainerBuilder:
             command = [
                 "singularity",
                 "build",
-                f"/mnt/output/{task.destination.filename or ''}",
+                f"{task.container_work_dir}/output/{task.destination.filename or ''}",
                 recipe_file_path
             ]
 

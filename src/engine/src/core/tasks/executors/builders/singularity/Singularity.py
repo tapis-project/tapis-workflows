@@ -8,11 +8,11 @@ from kubernetes.client import (
     V1Volume,
     V1PodSpec,
     V1PodTemplateSpec,
-    V1PersistentVolumeClaimVolumeSource,
+    V1NFSVolumeSource,
     V1ObjectMeta,
 )
 
-from conf.constants import KUBERNETES_NAMESPACE, PIPELINES_PVC
+from conf.constants import KUBERNETES_NAMESPACE, WORKFLOW_NFS_SERVER
 from core.resources import JobResource
 from core.tasks.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
@@ -58,7 +58,7 @@ class Singularity(BaseBuildExecutor):
                 _preload_content=False,
             ).data  # .decode("utf-8")
             # logging.debug(f"{logs}\n") # TODO Remove
-            self._store_result(".stdout", logs)
+            self._stdout(logs)
 
         except ApiException as e:
             logging.exception(e)
@@ -79,8 +79,7 @@ class Singularity(BaseBuildExecutor):
             # Volume mount for the workdir
             V1VolumeMount(
                 name="workdir",
-                mount_path="/mnt/",
-                sub_path=self.task.work_dir.replace("/mnt/pipelines/", "")
+                mount_path=self.task.container_work_dir
             )
         ]
 
@@ -96,10 +95,11 @@ class Singularity(BaseBuildExecutor):
             # Volume for mounting the output
             V1Volume(
                 name="workdir",
-                persistent_volume_claim=V1PersistentVolumeClaimVolumeSource(
-                    claim_name=PIPELINES_PVC
+                nfs=V1NFSVolumeSource(
+                    server=WORKFLOW_NFS_SERVER,
+                    path=self.task.work_dir
                 ),
-            )
+            ),
         ]
 
         # Pod template and pod template spec

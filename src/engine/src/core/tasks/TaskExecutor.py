@@ -21,7 +21,11 @@ class TaskExecutor(EventPublisher):
         
         self.ctx = ctx
         self.task = task
+        # The workdir for the task inside of the container
+        self.task.container_work_dir = "/mnt/open-workflow-engine/pipeline/task"
         self.pipeline = self.ctx.pipeline
+        # The cache dir for the pipeline inside of the container
+        self.pipeline.container_cache_dir = "/mnt/open-workflow-engine/pipeline/cache"
         self.group = self.ctx.group
         self.event = self.ctx.event
         self.directives = self.ctx.directives
@@ -64,9 +68,15 @@ class TaskExecutor(EventPublisher):
     def _register_resource(self, resource: Resource):
         self._resources.append(resource)
 
-    def _store_result(self, filename, value, flag="wb"):
+    def _set_output(self, filename, value, flag="wb"):
         with open(f"{self.task.output_dir}{filename.lstrip('/')}", flag) as file:
             file.write(value)
+    
+    def _stdout(self, value, flag="wb"):
+        self._set_output(".stdout", value, flag=flag)
+
+    def _stderr(self, value, flag="wb"):
+        self._set_output(".stderr", value, flag=flag)
 
     def _initialize_fs(self):
         # Create the base directory for all files and output created during this task execution

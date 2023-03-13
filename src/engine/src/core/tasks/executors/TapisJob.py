@@ -20,7 +20,7 @@ class TapisJob(TaskExecutor):
             job_def = json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: s.__dict__))
 
             # Add timestamp on job name to ensure unique name on submit
-            job_def["name"] += time.time()
+            job_def["name"] += str(time.time())
 
             # Submit the job
             job = service_client.jobs.submitJob(
@@ -54,5 +54,5 @@ class TapisJob(TaskExecutor):
             return TaskResult(0, output={"jobUuid": job.uuid, "status": job_status})
 
         except Exception as e:
-            self.ctx.logger.error(f"ERROR IN TAPIS ACTOR: {str(e)}")
+            self.ctx.logger.error(f"ERROR IN TAPIS JOB: {str(e)}")
             return TaskResult(1, errors=[str(e)])
