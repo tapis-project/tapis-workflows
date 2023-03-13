@@ -114,8 +114,8 @@ class RestrictedAPIView(View):
             request_object = request_schema(**self.request_body)
         except ValidationError as e:
             # NOTE : {'.'.join(error['loc'])} <-- Causes errors
-            errors = [ f"{str(error['type'])}. {str(error['msg'])}" for error in json.loads(e.json())]
-            failure_view = BadRequest(message="\n".join(errors))
+            # errors = [ f"{str(error['type'])}. {str(error['msg'])}" for error in json.loads(e.json())]
+            failure_view = BadRequest(message=str(e))
 
             self.prepared_request = PreparedRequest(is_valid=False, failure_view=failure_view)
 
