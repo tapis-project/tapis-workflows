@@ -198,8 +198,7 @@ class Function(TaskExecutor):
         # the open workflow engine input prefix
         env = env + input_to_k8s_env_vars(
             self.task.input,
-            self.ctx.env,
-            self.ctx.params,
+            self.ctx,
             prefix="_OWE_WORKFLOW_INPUT_"
         )
 

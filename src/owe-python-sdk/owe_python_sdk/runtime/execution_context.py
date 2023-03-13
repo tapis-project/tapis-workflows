@@ -13,8 +13,14 @@ class ExecutionContext:
 
         return input_var
 
-    def set_output(self, _id, value):
-        with open(os.path.join(self.runtime.output_dir, _id), "w") as file:
+    def set_output(self, _id, value, encoding=None):
+        flag = "wb"
+        # If no encoding specified, save the value as text
+        if encoding == None:
+            flag = "w"
+            value = str(value)
+
+        with open(os.path.join(self.runtime.output_dir, _id), flag, encoding=encoding) as file:
             file.write(value)
 
     def stderr(self, code: int, message):
