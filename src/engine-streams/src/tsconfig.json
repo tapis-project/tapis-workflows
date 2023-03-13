@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "es2015",
+    "outDir": "./dist/src",
+    "strict": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "typeRoots": ["node_modules/@types", "node_modules/@tapis/tapis-typescript/types"],
+    "moduleResolution": "node"
+  },
+  "exclude": ["dist", "node_modules"]
+}

@@ -1,0 +1,1 @@
+export { default as withHasPipelinePerms } from "./withHasPipelinePerms.js"

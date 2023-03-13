@@ -1,0 +1,12 @@
+{
+    "id": "fn-share-outputs",
+    "type": "workflow",
+    "archive_ids": [],
+    "tasks": [],
+    "env": {
+        "TAPIS_SYSTEM_ID": "tapisv3-exec",
+        "MANIFEST_FILES_PATH": "/",
+        "TAPIS_USERNAME": "testuser2",
+        "TAPIS_PASSWORD": "testuser2"
+    }
+}

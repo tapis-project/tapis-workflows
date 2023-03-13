@@ -1,9 +1,0 @@
-#!/bin/bash
-
-here=$(dirname $0)
-
-kubectl apply -f "$here/clusterroles.yml"
-kubectl apply -f "$here/crb.yml"
-kubectl apply -f "$here/service.yml"
-kubectl apply -f "$here/pvc.yml"
-kubectl apply -f "$here/deployment.yml"

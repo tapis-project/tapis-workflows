@@ -97,6 +97,8 @@ class Tasks(RestrictedAPIView):
             task = task_service.create(pipeline, body)
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
+        except Exception as e:
+            return ServerError(f"{e}")
 
         return ResourceURLResponse(
             url=resource_url_builder(request.url, task.id))
