@@ -305,6 +305,8 @@ class BaseTask(BaseModel):
     builder: str = None
     cache: bool = None
     context: Context = None
+    code: str = None
+    command: str = None
     data: dict = None
     description: str = None
     destination: Union[
@@ -315,15 +317,18 @@ class BaseTask(BaseModel):
     headers: dict = None
     http_method: str = None
     image: str = None
+    installer: str = None
     input: Input = {}
     id: str
     _if: str = None
     output: Output = {}
+    packages: List[str] = None
     poll: bool = None
     query_params: str = None
     type: str
     depends_on: List[TaskDependency] = []
     retries: int = 0
+    runtime: str = None
     tapis_actor_id: str = None
     tapis_actor_message: Union[str, dict] = None
     tapis_job_def: dict = None

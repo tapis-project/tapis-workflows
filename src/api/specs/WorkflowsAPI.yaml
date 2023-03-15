@@ -2052,11 +2052,7 @@ components:
               type: string
             tapis_actor_message:
               nullable: true
-              oneOf:
-                - type: string
-                - type: object
-                - type: array
-                  items: {}
+              type: string
                   
     FunctionTask:
       allOf:
@@ -2493,11 +2489,7 @@ components:
               type: string
             tapis_actor_message:
               nullable: true
-              oneOf:
-                - type: string
-                - type: object
-                - type: array
-                  items: {}
+              type: string
                     
     
     ReqFunctionTask:
@@ -3161,8 +3153,3 @@ components:
       type: string
       enum:
         - python:3.9
-
-
-
-
-    
