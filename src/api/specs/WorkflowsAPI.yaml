@@ -2493,9 +2493,18 @@ components:
         - type: object
           required:
             - runtime
+            - installer
+            - code
           properties:
             runtime:
               $ref: "#/components/schemas/EnumRuntimeEnvironment"
+            installer:
+              $ref: "#/components/schemas/EnumInstaller"
+            command:
+              type: string
+            code:
+              type: string
+              format: byte
 
     ReqTask:
       oneOf:
@@ -3126,11 +3135,13 @@ components:
       enum:
         - github
         - dockerhub
-
+    
     EnumRuntimeEnvironment:
       type: string
       enum:
-        - python3.9
-        - python2.7
-        - node20
-        - java17
+        - python:3.9
+
+    EnumInstaller:
+      type: string
+      enum:
+        - pip
