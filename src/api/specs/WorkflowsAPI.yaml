@@ -1982,8 +1982,10 @@ components:
           $ref: '#/components/schemas/ExecutionProfile'
         input:
           type: object
+          additionalProperties: true
         output:
           type: object
+          additionalProperties: true
 
     ImageBuildTask:
       allOf:
@@ -2040,7 +2042,7 @@ components:
 
     TapisActorTask:
       allOf:
-        - $ref: '#/components/schemas/ReqBaseTask'
+        - $ref: '#/components/schemas/BaseTask'
         - type: object
           properties:
             poll:
@@ -2056,15 +2058,24 @@ components:
                 - type: array
                   items: {}
                   
-
-
     FunctionTask:
       allOf:
-        - $ref: '#/components/schemas/ReqBaseTask'
+        - $ref: '#/components/schemas/BaseTask'
         - type: object
           properties:
             runtime:
               $ref: "#/components/schemas/EnumRuntimeEnvironment"
+            installer:
+              $ref: "#/components/schemas/EnumInstaller"
+            command:
+              type: string
+            code:
+              type: string
+              format: byte
+            packages:
+              type: array
+              items:
+                type: string
 
     # --- Task Dependency ---
     TaskDependency:
@@ -2399,8 +2410,10 @@ components:
           $ref: "#/components/schemas/ExecutionProfile"
         input:
           type: object
+          additionalProperties: true
         output:
           type: object
+          additionalProperties: true
 
     ReqImageBuildTask:
       allOf:
@@ -2505,6 +2518,10 @@ components:
             code:
               type: string
               format: byte
+            packages:
+              type: array
+              items:
+                type: string
 
     ReqTask:
       oneOf:
@@ -2893,14 +2910,6 @@ components:
               items:
                 $ref: '#/components/schemas/GroupUser'
 
-    # RespGroup:
-    #   allOf:
-    #     - $ref: '#/components/schemas/RespObject'
-    #     - type: object
-    #       properties:
-    #         result:
-    #           $ref: '#/components/schemas/Group'
-
     RespGroupList:
       allOf:
         - $ref: '#/components/schemas/RespList'
@@ -3136,12 +3145,24 @@ components:
         - github
         - dockerhub
     
-    EnumRuntimeEnvironment:
+    EnumInputType:
       type: string
       enum:
-        - python:3.9
+        - string
+        - int
+        - float
 
     EnumInstaller:
       type: string
       enum:
         - pip
+
+    EnumRuntimeEnvironment:
+      type: string
+      enum:
+        - python:3.9
+
+
+
+
+    
