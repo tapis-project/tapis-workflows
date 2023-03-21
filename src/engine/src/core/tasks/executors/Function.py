@@ -164,7 +164,7 @@ class Function(TaskExecutor):
         # Entrypoint file
         entrypoint_py = os.path.join(self.task.container_work_dir, "scratch", entrypoint_filename)
         
-        # Install output file
+        # The output file for the install logs
         dot_install = os.path.join(self.task.container_work_dir, "output", ".install")
 
         # .stderr

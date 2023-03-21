@@ -426,9 +426,19 @@ Task = Annotated[
     Field(discriminator="type")
 ]
 
-EnvValue = Union[str, int, float]
+EnvVarValue = Union[str, int, float]
 
-Env = Dict[str, EnvValue]
+EnvVarValueLiteral = Dict[
+    Literal["value"],
+    EnvVarValue
+]
+
+EnvVarValueFrom = Dict[
+    Literal["value_from"],
+    Dict[str, EnvVarValue]
+]
+
+Env = Dict[str, Union[EnvVarValue, EnvVarValueFrom]]
 
 class BasePipeline(BaseModel):
     id: str
