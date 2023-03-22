@@ -428,17 +428,44 @@ Task = Annotated[
 
 EnvVarValue = Union[str, int, float]
 
-EnvVarValueLiteral = Dict[
-    Literal["value"],
-    EnvVarValue
-]
+class EnvVar(BaseModel):
+    type: Union[
+        Literal["string"],
+        Literal["number"],
+        Literal["boolean"]
+    ]
+    value: Union[str, int, float, bool] = None
+    value_from: Dict[str, str] = None
 
-EnvVarValueFrom = Dict[
-    Literal["value_from"],
-    Dict[str, EnvVarValue]
-]
+    @root_validator(pre=True)
+    def value_or_value_from(cls, values):
+        # Either 'value' or 'value_from' must be set on every env variable
+        if (
+            values.get("value", None) == None
+            and values.get("value_from", None) == None
+        ):
+            raise ValueError(
+                "Missing 'value' or 'value_from' property in EnvVar")
 
-Env = Dict[str, Union[EnvVarValue, EnvVarValueFrom]]
+        return values
+
+    @validator("value", pre=True)
+    def value_type_validation(cls, value):
+        if type(value) not in [str, bool, int, float]:
+            raise TypeError("EnvVar values must be a string, number, or boolean'")
+
+        return value
+
+    @validator("value_from", pre=True)
+    def value_from_type_validation(cls, value):
+        is_dict = type(value) == dict
+        is_valid = len([k for k in value if (type(k) == str and type(value[k]) == str)]) < 1
+        if (not is_dict or (is_dict and is_valid)):
+            raise TypeError(
+                "The value of an EnvVar's 'value_from' property must be a single key-value pair where both the key and the value are non-empty strings")
+        return value
+
+Env = Dict[str, EnvVar]
 
 class BasePipeline(BaseModel):
     id: str
