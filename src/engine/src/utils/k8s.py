@@ -51,7 +51,11 @@ def input_to_k8s_env_vars(_inputs, ctx, prefix=""):
         k8s_env_var_value = None
         if hasattr(value_from, "env"):
             k8s_env_var_value_source = "env"
-            k8s_env_var_value = getattr(ctx.env, value_from.env, None)
+            env_var_key = value_from.env
+            env_var = getattr(ctx.env, env_var_key, None)
+            if env_var == None:
+                raise Exception(f"Environment variable '{env_var_key}' does not exist.")
+            k8s_env_var_value = getattr(env_var, "value", None)
         elif hasattr(value_from, "params"):
             k8s_env_var_value_source = "params"
             k8s_env_var_value = getattr(ctx.params, value_from.params, None)
