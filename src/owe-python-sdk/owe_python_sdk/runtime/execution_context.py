@@ -1,6 +1,6 @@
 import os, sys
 
-from owe_python_sdk.runtime.Runtime import Runtime
+from owe_python_sdk.runtime.runtime.Runtime import Runtime
 from owe_python_sdk.constants import INPUT_PREFIX
 
 
