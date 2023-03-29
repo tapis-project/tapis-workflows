@@ -1,11 +1,11 @@
 import logging
 
+from contrib.tapis.executors.TapisJob import TapisJob
+from contrib.tapis.executors.TapisActor import TapisActor
 from core.tasks.BuildTaskExecutorResolver import build_task_executor_resolver
 from core.tasks.TaskExecutor import TaskExecutor
 from core.events import EventExchange
 from core.tasks.executors.requesters.HTTP import HTTP
-from core.tasks.executors.TapisJob import TapisJob
-from core.tasks.executors.TapisActor import TapisActor
 from core.tasks.executors.Function import Function
 from errors.tasks import InvalidTaskTypeError
 
@@ -34,8 +34,11 @@ class TaskExecutorFactory:
         return HTTP(task, ctx, exchange)
 
     def _container_run(self, task, ctx, exchange) -> TaskExecutor:
-        return HTTP(task, ctx, exchange)
+        return self._application(task, ctx, exchange)
     
+    def _application(self, task, ctx, exchange) -> TaskExecutor:
+        return HTTP(task, ctx, exchange)
+
     def _function(self, task, ctx, exchange) -> TaskExecutor:
         return Function(task, ctx, exchange)
 

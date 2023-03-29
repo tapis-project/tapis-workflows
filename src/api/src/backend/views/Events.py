@@ -82,7 +82,8 @@ class Events(RestrictedAPIView):
             group,
             pipeline,
             event,
-            directives=body.directives
+            directives=body.directives,
+            params=body.params
         )
 
         # Dispatch the request

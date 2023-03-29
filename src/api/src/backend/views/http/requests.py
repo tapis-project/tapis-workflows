@@ -36,7 +36,49 @@ def validate_ctx_dest_url(value):
         raise ValueError("`url` must follow the format:  `<username>/<name>`")
 
     return value
-##################
+
+################## Common ####################
+String = Literal["string"]
+Number = Literal["number"]
+Boolean = Literal["boolean"]
+
+class Value(BaseModel):
+    type: Union[String, Number, Boolean] = String
+    value: Union[str, int, float, bool] = None
+    value_from: Dict[str, str] = None
+
+    @root_validator(pre=True)
+    def value_or_value_from(cls, values):
+        # Either 'value' or 'value_from' must be set on every variable
+        if (
+            values.get("value", None) == None
+            and values.get("value_from", None) == None
+        ):
+            raise ValueError(
+                "Missing 'value' or 'value_from' property in variable values")
+
+        return values
+
+    @validator("value", pre=True)
+    def value_type_validation(cls, value):
+        if type(value) not in [str, bool, int, float]:
+            raise TypeError("Variable values must be a string, number, or boolean'")
+
+        return value
+
+    @validator("value_from", pre=True)
+    def value_from_type_validation(cls, value):
+        is_dict = type(value) == dict
+        is_valid = len([k for k in value if (type(k) == str and type(value[k]) == str)]) < 1
+        if (not is_dict or (is_dict and is_valid)):
+            raise TypeError(
+                "The value of an Variable's 'value_from' property must be a single key-value pair where both the key and the value are non-empty strings")
+        return value
+
+Key = str
+
+KeyVal = Dict[Key, Value]
+################## /Common ###################
 
 class S3Credentials(TypedDict):
     access_key: str
@@ -192,6 +234,7 @@ class BaseEvent(BaseModel):
     username: str = None
 
 class APIEvent(BaseEvent):
+    params: KeyVal = {}
     directives: List[str] = None
 
 class WebhookEvent(BaseEvent):
@@ -426,47 +469,6 @@ Task = Annotated[
     Field(discriminator="type")
 ]
 
-EnvVarValue = Union[str, int, float]
-
-class EnvVar(BaseModel):
-    type: Union[
-        Literal["string"],
-        Literal["number"],
-        Literal["boolean"]
-    ]
-    value: Union[str, int, float, bool] = None
-    value_from: Dict[str, str] = None
-
-    @root_validator(pre=True)
-    def value_or_value_from(cls, values):
-        # Either 'value' or 'value_from' must be set on every env variable
-        if (
-            values.get("value", None) == None
-            and values.get("value_from", None) == None
-        ):
-            raise ValueError(
-                "Missing 'value' or 'value_from' property in EnvVar")
-
-        return values
-
-    @validator("value", pre=True)
-    def value_type_validation(cls, value):
-        if type(value) not in [str, bool, int, float]:
-            raise TypeError("EnvVar values must be a string, number, or boolean'")
-
-        return value
-
-    @validator("value_from", pre=True)
-    def value_from_type_validation(cls, value):
-        is_dict = type(value) == dict
-        is_valid = len([k for k in value if (type(k) == str and type(value[k]) == str)]) < 1
-        if (not is_dict or (is_dict and is_valid)):
-            raise TypeError(
-                "The value of an EnvVar's 'value_from' property must be a single key-value pair where both the key and the value are non-empty strings")
-        return value
-
-Env = Dict[str, EnvVar]
-
 class BasePipeline(BaseModel):
     id: str
     type: str = "workflow"
@@ -475,7 +477,7 @@ class BasePipeline(BaseModel):
         max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
     cron: str = None
     archive_ids: List[str] = []
-    env: Env = {}
+    env: KeyVal = {}
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)

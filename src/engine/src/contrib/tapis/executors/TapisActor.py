@@ -1,10 +1,10 @@
 import time
 
-from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
+from contrib.tapis.helpers import TapisServiceAPIGateway
+from contrib.tapis.constants import TAPIS_ACTOR_POLLING_FREQUENCY
 
 from core.tasks.TaskResult import TaskResult
 from core.tasks.TaskExecutor import TaskExecutor
-from conf.constants import TAPIS_ACTOR_POLLING_FREQUENCY
 
 
 class TapisActor(TaskExecutor):
@@ -23,8 +23,8 @@ class TapisActor(TaskExecutor):
                 # message=self.task.tapis_actor_message or "", # Send empty message
                 message="This is a word count test",
                 _tapis_set_x_headers_from_service=True,
-                _x_tapis_tenant=self.ctx.group.tenant_id,
-                _x_tapis_user=self.ctx.pipeline.owner
+                _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
+                _x_tapis_user=self.ctx.params.tapis_pipeline_owner
             )
             
             # End the task successfully with empty output
@@ -72,8 +72,8 @@ class TapisActor(TaskExecutor):
         logs = self.service_client.actors.get_execution_logs(
             actor_id=execution.actor_id,
             execution_id=execution.id,
-            _x_tapis_tenant=self.ctx.group.tenant_id,
-            _x_tapis_user=self.ctx.pipeline.owner
+            _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
+            _x_tapis_user=self.ctx.params.tapis_pipeline_owner
         ).logs
 
         self._set_output(f"actors/{execution.actor_id}/.stdout", logs)
@@ -81,8 +81,8 @@ class TapisActor(TaskExecutor):
         execution_result = self.service_client.actors.get_execution_result(
             actor_id=execution.actor_id,
             execution_id=execution.id,
-            _x_tapis_tenant=self.ctx.group.tenant_id,
-            _x_tapis_user=self.ctx.pipeline.owner
+            _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
+            _x_tapis_user=self.ctx.params.tapis_pipeline_owner
         )
 
         self._set_output(f"actors/{execution.actor_id}/.result", execution_result)
@@ -96,8 +96,8 @@ class TapisActor(TaskExecutor):
         return self.service_client.actors.get_execution(
             actor_id=actor_id,
             execution_id=execution_id,
-            _x_tapis_tenant=self.ctx.group.tenant_id,
-            _x_tapis_user=self.ctx.pipeline.owner
+            _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
+            _x_tapis_user=self.ctx.params.tapis_pipeline_owner
         )
 
     def _set_output(self, filename, value, flag="wb"):

@@ -9,7 +9,16 @@ class PipelineDispatchRequestBuilder:
     def __init__(self, secret_service):
         self.secret_service = secret_service
 
-    def build(self, base_url, group, pipeline, event, commit=None, directives=None):
+    def build(
+        self,
+        base_url,
+        group,
+        pipeline,
+        event,
+        commit=None,
+        directives=None,
+        params={}
+    ):
         # Get the pipeline tasks, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
         tasks = pipeline.tasks.all()
@@ -33,7 +42,6 @@ class PipelineDispatchRequestBuilder:
         request = {}
 
         request["group"] = model_to_dict(group)
-        request["event"] = model_to_dict(event)
         request["pipeline"] = model_to_dict(pipeline)
         # TODO Implement model and request object.
         request["pipeline"]["tasks"] = tasks_request
@@ -43,22 +51,26 @@ class PipelineDispatchRequestBuilder:
         request["env"] = request["pipeline"]["env"]
 
         # Populate the params for this request
-        request["params"] = {}
-        request["params"]["base_url"] = base_url
-
-        # Tell the workflow executors which backends and archivers to use.
-        # Add the workflow executor access token to the request. This enables
-        # the workflow executor to make calls to special endpoints on the API.
-        request["middleware"] = {
-            "backends": {
-                "tapisworkflowsapi": {
-                    "access_token": WORKFLOW_EXECUTOR_ACCESS_TOKEN
-                }
-            },
-            "archivers": {
-                "tapissystem": {}
-            }
+        request["params"] = {
+            "workflow_executor_access_token": WORKFLOW_EXECUTOR_ACCESS_TOKEN,
+            "tapis_tenant_id": request["group"]["tenant_id"],
+            "tapis_pipeline_owner": request["pipeline"]["owner"],
+            **params
         }
+
+        # # Tell the workflow executors which backends and archivers to use.
+        # # Add the workflow executor access token to the request. This enables
+        # # the workflow executor to make calls to special endpoints on the API.
+        # request["middleware"] = {
+        #     "backends": {
+        #         "tapisworkflowsapi": {
+        #             "access_token": WORKFLOW_EXECUTOR_ACCESS_TOKEN
+        #         }
+        #     },
+        #     "archivers": {
+        #         "tapissystem": {}
+        #     }
+        # }
 
         request["meta"] = {}
         # Properties to help uniquely identity a pipeline submission. If the workflow
@@ -68,9 +80,12 @@ class PipelineDispatchRequestBuilder:
         # pipeline.duplicate_submission_policy (allow, allow_terminate, deny)
         request["meta"]["idempotency_key"] = [
             "group.id",
-            "group.tenant_id",
+            "params.tapis_tenant_id",
             "pipeline.id"
         ]
+
+        request["meta"]["origin"] = base_url, # Origin of the request
+        request["meta"]["event"] = model_to_dict(event)
 
         request["pipeline_run"] = {}
         

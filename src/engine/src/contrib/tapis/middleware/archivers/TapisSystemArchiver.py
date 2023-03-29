@@ -3,7 +3,7 @@ import os, logging
 from tapipy.tapis import Tapis
 from tapipy.errors import InvalidInputError  
 
-from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
+from contrib.tapis.helpers import TapisServiceAPIGateway
 from conf.constants import BASE_WORK_DIR
 from errors.archives import ArchiveError
 from core.events import Event, EventHandler
@@ -20,6 +20,7 @@ class TapisSystemArchiver(EventHandler):
                     event.payload.archive,
                     event.payload.pipeline,
                     event.payload.group,
+                    event.payload.params,
                     event.payload.logger
                 )
             except ArchiveError as e:
@@ -32,7 +33,7 @@ class TapisSystemArchiver(EventHandler):
             event.payload.logger.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING COMPLETED] {trunc_uuid(event.payload.pipeline.run_id)}")
         
 
-    def archive(self, archive, pipeline, group, logger):
+    def archive(self, archive, pipeline, group, params, logger):
         try:
             tapis_service_api_gateway = TapisServiceAPIGateway()
             service_client = tapis_service_api_gateway.get_client()
@@ -40,7 +41,7 @@ class TapisSystemArchiver(EventHandler):
             perms = service_client.systems.getUserPerms(
                 systemId=archive.system_id,
                 userName=archive.owner,
-                _x_tapis_tenant=group.tenant_id,
+                _x_tapis_tenant=group.params.tapis_tenant_id,
                 _x_tapis_user=archive.owner
             )
         except InvalidInputError as e:
@@ -69,7 +70,7 @@ class TapisSystemArchiver(EventHandler):
                 service_client.files.mkdir(
                     systemId=archive.system_id,
                     path=archive_output_dir,
-                    _x_tapis_tenant=group.tenant_id,
+                    _x_tapis_tenant=params.tapis_tenant_id,
                     _x_tapis_user=archive.owner
                 )
             except Exception as e:
@@ -90,10 +91,10 @@ class TapisSystemArchiver(EventHandler):
                             system_id=archive.system_id,
                             source_file_path=path_to_file,
                             dest_file_path=os.path.join(archive_output_dir, filename),
-                            # _x_tapis_tenant=group.tenant_id,
+                            # _x_tapis_tenant=params.tapis_tenant_id,
                             # _x_tapis_user=archive.owner,
                             headers={
-                                "X-Tapis-Tenant": group.tenant_id,
+                                "X-Tapis-Tenant": params.tapis_tenant_id,
                                 "X-Tapis-User": archive.owner,
                                 "X-Tapis-Token": service_client.service_tokens["admin"]["access_token"].access_token
                             }

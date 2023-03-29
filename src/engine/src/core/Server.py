@@ -21,9 +21,11 @@ from conf.constants import (
     INBOUND_EXCHANGE,
     RETRY_EXCHANGE,
     DEAD_LETTER_EXCHANGE,
+    DEFERRED_EXCHANGE,
     INBOUND_QUEUE,
     RETRY_QUEUE,
     DEAD_LETTER_QUEUE,
+    DEFERRED_QUEUE,
     DUPLICATE_SUBMISSION_POLICY_TERMINATE,
     DUPLICATE_SUBMISSION_POLICY_DENY,
 )
@@ -69,6 +71,13 @@ class Server:
         channel.exchange_declare(INBOUND_EXCHANGE, exchange_type=ExchangeType.fanout)
         inbound_queue = channel.queue_declare(queue=INBOUND_QUEUE, exclusive=True)
         channel.queue_bind(exchange=INBOUND_EXCHANGE, queue=inbound_queue.method.queue)
+
+        # TODO Future implementation
+        # Deferred exchange and queue stores workflow submissions that await execution
+        # of workflows with the same idempotency key
+        channel.exchange_declare(DEFERRED_EXCHANGE, exchange_type=ExchangeType.fanout)
+        deferred_queue = channel.queue_declare(queue=DEFERRED_QUEUE, exclusive=True)
+        channel.queue_bind(exchange=DEFERRED_EXCHANGE, queue=deferred_queue.method.queue)
         
         # TODO Future Implementation
         # Retry exchange and queue is a temporary hold for messages that havent been
@@ -306,10 +315,12 @@ class Server:
         # Check the context's meta for an idempotency key. This will be used
         # to identify duplicate workflow submissions and handle them according
         # to their duplicate submission policy.
-        #
-        # Defaults to the pipeline run uuid
+
+        # Defaults to the pipeline id
+        default_idempotency_key = ctx.pipeline.id
+
         if len(ctx.meta.idempotency_key) == 0:
-            return ctx.pipeline_run.uuid
+            return default_idempotency_key
 
         try:
             idempotency_key = ""
@@ -320,7 +331,8 @@ class Server:
 
             return idempotency_key
         except (AttributeError, TypeError):
-            return ctx.pipeline_run.uuid
+            logger.info(f"{lbuf('[SERVER]')} ERROR: Failed to resolve idempotency key from provided constraints. Defaulted to pipeline id '{default_idempotency_key}'")
+            return default_idempotency_key
 
             
 

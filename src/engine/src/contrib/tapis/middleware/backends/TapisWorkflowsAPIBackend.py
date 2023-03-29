@@ -1,4 +1,4 @@
-from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
+from contrib.tapis.helpers import TapisServiceAPIGateway
 
 from core.events import Event, EventHandler
 from core.events.types import (
@@ -13,7 +13,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
     def __init__(self, ctx):
         # Set the access token
         access_token = getattr(
-            ctx.middleware.backends.tapisworkflowsapi, "access_token", None)
+            ctx.params, "workflow_executor_access_token", None)
 
         # Access token is required. If its missing, raise an exception
         if access_token == None:
@@ -45,8 +45,8 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
         self._kwargs = {
             "_tapis_set_x_headers_from_service": True,
-            "_x_tapis_tenant": ctx.group.tenant_id,
-            "_x_tapis_user": ctx.pipeline.owner,
+            "_x_tapis_tenant": ctx.params.tapis_tenant_id,
+            "_x_tapis_user": ctx.params.tapis_pipeline_owner,
             "_tapis_headers": {
                 "X-WORKFLOW-EXECUTOR-TOKEN": access_token
             }
