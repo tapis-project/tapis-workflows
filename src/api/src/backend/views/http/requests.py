@@ -1,5 +1,6 @@
 import re
 
+from enum import Enum
 from typing import AnyStr, List, Union, Dict, TypedDict, Literal, Optional
 from typing_extensions import Annotated
 from pydantic import BaseModel, validator, root_validator, Field
@@ -38,12 +39,13 @@ def validate_ctx_dest_url(value):
     return value
 
 ################## Common ####################
-String = Literal["string"]
-Number = Literal["number"]
-Boolean = Literal["boolean"]
+class EnumValueType(str, Enum):
+    String = "string"
+    Number = "number"
+    Boolean = "boolean"
 
 class Value(BaseModel):
-    type: Union[String, Number, Boolean] = String
+    type: EnumValueType = EnumValueType.String
     value: Union[str, int, float, bool] = None
     value_from: Dict[str, str] = None
 

@@ -315,7 +315,7 @@ class Server:
         # Check the context's meta for an idempotency key. This will be used
         # to identify duplicate workflow submissions and handle them according
         # to their duplicate submission policy.
-
+        
         # Defaults to the pipeline id
         default_idempotency_key = ctx.pipeline.id
 

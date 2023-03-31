@@ -50,12 +50,16 @@ class PipelineDispatchRequestBuilder:
         # Populate the env for this request
         request["env"] = request["pipeline"]["env"]
 
+        req_params = {}
+        for key in params:
+            req_params[key] = params[key].value
+
         # Populate the params for this request
         request["params"] = {
             "workflow_executor_access_token": WORKFLOW_EXECUTOR_ACCESS_TOKEN,
             "tapis_tenant_id": request["group"]["tenant_id"],
             "tapis_pipeline_owner": request["pipeline"]["owner"],
-            **params
+            **req_params
         }
 
         # # Tell the workflow executors which backends and archivers to use.
