@@ -79,7 +79,11 @@ class Value(BaseModel):
 
 Key = str
 
+class ValueWithRequirements(Value):
+    required: bool = False
+
 KeyVal = Dict[Key, Value]
+Params  = Dict[Key, ValueWithRequirements]
 ################## /Common ###################
 
 class S3Credentials(TypedDict):
@@ -338,7 +342,18 @@ class Auth(BaseModel):
     type: str = "http_basic_auth"
     creds: HTTPBasicAuthCreds
 
+class EnumTaskFlavor(str, Enum):
+    C1_SML = "c1sml"
+    C1_MED = "c1med"
+    C1_LRG = "c1lrg"
+    C1_XLRG = "c1xlrg"
+    C1_XXLRG = "c1xxlrg"
+    G1_NVD_SML = "g1nvdsml"
+    G1_NVD_MED = "g1nvdmed"
+    G1_NVD_LRG = "g1nvdlrg"
+
 class ExecutionProfile(BaseModel):
+    flavor: EnumTaskFlavor = None
     max_exec_time: int = DEFAULT_MAX_EXEC_TIME
     invocation_mode: str = DEFAULT_TASK_INVOCATION_MODE
     retry_policy: str = DEFAULT_RETRY_POLICY
@@ -480,6 +495,7 @@ class BasePipeline(BaseModel):
     cron: str = None
     archive_ids: List[str] = []
     env: KeyVal = {}
+    params: Params = {}
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)

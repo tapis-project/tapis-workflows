@@ -6,14 +6,13 @@ from conf.constants import (
     KUBERNETES_NAMESPACE,
     WORKFLOW_NFS_SERVER,
     KANIKO_IMAGE_URL,
-    KANIKO_IMAGE_TAG,
-    FLAVOR_B1_XXLARGE
+    KANIKO_IMAGE_TAG
 )
 from core.tasks.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
-from utils import lbuffer_str as lbuf
-from utils.k8s import get_k8s_resource_reqs
+from utils import get_flavor, lbuffer_str as lbuf
+from utils.k8s import flavor_to_k8s_resource_reqs
 from errors import WorkflowTerminated
 
 
@@ -121,7 +120,7 @@ class Kaniko(BaseBuildExecutor):
             image=f"{KANIKO_IMAGE_URL}:{KANIKO_IMAGE_TAG}",
             args=container_args,
             volume_mounts=volume_mounts,
-            resources=get_k8s_resource_reqs(FLAVOR_B1_XXLARGE)
+            resources=flavor_to_k8s_resource_reqs(get_flavor("c1lrg"))
         )
 
         # List of volume objects

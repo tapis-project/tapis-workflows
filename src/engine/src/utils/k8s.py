@@ -1,16 +1,13 @@
 import os
 
 from core.tasks.Flavor import Flavor
-from conf.constants import FLAVORS, IS_LOCAL
-from errors import InvalidFlavorError
+from conf.constants import IS_LOCAL
 from types import SimpleNamespace
+
 
 from kubernetes.client import V1ResourceRequirements, V1EnvVar
 
-def get_k8s_resource_reqs(flavor: Flavor):
-    if flavor not in FLAVORS:
-        raise InvalidFlavorError(f"{flavor} is an invalid flavor")
-
+def flavor_to_k8s_resource_reqs(flavor: Flavor):
     if IS_LOCAL: return None
 
     return V1ResourceRequirements(
@@ -18,9 +15,13 @@ def get_k8s_resource_reqs(flavor: Flavor):
     )
 
 def flavor_to_limits(flavor: Flavor):
-    if flavor not in FLAVORS:
-        raise InvalidFlavorError(f"{flavor} is an invalid flavor")
-    return {"cpu": flavor.cpu, "memory": flavor.memory}
+    if flavor == None: return {}
+
+    gpu_specs = {}
+    if flavor.gpu_type != None and flavor.gpu > 0:
+        gpu_specs = {f"{flavor.gpu_type}": flavor.gpu }
+    
+    return {"cpu": flavor.cpu, "memory": flavor.memory, **gpu_specs}
 
 def input_to_k8s_env_vars(_inputs, ctx, prefix=""):
     k8s_env_vars = []
@@ -46,7 +47,8 @@ def input_to_k8s_env_vars(_inputs, ctx, prefix=""):
                 ),
             )
             continue
-
+        
+        k8s_env_var_value_source_key = None
         k8s_env_var_value_source = None
         k8s_env_var_value = None
         if hasattr(value_from, "env"):
@@ -57,8 +59,9 @@ def input_to_k8s_env_vars(_inputs, ctx, prefix=""):
                 raise Exception(f"Environment variable '{env_var_key}' does not exist.")
             k8s_env_var_value = getattr(env_var, "value", None)
         elif hasattr(value_from, "params"):
+            k8s_env_var_value_source_key = value_from.params
             k8s_env_var_value_source = "params"
-            k8s_env_var_value = getattr(ctx.params, value_from.params, None)
+            k8s_env_var_value = getattr(ctx.params, k8s_env_var_value_source_key, None)
         elif hasattr(value_from, "task_output"):
             k8s_env_var_value_source = "task_output"
             task_id = value_from.task_output.task_id
@@ -103,7 +106,10 @@ def input_to_k8s_env_vars(_inputs, ctx, prefix=""):
             raise Exception("Invalid 'value_from' type: Must be oneOf type [env, params, task_output]")
         
         if k8s_env_var_value == None:
-            raise Exception(f"Value for key {input_id} not found in source {k8s_env_var_value_source}")
+            source_key_error_message = ""
+            if k8s_env_var_value_source_key:
+                source_key_error_message = f" at key '{k8s_env_var_value_source_key}'"
+            raise Exception(f"Value for input {input_id} not found in source {k8s_env_var_value_source}{source_key_error_message}")
 
         k8s_env_vars.append(
             V1EnvVar(

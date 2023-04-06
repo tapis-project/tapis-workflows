@@ -80,22 +80,16 @@ DEFAULT_MAX_RETRIES = 0
 KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"
 KANIKO_IMAGE_TAG = "debug"
 
-# Container Flavors - Image Builders
-FLAVOR_B1_LARGE = Flavor(cpu="4", memory="4G", disk="20GB")
-FLAVOR_B1_XLARGE = Flavor(cpu="4", memory="8G", disk="20GB")
-FLAVOR_B1_XXLARGE = Flavor(cpu="4", memory="16G", disk="20GB")
-
-# Container Flavors - Compute
-FLAVOR_C1_SMALL = Flavor(cpu="1", memory="1G", disk="20GB")
-FLAVOR_C1_MEDIUM = Flavor(cpu="2", memory="2G", disk="20GB")
-FLAVOR_C1_LARGE = Flavor(cpu="4", memory="4G", disk="20GB")
-FLAVOR_C1_XLARGE = Flavor(cpu="8", memory="8G", disk="20GB")
-FLAVOR_C1_XXLARGE = Flavor(cpu="16", memory="16G", disk="20GB")
-
-FLAVORS = [
-    FLAVOR_B1_LARGE, FLAVOR_B1_XLARGE, FLAVOR_B1_XXLARGE,
-    FLAVOR_C1_SMALL, FLAVOR_C1_MEDIUM, FLAVOR_C1_LARGE, FLAVOR_C1_XLARGE, FLAVOR_C1_XXLARGE,
-]
+FLAVORS = {
+    "c1sml": {"cpu": "1", "memory": "4G", "disk": "20GB"},
+    "c1med": {"cpu": "2", "memory": "8G", "disk": "20GB"},
+    "c1lrg": {"cpu": "4", "memory": "16G", "disk": "20GB"},
+    "c1xlrg": {"cpu": "8", "memory": "32G", "disk": "20GB"},
+    "c1xxlrg": {"cpu": "16", "memory": "64G", "disk": "20GB"},
+    "g1nvdsml": {"gpu": "1", "gpu_type": "nvidia.com/gpu", "memory": "4G", "disk": "20GB"},
+    "g1nvdmed": {"gpu": "2", "gpu_type": "nvidia.com/gpu", "memory": "8G", "disk": "20GB"},
+    "g1nvdlrg": {"gpu": "4", "gpu_type": "nvidia.com/gpu", "memory": "6G", "disk": "20GB"}
+}
 
 SINGULARITY_IMAGE_URL = "quay.io/singularity/singularity"
 SINGULARITY_IMAGE_TAG = "v3.10.0"

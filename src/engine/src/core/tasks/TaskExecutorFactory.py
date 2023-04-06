@@ -7,6 +7,7 @@ from core.tasks.TaskExecutor import TaskExecutor
 from core.events import EventExchange
 from core.tasks.executors.requesters.HTTP import HTTP
 from core.tasks.executors.Function import Function
+from core.tasks.executors.Application import Application
 from errors.tasks import InvalidTaskTypeError
 
 
@@ -32,12 +33,9 @@ class TaskExecutorFactory:
 
     def _request(self, task, ctx, exchange) -> TaskExecutor:
         return HTTP(task, ctx, exchange)
-
-    def _container_run(self, task, ctx, exchange) -> TaskExecutor:
-        return self._application(task, ctx, exchange)
     
     def _application(self, task, ctx, exchange) -> TaskExecutor:
-        return HTTP(task, ctx, exchange)
+        return Application(task, ctx, exchange)
 
     def _function(self, task, ctx, exchange) -> TaskExecutor:
         return Function(task, ctx, exchange)

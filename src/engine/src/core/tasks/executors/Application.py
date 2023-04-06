@@ -5,14 +5,15 @@ from uuid import uuid4
 from kubernetes import client
 
 from core.tasks.TaskExecutor import TaskExecutor
-from conf.constants import PIPELINES_PVC, KUBERNETES_NAMESPACE, FLAVOR_C1_MEDIUM
+from conf.constants import KUBERNETES_NAMESPACE
 from core.resources import PodResource
-from utils.k8s import get_k8s_resource_reqs
+from utils import get_flavor
+from utils.k8s import flavor_to_k8s_resource_reqs
 
 
 # TODO Review the Kubernetes attack surface guide.
 # TODO Remove the kubernetes token from the container(s)
-class ContainerRun(TaskExecutor):
+class Application(TaskExecutor):
     def execute(self):
         """Create a the container"""
         container_name = str(uuid4())
@@ -32,17 +33,11 @@ class ContainerRun(TaskExecutor):
             image=self._resovle_image(),
             args=self._resolve_args(),
             volume_mounts=volume_mounts,
-            resources=get_k8s_resource_reqs(FLAVOR_C1_MEDIUM)
+            resources=flavor_to_k8s_resource_reqs(get_flavor("c1lrg"))
         )
 
         # Volume for output and caching
         volumes = [
-            client.V1Volume(
-                name="artifacts",
-                persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
-                    claim_name=PIPELINES_PVC
-                ),
-            )
         ]
 
         # Pod template and pod template spec

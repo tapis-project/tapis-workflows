@@ -52,6 +52,26 @@ FUNCTION_TASK_INSTALLERS = [
     (FUNCTION_TASK_INSTALLER_PIP, "pip")
 ]
 
+TASK_FLAVOR_C1_SML = "c1sml"
+TASK_FLAVOR_C1_MED = "c1med"
+TASK_FLAVOR_C1_LRG = "c1lrg"
+TASK_FLAVOR_C1_XLRG = "c1xlrg"
+TASK_FLAVOR_C1_XXLRG = "c1xxlrg"
+TASK_FLAVOR_G1_NVD_SML = "g1nvdsml"
+TASK_FLAVOR_G1_NVD_MED = "g1nvdmed"
+TASK_FLAVOR_G1_NVD_LRG = "g1nvdlrg"
+
+TASK_FLAVORS = [
+    (TASK_FLAVOR_C1_SML, "c1sml"),
+    (TASK_FLAVOR_C1_MED, "c1med"),
+    (TASK_FLAVOR_C1_LRG, "c1lrg"),
+    (TASK_FLAVOR_C1_XLRG, "c1xlrg"),
+    (TASK_FLAVOR_C1_XXLRG, "c1xxlrg"),
+    (TASK_FLAVOR_G1_NVD_SML,  "g1nvdsml"),
+    (TASK_FLAVOR_G1_NVD_MED,  "g1nvdmed"),
+    (TASK_FLAVOR_G1_NVD_LRG, "g1nvdlrg")
+]
+
 DEFAULT_TASK_INVOCATION_MODE = TASK_INVOCATION_MODE_ASYNC
 DEFAULT_WORKFLOW_INVOCATION_MODE = TASK_INVOCATION_MODE_ASYNC
 
@@ -351,6 +371,7 @@ class Pipeline(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
     env = models.JSONField(null=True)
+    params = models.JSONField(null=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
     invocation_mode = models.CharField(max_length=16, default=DEFAULT_WORKFLOW_INVOCATION_MODE)
     max_exec_time = models.BigIntegerField(
@@ -412,6 +433,7 @@ class Task(models.Model):
     cache = models.BooleanField(null=True)
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
+    flavor = models.CharField(max_length=32, choices=TASK_FLAVORS, default=TASK_FLAVOR_C1_MED)
     input = models.JSONField(null=True)
     invocation_mode = models.CharField(max_length=16, default=DEFAULT_TASK_INVOCATION_MODE)
     max_exec_time = models.BigIntegerField(

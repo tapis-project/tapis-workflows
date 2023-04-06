@@ -121,8 +121,13 @@ class Pipelines(RestrictedAPIView):
                 id=body.id,
                 group=group,
                 owner=request.username,
+                max_exec_time=request.execution_profile.max_exec_time,
+                invocation_mode=request.execution_profile.invocation_mode,
+                max_retries=request.execution_profile.max_retries,
+                retry_policy=request.execution_profile.retry_policy,
                 duplicate_submission_policy=body.execution_profile.duplicate_submission_policy,
-                env=body.dict()["env"]
+                env=body.dict()["env"],
+                params=body.dict()["params"]
             )
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
