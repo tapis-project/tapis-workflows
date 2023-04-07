@@ -14,6 +14,7 @@ from backend.models import (
     ARCHIVE_TYPE_S3,
     ARCHIVE_TYPE_SYSTEM,
     DEFAULT_ARCHIVE_DIR,
+    DEFAULT_TASK_FLAVOR,
     DEFAULT_TASK_INVOCATION_MODE,
     DEFAULT_MAX_EXEC_TIME,
     DEFAULT_MAX_RETRIES,
@@ -353,7 +354,7 @@ class EnumTaskFlavor(str, Enum):
     G1_NVD_LRG = "g1nvdlrg"
 
 class ExecutionProfile(BaseModel):
-    flavor: EnumTaskFlavor = None
+    flavor: EnumTaskFlavor = DEFAULT_TASK_FLAVOR
     max_exec_time: int = DEFAULT_MAX_EXEC_TIME
     invocation_mode: str = DEFAULT_TASK_INVOCATION_MODE
     retry_policy: str = DEFAULT_RETRY_POLICY
