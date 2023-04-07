@@ -4,10 +4,11 @@ import logging, os
 logging.getLogger("git").setLevel(logging.CRITICAL)
 import git
 
-from kubernetes.client import V1Container, V1EnvVar, V1ResourceRequirements
+from kubernetes.client import V1Container, V1EnvVar
 
-from conf.constants import SINGULARITY_IMAGE_URL, SINGULARITY_IMAGE_TAG, FLAVOR_B1_XXLARGE
-from utils.k8s import get_k8s_resource_reqs
+from conf.constants import SINGULARITY_IMAGE_URL, SINGULARITY_IMAGE_TAG
+from utils import get_flavor
+from utils.k8s import flavor_to_k8s_resource_reqs
 
 
 
@@ -22,7 +23,7 @@ class ContainerBuilder:
             image=f"{SINGULARITY_IMAGE_URL}:{SINGULARITY_IMAGE_TAG}",
             command=command,
             volume_mounts=volume_mounts,
-            resources=get_k8s_resource_reqs(FLAVOR_B1_XXLARGE)
+            resources=flavor_to_k8s_resource_reqs(get_flavor("c1lrg"))
         )
 
         return container

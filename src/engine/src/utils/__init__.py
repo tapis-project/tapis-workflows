@@ -2,7 +2,10 @@ import json
 
 from types import SimpleNamespace
 
-from utils.CompositeLogger import CompositeLogger
+from conf.constants import FLAVORS
+# from errors import InvalidFlavorError
+from core.tasks.Flavor import Flavor
+from utils.CompositeLogger import CompositeLogger # NOTE imported to re-export
 
 
 def json_to_object(json_string):
@@ -29,3 +32,8 @@ def bytes_to_json(bytestring):
 
     return json.dumps(data)
 
+def get_flavor(flavor: str):
+    if flavor not in FLAVORS:
+        raise Exception(f"Invalid Flavor Error | Recieved: {flavor} | Expected: oneOf {[key for key in FLAVORS.keys()]}")
+
+    return Flavor(**FLAVORS[flavor])

@@ -25,9 +25,12 @@ from errors.tasks import (
     InvalidDependenciesError,
     CycleDetectedError,
 )
-from core.middleware.backends import TapisWorkflowsAPIBackend
+# Tapis specific middleware
+from contrib.tapis.middleware.backends import TapisWorkflowsAPIBackend
+from contrib.tapis.middleware.archivers import TapisSystemArchiver
+
+# Core middleware
 from core.middleware.archivers import (
-    TapisSystemArchiver,
     S3Archiver,
     IRODSArchiver
 )
@@ -105,7 +108,7 @@ class WorkflowExecutor(Worker, EventPublisher):
                 ),
                 # NOTE Not necessary to have this as a hook, but a good it's a good
                 # demonstration of how ReactiveState works. Move logic from 
-                # _on_change_ready_task to all spots where self.state.read_tasks
+                # _on_change_ready_task to all spots where self.state.ready_tasks
                 # is accessed or updated and remove this Hook
                 Hook(
                     self._on_change_ready_task,
@@ -133,8 +136,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         self._set_initial_state()
 
     # Logging formatters. Makes logs more useful and pretty
-    def p_str(self, status): return f"worker{self.id} {self.state.ctx.idempotency_key} {lbuf('[PIPELINE]')} {status} {self.state.ctx.pipeline.id}"
-    def t_str(self, task, status): return f"worker{self.id} {self.state.ctx.idempotency_key} {lbuf('[TASK]')} {status} {task.id}.{self.state.ctx.pipeline.id}"
+    def p_str(self, status): return f"{self.state.ctx.idempotency_key} {lbuf('[PIPELINE]')} {status} {self.state.ctx.pipeline.id}"
+    def t_str(self, task, status): return f"{self.state.ctx.idempotency_key} {lbuf('[TASK]')} {status} {task.id}.{self.state.ctx.pipeline.id}"
 
     @interceptable()
     def start(self, ctx, threads):
@@ -177,10 +180,10 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Setup the server and the pipeline run loggers
         self._setup_loggers()
 
-        self.state.ctx.logger.info(self.p_str("STAGING"))
-
         # Set the run id
         self.state.ctx.pipeline.run_id = self.state.ctx.pipeline_run.uuid
+
+        self.state.ctx.logger.info(f'{self.p_str("STAGING")} {self.state.ctx.pipeline.run_id}')
 
         # Backends are used to relay/persist updates about a pipeline run
         # and its tasks to some external resource
@@ -224,13 +227,13 @@ class WorkflowExecutor(Worker, EventPublisher):
             task_result = TaskResult(1, errors=[str(e)])
 
         # Get the next queued tasks if any
-        unstarted_threads = self._on_task_finish(task, task_result)
+        unstarted_threads = self._on_task_terminal_state(task, task_result)
 
         # NOTE Triggers hook _on_change_ready_task
         self.state.ready_tasks += unstarted_threads
 
     @interceptable()
-    def _on_task_finish(self, task, task_result):
+    def _on_task_terminal_state(self, task, task_result):
         # Determine the correct callback to use
         callback = self._on_task_completed if task_result.success else self._on_task_fail
 
@@ -244,13 +247,14 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Deregister the task executor. This cleans up the resources that were created
         # during the initialization and execution of the task executor
         # TODO NOTE the line below will throw and exception if task 
-        # fails because before registering the executor
+        # fails before registering the executor
         self._deregister_executor(self.state.ctx.pipeline_run.uuid, task)
         
         # Run the on_pipeline_terminal_state callback if all tasks are complete.
-        # NOTE to prevent this from more than once, we put a check to see if state
-        
-        if len(self.state.tasks) == len(self.state.finished):
+        if (
+            len(self.state.tasks) == len(self.state.finished)
+            or task_result.status != 0
+        ):
             self._on_pipeline_terminal_state()
             return []
 
@@ -372,7 +376,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Set the directories
         # The pipeline root dir. All files and directories produced by a workflow
         # execution will reside here
-        self.state.ctx.pipeline.root_dir = f"{BASE_WORK_DIR}{self.state.ctx.group.id}/{self.state.ctx.pipeline.id}/"
+        self.state.ctx.pipeline.root_dir = f"{BASE_WORK_DIR}{self.state.ctx.idempotency_key}/{self.state.ctx.pipeline.id}/"
         os.makedirs(f"{self.state.ctx.pipeline.root_dir}", exist_ok=True)
 
         # Create the directories in which data between pipeline runs will be stored. This

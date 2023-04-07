@@ -1,10 +1,10 @@
 import json, time
 
-from helpers.TapisServiceAPIGateway import TapisServiceAPIGateway
+from contrib.tapis.helpers import TapisServiceAPIGateway
+from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY
 
 from core.tasks.TaskResult import TaskResult
 from core.tasks.TaskExecutor import TaskExecutor
-from conf.constants import TAPIS_JOB_POLLING_FREQUENCY
 
 
 class TapisJob(TaskExecutor):
@@ -25,8 +25,8 @@ class TapisJob(TaskExecutor):
             # Submit the job
             job = service_client.jobs.submitJob(
                 **job_def,
-                _x_tapis_tenant=self.ctx.group.tenant_id,
-                _x_tapis_user=self.ctx.pipeline.owner
+                _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
+                _x_tapis_user=self.ctx.params.tapis_pipeline_owner
             )
 
             # Get the initial job status
@@ -39,8 +39,8 @@ class TapisJob(TaskExecutor):
                     time.sleep(TAPIS_JOB_POLLING_FREQUENCY)
                     job_status = service_client.jobs.getJobStatus(
                         jobUuid=job.uuid,
-                        _x_tapis_tenant=self.ctx.group.tenant_id,
-                        _x_tapis_user=self.ctx.pipeline.owner
+                        _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
+                        _x_tapis_user=self.ctx.params.tapis_pipeline_owner
                     ).status
 
                 output = {"jobUuid": job.uuid, "status": job_status}

@@ -108,6 +108,7 @@ class TaskService(Service):
                 ),
                 url=request.url,
                 # Exection profile
+                flavor=request.execution_profile.flavor,
                 max_exec_time=request.execution_profile.max_exec_time,
                 max_retries=request.execution_profile.max_retries,
                 invocation_mode=request.execution_profile.invocation_mode,

@@ -9,11 +9,11 @@ from core.tasks.TaskResult import TaskResult
 from conf.constants import (
     WORKFLOW_NFS_SERVER,
     KUBERNETES_NAMESPACE,
-    FLAVOR_C1_SMALL,
     OWE_PYTHON_SDK_DIR
 )
 from core.resources import JobResource
-from utils.k8s import get_k8s_resource_reqs, input_to_k8s_env_vars
+from utils import get_flavor
+from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars
 from errors import WorkflowTerminated
 
 class ContainerDetails:
@@ -57,7 +57,7 @@ class Function(TaskExecutor):
             image=container_details.image,
             volume_mounts=volume_mounts,
             env=container_details.env,
-            resources=get_k8s_resource_reqs(FLAVOR_C1_SMALL)
+            resources=flavor_to_k8s_resource_reqs(get_flavor("c1sml"))
         )
 
         # Volume for output
@@ -164,7 +164,7 @@ class Function(TaskExecutor):
         # Entrypoint file
         entrypoint_py = os.path.join(self.task.container_work_dir, "scratch", entrypoint_filename)
         
-        # Install output file
+        # The output file for the install logs
         dot_install = os.path.join(self.task.container_work_dir, "output", ".install")
 
         # .stderr
@@ -208,4 +208,3 @@ class Function(TaskExecutor):
             args=args,
             env=env
         )
-

@@ -23,22 +23,19 @@ MAX_WORKERS = os.environ.get("MAX_WORKERS", None) or 10
 INBOUND_EXCHANGE = "workflows"
 RETRY_EXCHANGE = "retry"
 DEAD_LETTER_EXCHANGE = "deadletter"
+DEFERRED_EXCHANGE = "deferred"
 
 # Queues
 INBOUND_QUEUE = "workflows"
 RETRY_QUEUE = "retry"
 DEAD_LETTER_QUEUE = "deadletter"
+DEFERRED_QUEUE = "deferred"
 
 BASE_WORK_DIR = "/mnt/pipelines/"
 
 LOG_FILE = BASE_DIR + "logs/service.log"
 
 LOG_LEVEL = os.environ["LOG_LEVEL"]
-
-# TODO probably remove. Going full kubernetes
-DEPLOYMENT_TYPE = os.environ["DEPLOYMENT_TYPE"]
-
-WORKFLOWS_API_BASE_URL = os.environ["WORKFLOWS_API_BASE_URL"] # TODO Not needed
 
 BROKER_USER = os.environ["BROKER_USER"]
 BROKER_PASSWORD = os.environ["BROKER_PASSWORD"]
@@ -59,7 +56,6 @@ BACKEND_URL = f"db+mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}
 # Read the kubernetes namespace from the serviceaccount namespace directly
 KUBERNETES_NAMESPACE = open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read()
 
-PIPELINES_PVC = "workflows-pipelines-pvc" # TODO remove
 WORKFLOW_NFS_SERVER = os.environ.get("WORKFLOW_NFS_SERVER")
 
 # Polling intervals in seconds
@@ -71,9 +67,10 @@ MAX_POLLING_INTERVAL = 3600
 DUPLICATE_SUBMISSION_POLICY_TERMINATE = "terminate"
 DUPLICATE_SUBMISSION_POLICY_ALLOW = "allow"
 DUPLICATE_SUBMISSION_POLICY_DENY = "deny"
+DUPLICATE_SUBMISSION_POLICY_DEFER = "defer"
 
 # Execution profile
-DEFAULT_MAX_EXEC_TIME = 86400 # 1 day TODO Consider higher
+DEFAULT_MAX_EXEC_TIME = 60 * 60 * 24
 DEFAULT_INVOCATION_MODE = "async"
 DEFAULT_RETRY_POLICY = "exponential_backoff"
 DEFAULT_DUPLICATE_SUBMISSION_POLICY = "terminate"
@@ -83,34 +80,16 @@ DEFAULT_MAX_RETRIES = 0
 KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"
 KANIKO_IMAGE_TAG = "debug"
 
-# Container Flavors - Image Builders
-FLAVOR_B1_LARGE = Flavor(cpu="4", memory="4G", disk="20GB")
-FLAVOR_B1_XLARGE = Flavor(cpu="4", memory="8G", disk="20GB")
-FLAVOR_B1_XXLARGE = Flavor(cpu="4", memory="16G", disk="20GB")
-
-# Container Flavors - Compute
-FLAVOR_C1_SMALL = Flavor(cpu="1", memory="1G", disk="20GB")
-FLAVOR_C1_MEDIUM = Flavor(cpu="2", memory="2G", disk="20GB")
-FLAVOR_C1_LARGE = Flavor(cpu="4", memory="4G", disk="20GB")
-FLAVOR_C1_XLARGE = Flavor(cpu="8", memory="8G", disk="20GB")
-FLAVOR_C1_XXLARGE = Flavor(cpu="16", memory="16G", disk="20GB")
-
-FLAVORS = [
-    FLAVOR_B1_LARGE, FLAVOR_B1_XLARGE, FLAVOR_B1_XXLARGE,
-    FLAVOR_C1_SMALL, FLAVOR_C1_MEDIUM, FLAVOR_C1_LARGE, FLAVOR_C1_XLARGE, FLAVOR_C1_XXLARGE,
-]
+FLAVORS = {
+    "c1sml": {"cpu": "1", "memory": "4G", "disk": "20GB"},
+    "c1med": {"cpu": "2", "memory": "8G", "disk": "20GB"},
+    "c1lrg": {"cpu": "4", "memory": "16G", "disk": "20GB"},
+    "c1xlrg": {"cpu": "8", "memory": "32G", "disk": "20GB"},
+    "c1xxlrg": {"cpu": "16", "memory": "64G", "disk": "20GB"},
+    "g1nvdsml": {"gpu": "1", "gpu_type": "nvidia.com/gpu", "memory": "4G", "disk": "20GB"},
+    "g1nvdmed": {"gpu": "2", "gpu_type": "nvidia.com/gpu", "memory": "8G", "disk": "20GB"},
+    "g1nvdlrg": {"gpu": "4", "gpu_type": "nvidia.com/gpu", "memory": "6G", "disk": "20GB"}
+}
 
 SINGULARITY_IMAGE_URL = "quay.io/singularity/singularity"
 SINGULARITY_IMAGE_TAG = "v3.10.0"
-
-TAPIS_SERVICE_ACCOUNT = os.environ["WORKFLOWS_SERVICE_ACCOUNT"]
-TAPIS_SERVICE_ACCOUNT_PASSWORD = os.environ["WORKFLOWS_SERVICE_PASSWORD"]
-TAPIS_SERVICE_SITE_ID = os.environ["TAPIS_SERVICE_SITE_ID"]
-TAPIS_SERVICE_TENANT_ID = os.environ["TAPIS_SERVICE_TENANT_ID"]
-TAPIS_SERVICE_LOG_FILE = "/src/logs/workflows.logs"
-
-TAPIS_DEV_URL = os.environ["TAPIS_DEV_URL"]
-WORKFLOWS_SERVICE_URL = os.environ["WORKFLOWS_SERVICE_URL"]
-
-TAPIS_JOB_POLLING_FREQUENCY = 2  # in seconds
-TAPIS_ACTOR_POLLING_FREQUENCY = 2  # in seconds

@@ -1799,23 +1799,28 @@ components:
     Env:
       type: object
       additionalProperties: true
-        
+    
+    Params:
+      type: object
+      additionalProperties: true
 
     ExecutionProfile:
       type: object
       properties:
+        duplicate_submission_policy:
+          $ref: '#/components/schemas/EnumDuplicateSubmissionPolicy'
+        flavor:
+          $ref: '#/components/schemas/EnumTaskFlavor'
+        invocation_mode:
+          $ref: '#/components/schemas/EnumInvocationMode'
         max_retries:
           type: integer
           default: 0
         max_exec_time:
           type: integer
           default: 3600
-        invocation_mode:
-          $ref: '#/components/schemas/EnumInvocationMode'
         retry_policy:
           $ref: '#/components/schemas/EnumRetryPolicy'
-        duplicate_submission_policy:
-          $ref: '#/components/schemas/EnumDuplicateSubmissionPolicy'
 
     BaseArchive:
       type: object
@@ -1887,6 +1892,8 @@ components:
           $ref: '#/components/schemas/ID'
         env:
           $ref: "#/components/schemas/Env"
+        params:
+          $ref: "#/components/schemas/Params"
         group:
           type: string
           format: uuid
@@ -1982,8 +1989,10 @@ components:
           $ref: '#/components/schemas/ExecutionProfile'
         input:
           type: object
+          additionalProperties: true
         output:
           type: object
+          additionalProperties: true
 
     ImageBuildTask:
       allOf:
@@ -2040,7 +2049,7 @@ components:
 
     TapisActorTask:
       allOf:
-        - $ref: '#/components/schemas/ReqBaseTask'
+        - $ref: '#/components/schemas/BaseTask'
         - type: object
           properties:
             poll:
@@ -2050,21 +2059,26 @@ components:
               type: string
             tapis_actor_message:
               nullable: true
-              oneOf:
-                - type: string
-                - type: object
-                - type: array
-                  items: {}
+              type: string
                   
-
-
     FunctionTask:
       allOf:
-        - $ref: '#/components/schemas/ReqBaseTask'
+        - $ref: '#/components/schemas/BaseTask'
         - type: object
           properties:
             runtime:
               $ref: "#/components/schemas/EnumRuntimeEnvironment"
+            installer:
+              $ref: "#/components/schemas/EnumInstaller"
+            command:
+              type: string
+            code:
+              type: string
+              format: byte
+            packages:
+              type: array
+              items:
+                type: string
 
     # --- Task Dependency ---
     TaskDependency:
@@ -2370,6 +2384,8 @@ components:
           $ref: '#/components/schemas/DescriptionString'
         env:
           $ref: "#/components/schemas/Env"
+        params:
+          $ref: "#/components/schemas/Params"
         type:
           $ref: '#/components/schemas/EnumPipelineType'
         execution_profile:
@@ -2399,8 +2415,10 @@ components:
           $ref: "#/components/schemas/ExecutionProfile"
         input:
           type: object
+          additionalProperties: true
         output:
           type: object
+          additionalProperties: true
 
     ReqImageBuildTask:
       allOf:
@@ -2480,11 +2498,7 @@ components:
               type: string
             tapis_actor_message:
               nullable: true
-              oneOf:
-                - type: string
-                - type: object
-                - type: array
-                  items: {}
+              type: string
                     
     
     ReqFunctionTask:
@@ -2505,6 +2519,10 @@ components:
             code:
               type: string
               format: byte
+            packages:
+              type: array
+              items:
+                type: string
 
     ReqTask:
       oneOf:
@@ -2767,8 +2785,7 @@ components:
       type: object
       properties:
         params:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/Params"
         directives:
           type: array
           items:
@@ -2892,14 +2909,6 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/GroupUser'
-
-    # RespGroup:
-    #   allOf:
-    #     - $ref: '#/components/schemas/RespObject'
-    #     - type: object
-    #       properties:
-    #         result:
-    #           $ref: '#/components/schemas/Group'
 
     RespGroupList:
       allOf:
@@ -3095,6 +3104,18 @@ components:
         - tapis_actor
         - function
 
+    EnumTaskFlavor:
+      type: string
+      enum:
+        - c1sml
+        - c1med
+        - c1lrg
+        - c1xlrg
+        - c1xxlrg
+        - g1nvdsml
+        - g1nvdmed
+        - g1nvdlrg
+
     EnumBuilder:
       type: string
       enum:
@@ -3136,12 +3157,19 @@ components:
         - github
         - dockerhub
     
-    EnumRuntimeEnvironment:
+    EnumInputType:
       type: string
       enum:
-        - python:3.9
+        - string
+        - int
+        - float
 
     EnumInstaller:
       type: string
       enum:
         - pip
+
+    EnumRuntimeEnvironment:
+      type: string
+      enum:
+        - python:3.9

@@ -60,7 +60,6 @@ class WorkerPool:
         raise NoAvailableWorkers(f"No available workers: Max Workers: {self.max_workers}")
 
     def check_in(self, worker):
-        print("CHECKING IN", worker)
         if worker in self.checked_out:
             self.checked_out.remove(worker)
         

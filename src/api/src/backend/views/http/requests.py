@@ -1,5 +1,6 @@
 import re
 
+from enum import Enum
 from typing import AnyStr, List, Union, Dict, TypedDict, Literal, Optional
 from typing_extensions import Annotated
 from pydantic import BaseModel, validator, root_validator, Field
@@ -36,7 +37,54 @@ def validate_ctx_dest_url(value):
         raise ValueError("`url` must follow the format:  `<username>/<name>`")
 
     return value
-##################
+
+################## Common ####################
+class EnumValueType(str, Enum):
+    String = "string"
+    Number = "number"
+    Boolean = "boolean"
+
+class Value(BaseModel):
+    type: EnumValueType = EnumValueType.String
+    value: Union[str, int, float, bool] = None
+    value_from: Dict[str, str] = None
+
+    @root_validator(pre=True)
+    def value_or_value_from(cls, values):
+        # Either 'value' or 'value_from' must be set on every variable
+        if (
+            values.get("value", None) == None
+            and values.get("value_from", None) == None
+        ):
+            raise ValueError(
+                "Missing 'value' or 'value_from' property in variable values")
+
+        return values
+
+    @validator("value", pre=True)
+    def value_type_validation(cls, value):
+        if type(value) not in [str, bool, int, float]:
+            raise TypeError("Variable values must be a string, number, or boolean'")
+
+        return value
+
+    @validator("value_from", pre=True)
+    def value_from_type_validation(cls, value):
+        is_dict = type(value) == dict
+        is_valid = len([k for k in value if (type(k) == str and type(value[k]) == str)]) < 1
+        if (not is_dict or (is_dict and is_valid)):
+            raise TypeError(
+                "The value of an Variable's 'value_from' property must be a single key-value pair where both the key and the value are non-empty strings")
+        return value
+
+Key = str
+
+class ValueWithRequirements(Value):
+    required: bool = False
+
+KeyVal = Dict[Key, Value]
+Params  = Dict[Key, ValueWithRequirements]
+################## /Common ###################
 
 class S3Credentials(TypedDict):
     access_key: str
@@ -192,6 +240,7 @@ class BaseEvent(BaseModel):
     username: str = None
 
 class APIEvent(BaseEvent):
+    params: KeyVal = {}
     directives: List[str] = None
 
 class WebhookEvent(BaseEvent):
@@ -293,7 +342,18 @@ class Auth(BaseModel):
     type: str = "http_basic_auth"
     creds: HTTPBasicAuthCreds
 
+class EnumTaskFlavor(str, Enum):
+    C1_SML = "c1sml"
+    C1_MED = "c1med"
+    C1_LRG = "c1lrg"
+    C1_XLRG = "c1xlrg"
+    C1_XXLRG = "c1xxlrg"
+    G1_NVD_SML = "g1nvdsml"
+    G1_NVD_MED = "g1nvdmed"
+    G1_NVD_LRG = "g1nvdlrg"
+
 class ExecutionProfile(BaseModel):
+    flavor: EnumTaskFlavor = None
     max_exec_time: int = DEFAULT_MAX_EXEC_TIME
     invocation_mode: str = DEFAULT_TASK_INVOCATION_MODE
     retry_policy: str = DEFAULT_RETRY_POLICY
@@ -305,6 +365,8 @@ class BaseTask(BaseModel):
     builder: str = None
     cache: bool = None
     context: Context = None
+    code: str = None
+    command: str = None
     data: dict = None
     description: str = None
     destination: Union[
@@ -315,15 +377,18 @@ class BaseTask(BaseModel):
     headers: dict = None
     http_method: str = None
     image: str = None
+    installer: str = None
     input: Input = {}
     id: str
     _if: str = None
     output: Output = {}
+    packages: List[str] = None
     poll: bool = None
     query_params: str = None
     type: str
     depends_on: List[TaskDependency] = []
     retries: int = 0
+    runtime: str = None
     tapis_actor_id: str = None
     tapis_actor_message: Union[str, dict] = None
     tapis_job_def: dict = None
@@ -421,10 +486,6 @@ Task = Annotated[
     Field(discriminator="type")
 ]
 
-EnvValue = Union[str, int, float]
-
-Env = Dict[str, EnvValue]
-
 class BasePipeline(BaseModel):
     id: str
     type: str = "workflow"
@@ -433,7 +494,8 @@ class BasePipeline(BaseModel):
         max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
     cron: str = None
     archive_ids: List[str] = []
-    env: Env = {}
+    env: KeyVal = {}
+    params: Params = {}
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)

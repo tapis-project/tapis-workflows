@@ -27,7 +27,7 @@ class TaskExecutor(EventPublisher):
         # The cache dir for the pipeline inside of the container
         self.pipeline.container_cache_dir = "/mnt/open-workflow-engine/pipeline/cache"
         self.group = self.ctx.group
-        self.event = self.ctx.event
+        self.event = self.ctx.meta.event
         self.directives = self.ctx.directives
         self.polling_interval = DEFAULT_POLLING_INTERVAL
         self._resources: list[Resource] = []
