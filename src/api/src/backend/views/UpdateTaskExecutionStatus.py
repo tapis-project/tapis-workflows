@@ -1,4 +1,5 @@
 from django.db import DatabaseError, IntegrityError, OperationalError
+from django.utils import timezone
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses import BaseResponse
@@ -17,7 +18,10 @@ class UpdateTaskExecutionStatus(RestrictedAPIView):
 
         try:
             TaskExecution.objects.filter(
-                uuid=task_execution_uuid).update(status=status)
+                uuid=task_execution_uuid).update(
+                    status=status,
+                    last_modified=timezone.now()
+                )
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return ServerError(f"Server Error: {e.__cause__}")
         except Exception as e:

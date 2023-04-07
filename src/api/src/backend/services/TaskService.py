@@ -1,9 +1,10 @@
-import logging, json
+import json, re
 
-from typing import List
+from typing import AnyStr, List
 
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
+from django.core.exceptions import ValidationError as ModelValidationError
 
 from backend.models import Task, Context, Destination, Identity
 from backend.models import (
@@ -12,6 +13,7 @@ from backend.models import (
     TASK_TYPE_CONTAINER_RUN,
     TASK_TYPE_TAPIS_JOB,
     TASK_TYPE_TAPIS_ACTOR,
+    TASK_TYPE_FUNCTION,
     DESTINATION_TYPE_LOCAL,
     DESTINATION_TYPE_DOCKERHUB,
 )
@@ -21,8 +23,11 @@ from backend.views.http.requests import (
     ContainerRunTask,
     TapisJobTask,
     TapisActorTask,
+    FunctionTask,
     RegistryDestination,
-    LocalDestination
+    LocalDestination,
+    task_input_value_types,
+    task_input_value_from_keys
 )
 from backend.services.SecretService import service as secret_service
 from backend.services.Service import Service
@@ -35,6 +40,7 @@ TASK_TYPE_REQUEST_MAPPING = {
     TASK_TYPE_CONTAINER_RUN: ContainerRunTask,
     TASK_TYPE_TAPIS_JOB: TapisJobTask,
     TASK_TYPE_TAPIS_ACTOR: TapisActorTask,
+    TASK_TYPE_FUNCTION: FunctionTask
 }
 
 DESTINATION_TYPE_REQUEST_MAPPING = {
@@ -59,6 +65,11 @@ class TaskService(Service):
             if request.destination != None:
                 destination = self._create_destination(request, pipeline)
 
+            # Validate input TODO move validation logic to pydantic if possible
+            err = self._validate_input(request.input)
+            if err != None:
+                raise Exception(f"Failed to validate input: {err}")
+
         except Exception as e:
             self.rollback()
             raise e
@@ -70,6 +81,8 @@ class TaskService(Service):
                 auth=request.auth,
                 builder=request.builder,
                 cache=request.cache,
+                code=request.code,
+                command=request.command,
                 context=context,
                 data=request.data,
                 description=request.description,
@@ -78,27 +91,41 @@ class TaskService(Service):
                 http_method=request.http_method,
                 image=request.image,
                 input=request.input,
+                installer=request.installer,
                 id=request.id,
                 output=request.output,
+                packages=request.packages,
                 pipeline=pipeline,
                 poll=request.poll,
                 query_params=request.query_params,
+                runtime=request.runtime,
                 type=request.type,
                 depends_on=[ dict(item) for item in request.depends_on ],
                 tapis_job_def=request.tapis_job_def,
                 tapis_actor_id=request.tapis_actor_id,
+                tapis_actor_message=self._tapis_actor_message_to_str(
+                    request.tapis_actor_message
+                ),
                 url=request.url,
                 # Exection profile
+                flavor=request.execution_profile.flavor,
                 max_exec_time=request.execution_profile.max_exec_time,
                 max_retries=request.execution_profile.max_retries,
                 invocation_mode=request.execution_profile.invocation_mode,
                 retry_policy=request.execution_profile.retry_policy
             )
+
+            # TODO Calls the validators on the task model
+            # task.clean()
         except (IntegrityError, OperationalError, DatabaseError) as e:
             self.rollback()
             raise e
 
         except BadRequestError as e:
+            self.rollback()
+            raise e
+
+        except ModelValidationError as e:
             self.rollback()
             raise e
 
@@ -239,6 +266,60 @@ class TaskService(Service):
 
     def get_task_request_types(self):
         return TASK_REQUEST_TYPES
+
+    def _tapis_actor_message_to_str(self, message):
+        # Simply pass the message back if already a string
+        if type(message) == str:
+            return message
+
+        # Message is a dictionary. Convert to string and return
+        return json.dumps(message)
+
+    def _validate_input(self, _input):
+        input_key_pattern = r"^[_]?[a-zA-Z]+[a-zA-Z0-9_]*"
+        for key in _input:
+            # Validate input key
+            if not re.match(input_key_pattern, key):
+                return "Disallowed input key: must conform to the following pattern: ^[_]*[a-zA-Z]+[a-zA-Z0-9]*"
+
+            # Validate input value
+            if type(_input[key]) != dict:
+                return f"Input value must be a dict: type {type(_input[key])} found for key {key}"
+
+            # Validate input value type property
+            if _input[key].get("type", None) not in task_input_value_types:
+                return f"'type' property input value of key {key} must be oneOf: {task_input_value_types}"
+
+            # Return if the value property exists and is not None
+            if _input[key].get("value", None) != None:
+                return
+            
+            # Validate the value_from property of the input value
+            value_from = _input[key].get("value_from", None)
+            if type(value_from) != dict:
+                return f"Input validation error at key {key}: 'value_from' must be a dictionary"
+
+            # Validate the key of the value_from property
+            value_from_key = list(value_from.keys())[0]
+            if len(value_from) > 1 or value_from_key not in task_input_value_from_keys:
+                return f"Input validation error at key {key}: The key in 'value_from' must be oneOf: {task_input_value_from_keys}" 
+            
+            # Validate value_from value for 'env' and 'params'
+            value_from_value = value_from[value_from_key]
+            if value_from_key != "task_output" and type(value_from_value) not in [str, int, float, AnyStr]:
+                return f"Input validation error at key {key}: 'value_from' value type for keys [env|params] must be oneOf types [string, number, binary]"
+
+            # Validate value_from value for "task_output"
+            if (
+                value_from_key == "task_output"
+                and (
+                    type(value_from_value) != dict
+                    or value_from_value.get("task_id", None) == None
+                    or value_from_value.get("output_id", None) == None
+                )
+                
+            ):
+                return f"Input validation error at key {key}: When referencing task outputs, 'value_from' value must be a dictionary with the following properties ['task_id', 'output_id']"
 
     def delete(self, tasks: List[Task]):
         for task in tasks:

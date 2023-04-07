@@ -1,6 +1,8 @@
 from django.db import DatabaseError, IntegrityError, OperationalError
+from django.forms.models import model_to_dict
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
+from backend.views.http.responses.BaseResponse import BaseResponse
 from backend.views.http.responses.models import ModelResponse, ModelListResponse
 from backend.views.http.responses.errors import (
     ServerError,
@@ -45,7 +47,18 @@ class PipelineRuns(RestrictedAPIView):
             if run == None:
                 return BadRequest(f"PiplineRun with uuid '{pipeline_run_uuid}' does not exist")
 
-            return ModelResponse(run)
+            # Format the started at and last_modified
+            run = model_to_dict(run)
+            
+            run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S") if run["started_at"] else None
+            run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S") if run["last_modified"] else None
+
+            return BaseResponse(
+                status=200,
+                success=True,
+                message="success",
+                result=run
+            )
             
         # TODO catch the specific error thrown by the group service
         except (DatabaseError, IntegrityError, OperationalError) as e:
@@ -55,9 +68,22 @@ class PipelineRuns(RestrictedAPIView):
 
 
     def list(self, pipeline):
+        runs = []
         try:
-            runs = PipelineRun.objects.filter(pipeline=pipeline)
-            return ModelListResponse(runs)
+            run_models = PipelineRun.objects.filter(pipeline=pipeline)
+            for run_model in run_models:
+                run = model_to_dict(run_model)
+                
+                run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S") if run["started_at"] else None
+                run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S")  if run["last_modified"] else None
+                runs.append(run)
+
+            return BaseResponse(
+                status=200,
+                success=True,
+                message="success",
+                result=runs
+            )
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return ServerError(message=e.__cause__)
         except Exception as e:

@@ -95,7 +95,7 @@ class Pipelines(RestrictedAPIView):
             or self.request_body["type"] not in PIPELINE_TYPES
         ):
             return BadRequest(f"Request body must inlcude a 'type' property with one of the following values: {PIPELINE_TYPES}")
-
+        
         # Determine the proper request type. Default will be a WorkflowPipeline request
         PipelineCreateRequest = WorkflowPipeline
         if self.request_body["type"] == PIPELINE_TYPE_CI:
@@ -121,7 +121,13 @@ class Pipelines(RestrictedAPIView):
                 id=body.id,
                 group=group,
                 owner=request.username,
-                duplicate_submission_policy=body.execution_profile.duplicate_submission_policy
+                max_exec_time=body.execution_profile.max_exec_time,
+                invocation_mode=body.execution_profile.invocation_mode,
+                max_retries=body.execution_profile.max_retries,
+                retry_policy=body.execution_profile.retry_policy,
+                duplicate_submission_policy=body.execution_profile.duplicate_submission_policy,
+                env=body.dict()["env"],
+                params=body.dict()["params"]
             )
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)

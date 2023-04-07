@@ -70,13 +70,19 @@ urlpatterns = [
     # Pipeline Runs
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs", PipelineRuns.as_view(), name="pipelineRuns"),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>", PipelineRuns.as_view(), name="pipelineRun"),
+    
+    # NOTE The route below must come before the route below it as it matches
+    # the more general pattern layed out in the latter route
+    # Task Executions
+    path("executor/runs/<str:pipeline_run_uuid>/executions", CreateTaskExecution.as_view(), name="createTaskExecution"),
+    
+    # Pipeline Runs cont.
     path("executor/runs/<str:pipeline_run_uuid>/<str:status>", UpdatePipelineRunStatus.as_view(), name="updatePipelineRunStatus"),
 
     # Task Executions
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>/executions", TaskExecutions.as_view(), name="taskExecutions"),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>/executions/<str:task_execution_uuid>", TaskExecutions.as_view(), name="taskExecution"),
     path("executor/executions/<str:task_execution_uuid>/<str:status>", UpdateTaskExecutionStatus.as_view(), name="updateTaskExecutionStatus"),
-    path("executor/runs/<str:pipeline_run_uuid>/executions", CreateTaskExecution.as_view(), name="createTaskExecution"),
 ]
 
 # NOTE This is handy, but there is the distinct posibility that someone malicious

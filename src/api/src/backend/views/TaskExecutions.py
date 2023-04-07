@@ -1,7 +1,11 @@
 from django.db import DatabaseError, IntegrityError, OperationalError
+from django.forms.models import model_to_dict
+
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
+from backend.views.http.responses.BaseResponse import BaseResponse
+
 from backend.views.http.responses.errors import (
     ServerError,
     Forbidden,
@@ -9,7 +13,7 @@ from backend.views.http.responses.errors import (
     BadRequest
 )
 from backend.services.GroupService import service as group_service
-from backend.models import Pipeline, PipelineRun, TaskExecution
+from backend.models import Pipeline, PipelineRun, TaskExecution, Task
 
 
 class TaskExecutions(RestrictedAPIView):
@@ -46,14 +50,24 @@ class TaskExecutions(RestrictedAPIView):
             if task_execution_uuid == None:
                 return self.list(run)
 
-            execution = TaskExecution.objects.filter(
+            execution_model = TaskExecution.objects.filter(
                 uuid=task_execution_uuid
             ).first()
 
-            if execution == None:
-                return BadRequest
+            if execution_model == None:
+                return NotFound()
 
-            return ModelResponse(execution)
+            # Convert the model to a dict and set the task id
+            task_id = execution_model.task.id
+            execution = model_to_dict(execution_model)
+            execution["task_id"] = task_id
+
+            return BaseResponse(
+                status=200,
+                success=True,
+                message="success",
+                result=execution
+            )
 
         # TODO catch the specific error thrown by the group service
         except (DatabaseError, IntegrityError, OperationalError) as e:
@@ -63,8 +77,22 @@ class TaskExecutions(RestrictedAPIView):
 
     def list(self, run):
         try:
-            executions = TaskExecution.objects.filter(pipeline_run=run)
-            return ModelListResponse(executions)
+            execution_models = TaskExecution.objects.filter(pipeline_run=run).prefetch_related("task")
+            executions = []
+            for execution_model in execution_models:
+                # Convert the model to a dict and set the task id
+                task_id = execution_model.task.id
+                execution = model_to_dict(execution_model)
+                execution["task_id"] = task_id
+
+                executions.append(execution)
+
+            return BaseResponse(
+                status=200,
+                success=True,
+                message="success",
+                result=executions
+            )
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return ServerError(message=e.__cause__)
         except Exception as e:

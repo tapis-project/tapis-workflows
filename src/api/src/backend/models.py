@@ -1,3 +1,4 @@
+from typing import Tuple
 import uuid, re
 
 from django.db import models
@@ -16,12 +17,14 @@ TASK_INVOCATION_MODES = [
 TASK_TYPE_IMAGE_BUILD = "image_build"
 TASK_TYPE_CONTAINER_RUN = "container_run"
 TASK_TYPE_REQUEST = "request"
+TASK_TYPE_FUNCTION = "function"
 TASK_TYPE_TAPIS_JOB = "tapis_job"
 TASK_TYPE_TAPIS_ACTOR = "tapis_actor"
 TASK_TYPES = [
     (TASK_TYPE_IMAGE_BUILD, "image_build"),
     (TASK_TYPE_CONTAINER_RUN, "container_run"),
     (TASK_TYPE_REQUEST, "request"),
+    (TASK_TYPE_FUNCTION, "function"),
     (TASK_TYPE_TAPIS_JOB, "tapis_job"),
     (TASK_TYPE_TAPIS_ACTOR, "tapis_actor"),
 ]
@@ -38,6 +41,38 @@ TASK_PROTOCOLS = [
     (TASK_PROTOCOL_FTP, "ftp"),
     (TASK_PROTOCOL_FTPS, "ftps"),
 ]
+
+FUNCTION_TASK_RUNTIME_PYTHON39 = "python:3.9"
+FUNCTION_TASK_RUNTIMES = [
+    (FUNCTION_TASK_RUNTIME_PYTHON39, "python:3.9")
+]
+
+FUNCTION_TASK_INSTALLER_PIP = "pip"
+FUNCTION_TASK_INSTALLERS = [
+    (FUNCTION_TASK_INSTALLER_PIP, "pip")
+]
+
+TASK_FLAVOR_C1_SML = "c1sml"
+TASK_FLAVOR_C1_MED = "c1med"
+TASK_FLAVOR_C1_LRG = "c1lrg"
+TASK_FLAVOR_C1_XLRG = "c1xlrg"
+TASK_FLAVOR_C1_XXLRG = "c1xxlrg"
+TASK_FLAVOR_G1_NVD_SML = "g1nvdsml"
+TASK_FLAVOR_G1_NVD_MED = "g1nvdmed"
+TASK_FLAVOR_G1_NVD_LRG = "g1nvdlrg"
+
+TASK_FLAVORS = [
+    (TASK_FLAVOR_C1_SML, "c1sml"),
+    (TASK_FLAVOR_C1_MED, "c1med"),
+    (TASK_FLAVOR_C1_LRG, "c1lrg"),
+    (TASK_FLAVOR_C1_XLRG, "c1xlrg"),
+    (TASK_FLAVOR_C1_XXLRG, "c1xxlrg"),
+    (TASK_FLAVOR_G1_NVD_SML,  "g1nvdsml"),
+    (TASK_FLAVOR_G1_NVD_MED,  "g1nvdmed"),
+    (TASK_FLAVOR_G1_NVD_LRG, "g1nvdlrg")
+]
+
+DEFAULT_TASK_FLAVOR = TASK_FLAVOR_C1_MED
 
 DEFAULT_TASK_INVOCATION_MODE = TASK_INVOCATION_MODE_ASYNC
 DEFAULT_WORKFLOW_INVOCATION_MODE = TASK_INVOCATION_MODE_ASYNC
@@ -133,27 +168,16 @@ ACCESS_CONTROLS = [
     (ACCESS_CONTROL_DENY, "deny")
 ]
 
-STATUS_QUEUED = "queued"
-STATUS_IN_PROGRESS = "in_progress"
-STATUS_PUSHING = "pushing"
-STATUS_ERROR = "error"
-STATUS_SUCCESS = "success"
-STATUSES = [
-    (STATUS_QUEUED, "queued"),
-    (STATUS_IN_PROGRESS, "in_progress"),
-    (STATUS_PUSHING, "pushing"),
-    (STATUS_ERROR, "error"),
-    (STATUS_SUCCESS, "success"),
-]
-
-RUN_STATUS_ACTIVE = "active"
+RUN_STATUS_SUBMITTED = "submitted"
 RUN_STATUS_PENDING = "pending"
+RUN_STATUS_ACTIVE = "active"
 RUN_STATUS_BACKOFF = "backoff"
 RUN_STATUS_COMPLETED = "completed"
 RUN_STATUS_FAILED = "failed"
 RUN_STATUS_SUSPENDED = "suspended"
 RUN_STATUS_ARCHIVING = "archiving"
 RUN_STATUS_TERMINATED = "terminated"
+RUN_STATUS_DEFERRED = "deferred"
 
 RUN_STATUSES = [
     (RUN_STATUS_PENDING, "pending"),
@@ -164,17 +188,41 @@ RUN_STATUSES = [
     (RUN_STATUS_SUSPENDED, "suspended"),
     (RUN_STATUS_ARCHIVING, "archiving"),
     (RUN_STATUS_TERMINATED, "terminated"),
+    (RUN_STATUS_SUBMITTED, "submitted"),
+    (RUN_STATUS_DEFERRED, "deferred")
 ]
 
-TASK_EXECUTION_STATUSES = RUN_STATUSES
+EXEC_STATUS_PENDING = "pending"
+EXEC_STATUS_ACTIVE = "active"
+EXEC_STATUS_BACKOFF = "backoff"
+EXEC_STATUS_COMPLETED = "completed"
+EXEC_STATUS_FAILED = "failed"
+EXEC_STATUS_SUSPENDED = "suspended"
+EXEC_STATUS_ARCHIVING = "archiving"
+EXEC_STATUS_TERMINATED = "terminated"
+EXEC_STATUS_SKIPPED = "skipped"
+
+TASK_EXECUTION_STATUSES = EXEC_STATUSES = [
+    (EXEC_STATUS_PENDING, "pending"),
+    (EXEC_STATUS_ACTIVE, "active"),
+    (EXEC_STATUS_BACKOFF, "backoff"),
+    (EXEC_STATUS_COMPLETED, "completed"),
+    (EXEC_STATUS_FAILED, "failed"),
+    (EXEC_STATUS_SUSPENDED, "suspended"),
+    (EXEC_STATUS_ARCHIVING, "archiving"),
+    (EXEC_STATUS_TERMINATED, "terminated"),
+    (EXEC_STATUS_SKIPPED, "skipped"),
+]
 
 DUPLICATE_SUBMISSION_POLICY_ALLOW = "allow"
 DUPLICATE_SUBMISSION_POLICY_DENY = "deny"
 DUPLICATE_SUBMISSION_POLICY_TERMINATE = "terminate"
+DUPLICATE_SUBMISSION_POLICY_DEFER = "defer"
 DUPLICATE_SUBMISSION_POLICIES = [
     (DUPLICATE_SUBMISSION_POLICY_ALLOW, "allow"),
     (DUPLICATE_SUBMISSION_POLICY_DENY, "deny"),
-    (DUPLICATE_SUBMISSION_POLICY_TERMINATE, "terminate")
+    (DUPLICATE_SUBMISSION_POLICY_TERMINATE, "terminate"),
+    (DUPLICATE_SUBMISSION_POLICY_DEFER, "defer")
 ]
 DEFAULT_DUPLICATE_SUBMISSION_POLICY = DUPLICATE_SUBMISSION_POLICY_ALLOW
 
@@ -262,14 +310,15 @@ class Destination(models.Model):
     identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.CASCADE)
 
 class Event(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
     branch = models.CharField(max_length=255, null=True)
     commit = models.TextField(max_length=255, null=True)
     commit_sha = models.CharField(max_length=128, null=True)
     context_url = models.CharField(max_length=128, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    cron = models.CharField(null=True, max_length=128)
     directives = models.JSONField(null=True)
-    message = models.TextField()
     group = models.ForeignKey("backend.Group", related_name="events", null=True, on_delete=models.CASCADE)
+    message = models.TextField()
     pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
     source = models.CharField(max_length=255)
     username = models.CharField(max_length=64, null=True)
@@ -323,6 +372,8 @@ class Identity(models.Model):
 class Pipeline(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
+    env = models.JSONField(null=True)
+    params = models.JSONField(null=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
     invocation_mode = models.CharField(max_length=16, default=DEFAULT_WORKFLOW_INVOCATION_MODE)
     max_exec_time = models.BigIntegerField(
@@ -360,17 +411,31 @@ class PipelineArchive(models.Model):
         ]
 
 class PipelineRun(models.Model):
-    last_modified = models.DateField(null=True)
+    last_modified = models.DateTimeField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="runs", on_delete=models.CASCADE)
     status = models.CharField(max_length=16, choices=RUN_STATUSES, default=RUN_STATUS_PENDING)
-    started_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True)
     uuid = models.UUIDField(primary_key=True)
 
 class Task(models.Model):
+    class Meta:
+            constraints = [
+                models.UniqueConstraint(
+                    fields=["id", "pipeline_id"],
+                    name="task_id_pipeline_id"
+                )
+            ]
+            indexes = [
+                models.Index(fields=["id", "pipeline_id"])
+            ]
+
+    # Props
     id = models.CharField(validators=[validate_id], max_length=128)
+    _if = models.TextField(null=True)
     cache = models.BooleanField(null=True)
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
+    flavor = models.CharField(max_length=32, choices=TASK_FLAVORS, default=TASK_FLAVOR_C1_MED)
     input = models.JSONField(null=True)
     invocation_mode = models.CharField(max_length=16, default=DEFAULT_TASK_INVOCATION_MODE)
     max_exec_time = models.BigIntegerField(
@@ -398,7 +463,14 @@ class Task(models.Model):
     protocol = models.CharField(max_length=32, choices=TASK_PROTOCOLS, null=True)
     query_params = models.JSONField(null=True)
     url = models.CharField(max_length=255, null=True)
-    
+
+    # Function specific properties
+    runtime = models.CharField(max_length=64, choices=FUNCTION_TASK_RUNTIMES, null=True)
+    code = models.TextField(null=True)
+    command = models.TextField(null=True)
+    installer = models.CharField(max_length=64, choices=FUNCTION_TASK_INSTALLERS, null=True)
+    packages = models.JSONField(null=True, default=list)
+
     # Container run specific properties
     # Full image name for container run. includes scheme.
     image = models.CharField(max_length=128, null=True)
@@ -408,22 +480,50 @@ class Task(models.Model):
 
     # Tapis actor specific properties
     tapis_actor_id = models.CharField(max_length=128, null=True)
+    tapis_actor_message = models.TextField(null=True)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["id", "pipeline_id"],
-                name="task_id_pipeline_id"
-            )
-        ]
-        indexes = [
-            models.Index(fields=["id", "pipeline_id"])
-        ]
+    def clean(self):
+        errors = {}
+        
+        # Validate runtimes
+        (success, error) = self.validate_function_task_installers()
+        if not success: errors = {**errors, "invalid-runtime-installer": error}
+
+        # Validate packages schema
+        (success, error) = self.validate_function_task_installers()
+        if not success: errors = {**errors, "packages-schema-error": error}
+
+        if errors:
+            raise ValidationError(errors)
+
+    def validate_function_task_installers(self) -> Tuple[bool, str]:
+        installer_runtime_mapping = {
+            FUNCTION_TASK_RUNTIME_PYTHON39: [FUNCTION_TASK_INSTALLER_PIP3]
+        }
+
+        installers_for_runtime = installer_runtime_mapping.get(self.runtime, None)
+        if installers_for_runtime == None: return (False, f"Invalid runtime '{self.runtime}'")
+        if self.installer not in installers_for_runtime:
+            return (False, f"Installer '{self.installer}' for runtime {self.runtime}")
+
+    def validate_packages_schema(self) -> Tuple[bool, str]:
+        if type(self.packages) != list:
+            return (False, f"Invalid installer: Installer '{self.installer}' for runtime {self.runtime}")
+        
+        for package in self.packages:
+            if type(package) != str: return (False, "Items in the package array must be strings")
+
+    def validate_input(self):
+        pass
+
+    def validate_output(self):
+        pass
+
 
 class TaskExecution(models.Model):
-    last_modified = models.DateField(null=True)
+    last_modified = models.DateTimeField(null=True)
     pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="task_executions", on_delete=models.CASCADE)
-    started_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True)
     status = models.CharField(max_length=16, choices=TASK_EXECUTION_STATUSES, default=RUN_STATUS_PENDING)
     task = models.ForeignKey("backend.Task", related_name="task_executions", on_delete=models.CASCADE)
     uuid = models.UUIDField(primary_key=True)

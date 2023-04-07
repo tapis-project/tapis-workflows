@@ -12,7 +12,7 @@ chmod +x ./src/rabbitmq/deploy/local/minikube/burndown
 chmod +x ./src/api/deploy/local/minikube/burndown
 ./src/api/deploy/local/minikube/burndown
 
-# pipelines
-chmod +x ./src/pipelines/deploy/local/minikube/burndown
-./src/pipelines/deploy/local/minikube/burndown
+# engine
+chmod +x ./src/engine/deploy/local/minikube/burndown
+./src/engine/deploy/local/minikube/burndown
 

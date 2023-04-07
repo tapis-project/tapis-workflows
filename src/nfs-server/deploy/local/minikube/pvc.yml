@@ -1,0 +1,12 @@
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: workflows-nfs-server-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 10Gi

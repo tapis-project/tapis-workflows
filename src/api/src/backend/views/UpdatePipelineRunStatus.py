@@ -1,4 +1,5 @@
 from django.db import DatabaseError, IntegrityError, OperationalError
+from django.utils import timezone
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses import BaseResponse
@@ -17,7 +18,10 @@ class UpdatePipelineRunStatus(RestrictedAPIView):
 
         try:
             PipelineRun.objects.filter(
-                uuid=pipeline_run_uuid).update(status=status)
+                uuid=pipeline_run_uuid).update(
+                    status=status,
+                    last_modified=timezone.now()
+                )
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return ServerError(f"Server Error: {e.__cause__}")
         except Exception as e:

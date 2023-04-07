@@ -1,0 +1,1 @@
+export { default as getPipeline } from "./details.js"
