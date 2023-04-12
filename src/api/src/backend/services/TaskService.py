@@ -26,8 +26,8 @@ from backend.views.http.requests import (
     FunctionTask,
     RegistryDestination,
     LocalDestination,
-    task_input_value_types,
-    task_input_value_from_keys
+    EnumTaskIOTypes,
+    EnumTaskInputValueFromKey
 )
 from backend.services.SecretService import service as secret_service
 from backend.services.Service import Service
@@ -287,8 +287,8 @@ class TaskService(Service):
                 return f"Input value must be a dict: type {type(_input[key])} found for key {key}"
 
             # Validate input value type property
-            if _input[key].get("type", None) not in task_input_value_types:
-                return f"'type' property input value of key {key} must be oneOf: {task_input_value_types}"
+            if _input[key].get("type", None) not in EnumTaskIOTypes:
+                return f"'type' property input value of key {key} must be oneOf: {[item.value for item in EnumTaskIOTypes]}"
 
             # Return if the value property exists and is not None
             if _input[key].get("value", None) != None:
@@ -301,8 +301,8 @@ class TaskService(Service):
 
             # Validate the key of the value_from property
             value_from_key = list(value_from.keys())[0]
-            if len(value_from) > 1 or value_from_key not in task_input_value_from_keys:
-                return f"Input validation error at key {key}: The key in 'value_from' must be oneOf: {task_input_value_from_keys}" 
+            if len(value_from) > 1 or value_from_key not in EnumTaskInputValueFromKey:
+                return f"Input validation error at key {key}: The key in 'value_from' must be oneOf: {[item.value for item in EnumTaskInputValueFromKey]}" 
             
             # Validate value_from value for 'env' and 'params'
             value_from_value = value_from[value_from_key]
