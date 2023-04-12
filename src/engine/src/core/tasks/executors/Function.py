@@ -125,7 +125,7 @@ class Function(TaskExecutor):
         return TaskResult(status=0 if self._job_succeeded(job) else 1)
 
     def _setup_container(self) -> ContainerDetails:
-        if self.task.runtime in ["python:3.9"]:
+        if self.task.runtime in ["python:3.9", "tapis/workflows-python-singularity:0.1.0"]:
             return self._setup_python_container()
         # elif self.task.runtime in ["node:18"]:
         #     return "entrypoint.js"
@@ -158,19 +158,19 @@ class Function(TaskExecutor):
         command = ["/bin/sh", "-c"]
 
         # NOTE Only supporting pip for now
-        # Requirements file
+        # Requirements file path inside the container
         requirements_txt = os.path.join(self.task.container_work_dir, "scratch", requirements_filename)
         
-        # Entrypoint file
+        # Entrypoint path inside the container
         entrypoint_py = os.path.join(self.task.container_work_dir, "scratch", entrypoint_filename)
         
-        # The output file for the install logs
+        # The output file for the install logs inside the container
         dot_install = os.path.join(self.task.container_work_dir, "output", ".install")
 
-        # .stderr
+        # .stderr path inside the container
         stderr = os.path.join(self.task.container_work_dir, "output", ".stderr")
 
-        # .stdout
+        # .stdout path inside the container
         stdout = os.path.join(self.task.container_work_dir, "output", ".stdout")
 
         install_cmd = ""
@@ -191,6 +191,10 @@ class Function(TaskExecutor):
             client.V1EnvVar(
                 name="OWE_OUTPUT_DIR",
                 value=os.path.join(self.task.container_work_dir, "output")
+            ),
+            client.V1EnvVar(
+                name="OWE_SCRATCH_DIR",
+                value=os.path.join(self.task.container_work_dir, "scratch")
             ),
         ]
 
