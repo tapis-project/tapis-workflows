@@ -6,7 +6,7 @@ from tapisservice import errors
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest, Unauthorized
+from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest, Unauthorized, ServerError
 from backend.views.http.responses import NoContentResponse
 from backend.views.http.requests import PreparedRequest
 from backend.services.TapisAPIGateway import TapisAPIGateway
@@ -120,6 +120,10 @@ class RestrictedAPIView(View):
             self.prepared_request = PreparedRequest(is_valid=False, failure_view=failure_view)
 
             return self.prepared_request
+        except Exception as e:
+            failure_view = ServerError(str(e))
+
+            self.prepared_request = PreparedRequest(is_valid=False, failure_view=failure_view)
 
         self.prepared_request = PreparedRequest(body=request_object)
         return self.prepared_request
