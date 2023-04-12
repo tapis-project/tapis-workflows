@@ -5,6 +5,24 @@ from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 
+from backend.views.http.requests import (
+    EnumRuntimeEnvironment,
+    EnumTaskFlavor,
+    EnumTaskType,
+    EnumImageBuilder,
+    EnumContextType,
+    EnumDestinationType,
+    EnumVisibility,
+    EnumInstaller,
+    EnumInvocationMode,
+    EnumRetryPolicy,
+    EnumDuplicateSubmissionPolicy,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_MAX_TASK_EXEC_TIME,
+    DEFAULT_MAX_WORKFLOW_EXEC_TIME
+) 
+
+
 ONE_HOUR_IN_SEC = 3600
 
 TASK_INVOCATION_MODE_SYNC = "sync"
@@ -14,19 +32,19 @@ TASK_INVOCATION_MODES = [
     (TASK_INVOCATION_MODE_ASYNC, "async")
 ]
 
-TASK_TYPE_IMAGE_BUILD = "image_build"
-TASK_TYPE_CONTAINER_RUN = "container_run"
-TASK_TYPE_REQUEST = "request"
-TASK_TYPE_FUNCTION = "function"
-TASK_TYPE_TAPIS_JOB = "tapis_job"
-TASK_TYPE_TAPIS_ACTOR = "tapis_actor"
+TASK_TYPE_IMAGE_BUILD = EnumTaskType.ImageBuild
+TASK_TYPE_CONTAINER_RUN = EnumTaskType.ContainerRun
+TASK_TYPE_REQUEST = EnumTaskType.Request
+TASK_TYPE_FUNCTION = EnumTaskType.Function
+TASK_TYPE_TAPIS_JOB = EnumTaskType.TapisJob
+TASK_TYPE_TAPIS_ACTOR = EnumTaskType.TapisActor
 TASK_TYPES = [
-    (TASK_TYPE_IMAGE_BUILD, "image_build"),
-    (TASK_TYPE_CONTAINER_RUN, "container_run"),
-    (TASK_TYPE_REQUEST, "request"),
-    (TASK_TYPE_FUNCTION, "function"),
-    (TASK_TYPE_TAPIS_JOB, "tapis_job"),
-    (TASK_TYPE_TAPIS_ACTOR, "tapis_actor"),
+    (TASK_TYPE_IMAGE_BUILD, EnumTaskType.ImageBuild),
+    (TASK_TYPE_CONTAINER_RUN, EnumTaskType.ContainerRun),
+    (TASK_TYPE_REQUEST, EnumTaskType.Request),
+    (TASK_TYPE_FUNCTION, EnumTaskType.Function),
+    (TASK_TYPE_TAPIS_JOB, EnumTaskType.TapisJob),
+    (TASK_TYPE_TAPIS_ACTOR, EnumTaskType.TapisActor),
 ]
 
 TASK_PROTOCOL_HTTP = "http"
@@ -42,54 +60,36 @@ TASK_PROTOCOLS = [
     (TASK_PROTOCOL_FTPS, "ftps"),
 ]
 
-FUNCTION_TASK_RUNTIME_PYTHON39 = "python:3.9"
+FUNCTION_TASK_RUNTIME_PYTHON39 = EnumRuntimeEnvironment.Python39
+FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY = EnumRuntimeEnvironment.PythonSingularity
 FUNCTION_TASK_RUNTIMES = [
-    (FUNCTION_TASK_RUNTIME_PYTHON39, "python:3.9")
+    (FUNCTION_TASK_RUNTIME_PYTHON39, EnumRuntimeEnvironment.Python39),
+    (FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY, EnumRuntimeEnvironment.PythonSingularity)
 ]
 
-FUNCTION_TASK_INSTALLER_PIP = "pip"
 FUNCTION_TASK_INSTALLERS = [
-    (FUNCTION_TASK_INSTALLER_PIP, "pip")
+    (EnumInstaller.Pip, EnumInstaller.Pip)
 ]
 
-TASK_FLAVOR_C1_SML = "c1sml"
-TASK_FLAVOR_C1_MED = "c1med"
-TASK_FLAVOR_C1_LRG = "c1lrg"
-TASK_FLAVOR_C1_XLRG = "c1xlrg"
-TASK_FLAVOR_C1_XXLRG = "c1xxlrg"
-TASK_FLAVOR_G1_NVD_SML = "g1nvdsml"
-TASK_FLAVOR_G1_NVD_MED = "g1nvdmed"
-TASK_FLAVOR_G1_NVD_LRG = "g1nvdlrg"
+TASK_FLAVOR_C1_SML = EnumTaskFlavor.C1_SML
+TASK_FLAVOR_C1_MED = EnumTaskFlavor.C1_MED
+TASK_FLAVOR_C1_LRG = EnumTaskFlavor.C1_LRG
+TASK_FLAVOR_C1_XLRG = EnumTaskFlavor.C1_XLRG
+TASK_FLAVOR_C1_XXLRG = EnumTaskFlavor.C1_XXLRG
+TASK_FLAVOR_G1_NVD_SML = EnumTaskFlavor.G1_NVD_SML
+TASK_FLAVOR_G1_NVD_MED = EnumTaskFlavor.G1_NVD_MED
+TASK_FLAVOR_G1_NVD_LRG = EnumTaskFlavor.G1_NVD_LRG
 
 TASK_FLAVORS = [
-    (TASK_FLAVOR_C1_SML, "c1sml"),
-    (TASK_FLAVOR_C1_MED, "c1med"),
-    (TASK_FLAVOR_C1_LRG, "c1lrg"),
-    (TASK_FLAVOR_C1_XLRG, "c1xlrg"),
-    (TASK_FLAVOR_C1_XXLRG, "c1xxlrg"),
-    (TASK_FLAVOR_G1_NVD_SML,  "g1nvdsml"),
-    (TASK_FLAVOR_G1_NVD_MED,  "g1nvdmed"),
-    (TASK_FLAVOR_G1_NVD_LRG, "g1nvdlrg")
+    (TASK_FLAVOR_C1_SML, EnumTaskFlavor.C1_SML),
+    (TASK_FLAVOR_C1_MED, EnumTaskFlavor.C1_MED),
+    (TASK_FLAVOR_C1_LRG, EnumTaskFlavor.C1_LRG),
+    (TASK_FLAVOR_C1_XLRG, EnumTaskFlavor.C1_XLRG),
+    (TASK_FLAVOR_C1_XXLRG, EnumTaskFlavor.C1_XXLRG),
+    (TASK_FLAVOR_G1_NVD_SML,  EnumTaskFlavor.G1_NVD_SML),
+    (TASK_FLAVOR_G1_NVD_MED,  EnumTaskFlavor.G1_NVD_MED),
+    (TASK_FLAVOR_G1_NVD_LRG, EnumTaskFlavor.G1_NVD_LRG)
 ]
-
-DEFAULT_TASK_FLAVOR = TASK_FLAVOR_C1_MED
-
-DEFAULT_TASK_INVOCATION_MODE = TASK_INVOCATION_MODE_ASYNC
-DEFAULT_WORKFLOW_INVOCATION_MODE = TASK_INVOCATION_MODE_ASYNC
-
-# Execution times in seconds
-DEFAULT_MAX_EXEC_TIME = 3600
-DEFAULT_MAX_TASK_EXEC_TIME = DEFAULT_MAX_EXEC_TIME
-DEFAULT_MAX_WORKFLOW_EXEC_TIME = DEFAULT_MAX_EXEC_TIME*3
-
-# Retries and retry policies
-RETRY_POLICY_EXPONENTIAL_BACKOFF = "exponential_backoff"
-
-DEFAULT_RETRY_POLICY = RETRY_POLICY_EXPONENTIAL_BACKOFF
-
-RETRIES_NONE = 0
-RETRIES_UNLIMITED = -1
-DEFAULT_MAX_RETRIES = RETRIES_NONE
 
 ARCHIVE_TYPE_SYSTEM = "system"
 ARCHIVE_TYPE_S3 = "s3"
@@ -100,13 +100,11 @@ ARCHIVE_TYPES = [
     (ARCHIVE_TYPE_IRODS, "irods")
 ]
 
-DEFAULT_ARCHIVE_DIR = "/workflows/archive/"
-
-IMAGE_BUILDER_KANIKO = "kaniko"
-IMAGE_BUILDER_SINGULARITY = "singularity"
+IMAGE_BUILDER_KANIKO = EnumImageBuilder.Kaniko
+IMAGE_BUILDER_SINGULARITY = EnumImageBuilder.Singularity
 IMAGE_BUILDERS = [
-    (IMAGE_BUILDER_KANIKO, "kaniko"),
-    (IMAGE_BUILDER_SINGULARITY, "singularity"),
+    (IMAGE_BUILDER_KANIKO, EnumImageBuilder.Kaniko),
+    (IMAGE_BUILDER_SINGULARITY, EnumImageBuilder.Singularity),
 ]
 
 HTTP_METHOD_GET = "get"
@@ -122,22 +120,22 @@ TASK_HTTP_METHODS = [
     (HTTP_METHOD_DELETE, "delete"),
 ]
 
-CONTEXT_TYPE_GITHUB = "github"
-CONTEXT_TYPE_GITLAB = "gitlab"
-CONTEXT_TYPE_DOCKERHUB = "dockerhub"
+CONTEXT_TYPE_GITHUB = EnumContextType.Github
+CONTEXT_TYPE_GITLAB = EnumContextType.Gitlab
+CONTEXT_TYPE_DOCKERHUB = EnumContextType.Dockerhub
 CONTEXT_TYPES = [
-    (CONTEXT_TYPE_GITHUB, "github"),
-    (CONTEXT_TYPE_GITLAB, "gitlab"),
-    (CONTEXT_TYPE_DOCKERHUB, "dockerhub"),
+    (CONTEXT_TYPE_GITHUB, EnumContextType.Github),
+    (CONTEXT_TYPE_GITLAB, EnumContextType.Gitlab),
+    (CONTEXT_TYPE_DOCKERHUB, EnumContextType.Dockerhub),
 ]
 
-DESTINATION_TYPE_DOCKERHUB = "dockerhub"
-DESTINATION_TYPE_DOCKERHUB_LOCAL = "dockerhub_local"
-DESTINATION_TYPE_LOCAL = "local"
-DESTINATION_TYPE_S3 = "s3"
+DESTINATION_TYPE_DOCKERHUB = EnumDestinationType.Dockerhub
+DESTINATION_TYPE_DOCKERHUB_LOCAL = EnumDestinationType.DockerhubLocal
+DESTINATION_TYPE_LOCAL = EnumDestinationType.Local
+DESTINATION_TYPE_S3 = EnumDestinationType.Dockerhub
 DESTINATION_TYPES = [
-    (DESTINATION_TYPE_DOCKERHUB, "dockerhub"),
-    (DESTINATION_TYPE_LOCAL, "local")
+    (DESTINATION_TYPE_DOCKERHUB, EnumDestinationType.Dockerhub),
+    (DESTINATION_TYPE_LOCAL, EnumDestinationType.Local)
     # TODO support s3 destinations
     # TODO support local destination
     # TODO support local dockerhub
@@ -214,23 +212,22 @@ TASK_EXECUTION_STATUSES = EXEC_STATUSES = [
     (EXEC_STATUS_SKIPPED, "skipped"),
 ]
 
-DUPLICATE_SUBMISSION_POLICY_ALLOW = "allow"
-DUPLICATE_SUBMISSION_POLICY_DENY = "deny"
-DUPLICATE_SUBMISSION_POLICY_TERMINATE = "terminate"
-DUPLICATE_SUBMISSION_POLICY_DEFER = "defer"
+DUPLICATE_SUBMISSION_POLICY_ALLOW = EnumDuplicateSubmissionPolicy.Allow
+DUPLICATE_SUBMISSION_POLICY_DENY = EnumDuplicateSubmissionPolicy.Deny
+DUPLICATE_SUBMISSION_POLICY_TERMINATE = EnumDuplicateSubmissionPolicy.Terminate
+DUPLICATE_SUBMISSION_POLICY_DEFER = EnumDuplicateSubmissionPolicy.Defer
 DUPLICATE_SUBMISSION_POLICIES = [
-    (DUPLICATE_SUBMISSION_POLICY_ALLOW, "allow"),
-    (DUPLICATE_SUBMISSION_POLICY_DENY, "deny"),
-    (DUPLICATE_SUBMISSION_POLICY_TERMINATE, "terminate"),
-    (DUPLICATE_SUBMISSION_POLICY_DEFER, "defer")
+    (DUPLICATE_SUBMISSION_POLICY_ALLOW, EnumDuplicateSubmissionPolicy.Allow),
+    (DUPLICATE_SUBMISSION_POLICY_DENY, EnumDuplicateSubmissionPolicy.Deny),
+    (DUPLICATE_SUBMISSION_POLICY_TERMINATE, EnumDuplicateSubmissionPolicy.Terminate),
+    (DUPLICATE_SUBMISSION_POLICY_DEFER, EnumDuplicateSubmissionPolicy.Defer)
 ]
-DEFAULT_DUPLICATE_SUBMISSION_POLICY = DUPLICATE_SUBMISSION_POLICY_ALLOW
 
-VISIBILITY_PUBLIC = "public"
-VISIBILITY_PRIVATE = "private"
+VISIBILITY_PUBLIC = EnumVisibility.Public
+VISIBILITY_PRIVATE = EnumVisibility.Private
 VISIBILITY_TYPES = [
-    (VISIBILITY_PUBLIC, "public"),
-    (VISIBILITY_PRIVATE, "private")
+    (VISIBILITY_PUBLIC, EnumVisibility.Public),
+    (VISIBILITY_PRIVATE, EnumVisibility.Private)
 ]
 
 ### Validators ###
@@ -375,15 +372,15 @@ class Pipeline(models.Model):
     env = models.JSONField(null=True)
     params = models.JSONField(null=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
-    invocation_mode = models.CharField(max_length=16, default=DEFAULT_WORKFLOW_INVOCATION_MODE)
+    invocation_mode = models.CharField(max_length=16, default=EnumInvocationMode.Async)
     max_exec_time = models.BigIntegerField(
         default=DEFAULT_MAX_WORKFLOW_EXEC_TIME,
         validators=[MaxValueValidator(DEFAULT_MAX_WORKFLOW_EXEC_TIME), MinValueValidator(1)]
     )
     max_retries = models.IntegerField(default=DEFAULT_MAX_RETRIES)
-    duplicate_submission_policy = models.CharField(max_length=32, choices=DUPLICATE_SUBMISSION_POLICIES, default=DEFAULT_DUPLICATE_SUBMISSION_POLICY)
+    duplicate_submission_policy = models.CharField(max_length=32, choices=DUPLICATE_SUBMISSION_POLICIES, default=EnumDuplicateSubmissionPolicy.Terminate)
     owner = models.CharField(max_length=64)
-    retry_policy = models.CharField(max_length=32, default=DEFAULT_RETRY_POLICY)
+    retry_policy = models.CharField(max_length=32, default=EnumRetryPolicy.ExponentialBackoff)
     updated_at = models.DateTimeField(auto_now=True)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     current_run = models.ForeignKey("backend.PipelineRun", related_name="+", null=True, on_delete=models.CASCADE)
@@ -437,7 +434,7 @@ class Task(models.Model):
     description = models.TextField(null=True)
     flavor = models.CharField(max_length=32, choices=TASK_FLAVORS, default=TASK_FLAVOR_C1_MED)
     input = models.JSONField(null=True)
-    invocation_mode = models.CharField(max_length=16, default=DEFAULT_TASK_INVOCATION_MODE)
+    invocation_mode = models.CharField(max_length=16, default=EnumInvocationMode.Async)
     max_exec_time = models.BigIntegerField(
         default=DEFAULT_MAX_TASK_EXEC_TIME,
         validators=[MaxValueValidator(DEFAULT_MAX_TASK_EXEC_TIME*3), MinValueValidator(1)]
@@ -446,7 +443,7 @@ class Task(models.Model):
     output = models.JSONField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="tasks", on_delete=models.CASCADE)
     poll = models.BooleanField(null=True)
-    retry_policy = models.CharField(max_length=32, default=DEFAULT_RETRY_POLICY)
+    retry_policy = models.CharField(max_length=32, default=EnumRetryPolicy.ExponentialBackoff)
     type = models.CharField(max_length=32, choices=TASK_TYPES)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
 
@@ -498,7 +495,8 @@ class Task(models.Model):
 
     def validate_function_task_installers(self) -> Tuple[bool, str]:
         installer_runtime_mapping = {
-            FUNCTION_TASK_RUNTIME_PYTHON39: [FUNCTION_TASK_INSTALLER_PIP3]
+            FUNCTION_TASK_RUNTIME_PYTHON39: [EnumInstaller.Pip],
+            FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY: [EnumInstaller.Pip]
         }
 
         installers_for_runtime = installer_runtime_mapping.get(self.runtime, None)

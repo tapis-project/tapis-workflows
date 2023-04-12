@@ -115,3 +115,22 @@ jobs:
           docker build -f src/engine-streams/src/Dockerfile -t tapis/workflow-engine-streams:$BRANCH .
       - name: Push_All_Tags
         run: docker push --all-tags tapis/workflow-engine-streams
+
+  Build_Push_Image_Python_Singularity:
+    needs:
+      - Resolve_Image_Tag
+    runs-on: ubuntu-latest
+    name: Build_Push_Python_Sinuglarity_Image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.TAPIS_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.TAPIS_DOCKERHUB_ACCESS_TOKEN }}
+      - name: Build_Tapis_Python_Singularity_Image
+        run: |
+          docker build -f src/engine/src/contrib/tapis/images/python-singularity/Dockerfile -t tapis/workflows-python-singularity:0.1.0 src/engine/src/contrib/tapis/images/python-singularity
+      - name: Push_All_Tags
+        run: docker push --all-tags tapis/workflows-python-singularity
