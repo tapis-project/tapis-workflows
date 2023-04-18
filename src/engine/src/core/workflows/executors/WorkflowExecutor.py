@@ -4,7 +4,7 @@ from threading import Thread, Lock
 from uuid import uuid4
 
 from core.tasks.TaskExecutorFactory import task_executor_factory as factory
-from core.tasks.TaskResult import TaskResult
+from owe_python_sdk.TaskResult import TaskResult
 from owe_python_sdk.events import (
     Event,
     EventPublisher,

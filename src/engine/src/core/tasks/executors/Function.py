@@ -5,7 +5,7 @@ from uuid import uuid4
 from kubernetes import client
 
 from core.tasks.TaskExecutor import TaskExecutor
-from core.tasks.TaskResult import TaskResult
+from owe_python_sdk.TaskResult import TaskResult
 from conf.constants import (
     WORKFLOW_NFS_SERVER,
     KUBERNETES_NAMESPACE,

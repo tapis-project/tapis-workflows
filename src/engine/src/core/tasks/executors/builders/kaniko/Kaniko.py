@@ -8,7 +8,7 @@ from conf.constants import (
     KANIKO_IMAGE_URL,
     KANIKO_IMAGE_TAG
 )
-from core.tasks.TaskResult import TaskResult
+from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
 from utils import get_flavor, lbuffer_str as lbuf
