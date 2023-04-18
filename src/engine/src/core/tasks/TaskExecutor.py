@@ -2,9 +2,9 @@ import os
 
 from kubernetes import config, client
 
+from owe_python_sdk.events.types import TASK_TERMINATED
+from owe_python_sdk.events import EventPublisher, EventExchange, Event
 from utils import lbuffer_str as lbuf
-from core.events import EventPublisher, EventExchange, Event
-from core.events.types import TASK_TERMINATED
 from core.resources import Resource, ResourceType
 from conf.constants import (
     DEFAULT_POLLING_INTERVAL,

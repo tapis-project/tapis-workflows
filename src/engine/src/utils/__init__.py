@@ -1,5 +1,6 @@
 import json
 
+from importlib import import_module
 from types import SimpleNamespace
 
 from conf.constants import FLAVORS
@@ -37,3 +38,18 @@ def get_flavor(flavor: str):
         raise Exception(f"Invalid Flavor Error | Recieved: {flavor} | Expected: oneOf {[key for key in FLAVORS.keys()]}")
 
     return Flavor(**FLAVORS[flavor])
+
+def load_plugins(plugin_names):
+    contrib_prefix = "contrib"
+    plugins = []
+    for plugin_name in plugin_names:
+        if "contrib/" in plugin_name:
+            module_name = plugin_name.replace("contrib/", "")
+            module = import_module(f"{contrib_prefix}.{module_name}.plugin")
+            plugin_class = getattr(module, "plugin", None)
+            if plugin_class != None: plugins.append(plugin_class(plugin_name))
+            continue
+
+        # TODO handle non-contrib plugins
+
+    return plugins

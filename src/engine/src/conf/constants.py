@@ -93,3 +93,5 @@ FLAVORS = {
 
 SINGULARITY_IMAGE_URL = "quay.io/singularity/singularity"
 SINGULARITY_IMAGE_TAG = "v3.10.0"
+
+PLUGINS = [ "contrib/tapis" ]
