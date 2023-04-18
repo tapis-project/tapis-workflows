@@ -6,7 +6,7 @@ from core.tasks.Flavor import Flavor
 
 
 BASE_DIR = str(Path(__file__).resolve().parent.parent) + "/"
-OWE_PYTHON_SDK_DIR = os.path.join(BASE_DIR, "owe-python-sdk")
+OWE_PYTHON_SDK_DIR = os.path.join(BASE_DIR, "owe_python_sdk")
 
 IS_LOCAL = True if os.environ.get("IS_LOCAL", 'false') == 'true' else False
 

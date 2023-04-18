@@ -180,7 +180,7 @@ class Function(TaskExecutor):
         # TODO handle for "command" property
 
         # Copy the owe-python-sdk files to the scratch directory
-        owe_python_sdk_local_path = os.path.join(self.task.work_dir, "scratch")
+        owe_python_sdk_local_path = os.path.join(self.task.work_dir, "scratch/owe_python_sdk")
         shutil.copytree(OWE_PYTHON_SDK_DIR, owe_python_sdk_local_path, dirs_exist_ok=True)
 
         entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
