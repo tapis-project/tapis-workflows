@@ -1,6 +1,7 @@
 from owe_python_sdk.middleware import RequestMiddleware
+from owe_python_sdk.SchemaExtension import SchemaExtension
 
-MIDDLEWARE_TYPES = [ "request", "archive", "backend", "task_executor" ]
+MIDDLEWARE_TYPES = [ "request", "archive", "backend", "task_executor", "schema_extension" ]
 
 class Plugin:
     def __init__(self, name):
@@ -9,6 +10,7 @@ class Plugin:
         self.archive_middlewares = []
         self.backend_middlewares = []
         self.task_executors = {}
+        self.schema_extensions = []
 
     def register(self, _type, middleware):
         if _type not in MIDDLEWARE_TYPES:
@@ -28,6 +30,10 @@ class Plugin:
             # TODO more logic to ensure key(s) is a string and val is a
             # subclass (not an instance) of TaskExecutor
             self.task_executors = {**self.task_executors, **middleware}
+        elif _type == "schema_extension":
+            if type(middleware) != SchemaExtension:
+                raise Exception(f"Schema Extension Registration Error: Expected type 'SchemaExtension' | Recieved {type(middleware)}")
+            self.schema_extensions.append(middleware)
 
     def dispatch(self, _type, ctx):
         if _type not in MIDDLEWARE_TYPES:

@@ -6,10 +6,11 @@ from kubernetes import client
 
 from core.tasks.TaskExecutor import TaskExecutor
 from owe_python_sdk.TaskResult import TaskResult
+from owe_python_sdk.utils import get_schema_extensions
 from conf.constants import (
     WORKFLOW_NFS_SERVER,
     KUBERNETES_NAMESPACE,
-    OWE_PYTHON_SDK_DIR
+    OWE_PYTHON_SDK_DIR,
 )
 from core.resources import JobResource
 from utils import get_flavor
@@ -22,7 +23,7 @@ class ContainerDetails:
         image,
         command,
         args,
-        env
+        env=None
     ):
         self.image = image
         self.command = command
@@ -33,6 +34,23 @@ class ContainerDetails:
 # TODO Review the Kubernetes attack surface guide.
 # TODO Remove the kubernetes token from the container(s)?
 class Function(TaskExecutor):
+    def __init__(self, task, ctx, exchange, plugins=[]):
+        TaskExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
+
+        self.runtimes = {
+            "python": ["python:3.9"]
+        }
+        
+        # Add additional Function task runtimes from plugins
+        schemas = get_schema_extensions(self.plugins, "task_executor", sub_type="function")
+        for schema in schemas:
+            additional_runtimes = schema.get("runtimes", {})
+            for language in additional_runtimes:
+                runtimes_for_language = self.runtimes.get(
+                    language, []
+                ) + additional_runtimes.get(language, [])
+                self.runtimes[language] = runtimes_for_language
+
     def execute(self):
         """Create and run the container"""
         job_name = "wf-fn-" + str(uuid4())
@@ -57,7 +75,7 @@ class Function(TaskExecutor):
             image=container_details.image,
             volume_mounts=volume_mounts,
             env=container_details.env,
-            resources=flavor_to_k8s_resource_reqs(get_flavor("c1sml"))
+            resources=(flavor_to_k8s_resource_reqs(get_flavor("c1sml")))
         )
 
         # Volume for output
@@ -125,12 +143,35 @@ class Function(TaskExecutor):
         return TaskResult(status=0 if self._job_succeeded(job) else 1)
 
     def _setup_container(self) -> ContainerDetails:
-        if self.task.runtime in ["python:3.9", "tapis/workflows-python-singularity:0.1.0"]:
-            return self._setup_python_container()
+        if self.task.runtime in self.runtimes["python"]:
+            container_details = self._setup_python_container()
         # elif self.task.runtime in ["node:18"]:
         #     return "entrypoint.js"
         else:
             raise Exception(f"Invalid runtime: {self.task.runtime}")
+
+         # Set up env vars for the container
+        env = [
+            client.V1EnvVar(
+                name="OWE_OUTPUT_DIR",
+                value=os.path.join(self.task.container_work_dir, "output")
+            ),
+            client.V1EnvVar(
+                name="OWE_SCRATCH_DIR",
+                value=os.path.join(self.task.container_work_dir, "scratch")
+            ),
+        ]
+
+        # Convert defined workflow inputs into the function containers env vars with
+        # the open workflow engine input prefix
+        container_details.env = env + input_to_k8s_env_vars(
+            self.task.input,
+            self.ctx,
+            prefix="_OWE_WORKFLOW_INPUT_"
+        )
+        
+        return container_details
+        
 
     def _write_entrypoint_file(self, file_path, code):
         with open(file_path, "wb") as file:
@@ -186,29 +227,8 @@ class Function(TaskExecutor):
         entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
         args = [f"{install_cmd} {entrypoint_cmd}"]
 
-        # Set up env vars for the container
-        env = [
-            client.V1EnvVar(
-                name="OWE_OUTPUT_DIR",
-                value=os.path.join(self.task.container_work_dir, "output")
-            ),
-            client.V1EnvVar(
-                name="OWE_SCRATCH_DIR",
-                value=os.path.join(self.task.container_work_dir, "scratch")
-            ),
-        ]
-
-        # Convert defined workflow inputs into the function containers env vars with
-        # the open workflow engine input prefix
-        env = env + input_to_k8s_env_vars(
-            self.task.input,
-            self.ctx,
-            prefix="_OWE_WORKFLOW_INPUT_"
-        )
-
         return ContainerDetails(
             image=self.task.runtime,
             command=command,
-            args=args,
-            env=env
+            args=args
         )

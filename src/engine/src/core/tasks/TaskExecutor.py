@@ -15,10 +15,11 @@ from conf.constants import (
 TSTR = lbuf('[TASK]')
 
 class TaskExecutor(EventPublisher):
-    def __init__(self, task, ctx, exchange: EventExchange):
+    def __init__(self, task, ctx, exchange: EventExchange, plugins=[]):
         # Enabling task executors to publish events to the exchange. 
         EventPublisher.__init__(self, exchange)
         
+        self.plugins = plugins
         self.ctx = ctx
         self.task = task
         # The workdir for the task inside of the container

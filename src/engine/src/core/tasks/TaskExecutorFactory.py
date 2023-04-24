@@ -14,7 +14,7 @@ class TaskExecutorFactory:
         fn = getattr(self, f"_{task.type}", None)
         if fn != None:
             try:
-                return fn(task, ctx, exchange)
+                return fn(task, ctx, exchange, plugins)
             except Exception as e:
                 logging.error(e)
                 raise Exception(f"Error initializing Task Executor: {e}")
@@ -28,7 +28,7 @@ class TaskExecutorFactory:
                 continue
             
             try:
-                return PluginTaskExecutorClass(task, ctx, exchange)
+                return PluginTaskExecutorClass(task, ctx, exchange, plugins=plugins)
             except Exception as e:
                 logging.error(e)
                 raise Exception(f"Error initializing Task Executor: {e}")
@@ -40,19 +40,19 @@ class TaskExecutorFactory:
             hint=f"Update Task with id=={task.id} to have one of the following types: [image_build, container_run, request]",
         )
 
-    def _image_build(self, task, ctx, exchange) -> TaskExecutor:
+    def _image_build(self, task, ctx, exchange, plugins) -> TaskExecutor:
         # Returns a build executor for the specified image builder and
         # deployment type
         executor = build_task_executor_resolver.resolve(task)
-        return executor(task, ctx, exchange)
+        return executor(task, ctx, exchange, plugins=plugins)
 
-    def _request(self, task, ctx, exchange) -> TaskExecutor:
-        return HTTP(task, ctx, exchange)
+    def _request(self, task, ctx, exchange, plugins) -> TaskExecutor:
+        return HTTP(task, ctx, exchange, plugins=plugins)
     
-    def _application(self, task, ctx, exchange) -> TaskExecutor:
-        return Application(task, ctx, exchange)
+    def _application(self, task, ctx, exchange, plugins) -> TaskExecutor:
+        return Application(task, ctx, exchange, plugins=plugins)
 
-    def _function(self, task, ctx, exchange) -> TaskExecutor:
-        return Function(task, ctx, exchange)
+    def _function(self, task, ctx, exchange, plugins) -> TaskExecutor:
+        return Function(task, ctx, exchange, plugins=plugins)
 
 task_executor_factory = TaskExecutorFactory()

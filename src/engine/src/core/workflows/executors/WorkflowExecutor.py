@@ -214,7 +214,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         try:
             if not self.state.is_dry_run:
                 # Resolve the task executor and execute the task
-                executor = factory.build(task, self.state.ctx, self.exchange, self._plugins)
+                executor = factory.build(task, self.state.ctx, self.exchange, plugins=self._plugins)
                 # Register the task executor
                 self._register_executor(self.state.ctx.pipeline_run.uuid, task, executor)
                 
