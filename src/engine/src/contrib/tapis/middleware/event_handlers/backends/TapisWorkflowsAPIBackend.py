@@ -1,7 +1,7 @@
 from contrib.tapis.helpers import TapisServiceAPIGateway
 
-from core.events import Event, EventHandler
-from core.events.types import (
+from owe_python_sdk.events import Event, EventHandler
+from owe_python_sdk.events.types import (
     PIPELINE_ACTIVE, PIPELINE_ARCHIVING, PIPELINE_COMPLETED, PIPELINE_FAILED,
     PIPELINE_PENDING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, PIPELINE_SKIPPED, 
     TASK_ACTIVE, TASK_ARCHIVING, TASK_BACKOFF, TASK_COMPLETED, TASK_FAILED, 
@@ -14,10 +14,6 @@ class TapisWorkflowsAPIBackend(EventHandler):
         # Set the access token
         access_token = getattr(
             ctx.params, "workflow_executor_access_token", None)
-
-        # Access token is required. If its missing, raise an exception
-        if access_token == None:
-            raise Exception("Workflow Executor Token missing in request")
 
         # Create a mapping of functions to events
         self.handle_fn_mapping = {

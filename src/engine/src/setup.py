@@ -16,7 +16,7 @@ def setup():
     # Make the log file dir and file if it does not exist
     Path(TAPIS_SERVICE_LOG_DIR).mkdir(parents=True, exist_ok=True)
     Path(TAPIS_SERVICE_LOG_FILE_PATH).touch(exist_ok=True)
-
+    
     # Load the config and rewrite it with the values from the env vars
     with open("config.json", "r") as file:
         config = json.load(file)

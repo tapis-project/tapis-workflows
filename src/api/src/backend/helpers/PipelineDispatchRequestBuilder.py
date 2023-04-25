@@ -1,4 +1,4 @@
-from uuid import UUID, uuid4
+from uuid import uuid4
 from django.forms import model_to_dict
 
 from backend.utils.parse_directives import parse_directives as parse
@@ -47,7 +47,7 @@ class PipelineDispatchRequestBuilder:
         request["pipeline"]["tasks"] = tasks_request
         request["pipeline"]["archives"] = archives
 
-        # Populate the env for this request
+        # Populate the env for this request. Populate values from SK
         request["env"] = request["pipeline"]["env"]
 
         req_params = {}
@@ -61,20 +61,6 @@ class PipelineDispatchRequestBuilder:
             "tapis_pipeline_owner": request["pipeline"]["owner"],
             **req_params
         }
-
-        # # Tell the workflow executors which backends and archivers to use.
-        # # Add the workflow executor access token to the request. This enables
-        # # the workflow executor to make calls to special endpoints on the API.
-        # request["middleware"] = {
-        #     "backends": {
-        #         "tapisworkflowsapi": {
-        #             "access_token": WORKFLOW_EXECUTOR_ACCESS_TOKEN
-        #         }
-        #     },
-        #     "archivers": {
-        #         "tapissystem": {}
-        #     }
-        # }
 
         request["meta"] = {}
         # Properties to help uniquely identity a pipeline submission. If the workflow

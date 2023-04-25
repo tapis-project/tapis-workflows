@@ -3,7 +3,7 @@ import time
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_ACTOR_POLLING_FREQUENCY
 
-from core.tasks.TaskResult import TaskResult
+from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.TaskExecutor import TaskExecutor
 
 

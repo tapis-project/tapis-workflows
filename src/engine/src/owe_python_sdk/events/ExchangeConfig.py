@@ -1,5 +1,5 @@
 from typing import List, Union
-from core.events.types import (
+from owe_python_sdk.events.types import (
     PIPELINE_COMPLETED,
     PIPELINE_TERMINATED,
     PIPELINE_FAILED

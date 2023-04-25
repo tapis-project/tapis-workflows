@@ -1,13 +1,13 @@
-import os, logging
+import os
 
 from tapipy.tapis import Tapis
 from tapipy.errors import InvalidInputError  
 
+from owe_python_sdk.events import Event, EventHandler
+from owe_python_sdk.events.types import PIPELINE_COMPLETED, PIPELINE_TERMINATED, PIPELINE_FAILED
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from conf.constants import BASE_WORK_DIR
 from errors.archives import ArchiveError
-from core.events import Event, EventHandler
-from core.events.types import PIPELINE_COMPLETED, PIPELINE_TERMINATED, PIPELINE_FAILED
 from utils import trunc_uuid
 
 

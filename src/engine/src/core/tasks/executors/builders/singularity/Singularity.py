@@ -14,7 +14,7 @@ from kubernetes.client import (
 
 from conf.constants import KUBERNETES_NAMESPACE, WORKFLOW_NFS_SERVER
 from core.resources import JobResource
-from core.tasks.TaskResult import TaskResult
+from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.tasks.executors.builders.singularity.helpers.ContainerBuilder import container_builder
 from errors import WorkflowTerminated
