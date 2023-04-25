@@ -20,8 +20,8 @@ PSTR = lbuf('[PIPELINE]')
 TSTR = lbuf('[TASK]')
 
 class Kaniko(BaseBuildExecutor):
-    def __init__(self, task, ctx, exchange):
-        BaseBuildExecutor.__init__(self, task, ctx, exchange)
+    def __init__(self, task, ctx, exchange, plugins=[]):
+        BaseBuildExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
 
         self.configmap = None
 

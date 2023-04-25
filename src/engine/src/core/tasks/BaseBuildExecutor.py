@@ -6,8 +6,8 @@ from core.tasks.TaskExecutor import TaskExecutor
 
 
 class BaseBuildExecutor(TaskExecutor):
-    def __init__(self, task, ctx, exchange):
-        TaskExecutor.__init__(self, task, ctx, exchange)
+    def __init__(self, task, ctx, exchange, plugins=[]):
+        TaskExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
 
     def _resolve_context_string(self):
         # Resolve the repository from which the code containing the Dockerfile
