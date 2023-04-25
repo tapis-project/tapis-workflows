@@ -20,6 +20,9 @@ from core.tasks.executors.builders.singularity.helpers.ContainerBuilder import c
 from errors import WorkflowTerminated
 
 class Singularity(BaseBuildExecutor):
+    def __init__(self, task, ctx, exchange, plugins=[]):
+        BaseBuildExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
+        
     def execute(self) -> TaskResult:
         # Create the kaniko job return a failed task result on exception
         # with the error message as the str value of the exception
