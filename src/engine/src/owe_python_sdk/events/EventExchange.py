@@ -3,8 +3,8 @@ import logging
 from typing import List, Union
 from threading import Lock
 
-from core.events import EventHandler, Event
-from core.events.ExchangeConfig import ExchangeConfig
+from owe_python_sdk.events import EventHandler, Event
+from owe_python_sdk.events.ExchangeConfig import ExchangeConfig
 
 
 class EventExchange:

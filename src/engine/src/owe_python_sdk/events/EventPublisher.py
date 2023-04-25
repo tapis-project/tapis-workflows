@@ -1,7 +1,5 @@
-import logging
-
 from typing import List, Union
-from core.events import Event, EventHandler, EventExchange
+from owe_python_sdk.events import Event, EventHandler, EventExchange
 
 
 class EventPublisher:

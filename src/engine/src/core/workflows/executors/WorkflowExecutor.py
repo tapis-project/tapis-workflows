@@ -1,18 +1,17 @@
 import os, logging
 
 from threading import Thread, Lock
-
 from uuid import uuid4
 
 from core.tasks.TaskExecutorFactory import task_executor_factory as factory
-from core.tasks.TaskResult import TaskResult
-from core.events import (
+from owe_python_sdk.TaskResult import TaskResult
+from owe_python_sdk.events import (
     Event,
     EventPublisher,
     EventExchange,
     ExchangeConfig
 )
-from core.events.types import (
+from owe_python_sdk.events.types import (
     PIPELINE_ACTIVE, PIPELINE_COMPLETED, PIPELINE_ARCHIVING, PIPELINE_FAILED,
     PIPELINE_PENDING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, TASK_ACTIVE,
     TASK_ARCHIVING, TASK_BACKOFF, TASK_COMPLETED, TASK_FAILED, TASK_PENDING,
@@ -26,8 +25,8 @@ from errors.tasks import (
     CycleDetectedError,
 )
 # Tapis specific middleware
-from contrib.tapis.middleware.backends import TapisWorkflowsAPIBackend
-from contrib.tapis.middleware.archivers import TapisSystemArchiver
+from contrib.tapis.middleware.event_handlers.backends import TapisWorkflowsAPIBackend
+from contrib.tapis.middleware.event_handlers.archivers import TapisSystemArchiver
 
 # Core middleware
 from core.middleware.archivers import (
@@ -81,9 +80,12 @@ class WorkflowExecutor(Worker, EventPublisher):
     WorkflowExecutor and its EventExchange are reset.
     """
 
-    def __init__(self, _id=None):
+    def __init__(self, _id=None, plugins=[]):
         # Initialze the Worker class
         Worker.__init__(self, _id)
+
+        # Set the plugins
+        self._plugins = plugins
 
         # Initializes the primary(and only)event exchange, enabling publishers
         # (the WorkflowExecutor and other Event producers) to publish Events to it,
@@ -134,7 +136,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         )
 
         self._set_initial_state()
-
+        
     # Logging formatters. Makes logs more useful and pretty
     def p_str(self, status): return f"{self.state.ctx.idempotency_key} {lbuf('[PIPELINE]')} {status} {self.state.ctx.pipeline.id}"
     def t_str(self, task, status): return f"{self.state.ctx.idempotency_key} {lbuf('[TASK]')} {status} {task.id}.{self.state.ctx.pipeline.id}"
@@ -169,7 +171,7 @@ class WorkflowExecutor(Worker, EventPublisher):
     def _staging(self, ctx):
         # Resets the workflow executor to its initial state
         self._set_initial_state()
-
+        
         # Validates and sets the context. All subsequent references to the context
         # should be made via 'self.state.ctx'
         self._set_context(ctx)
@@ -212,7 +214,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         try:
             if not self.state.is_dry_run:
                 # Resolve the task executor and execute the task
-                executor = factory.build(task, self.state.ctx, self.exchange)
+                executor = factory.build(task, self.state.ctx, self.exchange, plugins=self._plugins)
                 # Register the task executor
                 self._register_executor(self.state.ctx.pipeline_run.uuid, task, executor)
                 

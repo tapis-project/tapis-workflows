@@ -1,0 +1,1 @@
+from contrib.tapis.TapisPlugin import TapisPlugin as plugin
