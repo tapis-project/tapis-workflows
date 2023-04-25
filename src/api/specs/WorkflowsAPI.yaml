@@ -3222,3 +3222,4 @@ components:
       type: string
       enum:
         - python:3.9
+        - tapis/workflows-python-singularity:0.1.0
