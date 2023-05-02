@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, json
 
 from owe_python_sdk.runtime.runtime import Runtime
 from owe_python_sdk.constants import INPUT_PREFIX
@@ -36,7 +36,10 @@ class ExecutionContext:
 
     def stdout(self, value):
         with open(self._runtime.stdout, "w") as file:
-            file.write(value)
+            if type(value) == dict:
+                value = json.dumps(value)
+
+            file.write(str(value))
 
         sys.exit(0)
 
