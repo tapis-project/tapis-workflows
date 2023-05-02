@@ -59,7 +59,7 @@ spec:
             - name: TAPIS_SERVICE_TENANT_ID
               value: admin
             - name: WORKFLOW_NFS_SERVER
-              value: 10.99.53.12
+              value: 10.104.129.91
             - name: IS_LOCAL
               value: 'true'
             - name: WORKFLOWS_SERVICE_URL
@@ -84,7 +84,7 @@ spec:
       volumes:
         - name: pipelines-mount
           nfs: 
-            server: 10.99.53.12
+            server: 10.104.129.91
             path: /
         # - name: pipelines-mount
         #   persistentVolumeClaim:
