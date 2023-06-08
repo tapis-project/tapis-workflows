@@ -111,7 +111,10 @@ class Function(TaskExecutor):
                     name="init-" + job_name,
                     image="alpine/git:latest",
                     command=command,
-                    volume_mounts=volume_mounts
+                    volume_mounts=volume_mounts,
+                    resources=(flavor_to_k8s_resource_reqs(
+                        {"cpu": "1", "memory": "2G", "disk": "20GB"}
+                    ))
                 )
             )
 
