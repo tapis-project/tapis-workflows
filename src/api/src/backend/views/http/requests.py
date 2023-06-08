@@ -432,6 +432,11 @@ class ExecutionProfile(BaseModel):
     max_retries: int = DEFAULT_MAX_RETRIES
     duplicate_submission_policy: str = EnumDuplicateSubmissionPolicy.Terminate
 
+class GitRepository(BaseModel):
+    url: str
+    branch: str = None # If no branch specified, the default branch will be used
+    directory: str = "/"
+
 class BaseTask(BaseModel):
     auth: Auth = None
     builder: str = None
@@ -446,6 +451,7 @@ class BaseTask(BaseModel):
         LocalDestination
     ] = None
     execution_profile: ExecutionProfile = ExecutionProfile()
+    git_repositories: List[GitRepository] = None
     headers: dict = None
     http_method: str = None
     image: str = None
@@ -535,11 +541,6 @@ class RequestTask(BaseTask):
     type: Literal["request"]
     http_method: str
     url: str
-
-class GitRepository(BaseModel):
-    url: str
-    branch: str = None # If no branch specified, the default branch will be used
-    directory: str = "/"
 
 class FunctionTask(BaseTask):
     type: Literal["function"]

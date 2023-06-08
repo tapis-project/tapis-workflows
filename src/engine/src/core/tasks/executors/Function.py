@@ -145,7 +145,8 @@ class Function(TaskExecutor):
             )
 
             # Register the job to be deleted after execution
-            self._register_resource(JobResource(job=job))
+            # TODO uncomment below
+            # self._register_resource(JobResource(job=job))
         except Exception as e:
             logging.critical(e)
             raise e
