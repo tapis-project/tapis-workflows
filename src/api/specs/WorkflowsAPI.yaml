@@ -2115,6 +2115,10 @@ components:
         - $ref: '#/components/schemas/BaseTask'
         - type: object
           properties:
+            git_repositories:
+              type: array
+              items:
+                $ref: "#/components/schemas/GitRepository"
             runtime:
               $ref: "#/components/schemas/EnumRuntimeEnvironment"
             installer:
@@ -2267,6 +2271,17 @@ components:
           type: string
           format: uuid
 
+    GitRepository:
+      type: object
+      properties:
+        url:
+          type: string
+        branch:
+          type: string
+        directory:
+          type: string
+
+
     # --- String types with constraints ------------------------------------
     ID:
       type: string
@@ -2279,6 +2294,7 @@ components:
     DescriptionString:
       type: string
       maxLength: 2048
+
 
     # -------------------------------------------------------------------------
     # --- Request objects -----------------------------------------------------
@@ -2559,6 +2575,10 @@ components:
             - installer
             - code
           properties:
+            git_repositories:
+              type: array
+              items:
+                $ref: "#/components/schemas/ReqGitRepository"
             runtime:
               $ref: "#/components/schemas/EnumRuntimeEnvironment"
             installer:
@@ -2572,6 +2592,18 @@ components:
               type: array
               items:
                 type: string
+
+    ReqGitRepository:
+      type: object
+      properties:
+        url:
+          type: string
+        branch:
+          type: string
+          default: null
+        directory:
+          type: string
+          default: "/"
 
     ReqTask:
       oneOf:
