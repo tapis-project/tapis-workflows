@@ -462,6 +462,7 @@ class Task(models.Model):
     url = models.CharField(max_length=255, null=True)
 
     # Function specific properties
+    git_repositories = models.JSONField(null=True, default=list)
     runtime = models.CharField(max_length=64, choices=FUNCTION_TASK_RUNTIMES, null=True)
     code = models.TextField(null=True)
     command = models.TextField(null=True)

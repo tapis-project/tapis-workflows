@@ -180,7 +180,7 @@ class Value(BaseModel):
         is_valid = len([k for k in value if (type(k) == str and type(value[k]) == str)]) < 1
         if (not is_dict or (is_dict and is_valid)):
             raise TypeError(
-                "The value of an Variable's 'value_from' property must be a single key-value pair where both the key and the value are non-empty strings")
+                "The value of a Value object's 'value_from' property must be a single key-value pair where both the key and the value are non-empty strings")
         return value
 
 Key = str
@@ -536,8 +536,14 @@ class RequestTask(BaseTask):
     http_method: str
     url: str
 
+class GitRepository(BaseModel):
+    url: str
+    branch: str = None # If no branch specified, the default branch will be used
+    directory: str = "/"
+
 class FunctionTask(BaseTask):
     type: Literal["function"]
+    git_repositories: List[GitRepository] = []
     runtime: EnumRuntimeEnvironment
     packages: List[str] = []
     installer: EnumInstaller

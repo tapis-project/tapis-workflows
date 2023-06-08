@@ -89,10 +89,36 @@ class Function(TaskExecutor):
             )
         ]
 
+        # Pulls in a git repository from an init container if specified by the user
+        init_containers = []
+        # TODO Remove
+        class Repo:
+            self.branch = "dev"
+            self.url = "https://github.com/tapis-project/tapisv3-cli.git"
+            self.directory = "/"
+        # for repo in self.task.git_repositories:
+        for repo in [Repo()]:
+            command = ["git", "clone"]
+            
+            # Add the branch to the command if specified
+            if repo.branch != None:
+                command += ["-b", repo.branch]
+
+            command += [repo.url, repo.directory]
+            init_containers.append(
+                client.V1Container(
+                    name="init-" + job_name,
+                    image="alpine/git:latest",
+                    command=command,
+                    volume_mounts=volume_mounts
+                )
+            )
+
         # Pod template and pod template spec
         template = client.V1PodTemplateSpec(
             spec=client.V1PodSpec(
                 containers=[container],
+                init_containers=init_containers,
                 restart_policy="Never",
                 volumes=volumes
             )
