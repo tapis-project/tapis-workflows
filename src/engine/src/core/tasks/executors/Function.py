@@ -93,9 +93,10 @@ class Function(TaskExecutor):
         init_containers = []
         # TODO Remove
         class Repo:
-            self.branch = "dev"
-            self.url = "https://github.com/tapis-project/tapisv3-cli.git"
-            self.directory = "/"
+            def __init__(self):
+                self.branch = "dev"
+                self.url = "https://github.com/tapis-project/tapisv3-cli.git"
+                self.directory = "/"
         # for repo in self.task.git_repositories:
         for repo in [Repo()]:
             command = ["git", "clone"]
