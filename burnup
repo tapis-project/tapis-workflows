@@ -21,7 +21,11 @@ chmod +x ./src/rabbitmq/deploy/local/minikube/burnup
 chmod +x ./src/api/deploy/local/minikube/burnup
 ./src/api/deploy/local/minikube/burnup
 
-# pipelines
-chmod +x ./src/pipelines/deploy/local/minikube/burnup
+# nfs
+chmod +x ./src/nfs-server/deploy/local/minikube/burnup
+./src/nfs-server/deploy/local/minikube/burnup
+
+# engine
+chmod +x ./src/engine/deploy/local/minikube/burnup
 ./src/engine/deploy/local/minikube/burnup
 
