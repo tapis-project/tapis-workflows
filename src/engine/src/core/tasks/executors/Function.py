@@ -74,7 +74,12 @@ class Function(TaskExecutor):
             command=container_details.command,
             args=container_details.args,
             image=container_details.image,
-            volume_mounts=volume_mounts,
+            volume_mounts=[
+                client.V1VolumeMount(
+                    name="workdir",
+                    mount_path=os.path.join(self.task.container_work_dir, "git_repositories"), 
+                )
+            ],
             env=container_details.env,
             resources=(flavor_to_k8s_resource_reqs(get_flavor("c1sml")))
         )
@@ -113,9 +118,7 @@ class Function(TaskExecutor):
                     image="alpine/git:latest",
                     command=command,
                     volume_mounts=volume_mounts,
-                    resources=(flavor_to_k8s_resource_reqs(
-                        Flavor(**{"cpu": "1", "memory": "2G", "disk": "20GB"})
-                    ))
+                    resources={}
                 )
             )
 
