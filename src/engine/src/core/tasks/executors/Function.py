@@ -5,6 +5,7 @@ from uuid import uuid4
 from kubernetes import client
 
 from core.tasks.TaskExecutor import TaskExecutor
+from core.tasks.Flavor import Flavor
 from owe_python_sdk.TaskResult import TaskResult
 from owe_python_sdk.utils import get_schema_extensions
 from conf.constants import (
@@ -113,7 +114,7 @@ class Function(TaskExecutor):
                     command=command,
                     volume_mounts=volume_mounts,
                     resources=(flavor_to_k8s_resource_reqs(
-                        {"cpu": "1", "memory": "2G", "disk": "20GB"}
+                        Flavor(**{"cpu": "1", "memory": "2G", "disk": "20GB"})
                     ))
                 )
             )
