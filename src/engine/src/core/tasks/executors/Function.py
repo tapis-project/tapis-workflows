@@ -39,7 +39,18 @@ class Function(TaskExecutor):
         TaskExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
 
         self.runtimes = {
-            "python": ["python:3.9"]
+            "python": [
+                "python:3.12",
+                "python:3.12-slim",
+                "python:3.11",
+                "python:3.11-slim",
+                "python:3.10",
+                "python:3.10-slim",
+                "python:3.9",
+                "python:3.9-slim",
+                "python:3.8",
+                "python:3.8-slim",
+            ]
         }
         
         # Add additional Function task runtimes from plugins
@@ -74,12 +85,7 @@ class Function(TaskExecutor):
             command=container_details.command,
             args=container_details.args,
             image=container_details.image,
-            volume_mounts=[
-                client.V1VolumeMount(
-                    name="workdir",
-                    mount_path=os.path.join(self.task.container_work_dir, "git_repositories"), 
-                )
-            ],
+            volume_mounts=volume_mounts,
             env=container_details.env,
             resources=(flavor_to_k8s_resource_reqs(get_flavor("c1sml")))
         )
@@ -117,7 +123,12 @@ class Function(TaskExecutor):
                     name="init-" + job_name,
                     image="alpine/git:latest",
                     command=command,
-                    volume_mounts=volume_mounts,
+                    volume_mounts=[
+                        client.V1VolumeMount(
+                            name="workdir",
+                            mount_path=os.path.join(self.task.container_work_dir, "scratch"), 
+                        )
+                    ],
                     resources={}
                 )
             )
