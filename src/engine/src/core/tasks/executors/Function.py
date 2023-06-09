@@ -25,7 +25,7 @@ class Repo:
     def __init__(self):
         self.branch = "dev"
         self.url = "https://github.com/tapis-project/tapisv3-cli.git"
-        self.directory = "."
+        self.directory = "testing"
 
 class ContainerDetails:
     def __init__(
@@ -147,7 +147,7 @@ class Function(TaskExecutor):
         return TaskResult(status=0 if self._job_succeeded(job) else 1)
 
     def _run_git_clone_jobs(self, job_name):
-        job_name = "init-" + job_name
+        job_name = job_name.replace("wf-fn", "wf-fn-init")
 
         init_job_containers = []
         # for repo in self.task.git_repositories:
