@@ -301,7 +301,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.publish(Event(TASK_FAILED, self.state.ctx, task=task, result=task_result))
 
         # Log the failure
-        self.state.ctx.logger.info(self.t_str(task, "FAILED"))
+        self.state.ctx.logger.info(self.t_str(task, f"FAILED: {task_result.errors}"))
 
         # Add the task to the finished list
         self.state.finished.append(task.id)

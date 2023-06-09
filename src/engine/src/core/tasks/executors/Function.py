@@ -91,7 +91,7 @@ class Function(TaskExecutor):
                                 volume_mounts=[
                                     # Volume mount for the output
                                     client.V1VolumeMount(
-                                        name="workdir",
+                                        name="task-workdir",
                                         mount_path=self.task.container_work_dir, 
                                     )
                                 ],
@@ -102,7 +102,7 @@ class Function(TaskExecutor):
                         restart_policy="Never",
                         volumes=[
                             client.V1Volume(
-                                name="workdir",
+                                name="task-workdir",
                                 nfs=client.V1NFSVolumeSource(
                                     server=WORKFLOW_NFS_SERVER,
                                     path=self.task.work_dir.replace("/mnt/pipelines/", "/")
@@ -159,15 +159,23 @@ class Function(TaskExecutor):
             if repo.branch != None:
                 command += ["-b", repo.branch]
 
-            command += [repo.url, os.path.join(self.task.container_work_dir, "scratch", repo.directory)]
+            command += [
+                repo.url,
+                os.path.join(
+                    self.task.container_work_dir,
+                    "scratch",
+                    repo.directory if repo.directory != "." else ""
+                )
+            ]
+            print("COMMAND", command)
             init_job_containers.append(
                 client.V1Container(
-                    name="init-" + job_name,
+                    name=job_name,
                     image="alpine/git:latest",
                     command=command,
                     volume_mounts=[
                         client.V1VolumeMount(
-                            name="workdir",
+                            name="task-workdir",
                             mount_path=os.path.join(self.task.container_work_dir, "scratch"), 
                         )
                     ],
@@ -192,7 +200,7 @@ class Function(TaskExecutor):
                                 restart_policy="Never",
                                 volumes=[
                                     client.V1Volume(
-                                        name="workdir",
+                                        name="task-workdir",
                                         nfs=client.V1NFSVolumeSource(
                                             server=WORKFLOW_NFS_SERVER,
                                             path=self.task.work_dir.replace("/mnt/pipelines/", "/")
@@ -205,12 +213,10 @@ class Function(TaskExecutor):
                     )
                 )
             )
-            print(job)
             # Register the job to be deleted after execution
             # TODO uncomment below
             # self._register_resource(JobResource(job=job))
         except Exception as e:
-            print("ERROR HERE: self.batch_v1_api.create_namespaced_job")
             logging.critical(e)
             raise e
             
