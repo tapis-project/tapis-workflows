@@ -121,8 +121,7 @@ class Function(TaskExecutor):
             )
 
             # Register the job to be deleted after execution
-            # TODO uncomment below
-            # self._register_resource(JobResource(job=job))
+            self._register_resource(JobResource(job=job))
         except Exception as e:
             logging.critical(e)
             raise e
@@ -158,7 +157,7 @@ class Function(TaskExecutor):
             command = ["git", "clone"]
             if repo.branch != None: command += ["-b", repo.branch]
 
-            command += [repo.url, repo.directory]
+            command += [repo.url, repo.directory, "&&", "sleep", "5000"]
 
             # Append the directory to the comman
             init_job_containers.append(
@@ -207,8 +206,7 @@ class Function(TaskExecutor):
                 )
             )
             # Register the job to be deleted after execution
-            # TODO uncomment below
-            # self._register_resource(JobResource(job=job))
+            self._register_resource(JobResource(job=job))
         except Exception as e:
             logging.critical(e)
             raise e
