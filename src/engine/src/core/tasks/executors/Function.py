@@ -167,7 +167,7 @@ class Function(TaskExecutor):
                     repo.directory if repo.directory != "." else ""
                 )
             ]
-            print("COMMAND", command)
+            
             init_job_containers.append(
                 client.V1Container(
                     name=job_name,
@@ -193,7 +193,7 @@ class Function(TaskExecutor):
                         namespace=KUBERNETES_NAMESPACE,
                     ),
                     spec=client.V1JobSpec(
-                        backoff_limit=0,
+                        # backoff_limit=0,
                         template=client.V1PodTemplateSpec(
                             spec=client.V1PodSpec(
                                 containers=init_job_containers,
