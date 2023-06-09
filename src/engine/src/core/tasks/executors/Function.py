@@ -70,40 +70,6 @@ class Function(TaskExecutor):
         
         # Set up the container details for the task's specified runtime
         container_details = self._setup_container()
-        
-        # Container object
-        container = client.V1Container(
-            name=job_name,
-            command=container_details.command,
-            args=container_details.args,
-            image=container_details.image,
-            volume_mounts=[
-                # Volume mount for the output
-                client.V1VolumeMount(
-                    name="workdir",
-                    mount_path=self.task.container_work_dir, 
-                )
-            ],
-            env=container_details.env,
-            resources=(flavor_to_k8s_resource_reqs(get_flavor("c1sml")))
-        )
-
-        # Pod template and pod template spec
-        template = client.V1PodTemplateSpec(
-            spec=client.V1PodSpec(
-                containers=[container],
-                restart_policy="Never",
-                volumes=[
-                    client.V1Volume(
-                        name="workdir",
-                        nfs=client.V1NFSVolumeSource(
-                            server=WORKFLOW_NFS_SERVER,
-                            path=self.task.work_dir.replace("/mnt/pipelines/", "/")
-                        ),
-                    )
-                ]
-            )
-        )
 
         # Job body
         body = client.V1Job(
@@ -114,13 +80,44 @@ class Function(TaskExecutor):
             ),
             spec=client.V1JobSpec(
                 backoff_limit=0 if self.task.max_retries < 0 else self.task.max_retries,
-                template=template
+                template=client.V1PodTemplateSpec(
+                    spec=client.V1PodSpec(
+                        containers=[
+                            client.V1Container(
+                                name=job_name,
+                                command=container_details.command,
+                                args=container_details.args,
+                                image=container_details.image,
+                                volume_mounts=[
+                                    # Volume mount for the output
+                                    client.V1VolumeMount(
+                                        name="workdir",
+                                        mount_path=self.task.container_work_dir, 
+                                    )
+                                ],
+                                env=container_details.env,
+                                resources=(flavor_to_k8s_resource_reqs(get_flavor("c1sml")))
+                            )
+                        ],
+                        restart_policy="Never",
+                        volumes=[
+                            client.V1Volume(
+                                name="workdir",
+                                nfs=client.V1NFSVolumeSource(
+                                    server=WORKFLOW_NFS_SERVER,
+                                    path=self.task.work_dir.replace("/mnt/pipelines/", "/")
+                                ),
+                            )
+                        ]
+                    )
+                )
             )
         )
         
         try:
             job = self.batch_v1_api.create_namespaced_job(
-                namespace=KUBERNETES_NAMESPACE, body=body
+                namespace=KUBERNETES_NAMESPACE,
+                body=body
             )
 
             # Register the job to be deleted after execution
@@ -129,6 +126,7 @@ class Function(TaskExecutor):
         except Exception as e:
             logging.critical(e)
             raise e
+
         try:
             while not self._job_in_terminal_state(job):
                 if self.terminating:
@@ -177,48 +175,42 @@ class Function(TaskExecutor):
                 )
             )
 
-        # Pod template and pod template spec
-        template = client.V1PodTemplateSpec(
-            spec=client.V1PodSpec(
-                containers=init_job_containers,
-                restart_policy="Never",
-
-                volumes=[
-                    client.V1Volume(
-                        name="workdir",
-                        nfs=client.V1NFSVolumeSource(
-                            server=WORKFLOW_NFS_SERVER,
-                            path=self.task.work_dir.replace("/mnt/pipelines/", "/")
-                        ),
-                    )
-                ]
-            )
-        )
-
-        # Job body
-        body = client.V1Job(
-            metadata=client.V1ObjectMeta(
-                labels=dict(job=job_name),
-                name=job_name,
-                namespace=KUBERNETES_NAMESPACE,
-            ),
-            spec=client.V1JobSpec(
-                backoff_limit=0,
-                template=template,
-                completions=len(repos)
-            )
-        )
-
         try:
             job = self.batch_v1_api.create_namespaced_job(
                 namespace=KUBERNETES_NAMESPACE,
-                body=body
+                body=client.V1Job(
+                    metadata=client.V1ObjectMeta(
+                        labels=dict(job=job_name),
+                        name=job_name,
+                        namespace=KUBERNETES_NAMESPACE,
+                    ),
+                    spec=client.V1JobSpec(
+                        backoff_limit=0,
+                        template=client.V1PodTemplateSpec(
+                            spec=client.V1PodSpec(
+                                containers=init_job_containers,
+                                restart_policy="Never",
+                                volumes=[
+                                    client.V1Volume(
+                                        name="workdir",
+                                        nfs=client.V1NFSVolumeSource(
+                                            server=WORKFLOW_NFS_SERVER,
+                                            path=self.task.work_dir.replace("/mnt/pipelines/", "/")
+                                        ),
+                                    )
+                                ]
+                            )
+                        ),
+                        completions=len(repos)
+                    )
+                )
             )
-
+            print(job)
             # Register the job to be deleted after execution
             # TODO uncomment below
             # self._register_resource(JobResource(job=job))
         except Exception as e:
+            print("ERROR HERE: self.batch_v1_api.create_namespaced_job")
             logging.critical(e)
             raise e
             
@@ -240,6 +232,8 @@ class Function(TaskExecutor):
         except Exception as e:
             self.ctx.logger.error(str(e))
             return TaskResult(status=1, errors=[e])
+
+        return TaskResult(status=0 if self._job_succeeded(job) else 1)
 
     def _setup_container(self) -> ContainerDetails:
         if self.task.runtime in self.runtimes["python"]:
