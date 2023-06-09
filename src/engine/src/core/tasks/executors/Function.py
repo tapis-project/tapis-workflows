@@ -19,6 +19,14 @@ from utils import get_flavor
 from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars
 from errors import WorkflowTerminated
 
+
+# TODO Remove
+class Repo:
+    def __init__(self):
+        self.branch = "dev"
+        self.url = "https://github.com/tapis-project/tapisv3-cli.git"
+        self.directory = "."
+
 class ContainerDetails:
     def __init__(
         self,
@@ -52,19 +60,15 @@ class Function(TaskExecutor):
                 self.runtimes[language] = runtimes_for_language
 
     def execute(self):
-        """Create and run the container"""
         job_name = "wf-fn-" + str(uuid4())
 
-        # List of volume mount objects for the container
-        volume_mounts = [
-            # Volume mount for the output
-            client.V1VolumeMount(
-                name="workdir",
-                mount_path=self.task.container_work_dir, 
-            )
-        ]
-
-        # Set up the container details for the task"s specified runtime
+        # Prepares the file system for the Function task by clone 
+        # git repsoitories specified by the user in the request
+        init_jobs_task_result = self._run_git_clone_jobs(job_name)
+        if not init_jobs_task_result.success:
+            return init_jobs_task_result
+        
+        # Set up the container details for the task's specified runtime
         container_details = self._setup_container()
         
         # Container object
@@ -73,78 +77,46 @@ class Function(TaskExecutor):
             command=container_details.command,
             args=container_details.args,
             image=container_details.image,
-            volume_mounts=volume_mounts,
+            volume_mounts=[
+                # Volume mount for the output
+                client.V1VolumeMount(
+                    name="workdir",
+                    mount_path=self.task.container_work_dir, 
+                )
+            ],
             env=container_details.env,
             resources=(flavor_to_k8s_resource_reqs(get_flavor("c1sml")))
         )
-
-        # Volume for output
-        volumes = [
-            client.V1Volume(
-                name="workdir",
-                nfs=client.V1NFSVolumeSource(
-                    server=WORKFLOW_NFS_SERVER,
-                    path=self.task.work_dir.replace("/mnt/pipelines/", "/")
-                ),
-            )
-        ]
-
-        # Pulls in a git repository from an init container if specified by the user
-        init_containers = []
-        # TODO Remove
-        class Repo:
-            def __init__(self):
-                self.branch = "dev"
-                self.url = "https://github.com/tapis-project/tapisv3-cli.git"
-                self.directory = "/"
-        # for repo in self.task.git_repositories:
-        for repo in [Repo()]:
-            command = ["git", "clone"]
-            
-            # Add the branch to the command if specified
-            if repo.branch != None:
-                command += ["-b", repo.branch]
-
-            command += [repo.url, repo.directory]
-            init_containers.append(
-                client.V1Container(
-                    name="init-" + job_name,
-                    image="alpine/git:latest",
-                    command=command,
-                    # volume_mounts=[
-                    #     client.V1VolumeMount(
-                    #         name="workdir",
-                    #         mount_path=os.path.join(self.task.container_work_dir, "scratch"), 
-                    #     )
-                    # ],
-                    resources={}
-                )
-            )
 
         # Pod template and pod template spec
         template = client.V1PodTemplateSpec(
             spec=client.V1PodSpec(
                 containers=[container],
-                init_containers=init_containers,
                 restart_policy="Never",
-                volumes=volumes
+                volumes=[
+                    client.V1Volume(
+                        name="workdir",
+                        nfs=client.V1NFSVolumeSource(
+                            server=WORKFLOW_NFS_SERVER,
+                            path=self.task.work_dir.replace("/mnt/pipelines/", "/")
+                        ),
+                    )
+                ]
             )
         )
 
-        # Job spec
-        self.task.max_retries = 0 if self.task.max_retries < 0 else self.task.max_retries
-        job_spec = client.V1JobSpec(
-            backoff_limit=(self.task.max_retries), template=template)
-
-        # Job metadata
-        metadata = client.V1ObjectMeta(
-            labels=dict(job=job_name),
-            name=job_name,
-            namespace=KUBERNETES_NAMESPACE,
-        )
-
         # Job body
-        body = client.V1Job(metadata=metadata, spec=job_spec)
+        body = client.V1Job(
+            metadata=client.V1ObjectMeta(
+                labels=dict(job=job_name),
+                name=job_name,
+                namespace=KUBERNETES_NAMESPACE,
+            ),
+            spec=client.V1JobSpec(
+                backoff_limit=0 if self.task.max_retries < 0 else self.task.max_retries,
+                template=template
+            )
+        )
         
         try:
             job = self.batch_v1_api.create_namespaced_job(
@@ -176,6 +148,96 @@ class Function(TaskExecutor):
 
         return TaskResult(status=0 if self._job_succeeded(job) else 1)
 
+    def _run_git_clone_jobs(self, job_name):
+        job_name = "init-" + job_name
+
+        init_job_containers = []
+        # for repo in self.task.git_repositories:
+        for repo in [Repo()]:
+            # Create the command for the container. Add the branch to
+            # the command if specified
+            command = ["git", "clone"]
+            if repo.branch != None:
+                command += ["-b", repo.branch]
+
+            command += [repo.url, os.path.join(self.task.container_work_dir, "scratch", repo.directory)]
+            init_job_containers.append(
+                client.V1Container(
+                    name="init-" + job_name,
+                    image="alpine/git:latest",
+                    command=command,
+                    volume_mounts=[
+                        client.V1VolumeMount(
+                            name="workdir",
+                            mount_path=os.path.join(self.task.container_work_dir, "scratch"), 
+                        )
+                    ],
+                    resources={}
+                )
+            )
+
+        # Pod template and pod template spec
+        template = client.V1PodTemplateSpec(
+            spec=client.V1PodSpec(
+                containers=[init_job_containers],
+                restart_policy="Never",
+                volumes=[
+                    client.V1Volume(
+                        name="workdir",
+                        nfs=client.V1NFSVolumeSource(
+                            server=WORKFLOW_NFS_SERVER,
+                            path=self.task.work_dir.replace("/mnt/pipelines/", "/")
+                        ),
+                    )
+                ]
+            )
+        )
+
+        # Job body
+        body = client.V1Job(
+            metadata=client.V1ObjectMeta(
+                labels=dict(job=job_name),
+                name=job_name,
+                namespace=KUBERNETES_NAMESPACE,
+            ),
+            spec=client.V1JobSpec(
+                backoff_limit=0,
+                template=template
+            )
+        )
+
+        try:
+            job = self.batch_v1_api.create_namespaced_job(
+                namespace=KUBERNETES_NAMESPACE,
+                body=body
+            )
+
+            # Register the job to be deleted after execution
+            # TODO uncomment below
+            # self._register_resource(JobResource(job=job))
+        except Exception as e:
+            logging.critical(e)
+            raise e
+            
+        try:
+            while not self._job_in_terminal_state(job):
+                if self.terminating:
+                    raise WorkflowTerminated()
+                    
+                job = self.batch_v1_api.read_namespaced_job(
+                    job.metadata.name,
+                    KUBERNETES_NAMESPACE
+                )
+
+                time.sleep(self.polling_interval)
+        except WorkflowTerminated as e:
+            self.ctx.logger.error(str(e))
+            self.cleanup(terminating=True)
+            return TaskResult(status=2, errors=[e])
+        except Exception as e:
+            self.ctx.logger.error(str(e))
+            return TaskResult(status=1, errors=[e])
+
     def _setup_container(self) -> ContainerDetails:
         if self.task.runtime in self.runtimes["python"]:
             container_details = self._setup_python_container()
@@ -205,7 +267,6 @@ class Function(TaskExecutor):
         )
         
         return container_details
-        
 
     def _write_entrypoint_file(self, file_path, code):
         with open(file_path, "wb") as file:

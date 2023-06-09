@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 from kubernetes.client import V1ResourceRequirements, V1EnvVar
 
+
 def flavor_to_k8s_resource_reqs(flavor: Flavor):
     if IS_LOCAL: return None
 

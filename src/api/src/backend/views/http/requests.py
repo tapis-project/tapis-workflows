@@ -435,7 +435,7 @@ class ExecutionProfile(BaseModel):
 class GitRepository(BaseModel):
     url: str
     branch: str = None # If no branch specified, the default branch will be used
-    directory: str = "/"
+    directory: str = "."
 
 class BaseTask(BaseModel):
     auth: Auth = None
