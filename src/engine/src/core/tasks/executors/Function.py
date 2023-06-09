@@ -96,7 +96,7 @@ class Function(TaskExecutor):
                                     )
                                 ],
                                 env=container_details.env,
-                                resources=(flavor_to_k8s_resource_reqs(get_flavor("c1sml")))
+                                resources=flavor_to_k8s_resource_reqs(get_flavor("c1sml"))
                             )
                         ],
                         restart_policy="Never",
@@ -151,18 +151,18 @@ class Function(TaskExecutor):
         init_job_containers = []
         # for repo in self.task.git_repositories:
         repos = [Repo()]
-        for repo in repos:
+        for i, repo in enumerate(repos):
             # Create the command for the container. Add the branch to
             # the command if specified
             command = ["git", "clone"]
             if repo.branch != None: command += ["-b", repo.branch]
 
-            command += [repo.url, repo.directory, "&&", "sleep", "5000"]
+            command += [repo.url, repo.directory]
 
             # Append the directory to the comman
             init_job_containers.append(
                 client.V1Container(
-                    name=job_name,
+                    name=job_name + i,
                     image="alpine/git:latest",
                     command=command,
                     volume_mounts=[
@@ -172,9 +172,26 @@ class Function(TaskExecutor):
                         )
                     ],
                     working_dir=os.path.join(self.task.container_work_dir, "scratch"),
-                    resources={}
+                    resources=flavor_to_k8s_resource_reqs(get_flavor("c1tiny"))
                 )
             )
+
+        init_job_containers.append(
+            client.V1Container(
+                name=job_name + "-T",
+                image="ubuntu:latest",
+                command=["/bin/sh"],
+                args=["-c", "sleep 5000"],
+                volume_mounts=[
+                    client.V1VolumeMount(
+                        name="task-workdir",
+                        mount_path=os.path.join(self.task.container_work_dir, "scratch"), 
+                    )
+                ],
+                working_dir=os.path.join(self.task.container_work_dir, "scratch"),
+                resources=flavor_to_k8s_resource_reqs(get_flavor("c1tiny"))
+            )
+        )
 
         try:
             job = self.batch_v1_api.create_namespaced_job(

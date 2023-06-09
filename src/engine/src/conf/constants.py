@@ -81,6 +81,9 @@ KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"
 KANIKO_IMAGE_TAG = "debug"
 
 FLAVORS = {
+    "c1tiny": {"cpu": "1", "memory": ".5G", "disk": "20GB"},
+    "c1xxsml": {"cpu": "1", "memory": "1G", "disk": "20GB"},
+    "c1xsml": {"cpu": "1", "memory": "2G", "disk": "20GB"},
     "c1sml": {"cpu": "1", "memory": "4G", "disk": "20GB"},
     "c1med": {"cpu": "2", "memory": "8G", "disk": "20GB"},
     "c1lrg": {"cpu": "4", "memory": "16G", "disk": "20GB"},
