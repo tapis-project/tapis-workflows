@@ -162,7 +162,7 @@ class Function(TaskExecutor):
             # Append the directory to the comman
             init_job_containers.append(
                 client.V1Container(
-                    name=job_name + i,
+                    name=job_name + str(i),
                     image="alpine/git:latest",
                     command=command,
                     volume_mounts=[
