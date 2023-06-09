@@ -178,7 +178,7 @@ class Function(TaskExecutor):
 
         init_job_containers.append(
             client.V1Container(
-                name=job_name + "-T",
+                name=job_name + "-t",
                 image="ubuntu:latest",
                 command=["/bin/sh"],
                 args=["-c", "sleep 5000"],
