@@ -8,6 +8,7 @@ from core.tasks.TaskExecutor import TaskExecutor
 from core.tasks.Flavor import Flavor
 from owe_python_sdk.TaskResult import TaskResult
 from owe_python_sdk.utils import get_schema_extensions
+from owe_python_sdk.constants import FUNCTION_TASK_RUNTIMES
 from conf.constants import (
     WORKFLOW_NFS_SERVER,
     KUBERNETES_NAMESPACE,
@@ -38,20 +39,7 @@ class Function(TaskExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
         TaskExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
 
-        self.runtimes = {
-            "python": [
-                "python:3.12",
-                "python:3.12-slim",
-                "python:3.11",
-                "python:3.11-slim",
-                "python:3.10",
-                "python:3.10-slim",
-                "python:3.9",
-                "python:3.9-slim",
-                "python:3.8",
-                "python:3.8-slim",
-            ]
-        }
+        self.runtimes = FUNCTION_TASK_RUNTIMES
         
         # Add additional Function task runtimes from plugins
         schemas = get_schema_extensions(self.plugins, "task_executor", sub_type="function")
@@ -123,12 +111,12 @@ class Function(TaskExecutor):
                     name="init-" + job_name,
                     image="alpine/git:latest",
                     command=command,
-                    volume_mounts=[
-                        client.V1VolumeMount(
-                            name="workdir",
-                            mount_path=os.path.join(self.task.container_work_dir, "scratch"), 
-                        )
-                    ],
+                    # volume_mounts=[
+                    #     client.V1VolumeMount(
+                    #         name="workdir",
+                    #         mount_path=os.path.join(self.task.container_work_dir, "scratch"), 
+                    #     )
+                    # ],
                     resources={}
                 )
             )
