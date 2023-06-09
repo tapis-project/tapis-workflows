@@ -153,7 +153,8 @@ class Function(TaskExecutor):
 
         init_job_containers = []
         # for repo in self.task.git_repositories:
-        for repo in [Repo()]:
+        repos = [Repo()]
+        for repo in repos:
             # Create the command for the container. Add the branch to
             # the command if specified
             command = ["git", "clone"]
@@ -179,8 +180,9 @@ class Function(TaskExecutor):
         # Pod template and pod template spec
         template = client.V1PodTemplateSpec(
             spec=client.V1PodSpec(
-                containers=[init_job_containers],
+                containers=init_job_containers,
                 restart_policy="Never",
+
                 volumes=[
                     client.V1Volume(
                         name="workdir",
@@ -202,7 +204,8 @@ class Function(TaskExecutor):
             ),
             spec=client.V1JobSpec(
                 backoff_limit=0,
-                template=template
+                template=template,
+                completions=len(repos)
             )
         )
 
@@ -223,7 +226,7 @@ class Function(TaskExecutor):
             while not self._job_in_terminal_state(job):
                 if self.terminating:
                     raise WorkflowTerminated()
-                    
+
                 job = self.batch_v1_api.read_namespaced_job(
                     job.metadata.name,
                     KUBERNETES_NAMESPACE
