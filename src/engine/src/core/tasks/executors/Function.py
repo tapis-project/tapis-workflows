@@ -156,18 +156,11 @@ class Function(TaskExecutor):
             # Create the command for the container. Add the branch to
             # the command if specified
             command = ["git", "clone"]
-            if repo.branch != None:
-                command += ["-b", repo.branch]
+            if repo.branch != None: command += ["-b", repo.branch]
 
-            command += [
-                repo.url,
-                os.path.join(
-                    self.task.container_work_dir,
-                    "scratch",
-                    repo.directory if repo.directory != "." else ""
-                )
-            ]
-            
+            command += [repo.url, repo.directory]
+
+            # Append the directory to the comman
             init_job_containers.append(
                 client.V1Container(
                     name=job_name,
@@ -179,6 +172,7 @@ class Function(TaskExecutor):
                             mount_path=os.path.join(self.task.container_work_dir, "scratch"), 
                         )
                     ],
+                    working_dir=os.path.join(self.task.container_work_dir, "scratch"),
                     resources={}
                 )
             )
@@ -193,7 +187,6 @@ class Function(TaskExecutor):
                         namespace=KUBERNETES_NAMESPACE,
                     ),
                     spec=client.V1JobSpec(
-                        # backoff_limit=0,
                         template=client.V1PodTemplateSpec(
                             spec=client.V1PodSpec(
                                 containers=init_job_containers,
