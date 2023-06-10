@@ -157,7 +157,10 @@ class Function(TaskExecutor):
             command = ["git", "clone"]
             if repo.branch != None: command += ["-b", repo.branch]
 
-            command += [repo.url, repo.directory]
+            command += [
+                repo.url,
+                os.path.join("scratch", repo.directory)
+            ]
 
             # Append the directory to the comman
             init_job_containers.append(
@@ -168,30 +171,30 @@ class Function(TaskExecutor):
                     volume_mounts=[
                         client.V1VolumeMount(
                             name="task-workdir",
-                            mount_path=os.path.join(self.task.container_work_dir, "scratch"), 
+                            mount_path=self.task.container_work_dir
                         )
                     ],
-                    working_dir=os.path.join(self.task.container_work_dir, "scratch"),
+                    working_dir=self.task.container_work_dir,
                     resources=flavor_to_k8s_resource_reqs(get_flavor("c1tiny"))
                 )
             )
 
-        init_job_containers.append(
-            client.V1Container(
-                name=job_name + "-t",
-                image="ubuntu:latest",
-                command=["/bin/sh"],
-                args=["-c", "sleep 5000"],
-                volume_mounts=[
-                    client.V1VolumeMount(
-                        name="task-workdir",
-                        mount_path=os.path.join(self.task.container_work_dir, "scratch"), 
-                    )
-                ],
-                working_dir=os.path.join(self.task.container_work_dir, "scratch"),
-                resources=flavor_to_k8s_resource_reqs(get_flavor("c1tiny"))
-            )
-        )
+        # init_job_containers.append(
+        #     client.V1Container(
+        #         name=job_name + "-t",
+        #         image="ubuntu:latest",
+        #         command=["/bin/sh"],
+        #         args=["-c", "sleep 5000"],
+        #         volume_mounts=[
+        #             client.V1VolumeMount(
+        #                 name="task-workdir",
+        #                 mount_path=self.task.container_work_dir, 
+        #             )
+        #         ],
+        #         working_dir=os.path.join(self.task.container_work_dir, "scratch"),
+        #         resources=flavor_to_k8s_resource_reqs(get_flavor("c1tiny"))
+        #     )
+        # )
 
         try:
             job = self.batch_v1_api.create_namespaced_job(
