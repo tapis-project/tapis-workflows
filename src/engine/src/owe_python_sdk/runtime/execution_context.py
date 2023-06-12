@@ -8,7 +8,7 @@ class ExecutionContext:
     def __init__(self, runtime: Runtime):
         self._runtime = runtime
         self.output_dir = runtime.output_dir
-        self.scratch_dir = runtime.scratch_dir
+        self.exec_dir = runtime.exec_dir
 
     def get_input(self, key, default=None):
         input_var = os.environ.get(INPUT_PREFIX + key, default=default)

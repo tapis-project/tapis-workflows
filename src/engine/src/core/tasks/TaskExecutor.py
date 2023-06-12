@@ -84,9 +84,9 @@ class TaskExecutor(EventPublisher):
         self.task.work_dir = f"{self.pipeline.work_dir}{self.task.id}/"
         os.makedirs(self.task.work_dir, exist_ok=True)
 
-        # Create the scratch dir for files created in support of the task execution
-        self.task.scratch_dir = f"{self.task.work_dir}scratch/"
-        os.makedirs(self.task.scratch_dir, exist_ok=True)
+        # Create the exec dir for files created in support of the task execution
+        self.task.exec_dir = f"{self.task.work_dir}exec/"
+        os.makedirs(self.task.exec_dir, exist_ok=True)
 
         # Create the output dir in which the output of the task execution will be stored
         self.task.output_dir = f"{self.task.work_dir}output/"

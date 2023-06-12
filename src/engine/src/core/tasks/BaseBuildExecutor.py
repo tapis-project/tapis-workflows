@@ -46,7 +46,7 @@ class BaseBuildExecutor(TaskExecutor):
             raise CredentialsError("No credentials for the destination")
 
         # Create the config dir to store the credentials
-        self.dockerhub_config_dir = f"{self.task.scratch_dir}dockerhub/"
+        self.dockerhub_config_dir = f"{self.task.exec_dir}dockerhub/"
         os.mkdir(self.dockerhub_config_dir)
 
         # Base64 encode credentials

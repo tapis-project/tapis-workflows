@@ -64,14 +64,14 @@ class ContainerBuilder:
             
             git.Repo.clone_from(
                 repo,
-                task.scratch_dir,
+                task.exec_dir,
                 branch=task.context.branch
             )
 
-            # Recipe file path is the scratch dir + recipe file path specified
+            # Recipe file path is the exec dir + recipe file path specified
             # in the context
             recipe_file_path = os.path.join(
-                f"{task.container_work_dir}/scratch/",
+                f"{task.container_work_dir}/exec/",
                 task.context.recipe_file_path
             )
 

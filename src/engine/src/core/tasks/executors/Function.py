@@ -155,7 +155,7 @@ class Function(TaskExecutor):
 
             command += [
                 repo.url,
-                os.path.join("scratch", repo.directory)
+                os.path.join("exec", repo.directory)
             ]
 
             # Append the directory to the comman
@@ -199,8 +199,7 @@ class Function(TaskExecutor):
                                     )
                                 ]
                             )
-                        ),
-                        completions=len(self.task.git_repositories)
+                        )
                     )
                 )
             )
@@ -246,8 +245,8 @@ class Function(TaskExecutor):
                 value=os.path.join(self.task.container_work_dir, "output")
             ),
             client.V1EnvVar(
-                name="OWE_SCRATCH_DIR",
-                value=os.path.join(self.task.container_work_dir, "scratch")
+                name="OWE_EXEC_DIR",
+                value=os.path.join(self.task.container_work_dir, "exec")
             ),
         ]
 
@@ -271,7 +270,7 @@ class Function(TaskExecutor):
         # The code provided in the request is expected to be base64 encoded. Decode, then
         # encode in UTF-8
         entrypoint_filename = "entrypoint.sh"
-        local_entrypoint_file_path = f"{self.task.scratch_dir}{entrypoint_filename}"
+        local_entrypoint_file_path = f"{self.task.exec_dir}{entrypoint_filename}"
         self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
 
     def _setup_python_container(self):
@@ -279,14 +278,14 @@ class Function(TaskExecutor):
         # The code provided in the request is expected to be base64 encoded. Decode, then
         # encode in UTF-8
         entrypoint_filename = "entrypoint.py"
-        local_entrypoint_file_path = f"{self.task.scratch_dir}{entrypoint_filename}"
+        local_entrypoint_file_path = f"{self.task.exec_dir}{entrypoint_filename}"
         self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
         
         # Create requirements file that will be mounted into the functions container
         # via NFS mount. This file will be used with the specified installer to install
         # the necessary python packages
         requirements_filename = "requirements.txt"
-        local_requirements_file_path = f"{self.task.scratch_dir}requirements.txt"
+        local_requirements_file_path = f"{self.task.exec_dir}requirements.txt"
         has_packages = len(self.task.packages) > 0
         if has_packages:
             with open(local_requirements_file_path, "w") as file:
@@ -297,10 +296,10 @@ class Function(TaskExecutor):
 
         # NOTE Only supporting pip for now
         # Requirements file path inside the container
-        requirements_txt = os.path.join(self.task.container_work_dir, "scratch", requirements_filename)
+        requirements_txt = os.path.join(self.task.container_work_dir, "exec", requirements_filename)
         
         # Entrypoint path inside the container
-        entrypoint_py = os.path.join(self.task.container_work_dir, "scratch", entrypoint_filename)
+        entrypoint_py = os.path.join(self.task.container_work_dir, "exec", entrypoint_filename)
         
         # The output file for the install logs inside the container
         dot_install = os.path.join(self.task.container_work_dir, "output", ".install")
@@ -317,8 +316,8 @@ class Function(TaskExecutor):
 
         # TODO handle for "command" property
 
-        # Copy the owe-python-sdk files to the scratch directory
-        owe_python_sdk_local_path = os.path.join(self.task.work_dir, "scratch/owe_python_sdk")
+        # Copy the owe-python-sdk files to the exec directory
+        owe_python_sdk_local_path = os.path.join(self.task.work_dir, "exec/owe_python_sdk")
         shutil.copytree(OWE_PYTHON_SDK_DIR, owe_python_sdk_local_path, dirs_exist_ok=True)
 
         entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
