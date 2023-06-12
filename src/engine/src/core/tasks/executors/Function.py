@@ -20,24 +20,19 @@ from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars
 from errors import WorkflowTerminated
 
 
-# TODO Remove
-class Repo:
-    def __init__(self):
-        self.branch = "dev"
-        self.url = "https://github.com/tapis-project/tapisv3-cli.git"
-        self.directory = "testing"
-
 class ContainerDetails:
     def __init__(
         self,
         image,
         command,
         args,
+        working_dir=None,
         env=None
     ):
         self.image = image
         self.command = command
         self.args = args
+        self.working_dir = working_dir
         self.env = env
 
 
@@ -149,9 +144,7 @@ class Function(TaskExecutor):
         job_name = job_name.replace("wf-fn", "wf-fn-init")
 
         init_job_containers = []
-        # for repo in self.task.git_repositories:
-        repos = [Repo()]
-        for i, repo in enumerate(repos):
+        for i, repo in enumerate(self.task.git_repositories):
             # Create the command for the container. Add the branch to
             # the command if specified
             command = ["git", "clone"]
@@ -178,23 +171,6 @@ class Function(TaskExecutor):
                     resources=flavor_to_k8s_resource_reqs(get_flavor("c1tiny"))
                 )
             )
-
-        # init_job_containers.append(
-        #     client.V1Container(
-        #         name=job_name + "-t",
-        #         image="ubuntu:latest",
-        #         command=["/bin/sh"],
-        #         args=["-c", "sleep 5000"],
-        #         volume_mounts=[
-        #             client.V1VolumeMount(
-        #                 name="task-workdir",
-        #                 mount_path=self.task.container_work_dir, 
-        #             )
-        #         ],
-        #         working_dir=os.path.join(self.task.container_work_dir, "scratch"),
-        #         resources=flavor_to_k8s_resource_reqs(get_flavor("c1tiny"))
-        #     )
-        # )
 
         try:
             job = self.batch_v1_api.create_namespaced_job(
@@ -285,6 +261,15 @@ class Function(TaskExecutor):
     def _write_entrypoint_file(self, file_path, code):
         with open(file_path, "wb") as file:
             file.write(base64.b64decode(code))
+    
+    # FIXME
+    def _setup_linux_container(self):
+        # Create entrypoint file that will be mounted into the container via NFS mount.
+        # The code provided in the request is expected to be base64 encoded. Decode, then
+        # encode in UTF-8
+        entrypoint_filename = "entrypoint.sh"
+        local_entrypoint_file_path = f"{self.task.scratch_dir}{entrypoint_filename}"
+        self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
 
     def _setup_python_container(self):
         # Create entrypoint file that will be mounted into the container via NFS mount.

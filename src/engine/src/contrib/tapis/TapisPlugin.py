@@ -21,7 +21,10 @@ class TapisPlugin(Plugin):
             sub_type="function",
             schema={
                 "runtimes": {
-                    "python": ["tapis/workflows-python-singularity:0.1.0"]
+                    "python": [
+                        "tapis/workflows-python-singularity:0.1.0",
+                        "tapis/flaskbase:1.2.2"
+                    ]
                 }
             }
         ))

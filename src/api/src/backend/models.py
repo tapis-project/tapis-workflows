@@ -463,10 +463,10 @@ class Task(models.Model):
 
     # Function specific properties
     git_repositories = models.JSONField(null=True, default=list)
-    runtime = models.CharField(max_length=64, choices=FUNCTION_TASK_RUNTIMES, null=True)
+    runtime = models.CharField(max_length=64, null=True)
     code = models.TextField(null=True)
     command = models.TextField(null=True)
-    installer = models.CharField(max_length=64, choices=FUNCTION_TASK_INSTALLERS, null=True)
+    installer = models.CharField(max_length=64, null=True)
     packages = models.JSONField(null=True, default=list)
 
     # Container run specific properties
@@ -488,7 +488,7 @@ class Task(models.Model):
         if not success: errors = {**errors, "invalid-runtime-installer": error}
 
         # Validate packages schema
-        (success, error) = self.validate_function_task_installers()
+        (success, error) = self.validate_packages_schema()
         if not success: errors = {**errors, "packages-schema-error": error}
 
         if errors:
