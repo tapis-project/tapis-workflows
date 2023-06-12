@@ -59,8 +59,12 @@ class Function(TaskExecutor):
 
         # Prepares the file system for the Function task by clone 
         # git repsoitories specified by the user in the request
-        init_jobs_task_result = self._run_git_clone_jobs(job_name)
-        if not init_jobs_task_result.success:
+        init_jobs_success = True
+        if len(self.task.git_repositories) > 0:
+            init_jobs_task_result = self._run_git_clone_jobs(job_name)
+            init_jobs_success = init_jobs_task_result.success
+        
+        if not init_jobs_success:
             return init_jobs_task_result
         
         # Set up the container details for the task's specified runtime
@@ -118,8 +122,8 @@ class Function(TaskExecutor):
             # Register the job to be deleted after execution
             self._register_resource(JobResource(job=job))
         except Exception as e:
-            logging.critical(e)
-            raise e
+            self.ctx.logger.error(e)
+            return TaskResult(status=1, errors=[e])
 
         try:
             while not self._job_in_terminal_state(job):
@@ -142,7 +146,6 @@ class Function(TaskExecutor):
 
     def _run_git_clone_jobs(self, job_name):
         job_name = job_name.replace("wf-fn", "wf-fn-init")
-
         init_job_containers = []
         for i, repo in enumerate(self.task.git_repositories):
             # Create the command for the container. Add the branch to
@@ -204,8 +207,8 @@ class Function(TaskExecutor):
             # Register the job to be deleted after execution
             self._register_resource(JobResource(job=job))
         except Exception as e:
-            logging.critical(e)
-            raise e
+            self.ctx.logger.error(e)
+            return TaskResult(status=1, errors=[e])
             
         try:
             while not self._job_in_terminal_state(job):
