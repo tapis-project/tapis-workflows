@@ -378,7 +378,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Set the directories
         # The pipeline root dir. All files and directories produced by a workflow
         # execution will reside here
-        self.state.ctx.pipeline.root_dir = f"{BASE_WORK_DIR}{self.state.ctx.idempotency_key}/{self.state.ctx.pipeline.id}/"
+        self.state.ctx.pipeline.root_dir = f"{BASE_WORK_DIR}{self.state.ctx.idempotency_key}/"
         os.makedirs(f"{self.state.ctx.pipeline.root_dir}", exist_ok=True)
 
         # Create the directories in which data between pipeline runs will be stored. This
