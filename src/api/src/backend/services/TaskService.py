@@ -89,7 +89,7 @@ class TaskService(Service):
                 destination=destination,
                 headers=request.headers,
                 http_method=request.http_method,
-                git_repositories=request.git_repositories,
+                git_repositories=[ dict(item) for item in request.git_repositories ],
                 image=request.image,
                 input=request.input,
                 installer=request.installer,
