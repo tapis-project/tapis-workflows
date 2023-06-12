@@ -7,8 +7,8 @@ from owe_python_sdk.constants import INPUT_PREFIX
 class ExecutionContext:
     def __init__(self, runtime: Runtime):
         self._runtime = runtime
-        self.output_dir = runtime.output_dir
-        self.exec_dir = runtime.exec_dir
+        self.output_dir = runtime.OUTPUT_DIR
+        self.exec_dir = runtime.EXEC_DIR
 
     def get_input(self, key, default=None):
         input_var = os.environ.get(INPUT_PREFIX + key, default=default)
@@ -29,13 +29,13 @@ class ExecutionContext:
         if code < 1:
             raise Exception("Exit code provided must be an int with a value >= 1")
 
-        with open(self._runtime.stderr, "w") as file:
+        with open(self._runtime.STDERR, "w") as file:
             file.write(message)
 
         sys.exit(code)
 
     def stdout(self, value):
-        with open(self._runtime.stdout, "w") as file:
+        with open(self._runtime.STDOUT, "w") as file:
             if type(value) == dict:
                 value = json.dumps(value)
 

@@ -5,7 +5,6 @@ from uuid import uuid4
 from kubernetes import client
 
 from core.tasks.TaskExecutor import TaskExecutor
-from core.tasks.Flavor import Flavor
 from owe_python_sdk.TaskResult import TaskResult
 from owe_python_sdk.utils import get_schema_extensions
 from owe_python_sdk.constants import FUNCTION_TASK_RUNTIMES
@@ -146,7 +145,6 @@ class Function(TaskExecutor):
 
     def _run_git_clone_jobs(self, job_name):
         job_name = job_name.replace("wf-fn", "wf-fn-init")
-        init_job_containers = []
         for i, repo in enumerate(self.task.git_repositories):
             # Create the command for the container. Add the branch to
             # the command if specified
@@ -158,75 +156,72 @@ class Function(TaskExecutor):
                 os.path.join("exec", repo.directory)
             ]
 
-            # Append the directory to the comman
-            init_job_containers.append(
-                client.V1Container(
-                    name=job_name + str(i),
-                    image="alpine/git:latest",
-                    command=command,
-                    volume_mounts=[
-                        client.V1VolumeMount(
-                            name="task-workdir",
-                            mount_path=self.task.container_work_dir
-                        )
-                    ],
-                    working_dir=self.task.container_work_dir,
-                    resources=flavor_to_k8s_resource_reqs(get_flavor("c1tiny"))
-                )
-            )
-
-        try:
-            job = self.batch_v1_api.create_namespaced_job(
-                namespace=KUBERNETES_NAMESPACE,
-                body=client.V1Job(
-                    metadata=client.V1ObjectMeta(
-                        labels=dict(job=job_name),
-                        name=job_name,
-                        namespace=KUBERNETES_NAMESPACE,
-                    ),
-                    spec=client.V1JobSpec(
-                        template=client.V1PodTemplateSpec(
-                            spec=client.V1PodSpec(
-                                containers=init_job_containers,
-                                restart_policy="Never",
-                                volumes=[
-                                    client.V1Volume(
-                                        name="task-workdir",
-                                        nfs=client.V1NFSVolumeSource(
-                                            server=WORKFLOW_NFS_SERVER,
-                                            path=self.task.work_dir.replace("/mnt/pipelines/", "/")
-                                        ),
-                                    )
-                                ]
+            try:
+                job = self.batch_v1_api.create_namespaced_job(
+                    namespace=KUBERNETES_NAMESPACE,
+                    body=client.V1Job(
+                        metadata=client.V1ObjectMeta(
+                            labels=dict(job=job_name),
+                            name=job_name,
+                            namespace=KUBERNETES_NAMESPACE,
+                        ),
+                        spec=client.V1JobSpec(
+                            template=client.V1PodTemplateSpec(
+                                spec=client.V1PodSpec(
+                                    containers=[
+                                        client.V1Container(
+                                            name=job_name + str(i),
+                                            image="alpine/git:latest",
+                                            command=command,
+                                            volume_mounts=[
+                                                client.V1VolumeMount(
+                                                    name="task-workdir",
+                                                    mount_path=self.task.container_work_dir
+                                                )
+                                            ],
+                                            working_dir=self.task.container_work_dir,
+                                            resources=flavor_to_k8s_resource_reqs(get_flavor("c1tiny"))
+                                        )
+                                    ],
+                                    restart_policy="Never",
+                                    volumes=[
+                                        client.V1Volume(
+                                            name="task-workdir",
+                                            nfs=client.V1NFSVolumeSource(
+                                                server=WORKFLOW_NFS_SERVER,
+                                                path=self.task.work_dir.replace("/mnt/pipelines/", "/")
+                                            ),
+                                        )
+                                    ]
+                                )
                             )
                         )
                     )
                 )
-            )
-            # Register the job to be deleted after execution
-            self._register_resource(JobResource(job=job))
-        except Exception as e:
-            self.ctx.logger.error(e)
-            return TaskResult(status=1, errors=[e])
-            
-        try:
-            while not self._job_in_terminal_state(job):
-                if self.terminating:
-                    raise WorkflowTerminated()
+                # Register the job to be deleted after execution
+                self._register_resource(JobResource(job=job))
+            except Exception as e:
+                self.ctx.logger.error(e)
+                return TaskResult(status=1, errors=[e])
+                
+            try:
+                while not self._job_in_terminal_state(job):
+                    if self.terminating:
+                        raise WorkflowTerminated()
 
-                job = self.batch_v1_api.read_namespaced_job(
-                    job.metadata.name,
-                    KUBERNETES_NAMESPACE
-                )
+                    job = self.batch_v1_api.read_namespaced_job(
+                        job.metadata.name,
+                        KUBERNETES_NAMESPACE
+                    )
 
-                time.sleep(self.polling_interval)
-        except WorkflowTerminated as e:
-            self.ctx.logger.error(str(e))
-            self.cleanup(terminating=True)
-            return TaskResult(status=2, errors=[e])
-        except Exception as e:
-            self.ctx.logger.error(str(e))
-            return TaskResult(status=1, errors=[e])
+                    time.sleep(self.polling_interval)
+            except WorkflowTerminated as e:
+                self.ctx.logger.error(str(e))
+                self.cleanup(terminating=True)
+                return TaskResult(status=2, errors=[e])
+            except Exception as e:
+                self.ctx.logger.error(str(e))
+                return TaskResult(status=1, errors=[e])
 
         return TaskResult(status=0 if self._job_succeeded(job) else 1)
 
