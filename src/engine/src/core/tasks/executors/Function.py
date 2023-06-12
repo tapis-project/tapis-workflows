@@ -197,7 +197,7 @@ class Function(TaskExecutor):
                                 ]
                             )
                         ),
-                        completions=len(repos)
+                        completions=len(self.task.git_repositories)
                     )
                 )
             )
