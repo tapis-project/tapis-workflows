@@ -471,7 +471,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         run_logger = logging.Logger(self.state.ctx.pipeline_run.uuid)
 
         handler = logging.FileHandler(f"{self.state.ctx.pipeline.work_dir}logs.txt")
-        handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
+        handler.setFormatter(logging.Formatter("%(message)s"))
 
         run_logger.setLevel(logging.DEBUG)
         run_logger.addHandler(handler)

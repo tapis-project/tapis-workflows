@@ -1,4 +1,4 @@
-import logging, os, base64, time, shutil
+import os, base64, time, shutil
 
 from uuid import uuid4
 
@@ -127,18 +127,19 @@ class Function(TaskExecutor):
         try:
             while not self._job_in_terminal_state(job):
                 if self.terminating:
-                    raise WorkflowTerminated()
+                    self.ctx.logger.error("Workflow Terminated")
+                    self.cleanup(terminating=True)
+                    self._stderr("Workflow Terminated")
+                    return TaskResult(status=2, errors=["Workflow Terminated"])
+
                 job = self.batch_v1_api.read_namespaced_job(
                     job.metadata.name, KUBERNETES_NAMESPACE
                 )
 
                 time.sleep(self.polling_interval)
-        except WorkflowTerminated as e:
-            self.ctx.logger.error(str(e))
-            self.cleanup(terminating=True)
-            return TaskResult(status=2, errors=[e])
         except Exception as e:
             self.ctx.logger.error(str(e))
+            self._stderr(str(e))
             return TaskResult(status=1, errors=[e])
 
         return TaskResult(status=0 if self._job_succeeded(job) else 1)
@@ -203,12 +204,16 @@ class Function(TaskExecutor):
                 self._register_resource(JobResource(job=job))
             except Exception as e:
                 self.ctx.logger.error(e)
-                return TaskResult(status=1, errors=[e])
+                self._stderr(str(e))
+                return TaskResult(status=1, errors=[str(e)])
                 
             try:
                 while not self._job_in_terminal_state(job):
                     if self.terminating:
-                        raise WorkflowTerminated()
+                        self.ctx.logger.error("Workflow Terminated")
+                        self.cleanup(terminating=True)
+                        self._stderr("Workflow Terminated")
+                        return TaskResult(status=2, errors=["Workflow Terminated"])
 
                     job = self.batch_v1_api.read_namespaced_job(
                         job.metadata.name,
@@ -216,13 +221,10 @@ class Function(TaskExecutor):
                     )
 
                     time.sleep(self.polling_interval)
-            except WorkflowTerminated as e:
-                self.ctx.logger.error(str(e))
-                self.cleanup(terminating=True)
-                return TaskResult(status=2, errors=[e])
             except Exception as e:
                 self.ctx.logger.error(str(e))
-                return TaskResult(status=1, errors=[e])
+                self._stderr(str(e))
+                return TaskResult(status=1, errors=[str(e)])
 
         return TaskResult(status=0 if self._job_succeeded(job) else 1)
 
