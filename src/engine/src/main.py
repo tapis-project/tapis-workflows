@@ -10,7 +10,7 @@ for name in logging.root.manager.loggerDict:
 
 server_logger = logging.getLogger("server")
 handler = logging.StreamHandler(stream=sys.stdout)
-handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
+handler.setFormatter(logging.Formatter("%(message)s"))
 server_logger.setLevel(logging.DEBUG)
 server_logger.addHandler(handler)
 # logging.basicConfig(
