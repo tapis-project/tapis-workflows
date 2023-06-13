@@ -161,8 +161,8 @@ class Function(TaskExecutor):
                     namespace=KUBERNETES_NAMESPACE,
                     body=client.V1Job(
                         metadata=client.V1ObjectMeta(
-                            labels=dict(job=job_name),
-                            name=job_name,
+                            labels=dict(job=job_name + str(i)),
+                            name=job_name + str(i),
                             namespace=KUBERNETES_NAMESPACE,
                         ),
                         spec=client.V1JobSpec(
