@@ -1,31 +1,197 @@
-from typing import List, Dict, Annotated, Union, TypedDict, AnyStr, Literal
-from pydantic import BaseModel, root_validator, Field
+import re
 
-from conf.constants import (
-    DEFAULT_MAX_EXEC_TIME,
-    DEFAULT_INVOCATION_MODE,
-    DEFAULT_RETRY_POLICY,
-    DEFAULT_MAX_RETRIES,
-    DEFAULT_DUPLICATE_SUBMISSION_POLICY
-)
+from enum import Enum, EnumMeta
+from typing import List, Literal, Union, Dict, TypedDict
+from typing_extensions import Annotated
+from pydantic import BaseModel, validator, root_validator, Field
 
-class Archivers(Dict):
-    pass
+### Enums ###
+class _EnumMeta(EnumMeta):  
+    def __contains__(cls, item): 
+        try:
+            cls(item)
+        except ValueError:
+            return False
+        else:
+            return True
 
-class Backends(Dict):
-    pass
+class EnumArchiveType(str, Enum, metaclass=_EnumMeta):
+    Irods = "irods"
+    S3 = "s3"
+    System = "system"
 
-class Meta(BaseModel):
-    idempotency_key: List[str] = []
+class EnumContextType(str, Enum, metaclass=_EnumMeta):
+    Github = "github"
+    Gitlab = "gitlab"
+    Dockerhub = "dockerhub"
 
-class Middleware(BaseModel):
-    backends: Backends
-    archivers: Archivers
+class EnumDestinationType(str, Enum, metaclass=_EnumMeta):
+    Dockerhub = "dockerhub"
+    DockerhubLocal = "dockerhub_local"
+    Local = "local"
+    S3 = "s3"
 
-class PipelineRun:
-    uuid: str
+class EnumDuplicateSubmissionPolicy(str, Enum, metaclass=_EnumMeta):
+    Allow = "allow",
+    Deny = "deny"
+    Terminate = "terminate"
+    Defer = "defer"
 
-# ___________________________________________
+class EnumImageBuilder(str, Enum, metaclass=_EnumMeta):
+    Kaniko = "kaniko"
+    Singularity = "singularity"
+
+class EnumRuntimeEnvironment(str, Enum, metaclass=_EnumMeta):
+    Python39 = "python:3.9"
+    PythonSingularity = "tapis/workflows-python-singularity:0.1.0"
+
+class EnumInstaller(str, Enum, metaclass=_EnumMeta):
+    Pip = "pip"
+
+class EnumPipelineType(str, Enum, metaclass=_EnumMeta):
+    Workflow = "workflow"
+    CI = "ci"
+
+class EnumValueType(str, Enum, metaclass=_EnumMeta):
+    String = "string"
+    Number = "number"
+    Boolean = "boolean"
+
+class EnumRetryPolicy(str, Enum, metaclass=_EnumMeta):
+    ExponentialBackoff = "exponential_backoff"
+
+class EnumInvocationMode(str, Enum, metaclass=_EnumMeta):
+    Async = "async"
+    Sync = "sync"
+
+class EnumTaskIOTypes(str, Enum, metaclass=_EnumMeta):
+    String = "string"
+    Number = "number"
+    Boolean = "boolean"
+    StringArray = "string_array"
+    NumberArray = "number_array"
+    BooleanArray = "boolean_array"
+    MixedArray = "mixed_array"
+    TapisFileInput = "tapis_file_input"
+    TapisFileInputArray = "tapis_file_input_array"
+
+class EnumTaskInputValueFromKey(str, Enum, metaclass=_EnumMeta):
+    Env = "env"
+    Params = "params"
+    TaskOutput = "task_output"
+
+class EnumTaskFlavor(str, Enum, metaclass=_EnumMeta):
+    C1_SML = "c1sml"
+    C1_MED = "c1med"
+    C1_LRG = "c1lrg"
+    C1_XLRG = "c1xlrg"
+    C1_XXLRG = "c1xxlrg"
+    G1_NVD_SML = "g1nvdsml"
+    G1_NVD_MED = "g1nvdmed"
+    G1_NVD_LRG = "g1nvdlrg"
+
+class EnumTaskType(str, Enum, metaclass=_EnumMeta):
+    ImageBuild = "image_build"
+    Request = "request"
+    Function = "function"
+    ContainerRun = "container_run"
+    Application = "application"
+    TapisActor = "tapis_actor"
+    TapisJob = "tapis_job"
+
+class EnumVisibility(str, Enum, metaclass=_EnumMeta):
+    Private = "private"
+    Public = "public"
+############
+
+### Defaults ###
+DEFAULT_MAX_RETRIES = 0
+DEFAULT_MAX_EXEC_TIME = 3600 # in seconds
+DEFAULT_MAX_TASK_EXEC_TIME = DEFAULT_MAX_EXEC_TIME
+DEFAULT_MAX_WORKFLOW_EXEC_TIME = DEFAULT_MAX_EXEC_TIME*3
+DEFAULT_ARCHIVE_DIR = "/workflows/archive/"
+################
+
+### Validators ###
+def validate_id(value):
+    pattern = re.compile(r"^[A-Z0-9\-_]+$")
+    if pattern.match(value) == None:
+        raise ValueError("`id` property must only contain alphanumeric characters, underscores, and hypens")
+
+    return value
+
+def validate_ctx_dest_url(value):
+    pattern = re.compile(r"^[a-zA-Z0-9-_]+/[a-zA-Z0-9-_]+$")
+    if pattern.match(value) == None:
+        raise ValueError("`url` must follow the format:  `<username>/<name>`")
+
+    return value
+
+################## Common ####################
+class ID(str):
+    _id_regex = re.compile(r"^[a-zA-Z0-9]+[a-zA-Z0-9\-_]*$")
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        field_schema.update(
+            pattern=cls._id_regex,
+            examples=['task_id', 'Task_ID', '0123-task-id'],
+        )
+    
+    @classmethod
+    def validate(cls, v):
+        if not isinstance(v, str) and not isinstance(v, int):
+            raise TypeError("Invalid 'id' format. Must start with alphanumeric chars followed by 0 or more alphanumeric chars, '_', and '-'")
+        match = cls._id_regex.fullmatch(v)
+        if not match:
+            raise ValueError("Invalid 'id' format. Must start with alphanumeric chars followed by 0 or more alphanumeric chars, '_', and '-'")
+        return v
+
+class Value(BaseModel):
+    type: EnumValueType = EnumValueType.String
+    value: Union[str, int, float, bool] = None
+    value_from: Dict[str, str] = None
+
+    @root_validator(pre=True)
+    def value_or_value_from(cls, values):
+        # Either 'value' or 'value_from' must be set on every variable
+        if (
+            values.get("value", None) == None
+            and values.get("value_from", None) == None
+        ):
+            raise ValueError(
+                "Missing 'value' or 'value_from' property in variable values")
+
+        return values
+
+    @validator("value", pre=True)
+    def value_type_validation(cls, value):
+        if type(value) not in [str, bool, int, float]:
+            raise TypeError("Variable values must be a string, number, or boolean'")
+
+        return value
+
+    @validator("value_from", pre=True)
+    def value_from_type_validation(cls, value):
+        is_dict = type(value) == dict
+        is_valid = len([k for k in value if (type(k) == str and type(value[k]) == str)]) < 1
+        if (not is_dict or (is_dict and is_valid)):
+            raise TypeError(
+                "The value of a Value object's 'value_from' property must be a single key-value pair where both the key and the value are non-empty strings")
+        return value
+
+Key = str
+
+class ValueWithRequirements(Value):
+    required: bool = False
+
+KeyVal = Dict[Key, Value]
+Params  = Dict[Key, ValueWithRequirements]
+################## /Common ###################
+
 class S3Credentials(TypedDict):
     access_key: str
     access_secret: str
@@ -36,12 +202,13 @@ class IRODSCredentials(TypedDict):
 
 # Archive
 class BaseArchive(BaseModel):
-    id: str
+    id: ID
     credentials: Union[
         S3Credentials,
         IRODSCredentials
     ] = None
-    type: str
+    identity_uuid: str = None
+    type: EnumArchiveType
 
     # System archive
     system_id: str = None
@@ -60,10 +227,11 @@ class BaseArchive(BaseModel):
 
 class SystemArchive(BaseArchive):
     system_id: str
-    archive_dir: str
+    archive_dir: str = DEFAULT_ARCHIVE_DIR # Relative to the system's RootDir
 
 class S3Archive(BaseArchive):
-    credentials: S3Credentials
+    credentials: S3Credentials = None
+    identity_uuid: str = None
     endpoint: str
     bucket: str
     region: str
@@ -71,9 +239,10 @@ class S3Archive(BaseArchive):
     @root_validator
     def validate_supported_types(cls, values):
         creds = values.get("credentials")
+        identity_uuid = values.get("identity_uuid")
 
-        if creds == None:
-            raise ValueError("Archive of type `s3` must provide credentials")
+        if creds == None and identity_uuid == None:
+            raise ValueError("Archive of type `s3` must provide either an identity_uuid or credentials")
 
         return values
 
@@ -82,15 +251,17 @@ class AddRemoveArchive(BaseModel):
 
 class IRODSArchive(BaseArchive):
     credentials: S3Credentials = None
+    identity_uuid: str = None
     host: str
     port: str
 
     @root_validator
     def validate_supported_types(cls, values):
         creds = values.get("credentials")
+        identity_uuid = values.get("identity_uuid")
 
-        if creds == None:
-            raise ValueError("Archive of type `irods` must provide credentials")
+        if creds == None and identity_uuid == None:
+            raise ValueError("Archive of type `irods` must provide either an identity_uuid or credentials")
 
         return values
 
@@ -124,9 +295,10 @@ class Context(BaseModel):
     credentials: ContextCredentialTypes = None
     branch: str = None
     build_file_path: str = None
+    identity_uuid: str = None
     sub_path: str = None
     tag: str = None
-    type: str
+    type: EnumContextType
     url: str
     visibility: str
 
@@ -137,35 +309,112 @@ class Context(BaseModel):
 DestinationCredentialTypes = DockerhubCredentials
 
 class Destination(BaseModel):
-    type: str
+    type: EnumDestinationType
     tag: str = None
     credentials: DestinationCredentialTypes = None
+    identity_uuid: str = None
 
 class RegistryDestination(Destination):
     tag: str = None
     credentials: DestinationCredentialTypes = None
+    identity_uuid: str = None
     url: str
+
+    # Validators
+    # _validate_url = validator("url", allow_reuse=True)(validate_ctx_dest_url)
+
+    @root_validator
+    def creds_or_identity(csl, values):
+        creds, identity = values.get("credentials"), values.get("identity_uuid")
+        if creds == None and identity == None:
+            raise ValueError("Missing credentials and identity_uuid. Must provide at lease one.")
+
+        return values
 
 class LocalDestination(Destination):
     filename: str = None
 
+# Events
+class BaseEvent(BaseModel):
+    branch: str = None
+    directives: str = None
+    commit: str = None
+    commit_sha: str = None
+    context_url: str = None
+    pipeline_id: str = None
+    source: str = None
+    username: str = None
+
+class APIEvent(BaseEvent):
+    params: KeyVal = {}
+    directives: List[str] = None
+
+class WebhookEvent(BaseEvent):
+    branch: str
+    commit: str
+    commit_sha: str
+    source: str
+    context_url: str
+    username: str
+    tenant_id: str
+
+# Groups and Users
+class GroupUserReq(BaseModel):
+    username: str
+    is_admin: bool = False
+
+GroupUserCreateRequest = GroupUserReq
+
+class GroupUserPutPatchRequest(BaseModel):
+    is_admin: bool
+
+class GroupCreateRequest(BaseModel):
+    id: ID
+    users: List[GroupUserReq] = []
+
+    # Validators
+    # _validate_id = validator("id", allow_reuse=True)(validate_id) 
+
 class TaskDependency(BaseModel):
-    id: str
+    id: ID
     can_fail: bool = False
 
-IOValueType = Union[AnyStr, Dict, List, bool]
+    # Validators
+    # _validate_id = validator("id", allow_reuse=True)(validate_id)
 
-class Input(BaseModel):
-    type: str
-    value: IOValueType
+# Task I/O Types ---------------------------------------------------------
 
-InputType = Dict[str, Input]
+class TaskOutputRef(BaseModel):
+    task_id: str
+    output_id: str
 
-class Output(BaseModel):
-    type: str
-    value: IOValueType
+# Input -----------------------------------------------------------------
 
-OutputType = Dict[str, Output]
+class BaseInputValue(BaseModel):
+    type: EnumTaskIOTypes
+    value: Union[str, int, float, bytes] = None
+    value_from: Union[
+        Dict[
+            Union[
+                EnumTaskInputValueFromKey.Env,
+                EnumTaskInputValueFromKey.Params,
+            ],
+            str
+        ],
+        Dict[EnumTaskInputValueFromKey.TaskOutput, TaskOutputRef]
+    ] = None
+
+Input = Dict # TODO move validation logic to pydantic model
+
+# Output -----------------------------------------------------------------
+
+class BaseOutputValue(BaseModel):
+    type: EnumTaskIOTypes
+    value: Union[str, int, float, bytes]
+
+Output = Dict[str, BaseOutputValue]
+
+# ------------------------------------------------------------------------
 
 class HTTPBasicAuthCreds(BaseModel):
     username: str = None
@@ -176,17 +425,25 @@ class Auth(BaseModel):
     creds: HTTPBasicAuthCreds
 
 class ExecutionProfile(BaseModel):
+    flavor: EnumTaskFlavor = EnumTaskFlavor.C1_MED
     max_exec_time: int = DEFAULT_MAX_EXEC_TIME
-    invocation_mode: str = DEFAULT_INVOCATION_MODE
-    retry_policy: str = DEFAULT_RETRY_POLICY
+    invocation_mode: str = EnumInvocationMode.Async
+    retry_policy: str = EnumRetryPolicy.ExponentialBackoff
     max_retries: int = DEFAULT_MAX_RETRIES
-    duplicate_submission_policy: str = DEFAULT_DUPLICATE_SUBMISSION_POLICY
+    duplicate_submission_policy: str = EnumDuplicateSubmissionPolicy.Terminate
+
+class GitRepository(BaseModel):
+    url: str
+    branch: str = None # If no branch specified, the default branch will be used
+    directory: str
 
 class BaseTask(BaseModel):
     auth: Auth = None
     builder: str = None
     cache: bool = None
     context: Context = None
+    code: str = None
+    command: str = None
     data: dict = None
     description: str = None
     destination: Union[
@@ -194,18 +451,24 @@ class BaseTask(BaseModel):
         LocalDestination
     ] = None
     execution_profile: ExecutionProfile = ExecutionProfile()
+    git_repositories: List[GitRepository] = None
     headers: dict = None
     http_method: str = None
     image: str = None
-    input: InputType = None
-    id: str
-    output: OutputType = None
+    installer: EnumInstaller = None
+    input: Input = {}
+    id: ID
+    _if: str = None
+    output: Output = {}
+    packages: List[str] = None
     poll: bool = None
     query_params: str = None
     type: str
     depends_on: List[TaskDependency] = []
     retries: int = 0
+    runtime: EnumRuntimeEnvironment = None
     tapis_actor_id: str = None
+    tapis_actor_message: Union[str, dict] = None
     tapis_job_def: dict = None
     url: str = None
 
@@ -237,22 +500,37 @@ class ImageBuildTask(BaseTask):
         # Only allow context type of dockerhub when singularity is chosen
         # as a the image builder
         if (
-            context.type == "dockerhub"
-            and builder != "singularity"
+            context.type == EnumContextType.Dockerhub
+            and builder != EnumImageBuilder.Singularity
         ):
             raise ValueError("Context type 'dockerhub' can only be used in conjunction with a builder of type 'singularity'")
         
         if (
-            context.type == "dockerhub"
-            and destination.type != "local"
+            context.type == EnumContextType.Dockerhub
+            and destination.type != EnumDestinationType.Local
         ):
             raise ValueError("Context type 'dockerhub' can only be used in conjunction with destination of type `local`")
+
+        return values
+    
+    @root_validator
+    def validate_ctx_authn(cls, values):
+        # Requester must provide an identity or credential in order
+        # to pull from a private repository
+        context = values.get("context")
+        if (
+            context.visibility == EnumVisibility.Private
+            and (context.identity_uuid == None and context.credentials == None)
+        ):
+            raise ValueError(f"Any Context of an image build task with visibilty `{EnumVisibility.Private}` must have an identity_uuid or credentials.")
 
         return values
 
 class TapisActorTask(BaseTask):
     type: Literal["tapis_actor"]
     tapis_actor_id: str
+    poll: bool = True
+    tapis_actor_message: str = None
 
 class TapisJobTask(BaseTask):
     type: Literal["tapis_job"]
@@ -264,33 +542,95 @@ class RequestTask(BaseTask):
     http_method: str
     url: str
 
+class FunctionTask(BaseTask):
+    type: Literal["function"]
+    git_repositories: List[GitRepository] = []
+    runtime: EnumRuntimeEnvironment
+    packages: List[str] = []
+    installer: EnumInstaller
+    code: str
+    command: str = None
+
 # Pipelines
 
 Task = Annotated[
     Union[
         ContainerRunTask,
         ImageBuildTask,
+        FunctionTask,
+        RequestTask,
         TapisActorTask,
         TapisJobTask,
-        RequestTask
     ],
     Field(discriminator="type")
 ]
 
 class BasePipeline(BaseModel):
-    id: str
-    type: str = "workflow"
+    id: ID
+    type: EnumPipelineType = EnumPipelineType.Workflow
     tasks: List[Task] = []
     execution_profile: ExecutionProfile = ExecutionProfile(
-        max_exec_time=DEFAULT_MAX_EXEC_TIME)
+        max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
+    cron: str = None
     archive_ids: List[str] = []
+    env: KeyVal = {}
+    params: Params = {}
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
-# ___________________________________________
 
-class BaseRequest(BaseModel):
+class WorkflowPipeline(BasePipeline):
+    pass
+
+class CIPipeline(BasePipeline):
+    cache: bool = False
+    builder: str
+    context: Context
+    destination: Union[
+        RegistryDestination,
+        LocalDestination
+    ] = None
+    auth: dict = None
+    data: dict = None
+    headers: dict = None
+    http_method: str = None
+    query_params: dict = None
+    url: str = None
+
+class TapisRemoteIOBox(BaseModel):
+    system_id: str
+    path: str
+
+class ETLPipeline(BasePipeline):
+    source: TapisRemoteIOBox
+    destination: TapisRemoteIOBox
+    jobs: List[object]
+
+# Pipeline runs and task executions
+class TaskExecution(BaseModel):
+    task_id: str
+    started_at: str = None
+    last_modified: str = None
+    uuid: str
+
+class PipelineRun(BaseModel):
+    last_modified: str = None
+    status: str = None
+    uuid: str
+
+class WorkflowSubmissionRequestMeta(BaseModel):
+    idempotency_key: Union[str, List[str]]
+    origin: str
+
+class Group(BaseModel):
+    id: str
+
+class WorkflowSubmissionRequest(BaseModel):
+    env: KeyVal
+    params: Params
+    group: Group
     pipeline: BasePipeline
     pipeline_run: PipelineRun
-    middleware: Middleware
-    meta: Meta = Meta()
+    meta: WorkflowSubmissionRequestMeta
+
+
