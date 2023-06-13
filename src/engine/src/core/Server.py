@@ -28,6 +28,8 @@ from conf.constants import (
     DEFERRED_QUEUE,
     DUPLICATE_SUBMISSION_POLICY_TERMINATE,
     DUPLICATE_SUBMISSION_POLICY_DENY,
+    DUPLICATE_SUBMISSION_POLICY_ALLOW,
+    DUPLICATE_SUBMISSION_POLICY_DEFER,
     PLUGINS,
 )
 
@@ -149,7 +151,7 @@ class Server:
         try:
             # Decode the message body, then convert to an object. (Because accessing
             # properties of an object is nicer than a dictionary)
-            ctx = json_to_object(bytes_to_json(body))
+            request = json_to_object(bytes_to_json(body))
             
             # Get a workflow executor worker. If there are none available,
             # this will raise a "NoWorkersAvailabe" error which is handled
@@ -159,7 +161,7 @@ class Server:
             # Run request middlewares over the workflow context
             # NOTE Request middlewares will very likely mutate the workflow context
             for plugin in self.plugins:
-                ctx = plugin.dispatch("request", ctx)
+                request = plugin.dispatch("request", request)
             
             # Ack the message before running the workflow executor
             cb = partial(self._ack_nack, "ack", channel, delivery_tag)
@@ -171,12 +173,12 @@ class Server:
 
             # Register the active worker to the server. If worker cannot 
             # execute, check it back in.
-            worker = self._register_worker(ctx, worker)
+            worker = self._register_worker(request, worker)
 
             threads = []
             
             if worker.can_start:
-                worker.start(ctx, threads)
+                worker.start(request, threads)
 
             for t in threads:
                 t.join()
@@ -287,31 +289,34 @@ class Server:
 
     # TODO handle for the case of multiple active workers with same
     # active worker key
-    def _register_worker(self, ctx, worker):
+    def _register_worker(self, request, worker):
         """Registers the worker to the Server. Handles duplicate workflow
         submissions"""
         # Returns a key based on user-defined idempotency key or pipeline
         # run uuid if no idempotency key is provided
-        worker.key = self._resolve_idempotency_key(ctx)
+        worker.key = self._resolve_idempotency_key(request)
 
         # Set the idempotency key on the context
-        ctx.idempotency_key = worker.key
+        request.idempotency_key = worker.key
 
         # Check if there are workers running that have the same unique constraint key
         active_workers = self._get_active_workers(worker.key)
-        policy = ctx.pipeline.duplicate_submission_policy
+        policy = request.pipeline.duplicate_submission_policy
 
         if (
             policy == DUPLICATE_SUBMISSION_POLICY_DENY
             and len(active_workers) > 0
         ):
             return worker
-
-
-        if policy == DUPLICATE_SUBMISSION_POLICY_TERMINATE:
+        elif policy == DUPLICATE_SUBMISSION_POLICY_TERMINATE:
             for active_worker in active_workers:
                 active_worker.terminate()
                 self._deregister_worker(active_worker, terminated=True)
+        elif policy == DUPLICATE_SUBMISSION_POLICY_DEFER:
+            logger.info(f"{lbuf('[SERVER]')} Warning: Duplicate Submission Policy of 'DEFER' not implemented. Handling as 'ALLOW'")
+            pass
+        elif policy == DUPLICATE_SUBMISSION_POLICY_ALLOW:
+            pass
         
         worker.can_start = True
         self.active_workers.append(worker)
@@ -326,23 +331,23 @@ class Server:
     def _get_active_workers(self, key):
         return [worker for worker in self.active_workers if worker.key == key]
 
-    def _resolve_idempotency_key(self, ctx):
+    def _resolve_idempotency_key(self, request):
         # Check the context's meta for an idempotency key. This will be used
         # to identify duplicate workflow submissions and handle them according
         # to their duplicate submission policy.
         
         # Defaults to the pipeline id
-        default_idempotency_key = ctx.pipeline.id
+        default_idempotency_key = request.pipeline.id
 
-        if len(ctx.meta.idempotency_key) == 0:
+        if len(request.meta.idempotency_key) == 0:
             return default_idempotency_key
 
         try:
             idempotency_key = ""
-            for constraint in ctx.meta.idempotency_key:
+            for constraint in request.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
                 delimiter = "." if idempotency_key != "" else ""
-                idempotency_key = idempotency_key + delimiter + str(getattr(getattr(ctx, obj), prop))
+                idempotency_key = idempotency_key + delimiter + str(getattr(getattr(request, obj), prop))
 
             return idempotency_key
         except (AttributeError, TypeError):

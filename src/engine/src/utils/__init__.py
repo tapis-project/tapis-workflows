@@ -22,7 +22,7 @@ def lbuffer_str(string, length=10):
     if diff <= 0: return string
     
     buffer = " " * diff
-    return buffer + string
+    return string + buffer
 
 def bytes_to_json(bytestring):
     # Decode UTF-8 bytes to Unicode, and convert single quotes
