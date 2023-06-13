@@ -166,6 +166,7 @@ class Function(TaskExecutor):
                             namespace=KUBERNETES_NAMESPACE,
                         ),
                         spec=client.V1JobSpec(
+                            backoff_limit=0,
                             template=client.V1PodTemplateSpec(
                                 spec=client.V1PodSpec(
                                     containers=[
