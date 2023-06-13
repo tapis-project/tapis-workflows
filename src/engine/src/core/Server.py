@@ -261,7 +261,7 @@ class Server:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        logger.info(f"{lbuf('[SERVER]')} CONNECTING")
+        logger.info(f"{lbuf('[SERVER]')} CONNECTING TO BROKER")
 
         connected = False
         connection_attempts = 0

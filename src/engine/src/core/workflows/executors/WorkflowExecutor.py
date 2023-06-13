@@ -54,7 +54,7 @@ def interceptable(rollback=None): # Decorator factory
 
                 return res
             except Exception as e:
-                server_logger.debug(f"ID: {self.id} Exception in @interceptable: {self.id} | Terminating:{self.state.terminating}/Terminated:{self.state.terminated} | {e}")
+                server_logger.debug(f"Workflow Termination Signal Detected: Terminating:{self.state.terminating}/Terminated:{self.state.terminated}")
                 if self.state.terminating or self.state.terminated:
                     # Run the rollback function by the name provided in the
                     # interceptable decorator factory args
@@ -138,8 +138,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         self._set_initial_state()
         
     # Logging formatters. Makes logs more useful and pretty
-    def p_str(self, status): return f"{self.state.ctx.idempotency_key} {lbuf('[PIPELINE]')} {status} {self.state.ctx.pipeline.id}"
-    def t_str(self, task, status): return f"{self.state.ctx.idempotency_key} {lbuf('[TASK]')} {status} {task.id}.{self.state.ctx.pipeline.id}"
+    def p_str(self, status): return f"{lbuf('[PIPELINE]')} {self.state.ctx.idempotency_key}  {status} {self.state.ctx.pipeline.id}"
+    def t_str(self, task, status): return f"{lbuf('[TASK]')} {self.state.ctx.idempotency_key} {status} {task.id}.{self.state.ctx.pipeline.id}"
 
     @interceptable()
     def start(self, ctx, threads):
