@@ -60,7 +60,7 @@ class RestrictedAPIView(View):
         if one_in(LOCAL_DEV_HOSTS, request.base_url):
             request.base_url = TAPIS_DEV_URL
 
-        # Set the request url
+        # Set the request url. This is the full url to where the request was sent
         request.url = request.base_url.rstrip("/") + "/" + request.path.lstrip("/")
 
         ### Auth start ###
