@@ -51,7 +51,7 @@ class PipelineDispatcher:
             raise ServerError(message=str(e))
 
         try:
-            pprint("SERVICE_REQUEST", service_request)
+            pprint(service_request)
             broker.publish(
                 "workflows",
                 json.dumps(service_request, default=self._uuid_convert)
