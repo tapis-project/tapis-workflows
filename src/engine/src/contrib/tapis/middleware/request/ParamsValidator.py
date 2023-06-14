@@ -11,6 +11,9 @@ class ParamsValidator(RequestMiddleware):
         ]
         
         for param in required_params:
+            print(type(request.params))
+            print(request.params)
+            print(dict(request.params))
             if not hasattr(request.params, param):
                 raise Exception(f"Middleware Error: ParamsValidator: '{param}' missing in request params")
 
