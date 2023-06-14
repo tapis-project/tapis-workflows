@@ -345,6 +345,8 @@ class Server:
 
         try:
             idempotency_key = ""
+            print(request.meta)
+            print(request.meta.idepmotency_key)
             for constraint in request.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
                 delimiter = "." if idempotency_key != "" else ""
