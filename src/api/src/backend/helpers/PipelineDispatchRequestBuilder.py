@@ -56,9 +56,15 @@ class PipelineDispatchRequestBuilder:
 
         # Populate the params for this request
         request["params"] = {
-            "workflow_executor_access_token": WORKFLOW_EXECUTOR_ACCESS_TOKEN,
-            "tapis_tenant_id": request["group"]["tenant_id"],
-            "tapis_pipeline_owner": request["pipeline"]["owner"],
+            "workflow_executor_access_token": {
+                "value": WORKFLOW_EXECUTOR_ACCESS_TOKEN
+            },
+            "tapis_tenant_id": {
+                "value": request["group"]["tenant_id"]
+            },
+            "tapis_pipeline_owner": {
+                "value": request["pipeline"]["owner"]
+            },
             **req_params
         }
 
