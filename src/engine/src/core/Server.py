@@ -1,5 +1,6 @@
 
 import os, sys, time, logging, json
+from pprint import pprint
 from threading import Thread
 
 from typing import Literal, Union
@@ -150,9 +151,10 @@ class Server:
         worker = None
         acked = False # Indicates that the message as been acked
         try:
-            # Decode the message body, then convert to an object. (Because accessing
-            # properties of an object is nicer than a dictionary)
-            request = WorkflowSubmissionRequest(**json.loads(bytes_to_json(body)))
+            # Decode the message body, then convert to an object.
+            request = json.loads(bytes_to_json(body))
+            pprint(request)
+            request = WorkflowSubmissionRequest(**request)
             
             # Get a workflow executor worker. If there are none available,
             # this will raise a "NoWorkersAvailabe" error which is handled
