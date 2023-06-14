@@ -1,4 +1,3 @@
-from pprint import pprint
 from uuid import uuid4
 from django.forms import model_to_dict
 
@@ -20,7 +19,6 @@ class PipelineDispatchRequestBuilder:
         directives=None,
         params={}
     ):
-        print("BASEURL in PipelineDispatchRequestBuilder", base_url)
         # Get the pipeline tasks, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
         tasks = pipeline.tasks.all()
@@ -82,9 +80,7 @@ class PipelineDispatchRequestBuilder:
             "pipeline.id"
         ]
 
-        print("BASEURL before adding to request", base_url)
-        request["meta"]["origin"] = base_url, # Origin of the request
-        print("BASEURL in meta origin", request["meta"]["origin"])
+        request["meta"]["origin"] = base_url # Origin of the request
         request["meta"]["event"] = model_to_dict(event)
 
         request["pipeline_run"] = {}
@@ -103,9 +99,6 @@ class PipelineDispatchRequestBuilder:
             directives_request = parse(directive_str)
 
         request["directives"] = directives_request
-
-        print("FULL REQUEST")
-        pprint(request)
 
         return request
 

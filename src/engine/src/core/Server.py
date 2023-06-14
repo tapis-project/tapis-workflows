@@ -1,6 +1,5 @@
 
 import os, sys, time, logging, json
-from pprint import pprint
 from threading import Thread
 
 from typing import Literal, Union
@@ -153,7 +152,6 @@ class Server:
         try:
             # Decode the message body, then convert to an object.
             request = json.loads(bytes_to_json(body))
-            pprint(request)
             request = WorkflowSubmissionRequest(**request)
             
             # Get a workflow executor worker. If there are none available,

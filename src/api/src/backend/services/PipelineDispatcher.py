@@ -1,5 +1,4 @@
 import json, logging
-from pprint import pprint
 
 from uuid import UUID
 
@@ -38,9 +37,8 @@ class PipelineDispatcher:
                 service_request_update = {"last_run": pipeline.current_run.uuid}
 
             Pipeline.objects.filter(pk=pipeline.uuid).update(**model_update)
-            print("SERVICE REQUEST BEFORE UPDATE", service_request)
+            
             service_request["pipeline"].update(service_request_update)
-            print("SERVICE REQUEST AFTER UPDATE", service_request)
 
         except (IntegrityError, DatabaseError, OperationalError) as e:
             message = f"Failed to create PipelineRun: {e.__cause__}"
