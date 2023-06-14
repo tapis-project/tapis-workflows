@@ -32,6 +32,7 @@ from conf.constants import (
     DUPLICATE_SUBMISSION_POLICY_DEFER,
     PLUGINS,
 )
+from conf.request import WorkflowSubmissionRequest
 
 from core.workers import WorkerPool
 from core.workflows.executors import WorkflowExecutor
@@ -151,7 +152,7 @@ class Server:
         try:
             # Decode the message body, then convert to an object. (Because accessing
             # properties of an object is nicer than a dictionary)
-            request = json_to_object(bytes_to_json(body))
+            request = WorkflowSubmissionRequest(bytes_to_json(body))
             
             # Get a workflow executor worker. If there are none available,
             # this will raise a "NoWorkersAvailabe" error which is handled
