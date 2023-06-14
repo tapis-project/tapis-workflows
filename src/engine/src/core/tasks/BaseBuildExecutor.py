@@ -27,7 +27,7 @@ class BaseBuildExecutor(TaskExecutor):
         # commit message. Image tagging directives take precedence over the
         # the image_property of the pipeline.
         if self.directives is not None:
-            for key, value in self.directives.__dict__.items():
+            for key, value in dict(self.directives).items():
                 if key == "CUSTOM_TAG" and key is not None:
                     tag = value
                 elif key == "CUSTOM_TAG" and key is None:

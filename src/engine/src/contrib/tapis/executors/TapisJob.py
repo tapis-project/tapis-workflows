@@ -17,7 +17,7 @@ class TapisJob(TaskExecutor):
             service_client = tapis_service_api_gateway.get_client()
 
             # Recursively convert nested simple namespace objects to dict
-            job_def = json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: s.__dict__))
+            job_def = json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s)))
 
             # Add timestamp on job name to ensure unique name on submit
             job_def["name"] += str(time.time())

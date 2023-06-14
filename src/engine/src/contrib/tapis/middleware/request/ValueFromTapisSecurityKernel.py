@@ -3,7 +3,7 @@ from owe_python_sdk.middleware import RequestMiddleware
 
 class ValueFromTapisSecurityKernal(RequestMiddleware):
     def __call__(self, request):
-        for key in request.env.__dict__:
+        for key in dict(request.env):
             # Get the sk secret name
             envvar_value = getattr(request.env, key)
             sk_id = getattr(getattr(request.env, key).value_from, "tapis-security-kernel", None)

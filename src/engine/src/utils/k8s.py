@@ -26,7 +26,7 @@ def flavor_to_limits(flavor: Flavor):
 
 def input_to_k8s_env_vars(_inputs, ctx, prefix=""):
     k8s_env_vars = []
-    for input_id, _input in _inputs.__dict__.items():
+    for input_id, _input in dict(_inputs).items():
         # Handle for empty input
         if type(_input) != SimpleNamespace:
             raise Exception(f"Invalid input for input '{input_id}'")
