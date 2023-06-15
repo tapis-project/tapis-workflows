@@ -185,7 +185,6 @@ class PipelineDispatchRequestBuilder:
         task_request["execution_profile"] = {
             "flavor": task_request["flavor"],
             "max_exec_time": task_request["max_exec_time"],
-            "duplicate_submission_policy": task_request["duplicate_submission_policy"],
             "max_retries": task_request["max_retries"],
             "invocation_mode": task_request["invocation_mode"],
             "retry_policy": task_request["retry_policy"]
