@@ -425,12 +425,14 @@ class Auth(BaseModel):
     creds: HTTPBasicAuthCreds
 
 class ExecutionProfile(BaseModel):
-    flavor: EnumTaskFlavor = EnumTaskFlavor.C1_MED
     max_exec_time: int = DEFAULT_MAX_EXEC_TIME
     invocation_mode: str = EnumInvocationMode.Async
     retry_policy: str = EnumRetryPolicy.ExponentialBackoff
     max_retries: int = DEFAULT_MAX_RETRIES
     duplicate_submission_policy: str = EnumDuplicateSubmissionPolicy.Terminate
+
+class TaskExecutionProfile(ExecutionProfile):
+    flavor: EnumTaskFlavor = EnumTaskFlavor.C1_MED
 
 class GitRepository(BaseModel):
     url: str
@@ -450,7 +452,7 @@ class BaseTask(BaseModel):
         RegistryDestination,
         LocalDestination
     ] = None
-    execution_profile: ExecutionProfile = ExecutionProfile()
+    execution_profile: TaskExecutionProfile = TaskExecutionProfile()
     git_repositories: List[GitRepository] = None
     headers: dict = None
     http_method: str = None
