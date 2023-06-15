@@ -302,9 +302,7 @@ class Server:
 
         # Check if there are workers running that have the same unique constraint key
         active_workers = self._get_active_workers(worker.key)
-        print(request.pipeline)
-        print(dict(request.pipeline))
-        policy = request.pipeline.duplicate_submission_policy
+        policy = request.pipeline.execution_profile.duplicate_submission_policy
 
         if (
             policy == DUPLICATE_SUBMISSION_POLICY_DENY
