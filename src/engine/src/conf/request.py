@@ -3,7 +3,7 @@ import re
 from enum import Enum, EnumMeta
 from typing import List, Literal, Union, Dict, TypedDict
 from typing_extensions import Annotated
-from pydantic import BaseModel, validator, root_validator, Field
+from pydantic import BaseModel, validator, root_validator, Field, Extra
 
 ### Enums ###
 class _EnumMeta(EnumMeta):  
@@ -625,7 +625,7 @@ class WorkflowSubmissionRequestMeta(BaseModel):
 class Group(BaseModel):
     id: str
 
-class WorkflowSubmissionRequest(BaseModel):
+class WorkflowSubmissionRequest(BaseModel, extra=Extra.allow):
     env: KeyVal
     params: Params
     group: Group
