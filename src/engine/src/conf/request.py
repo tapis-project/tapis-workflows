@@ -569,7 +569,7 @@ Task = Annotated[
     Field(discriminator="type")
 ]
 
-class BasePipeline(BaseModel, extra=Extra.allow):
+class BasePipeline(BaseModel):
     id: ID
     type: EnumPipelineType = EnumPipelineType.Workflow
     tasks: List[Task] = []
@@ -579,6 +579,9 @@ class BasePipeline(BaseModel, extra=Extra.allow):
     archive_ids: List[str] = []
     env: KeyVal = {}
     params: Params = {}
+
+    class Config:
+        extra = Extra.allow
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
@@ -626,15 +629,21 @@ class WorkflowSubmissionRequestMeta(BaseModel):
     idempotency_key: Union[str, List[str]]
     origin: str
 
+    class Config:
+        extra = Extra.allow
+
 class Group(BaseModel):
     id: str
 
-class WorkflowSubmissionRequest(BaseModel, extra=Extra.allow):
+class WorkflowSubmissionRequest(BaseModel):
     env: KeyVal
     params: Params
     group: Group
     pipeline: BasePipeline
     pipeline_run: PipelineRun
     meta: WorkflowSubmissionRequestMeta
+
+    class Config:
+        extra = Extra.allow
 
 

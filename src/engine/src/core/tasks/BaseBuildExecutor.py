@@ -4,7 +4,8 @@ from core.tasks.executors.builders.helpers.ContextResolver import context_resolv
 from errors.credentials import CredentialsError
 from core.tasks.TaskExecutor import TaskExecutor
 
-
+# TODO Move methods of this class to helpers, use the helpers in decendent classes,
+# and delete once complete
 class BaseBuildExecutor(TaskExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
         TaskExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
