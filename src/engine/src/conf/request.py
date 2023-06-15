@@ -433,7 +433,7 @@ class ExecutionProfile(BaseModel):
 
 class TaskExecutionProfile(ExecutionProfile):
     flavor: EnumTaskFlavor = EnumTaskFlavor.C1_MED
-    duplicate_submission_policy = None
+    duplicate_submission_policy: str = None
 
 class GitRepository(BaseModel):
     url: str
