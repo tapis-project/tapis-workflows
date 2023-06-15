@@ -440,7 +440,7 @@ class GitRepository(BaseModel):
     branch: str = None # If no branch specified, the default branch will be used
     directory: str
 
-class BaseTask(BaseModel):
+class BaseTask(BaseModel, extra=Extra.allow):
     auth: Auth = None
     builder: str = None
     cache: bool = None
@@ -568,7 +568,7 @@ Task = Annotated[
     Field(discriminator="type")
 ]
 
-class BasePipeline(BaseModel):
+class BasePipeline(BaseModel, extra=Extra.allow):
     id: ID
     type: EnumPipelineType = EnumPipelineType.Workflow
     tasks: List[Task] = []
