@@ -93,6 +93,9 @@ class Events(RestrictedAPIView):
         except ServerError as e:
             print(str(e))
             return ServerErrorResp(message=str(e))
+        except Exception as e:
+            print(str(e))
+            return ServerErrorResp(message=str(e))
 
         # Respond with the event
         return ModelResponse(event)
