@@ -91,7 +91,6 @@ class Events(RestrictedAPIView):
             # Dispatch the request
             pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline)
         except ServerError as e:
-            print(str(e))
             return ServerErrorResp(message=str(e))
         except Exception as e:
             print(str(e))
