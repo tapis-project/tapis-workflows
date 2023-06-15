@@ -28,14 +28,10 @@ class PipelineDispatchRequestBuilder:
         for task in tasks:
             # Convert the task to a dict and add the execution profile property
             # for all tasks.
-            print(task.id)
-            print("BEFORE PRE PROCESS TASK")
             preprocessed_task = self._preprocess_task(task)
-            print("AFTER")
+
             # Handle the task-specific schema conversions
-            print("BEFORE PROCESS TASK")
             task_request = getattr(self, f"_{task.type}")(preprocessed_task, task)
-            print("AFTER")
             tasks_request.append(task_request)
 
         # Get the archives for this pipeline
@@ -55,7 +51,6 @@ class PipelineDispatchRequestBuilder:
 
         # Move the execution profile props from the pipeline object to the
         # execution profile property
-        print("BEFORE PIPELINE EXECUTION PROFILE")
         request["pipeline"]["execution_profile"] = {
             "max_exec_time": request["pipeline"]["max_exec_time"],
             "duplicate_submission_policy": request["pipeline"]["duplicate_submission_policy"],
@@ -63,7 +58,6 @@ class PipelineDispatchRequestBuilder:
             "invocation_mode": request["pipeline"]["invocation_mode"],
             "retry_policy": request["pipeline"]["retry_policy"]
         }
-        print("AFTER")
 
         # TODO Implement model and request object.
         request["pipeline"]["tasks"] = tasks_request
@@ -108,10 +102,9 @@ class PipelineDispatchRequestBuilder:
         request["pipeline_run"] = {}
         
         # Generate the uuid for this pipeline run
-        print("BEFORE PIPELINE RUN UUID")
         uuid = uuid4()
         request["pipeline_run"]["uuid"] = uuid
-        print("AFTER")
+
         # Parse the directives from the commit message
         directives_request = {}
         if commit != None:
@@ -190,12 +183,12 @@ class PipelineDispatchRequestBuilder:
         # Map task data model properties to the workflow engine expected schema for
         # the execution profile
         task_request["execution_profile"] = {
-            "flavor": task_request["pipeline"]["flavor"],
-            "max_exec_time": task_request["pipeline"]["max_exec_time"],
-            "duplicate_submission_policy": task_request["pipeline"]["duplicate_submission_policy"],
-            "max_retries": task_request["pipeline"]["max_retries"],
-            "invocation_mode": task_request["pipeline"]["invocation_mode"],
-            "retry_policy": task_request["pipeline"]["retry_policy"]
+            "flavor": task_request["flavor"],
+            "max_exec_time": task_request["max_exec_time"],
+            "duplicate_submission_policy": task_request["duplicate_submission_policy"],
+            "max_retries": task_request["max_retries"],
+            "invocation_mode": task_request["invocation_mode"],
+            "retry_policy": task_request["retry_policy"]
         }
 
         return task_request
