@@ -55,6 +55,7 @@ def interceptable(rollback=None): # Decorator factory
 
                 return res
             except Exception as e:
+                print(str(e))
                 server_logger.debug(f"Workflow Termination Signal Detected: Terminating:{self.state.terminating}/Terminated:{self.state.terminated}")
                 if self.state.terminating or self.state.terminated:
                     # Run the rollback function by the name provided in the
