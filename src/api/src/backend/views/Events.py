@@ -76,18 +76,19 @@ class Events(RestrictedAPIView):
         if pipeline == None:
             return ModelResponse(event)
 
-        # Build the pipeline dispatch request
-        pipeline_dispatch_request = request_builder.build(
-            request.base_url,
-            group,
-            pipeline,
-            event,
-            directives=body.directives,
-            params=body.params
-        )
 
-        # Dispatch the request
         try:
+            # Build the pipeline dispatch request
+            pipeline_dispatch_request = request_builder.build(
+                request.base_url,
+                group,
+                pipeline,
+                event,
+                directives=body.directives,
+                params=body.params
+            )
+            
+            # Dispatch the request
             pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline)
         except ServerError as e:
             return ServerErrorResp(message=str(e))
