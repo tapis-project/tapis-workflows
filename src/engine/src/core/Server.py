@@ -350,10 +350,20 @@ class Server:
             idempotency_key = ""
             for constraint in request.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
-                delimiter = "." if idempotency_key != "" else ""
-                idempotency_key = idempotency_key + delimiter + str(getattr(getattr(request, obj), prop))
+
+                # Set idemp key part delimiter. If only one item is in the list, delim is empty string
+                part_delimiter = "." if len(request.meta.idempotency_key) ==  1 else ""
+
+                key_part = getattr(getattr(request, obj), prop)
+                # Access the value property if the object in the idemp key is params
+                if obj == "params":
+                    param_obj = getattr(getattr(request, obj), prop)
+                    key_part = param_obj.value
+
+                idempotency_key = idempotency_key + part_delimiter + str(key_part)
 
             return idempotency_key
+
         except (AttributeError, TypeError):
             logger.info(f"{lbuf('[SERVER]')} ERROR: Failed to resolve idempotency key from provided constraints. Defaulted to pipeline id '{default_idempotency_key}'")
             return default_idempotency_key
