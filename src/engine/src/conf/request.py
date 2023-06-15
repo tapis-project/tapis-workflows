@@ -440,7 +440,7 @@ class GitRepository(BaseModel):
     branch: str = None # If no branch specified, the default branch will be used
     directory: str
 
-class BaseTask(BaseModel, extra=Extra.allow):
+class BaseTask(BaseModel):
     auth: Auth = None
     builder: str = None
     cache: bool = None
@@ -480,6 +480,7 @@ class BaseTask(BaseModel, extra=Extra.allow):
 
     class Config:
         arbitrary_types_allowed = True
+        extra = Extra.allow
 
 class ContainerRunTask(BaseTask):
     type: Literal["container_run"]
