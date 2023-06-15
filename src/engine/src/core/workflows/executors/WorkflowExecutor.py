@@ -1,4 +1,5 @@
 import os, logging
+from pprint import pprint
 
 from threading import Thread, Lock
 from uuid import uuid4
@@ -374,7 +375,7 @@ class WorkflowExecutor(Worker, EventPublisher):
     def _prepare_fs(self):
         """Creates all of the directories necessary to run the pipeline, store
         temp files, and cache data"""
-        server_logger.debug(self.p_str("PREPPING FILESYSTEM"))
+        server_logger.debug(self.p_str("PREPARING FILESYSTEM"))
         # Set the directories
         # The pipeline root dir. All files and directories produced by a workflow
         # execution will reside here
@@ -475,8 +476,10 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         run_logger.setLevel(logging.DEBUG)
         run_logger.addHandler(handler)
-
+        print("CTX")
+        pprint(self.state.ctx)
         self.state.ctx.logger = CompositeLogger([server_logger, run_logger])
+        print("AFTER")
         
     @interceptable(rollback="_reset_event_exchange")
     def _initialize_backends(self):
