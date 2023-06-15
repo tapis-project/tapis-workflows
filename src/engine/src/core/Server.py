@@ -302,6 +302,8 @@ class Server:
 
         # Check if there are workers running that have the same unique constraint key
         active_workers = self._get_active_workers(worker.key)
+        print(request.pipeline)
+        print(dict(request.pipeline))
         policy = request.pipeline.duplicate_submission_policy
 
         if (
@@ -342,6 +344,9 @@ class Server:
 
         if len(request.meta.idempotency_key) == 0:
             return default_idempotency_key
+
+        if type(request.meta.idempotency_key) == str:
+            return request.meta.idempotency_key
 
         try:
             idempotency_key = ""
