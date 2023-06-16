@@ -348,11 +348,11 @@ class Server:
 
         try:
             idempotency_key = ""
+            # Set idemp key part delimiter. If only one item is in the list, delim is empty string
+            part_delimiter = "." if len(request.meta.idempotency_key) > 1 else ""
             for constraint in request.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
 
-                # Set idemp key part delimiter. If only one item is in the list, delim is empty string
-                part_delimiter = "." if len(request.meta.idempotency_key) > 1 else ""
                 
                 key_part = None
                 params_error = ""
@@ -366,7 +366,11 @@ class Server:
 
                 if key_part == None:
                     raise AttributeError(f"Value not found for 'request.{obj}.{prop}{params_error}'")
-                print("key_part", str(key_part))
+                
+                if idempotency_key == "":
+                    idempotency_key = str(key_part)
+                    continue
+
                 idempotency_key = idempotency_key + part_delimiter + str(key_part)
             print("idemp_key", idempotency_key)
             return idempotency_key
