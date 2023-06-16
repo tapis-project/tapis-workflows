@@ -32,7 +32,7 @@ from conf.constants import (
     DUPLICATE_SUBMISSION_POLICY_DEFER,
     PLUGINS,
 )
-from conf.request import WorkflowSubmissionRequest
+from conf.request import WorkflowSubmissionRequest, ValueWithRequirements, EmptyObject
 
 from core.workers import WorkerPool
 from core.workflows.executors import WorkflowExecutor
@@ -340,15 +340,13 @@ class Server:
         # Defaults to the pipeline id
         default_idempotency_key = request.pipeline.id
 
+        if type(request.meta.idempotency_key) == str:
+            return request.meta.idempotency_key
+            
         if len(request.meta.idempotency_key) == 0:
             return default_idempotency_key
 
-        if type(request.meta.idempotency_key) == str:
-            return request.meta.idempotency_key
-
         try:
-            print(request.params)
-            print(type(request.params))
             idempotency_key = ""
             for constraint in request.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
@@ -356,19 +354,23 @@ class Server:
                 # Set idemp key part delimiter. If only one item is in the list, delim is empty string
                 part_delimiter = "." if len(request.meta.idempotency_key) ==  1 else ""
 
-                key_part = getattr(getattr(request, obj), prop)
+                key_part = getattr(request.get(obj, EmptyObject()), prop, None)
                 # Access the value property if the object in the idemp key is params
+                params_error = ""
                 if obj == "params":
-                    param_obj = getattr(getattr(request, obj), prop)
+                    param_obj = request.get(obj, {}).get(prop, ValueWithRequirements())
                     key_part = param_obj.value
+                    params_error = ".value"
+
+                if key_part == None:
+                    raise AttributeError(f"Cannot find property '{prop}' on 'request.{obj}{params_error}'")
 
                 idempotency_key = idempotency_key + part_delimiter + str(key_part)
 
             return idempotency_key
 
         except (AttributeError, TypeError) as e:
-            print(str(e))
-            logger.info(f"{lbuf('[SERVER]')} ERROR: Failed to resolve idempotency key from provided constraints. Defaulted to pipeline id '{default_idempotency_key}'")
+            logger.info(f"{lbuf('[SERVER]')} ERROR: Failed to resolve idempotency key from provided constraints. {str(e)}. Defaulted to pipeline id '{default_idempotency_key}'")
             return default_idempotency_key
 
             

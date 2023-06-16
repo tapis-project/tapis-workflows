@@ -646,4 +646,8 @@ class WorkflowSubmissionRequest(BaseModel):
     class Config:
         extra = Extra.allow
 
+# Generic object. NOTE Only used in idempotency key resolution
+class EmptyObject(BaseModel):
+    pass
+
 
