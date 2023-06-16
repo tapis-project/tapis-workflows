@@ -360,7 +360,7 @@ class Server:
                     key_part = getattr(getattr(request, obj, EmptyObject()), prop, None)
                 else:
                     # Access the value property if the object in the idemp key is params
-                    param_obj = getattr(request, obj, {}).get(prop, ValueWithRequirements())
+                    param_obj = getattr(request, obj, {}).get(prop, ValueWithRequirements(value=None))
                     key_part = param_obj.value
                     params_error = ".value"
 
