@@ -352,7 +352,7 @@ class Server:
                 (obj, prop) = constraint.split(".")
 
                 # Set idemp key part delimiter. If only one item is in the list, delim is empty string
-                part_delimiter = "." if len(request.meta.idempotency_key) ==  1 else ""
+                part_delimiter = "." if len(request.meta.idempotency_key) > 1 else ""
                 
                 key_part = None
                 params_error = ""
