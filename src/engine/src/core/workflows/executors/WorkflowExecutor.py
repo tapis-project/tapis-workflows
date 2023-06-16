@@ -140,7 +140,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         
     # Logging formatters. Makes logs more useful and pretty
     def p_str(self, status): return f"{lbuf('[PIPELINE]')} {self.state.ctx.idempotency_key}  {status} {self.state.ctx.pipeline.id}"
-    def t_str(self, task, status): return f"{lbuf('[TASK]')} {self.state.ctx.idempotency_key} {status} {task.id}.{self.state.ctx.pipeline.id}"
+    def t_str(self, task, status): return f"{lbuf('[TASK]')} {self.state.ctx.idempotency_key} {status} {self.state.ctx.pipeline.id}.{task.id}"
 
     @interceptable()
     def start(self, ctx, threads):
@@ -441,14 +441,18 @@ class WorkflowExecutor(Worker, EventPublisher):
         executor = self._get_executor(run_id, task)
         executor.cleanup()
         del self.state.executors[f"{run_id}.{task.id}"]
-        self.state.ctx.logger.debug(self.t_str(task, "EXECUTOR DEREGISTERED"))
+        # TODO use server logger below
+        # self.state.ctx.logger.debug(self.t_str(task, "EXECUTOR DEREGISTERED"))
 
     @interceptable()
     def _get_executor(self, run_id, task):
         return self.state.executors[f"{run_id}.{task.id}"]
     
     def _cleanup_run(self):
-        self.state.ctx.logger.info(self.p_str("WORKFLOW EXECUTOR CLEANUP"))
+        # TODO use server logger below
+        #self.state.ctx.logger.info(self.p_str("WORKFLOW EXECUTOR CLEANUP"))
+        pass
+        # TODO remove comment below and pass above
         # os.system(f"rm -rf {self.work_dir}")
     
     def terminate(self):
