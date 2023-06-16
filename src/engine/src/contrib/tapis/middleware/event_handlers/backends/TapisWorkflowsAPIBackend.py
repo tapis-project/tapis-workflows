@@ -11,10 +11,6 @@ from owe_python_sdk.events.types import (
 
 class TapisWorkflowsAPIBackend(EventHandler):
     def __init__(self, ctx):
-        # Set the access token
-        access_token = getattr(
-            ctx.params, "workflow_executor_access_token", None)
-
         # Create a mapping of functions to events
         self.handle_fn_mapping = {
             PIPELINE_ACTIVE:     self._pipeline_active,
@@ -41,10 +37,10 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
         self._kwargs = {
             "_tapis_set_x_headers_from_service": True,
-            "_x_tapis_tenant": ctx.params.tapis_tenant_id,
-            "_x_tapis_user": ctx.params.tapis_pipeline_owner,
+            "_x_tapis_tenant": ctx.params["tapis_tenant_id"].value,
+            "_x_tapis_user": ctx.params["tapis_pipeline_owner"].value,
             "_tapis_headers": {
-                "X-WORKFLOW-EXECUTOR-TOKEN": access_token
+                "X-WORKFLOW-EXECUTOR-TOKEN": ctx.params["workflow_executor_access_token"].value
             }
         }
 
