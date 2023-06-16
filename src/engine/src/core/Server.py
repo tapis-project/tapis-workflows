@@ -353,17 +353,19 @@ class Server:
 
                 # Set idemp key part delimiter. If only one item is in the list, delim is empty string
                 part_delimiter = "." if len(request.meta.idempotency_key) ==  1 else ""
-
-                key_part = getattr(request.get(obj, EmptyObject()), prop, None)
-                # Access the value property if the object in the idemp key is params
+                
+                key_part = None
                 params_error = ""
-                if obj == "params":
-                    param_obj = request.get(obj, {}).get(prop, ValueWithRequirements())
+                if obj != "params":
+                    key_part = getattr(getattr(request, obj, EmptyObject()), prop, None)
+                else:
+                    # Access the value property if the object in the idemp key is params
+                    param_obj = getattr(request, obj, {}).get(prop, ValueWithRequirements())
                     key_part = param_obj.value
                     params_error = ".value"
 
                 if key_part == None:
-                    raise AttributeError(f"Cannot find property '{prop}' on 'request.{obj}{params_error}'")
+                    raise AttributeError(f"Value not found for 'request.{obj}.{prop}{params_error}'")
 
                 idempotency_key = idempotency_key + part_delimiter + str(key_part)
 
