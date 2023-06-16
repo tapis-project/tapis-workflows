@@ -347,6 +347,8 @@ class Server:
             return request.meta.idempotency_key
 
         try:
+            print(request.meta.idempotency_key)
+            print(type(request.meta.idempotency_key))
             idempotency_key = ""
             for constraint in request.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
