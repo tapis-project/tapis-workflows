@@ -22,11 +22,21 @@ class TaskExecutor(EventPublisher):
         self.plugins = plugins
         self.ctx = ctx
         self.task = task
-        # The workdir for the task inside of the container
-        self.task.container_work_dir = "/mnt/open-workflow-engine/pipeline/task"
         self.pipeline = self.ctx.pipeline
-        # The cache dir for the pipeline inside of the container
-        self.pipeline.container_cache_dir = "/mnt/open-workflow-engine/pipeline/cache"
+
+        # Paths to the workdir for the task inside the workflow engine container
+        self.task.work_dir = f"{self.pipeline.work_dir}{self.task.id}/"
+        self.task.exec_dir = f"{self.task.work_dir}exec/"
+        self.task.output_dir = f"{self.task.work_dir}output/"
+
+        # Paths to the workdir for the task inside the job container
+        self.task.container_work_dir = "/mnt/open-workflow-engine/pipeline/task"
+
+        # Paths to the workdir inside the nfs-server container
+        self.task.nfs_work_dir = f"{self.pipeline.nfs_work_dir}{self.task.id}/"
+        self.task.nfs_exec_dir = f"{self.task.nfs_work_dir}exec/"
+        self.task.nfs_output_dir = f"{self.task.nfs_work_dir}output/"
+
         self.group = self.ctx.group
         self.event = self.ctx.meta.event
         self.directives = self.ctx.directives
@@ -81,15 +91,12 @@ class TaskExecutor(EventPublisher):
 
     def _initialize_fs(self):
         # Create the base directory for all files and output created during this task execution
-        self.task.work_dir = f"{self.pipeline.work_dir}{self.task.id}/"
         os.makedirs(self.task.work_dir, exist_ok=True)
 
         # Create the exec dir for files created in support of the task execution
-        self.task.exec_dir = f"{self.task.work_dir}exec/"
         os.makedirs(self.task.exec_dir, exist_ok=True)
 
         # Create the output dir in which the output of the task execution will be stored
-        self.task.output_dir = f"{self.task.work_dir}output/"
         os.makedirs(self.task.output_dir, exist_ok=True)        
 
     def cleanup(self, terminating=False):

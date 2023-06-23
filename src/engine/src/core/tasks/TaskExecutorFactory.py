@@ -16,7 +16,6 @@ class TaskExecutorFactory:
             try:
                 return fn(task, ctx, exchange, plugins)
             except Exception as e:
-                logging.error(e)
                 raise Exception(f"Error initializing Task Executor: {e}")
 
         # No function found to initialize built-in task executors. Check
@@ -30,8 +29,7 @@ class TaskExecutorFactory:
             try:
                 return PluginTaskExecutorClass(task, ctx, exchange, plugins=plugins)
             except Exception as e:
-                logging.error(e)
-                raise Exception(f"Error initializing Task Executor: {e}")
+                raise Exception(f"Error initializing Task Executor plugin: {e}")
             
         # No task executors found with for the provided task type so
         # raise an error

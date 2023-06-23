@@ -52,7 +52,7 @@ class BaseBuildExecutor(TaskExecutor):
 
         # Base64 encode credentials
         encoded_creds = base64.b64encode(
-            f"{credentials.data.username}:{credentials.data.token}".encode("utf-8")
+            f"{credentials.username}:{credentials.token}".encode("utf-8")
         )
 
         # Add the credentials to the config file

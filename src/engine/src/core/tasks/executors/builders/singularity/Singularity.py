@@ -22,6 +22,8 @@ from errors import WorkflowTerminated
 class Singularity(BaseBuildExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
         BaseBuildExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
+
+        self._container_singularity_cache_dir = "/cache"
         
     def execute(self) -> TaskResult:
         # Create the kaniko job return a failed task result on exception
@@ -81,8 +83,13 @@ class Singularity(BaseBuildExecutor):
         volume_mounts = [
             # Volume mount for the workdir
             V1VolumeMount(
-                name="workdir",
+                name="task-workdir",
                 mount_path=self.task.container_work_dir
+            ),
+            # Volume mount the task-workdir
+            V1VolumeMount(
+                name="singularity-cache",
+                mount_path=self._container_singularity_cache_dir,
             )
         ]
 
@@ -97,12 +104,19 @@ class Singularity(BaseBuildExecutor):
         volumes = [
             # Volume for mounting the output
             V1Volume(
-                name="workdir",
+                name="task-workdir",
                 nfs=V1NFSVolumeSource(
                     server=WORKFLOW_NFS_SERVER,
-                    path=self.task.work_dir
+                    path=self.task.nfs_work_dir
                 ),
             ),
+            V1Volume(
+                name="singularity-cache",
+                nfs=V1NFSVolumeSource(
+                    server=WORKFLOW_NFS_SERVER,
+                    path=self.pipeline.nfs_singularity_cache_dir
+                ),
+            )
         ]
 
         # Pod template and pod template spec

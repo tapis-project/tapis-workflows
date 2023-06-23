@@ -176,6 +176,7 @@ class Value(BaseModel):
 
     @validator("value_from", pre=True)
     def value_from_type_validation(cls, value):
+        if value == None: return value
         is_dict = type(value) == dict
         is_valid = len([k for k in value if (type(k) == str and type(value[k]) == str)]) < 1
         if (not is_dict or (is_dict and is_valid)):
@@ -208,7 +209,7 @@ class BaseArchive(BaseModel):
         IRODSCredentials
     ] = None
     identity_uuid: str = None
-    type: EnumArchiveType
+    type: str
 
     # System archive
     system_id: str = None
@@ -225,11 +226,16 @@ class BaseArchive(BaseModel):
     host: str = None
     port: str = None
 
+    class Config:
+        extra = Extra.allow
+
 class SystemArchive(BaseArchive):
+    type: Literal["system"]
     system_id: str
     archive_dir: str = DEFAULT_ARCHIVE_DIR # Relative to the system's RootDir
 
 class S3Archive(BaseArchive):
+    type: Literal["s3"]
     credentials: S3Credentials = None
     identity_uuid: str = None
     endpoint: str
@@ -246,10 +252,9 @@ class S3Archive(BaseArchive):
 
         return values
 
-class AddRemoveArchive(BaseModel):
-    archive_id: str
 
 class IRODSArchive(BaseArchive):
+    type: Literal["irods"]
     credentials: S3Credentials = None
     identity_uuid: str = None
     host: str
@@ -265,17 +270,37 @@ class IRODSArchive(BaseArchive):
 
         return values
 
+Archive = Annotated[
+    Union[
+        SystemArchive,
+        IRODSArchive,
+        S3Archive
+    ],
+    Field(discriminator="type")
+]
+
+class AddRemoveArchive(BaseModel):
+    archive_id: str
+
 # Auth
 class AuthRequest(BaseModel):
     username: str
     password: str
 
 # Identities
-class GithubCredentials(TypedDict):
+# class GithubCredentials(TypedDict):
+#     username: str
+#     personal_access_token: str
+
+# class DockerhubCredentials(TypedDict):
+#     username: str
+#     token: str
+
+class GithubCredentials(BaseModel):
     username: str
     personal_access_token: str
 
-class DockerhubCredentials(TypedDict):
+class DockerhubCredentials(BaseModel):
     username: str
     token: str
 
@@ -288,22 +313,36 @@ class IdentityCreateRequest(BaseModel):
         DockerhubCredentials
     ]
 
-# ContextCredentialTypes = Union[GithubCredentials, SomethingElse]
-ContextCredentialTypes = Union[GithubCredentials, DockerhubCredentials]
-
 class Context(BaseModel):
-    credentials: ContextCredentialTypes = None
+    type: str
     branch: str = None
     build_file_path: str = None
+    credentials: Union[
+        GithubCredentials,
+        DockerhubCredentials
+    ] = None
     identity_uuid: str = None
     sub_path: str = None
     tag: str = None
-    type: EnumContextType
     url: str
     visibility: str
 
+    class Config:
+        extra: Extra.allow
+
     # Validators
     # _validate_url = validator("url", allow_reuse=True)(validate_ctx_dest_url)
+
+class GithubContext(Context):
+    type: Literal["github"]
+    credentials: GithubCredentials = None
+    branch: str = None
+    build_file_path: str = None
+    sub_path: str = None
+
+class DockerhubContext(Context):
+    type: Literal["dockerhub"]
+    credentials: DockerhubCredentials = None
 
 # TODO add more types to the destination credential types as they become supported
 DestinationCredentialTypes = DockerhubCredentials
@@ -314,14 +353,12 @@ class Destination(BaseModel):
     credentials: DestinationCredentialTypes = None
     identity_uuid: str = None
 
-class RegistryDestination(Destination):
+class DockerhubDestination(Destination):
+    type: Literal["dockerhub"]
     tag: str = None
     credentials: DestinationCredentialTypes = None
     identity_uuid: str = None
     url: str
-
-    # Validators
-    # _validate_url = validator("url", allow_reuse=True)(validate_ctx_dest_url)
 
     @root_validator
     def creds_or_identity(csl, values):
@@ -332,6 +369,7 @@ class RegistryDestination(Destination):
         return values
 
 class LocalDestination(Destination):
+    type: Literal["local"]
     filename: str = None
 
 # Events
@@ -399,7 +437,7 @@ class BaseInputValue(BaseModel):
                 EnumTaskInputValueFromKey.Env,
                 EnumTaskInputValueFromKey.Params,
             ],
-            str
+            Union[str, int, float, bytes]
         ],
         Dict[EnumTaskInputValueFromKey.TaskOutput, TaskOutputRef]
     ] = None
@@ -444,13 +482,16 @@ class BaseTask(BaseModel):
     auth: Auth = None
     builder: str = None
     cache: bool = None
-    context: Context = None
+    context: Union[
+        DockerhubContext,
+        GithubContext
+    ] = None
     code: str = None
     command: str = None
     data: dict = None
     description: str = None
     destination: Union[
-        RegistryDestination,
+        DockerhubDestination,
         LocalDestination
     ] = None
     execution_profile: TaskExecutionProfile = TaskExecutionProfile()
@@ -475,12 +516,30 @@ class BaseTask(BaseModel):
     tapis_job_def: dict = None
     url: str = None
 
-    # Validators
-    # _validate_id = validator("id", allow_reuse=True)(validate_id)
-
     class Config:
         arbitrary_types_allowed = True
         extra = Extra.allow
+
+    @root_validator(pre=True)
+    def backwards_compatibility_transforms(cls, values):
+        # Transform None for inputs and outputs to empty dict
+        props_to_transfom = ["input", "output"]
+        for prop in props_to_transfom:
+            if values.get(prop, None) == None:
+                values[prop] = {}
+
+        # Where git_repositories on tasks == None, set to empty array
+        if values.get("git_repositories", None) == None:
+            values["git_repositories"] = []
+
+        # Where values set directly on input, convert to use dict with "value" prop
+        for key, value in values.get("input").items():
+            if type(value) != dict:
+                values["input"][key] = {
+                    "value": value
+                }
+
+        return values
 
 class ContainerRunTask(BaseTask):
     type: Literal["container_run"]
@@ -492,7 +551,7 @@ class ImageBuildTask(BaseTask):
     cache: bool = False
     context: Context
     destination: Union[
-        RegistryDestination,
+        DockerhubDestination,
         LocalDestination
     ]
 
@@ -580,6 +639,23 @@ class BasePipeline(BaseModel):
     env: KeyVal = {}
     params: Params = {}
 
+    # NOTE This pre validation transformer is for backwards-compatibility
+    # Previous pipelines did not have environments or parmas
+    @root_validator(pre=True)
+    def backwards_compatibility_transforms(cls, values):
+        props_to_transfom = ["env", "params"]
+        for prop in props_to_transfom:
+            if values.get(prop, None) == None:
+                values[prop] = {}
+
+        # Where values set directly on env, convert to use dict with "value" prop
+        for key, value in values.get("env").items():
+            if type(value) != dict:
+                values["env"][key] = {
+                    "value": value
+                }
+        
+        return values
     class Config:
         extra = Extra.allow
 
@@ -592,9 +668,12 @@ class WorkflowPipeline(BasePipeline):
 class CIPipeline(BasePipeline):
     cache: bool = False
     builder: str
-    context: Context
+    context: Union[
+        DockerhubContext,
+        GithubContext
+    ]
     destination: Union[
-        RegistryDestination,
+        DockerhubDestination,
         LocalDestination
     ] = None
     auth: dict = None
@@ -636,8 +715,9 @@ class Group(BaseModel):
     id: str
 
 class WorkflowSubmissionRequest(BaseModel):
-    env: KeyVal
-    params: Params
+    archives: List[Archive] = []
+    env: KeyVal = {}
+    params: Params = {}
     group: Group
     pipeline: BasePipeline
     pipeline_run: PipelineRun
@@ -645,6 +725,24 @@ class WorkflowSubmissionRequest(BaseModel):
 
     class Config:
         extra = Extra.allow
+
+    # NOTE This pre validation transformer is for backwards-compatibility
+    # Previous workflow submissions did not have environments or parmas
+    @root_validator(pre=True)
+    def backwards_compatibility_transforms(cls, values):
+        props_to_transfom = ["env", "params"]
+        for prop in props_to_transfom:
+            if values.get(prop, None) == None:
+                values[prop] = {}
+
+        # Where values set directly on env, convert to use dict with "value" prop
+        for key, value in values.get("env").items():
+            if type(value) != dict:
+                values["env"][key] = {
+                    "value": value
+                }
+
+        return values
 
 # Generic object. NOTE Only used in idempotency key resolution
 class EmptyObject(BaseModel):

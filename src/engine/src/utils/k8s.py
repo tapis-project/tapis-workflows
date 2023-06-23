@@ -2,7 +2,6 @@ import os
 
 from core.tasks.Flavor import Flavor
 from conf.constants import IS_LOCAL
-from types import SimpleNamespace
 
 
 from kubernetes.client import V1ResourceRequirements, V1EnvVar
@@ -24,53 +23,50 @@ def flavor_to_limits(flavor: Flavor):
     
     return {"cpu": flavor.cpu, "memory": flavor.memory, **gpu_specs}
 
-def input_to_k8s_env_vars(_inputs, ctx, prefix=""):
-    k8s_env_vars = []
-    for input_id, _input in dict(_inputs).items():
-        # Handle for empty input
-        if type(_input) != SimpleNamespace:
-            raise Exception(f"Invalid input for input '{input_id}'")
-
-        # Get the value, value_from, and type
-        value = getattr(_input, "value", None)
-        value_from = getattr(_input, "value_from", None)
-        input_type = getattr(_input, "type", None)
-
-        # Raise exception if both value and value_from are None
-        if value_from == None and value == None:
-            raise Exception(f"Invalid input value for '{input_id}'. Value cannot be null/None")
+def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, params={}, prefix=""):
+    k8senvvars = []
+    for input_id, _input in _inputs.items():
+        # Use input[input_id].value if provided
+        value = _input.get("value", None)
 
         if value != None:
-            k8s_env_vars.append(
+            k8senvvars.append(
                 V1EnvVar(
                     name=f"{prefix}{input_id}",
                     value=value
                 ),
             )
             continue
+
+        # Raise exception if both value and value_from are None
+        value_from = _input.get("value_from", None)
+        if value_from == None and value == None:
+            raise Exception(f"Invalid input value for '{input_id}'. Value cannot be null/None")
         
-        k8s_env_var_value_source_key = None
-        k8s_env_var_value_source = None
-        k8s_env_var_value = None
-        if hasattr(value_from, "env"):
-            k8s_env_var_value_source = "env"
-            env_var_key = value_from.env
-            env_var = getattr(ctx.env, env_var_key, None)
-            if env_var == None:
-                raise Exception(f"Environment variable '{env_var_key}' does not exist.")
-            k8s_env_var_value = getattr(env_var, "value", None)
-        elif hasattr(value_from, "params"):
-            k8s_env_var_value_source_key = value_from.params
-            k8s_env_var_value_source = "params"
-            k8s_env_var_value = getattr(ctx.params, k8s_env_var_value_source_key, None)
+        k8senvvar_value_source_key = None
+        k8senvvar_value_source = None
+        k8senvvar_value = None
+        
+        if value_from.get("env", None) != None:
+            k8senvvar_value_source = "env"
+            key = value_from.get("env")
+            k8senvvar_value = get_value_from_env(env, key)
+            if k8senvvar_value == None:
+                raise Exception(f"No value found for environment variable '{value_from.get('env')}'")
+            k8senvvar_value_source_key = key
+        elif value_from.get("params", None) != None:
+            k8senvvar_value_source = "params"
+            key = value_from.get("params")
+            k8senvvar_value = get_value_from_params(params, key)
+            k8senvvar_value_source_key = key
         elif hasattr(value_from, "task_output"):
-            k8s_env_var_value_source = "task_output"
+            k8senvvar_value_source = "task_output"
             task_id = value_from.task_output.task_id
             output_id = value_from.task_output.output_id
             
             # Get the value from the output of a previous task
             previous_task_output_path = os.path.join(
-                ctx.pipeline.work_dir,
+                pipeline_work_dir,
                 task_id,
                 "output",
                 output_id
@@ -89,13 +85,14 @@ def input_to_k8s_env_vars(_inputs, ctx, prefix=""):
             if contents == None: raise Exception(f"Error: Output '{output_id}' for task '{task_id}' is null")
 
             # Coerce the value of the contents into the value specified in the input
+            input_type = _input.get("type", None)
             try:
                 if input_type == "string":
-                    k8s_env_var_value = str(contents)
+                    k8senvvar_value = str(contents)
                 elif input_type == "int":
-                    k8s_env_var_value = int(contents)
+                    k8senvvar_value = int(contents)
                 elif input_type == "float":
-                    k8s_env_var_value = float(contents)
+                    k8senvvar_value = float(contents)
                 elif input_type == "binary":
                     pass
                 else:
@@ -106,17 +103,30 @@ def input_to_k8s_env_vars(_inputs, ctx, prefix=""):
         else:
             raise Exception("Invalid 'value_from' type: Must be oneOf type [env, params, task_output]")
         
-        if k8s_env_var_value == None:
+        if k8senvvar_value == None:
             source_key_error_message = ""
-            if k8s_env_var_value_source_key:
-                source_key_error_message = f" at key '{k8s_env_var_value_source_key}'"
-            raise Exception(f"Value for input {input_id} not found in source {k8s_env_var_value_source}{source_key_error_message}")
+            if k8senvvar_value_source_key:
+                source_key_error_message = f" at key '{k8senvvar_value_source_key}'"
+            raise Exception(f"Value for input {input_id} not found in source {k8senvvar_value_source}{source_key_error_message}")
 
-        k8s_env_vars.append(
+        k8senvvars.append(
             V1EnvVar(
                 name=f"{prefix}{input_id}",
-                value=k8s_env_var_value
+                value=k8senvvar_value
             ),
         )
 
-    return k8s_env_vars
+    return k8senvvars
+
+def get_value_from_env(env, key):
+    value = env.get(key, None)
+    if value == None: return None
+    return value.value
+
+def get_value_from_params(params, key):
+    value = params.get(key, None)
+    if value == None: return None
+    return value.value
+
+def get_value_from_task_output(key):
+    pass

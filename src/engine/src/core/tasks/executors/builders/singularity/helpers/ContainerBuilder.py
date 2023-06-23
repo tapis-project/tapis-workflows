@@ -57,9 +57,9 @@ class ContainerBuilder:
             # Add the token to the repository url
             token = ""
             if task.context.visibility == "private":
-                token = f"{task.context.credentials.data.personal_access_token}@"
+                token = f"{task.context.credentials.personal_access_token}@"
 
-            # Pull the git repository with the recipe file
+            # Pull the git repository with the build file
             repo = os.path.join(f"https://{token}github.com", task.context.url) + ".git"
             
             git.Repo.clone_from(
@@ -68,11 +68,11 @@ class ContainerBuilder:
                 branch=task.context.branch
             )
 
-            # Recipe file path is the exec dir + recipe file path specified
+            # Build file path is the exec dir + build file path specified
             # in the context
-            recipe_file_path = os.path.join(
+            build_file_path = os.path.join(
                 f"{task.container_work_dir}/exec/",
-                task.context.recipe_file_path
+                task.context.build_file_path
             )
 
             # Build the command
@@ -80,7 +80,7 @@ class ContainerBuilder:
                 "singularity",
                 "build",
                 f"{task.container_work_dir}/output/{task.destination.filename or ''}",
-                recipe_file_path
+                build_file_path
             ]
 
             return command
@@ -91,11 +91,11 @@ class ContainerBuilder:
             return [
                 V1EnvVar(
                     name="SINGULARITY_DOCKERHUB_USERNAME",
-                    value=task.destination.credentials.data.username
+                    value=task.destination.credentials.username
                 ),
                 V1EnvVar(
                     name="SINGULARITY_DOCKERHUB_PASSOWORD",
-                    value=task.destination.credentials.data.token
+                    value=task.destination.credentials.token
                 )
             ]
 

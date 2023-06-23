@@ -23,7 +23,7 @@ class Application(TaskExecutor):
             client.V1VolumeMount(
                 name="artifacts",
                 mount_path="/mnt/",
-                sub_path=self.task.output_dir.replace("/mnt/pipelines/", "") 
+                sub_path=self.task.nfs_output_dir
             ),
         ]
 

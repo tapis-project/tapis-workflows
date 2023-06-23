@@ -54,7 +54,7 @@ def interceptable(rollback=None): # Decorator factory
 
                 return res
             except Exception as e:
-                print(str(e))
+                # print(str(e)) # DEBUG
                 server_logger.debug(f"Workflow Termination Signal Detected: Terminating:{self.state.terminating}/Terminated:{self.state.terminated}")
                 if self.state.terminating or self.state.terminated:
                     # Run the rollback function by the name provided in the
@@ -139,7 +139,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         self._set_initial_state()
         
     # Logging formatters. Makes logs more useful and pretty
-    def p_str(self, status): return f"{lbuf('[PIPELINE]')} {self.state.ctx.idempotency_key}  {status} {self.state.ctx.pipeline.id}"
+    def p_str(self, status): return f"{lbuf('[PIPELINE]')} {self.state.ctx.idempotency_key} {status} {self.state.ctx.pipeline.id}"
     def t_str(self, task, status): return f"{lbuf('[TASK]')} {self.state.ctx.idempotency_key} {status} {self.state.ctx.pipeline.id}.{task.id}"
 
     @interceptable()
@@ -158,7 +158,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             unstarted_threads = self._fetch_ready_tasks()
 
             # Trigger the PIPELINE_ACTIVE event and log
-            self.state.ctx.logger.info(self.p_str("STARTED"))
+            self.state.ctx.logger.info(self.p_str("ACTIVE"))
             self.publish(Event(PIPELINE_ACTIVE, self.state.ctx))
             
             # NOTE Triggers the hook _on_change_ready_task
@@ -190,7 +190,6 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         # Backends are used to relay/persist updates about a pipeline run
         # and its tasks to some external resource
-        # NOTE Currenly, the Tapis Workflows API is the only supported backend)
         self._initialize_backends()
 
         # Prepares archives to which the results of workflows will be persisted
@@ -271,7 +270,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         if event == None:
             event = PIPELINE_FAILED if len(self.state.failed) > 0 else PIPELINE_COMPLETED
     
-        msg = "COMPLETE"
+        msg = "COMPLETED"
         if event == PIPELINE_FAILED: msg = "FAILED"
         elif event == PIPELINE_TERMINATED: msg = "TERMINATED"
 
@@ -377,6 +376,14 @@ class WorkflowExecutor(Worker, EventPublisher):
         temp files, and cache data"""
         server_logger.debug(self.p_str("PREPARING FILESYSTEM"))
         # Set the directories
+
+        # References to paths on the nfs server
+        self.state.ctx.pipeline.nfs_root_dir = f"/{self.state.ctx.idempotency_key}/"
+        self.state.ctx.pipeline.nfs_cache_dir = f"{self.state.ctx.pipeline.nfs_root_dir}cache/"
+        self.state.ctx.pipeline.nfs_docker_cache_dir = f"{self.state.ctx.pipeline.nfs_cache_dir}docker"
+        self.state.ctx.pipeline.nfs_singularity_cache_dir = f"{self.state.ctx.pipeline.nfs_cache_dir}singularity"
+        self.state.ctx.pipeline.nfs_work_dir = f"{self.state.ctx.pipeline.nfs_root_dir}runs/{self.state.ctx.pipeline_run.uuid}/"
+
         # The pipeline root dir. All files and directories produced by a workflow
         # execution will reside here
         self.state.ctx.pipeline.root_dir = f"{BASE_WORK_DIR}{self.state.ctx.idempotency_key}/"
@@ -387,6 +394,12 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.state.ctx.pipeline.cache_dir = f"{self.state.ctx.pipeline.root_dir}cache/"
         os.makedirs(f"{self.state.ctx.pipeline.cache_dir}", exist_ok=True)
 
+        # Create the docker and singularity cache dirs
+        self.state.ctx.pipeline.docker_cache_dir = f"{self.state.ctx.pipeline.cache_dir}docker"
+        os.makedirs(f"{self.state.ctx.pipeline.docker_cache_dir}", exist_ok=True)
+
+        self.state.ctx.pipeline.singularity_cache_dir = f"{self.state.ctx.pipeline.cache_dir}singularity"
+        os.makedirs(f"{self.state.ctx.pipeline.singularity_cache_dir}", exist_ok=True)
 
         # The directory for this particular run of the workflow
         self.state.ctx.pipeline.work_dir = f"{self.state.ctx.pipeline.root_dir}runs/{self.state.ctx.pipeline_run.uuid}/"
@@ -509,10 +522,10 @@ class WorkflowExecutor(Worker, EventPublisher):
     def _initialize_archivers(self):
         self.state.ctx.logger.debug(self.p_str("INITIALIZING ARCHIVERS"))
         # No archivers specified. Return
-        if len(self.state.ctx.pipeline.archives) < 1: return
+        if len(self.state.ctx.archives) < 1: return
 
         # TODO Handle for multiple archives
-        self.state.ctx.archive = self.state.ctx.pipeline.archives[0]
+        self.state.ctx.archive = self.state.ctx.archives[0]
 
         ARCHIVERS_BY_TYPE = {
             "system": TapisSystemArchiver,

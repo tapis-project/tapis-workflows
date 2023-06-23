@@ -31,7 +31,7 @@ RETRY_QUEUE = "retry"
 DEAD_LETTER_QUEUE = "deadletter"
 DEFERRED_QUEUE = "deferred"
 
-BASE_WORK_DIR = "/mnt/pipelines/"
+BASE_WORK_DIR = "/var/lib/open-workflow-engine/"
 
 LOG_FILE = BASE_DIR + "logs/service.log"
 
@@ -78,7 +78,8 @@ DEFAULT_MAX_RETRIES = 0
 
 # Image tags and urls
 KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"
-KANIKO_IMAGE_TAG = "debug"
+# KANIKO_IMAGE_TAG = "debug"
+KANIKO_IMAGE_TAG = "latest"
 
 FLAVORS = {
     "c1tiny": {"cpu": "1", "memory": ".5G", "disk": "20GB"},

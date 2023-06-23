@@ -36,7 +36,7 @@ from conf.request import WorkflowSubmissionRequest, ValueWithRequirements, Empty
 
 from core.workers import WorkerPool
 from core.workflows.executors import WorkflowExecutor
-from utils import bytes_to_json, json_to_object, load_plugins, lbuffer_str as lbuf
+from utils import bytes_to_json, load_plugins, lbuffer_str as lbuf
 from errors import NoAvailableWorkers, WorkflowTerminated
 
 
@@ -217,6 +217,7 @@ class Server:
             if not acked:
                 cb = partial(self._ack_nack, "nack", channel, delivery_tag)
                 connection.add_callback_threadsafe(cb)
+            raise e
 
         # Deregister and return executor back to the worker pool
         self._deregister_worker(worker)

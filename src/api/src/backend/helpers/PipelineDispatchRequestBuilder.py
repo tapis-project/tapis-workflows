@@ -48,6 +48,7 @@ class PipelineDispatchRequestBuilder:
 
         request["group"] = model_to_dict(group)
         request["pipeline"] = model_to_dict(pipeline)
+        request["archives"] = archives
 
         # Move the execution profile props from the pipeline object to the
         # execution profile property
@@ -59,9 +60,7 @@ class PipelineDispatchRequestBuilder:
             "retry_policy": request["pipeline"]["retry_policy"]
         }
 
-        # TODO Implement model and request object.
         request["pipeline"]["tasks"] = tasks_request
-        request["pipeline"]["archives"] = archives
 
         # Populate the env for this request. Populate values from SK
         request["env"] = request["pipeline"]["env"]
@@ -137,7 +136,12 @@ class PipelineDispatchRequestBuilder:
 
             # Get the context credentials data
             context_cred_data = self.secret_service.get_secret(context_creds.sk_id)
-            task_request["context"]["credentials"]["data"] = context_cred_data
+            task_request["context"]["credentials"] = context_cred_data
+
+        # NOTE Workflow engine expect build_file_path and not recipe_file_path
+        # TODO REMOVE FIXME Migrate "recipe_file_path" to "build_file_path"
+        task_request["context"]["build_file_path"] = task_request["context"]["recipe_file_path"]
+        del task_request["context"]["recipe_file_path"]
 
         # Destination credentials
         task_request["destination"] = model_to_dict(task.destination)
@@ -154,7 +158,7 @@ class PipelineDispatchRequestBuilder:
 
             # Get the context credentials data
             destination_cred_data = self.secret_service.get_secret(destination_creds.sk_id)
-            task_request["destination"]["credentials"]["data"] = destination_cred_data
+            task_request["destination"]["credentials"] = destination_cred_data
 
         return task_request
 

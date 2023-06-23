@@ -103,7 +103,7 @@ class Function(TaskExecutor):
                                 name="task-workdir",
                                 nfs=client.V1NFSVolumeSource(
                                     server=WORKFLOW_NFS_SERVER,
-                                    path=self.task.work_dir.replace("/mnt/pipelines/", "/")
+                                    path=self.task.nfs_work_dir
                                 ),
                             )
                         ]
@@ -191,7 +191,7 @@ class Function(TaskExecutor):
                                             name="task-workdir",
                                             nfs=client.V1NFSVolumeSource(
                                                 server=WORKFLOW_NFS_SERVER,
-                                                path=self.task.work_dir.replace("/mnt/pipelines/", "/")
+                                                path=self.task.nfs_work_dir
                                             ),
                                         )
                                     ]
@@ -252,7 +252,9 @@ class Function(TaskExecutor):
         # the open workflow engine input prefix
         container_details.env = env + input_to_k8s_env_vars(
             self.task.input,
-            self.ctx,
+            self.ctx.pipeline.work_dir,
+            env=self.ctx.env,
+            params=self.ctx.params,
             prefix="_OWE_WORKFLOW_INPUT_"
         )
         

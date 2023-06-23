@@ -23,7 +23,8 @@ class Kaniko(BaseBuildExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
         BaseBuildExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
 
-        self.configmap = None
+        self._configmap = None
+        self._container_docker_cache_dir = "/cache"
 
     def execute(self) -> TaskResult:
         # Create the kaniko job. Return a failed task result on exception
@@ -94,7 +95,7 @@ class Kaniko(BaseBuildExecutor):
 
         # List of volume mount objects for the container
         volume_mounts = []
-        if self.configmap != None:
+        if self._configmap != None:
             volume_mounts = [
                 # Volume mount for the registry credentials config map
                 client.V1VolumeMount(
@@ -102,15 +103,15 @@ class Kaniko(BaseBuildExecutor):
                     mount_path="/kaniko/.docker/config.json",
                     sub_path="config.json",
                 ),
-                # Volume mount the workdir
+                # Volume mount the task-workdir
                 client.V1VolumeMount(
-                    name="workdir",
+                    name="task-workdir",
                     mount_path=self.task.container_work_dir,
                 ),
-                # Volume mount the cache dir
+                # Volume mount the task-workdir
                 client.V1VolumeMount(
-                    name="cache",
-                    mount_path=self.pipeline.container_cache_dir,
+                    name="kaniko-cache",
+                    mount_path=self._container_docker_cache_dir,
                 )
             ]
 
@@ -125,33 +126,35 @@ class Kaniko(BaseBuildExecutor):
 
         # List of volume objects
         volumes = []
-        if self.configmap != None:
+        if self._configmap != None:
             volumes.append(
                 # Volume for mounting the registry credentials
                 client.V1Volume(
                     name="regcred",
                     config_map=client.V1ConfigMapVolumeSource(
-                        name=self.configmap.metadata.name
+                        name=self._configmap.metadata.name
                     ),
                 )
             )
             
-        # Volumes for output and caching
+        # Volumes for configs
         volumes.append(
             client.V1Volume(
-                name="workdir",
+                name="task-workdir",
                 nfs=client.V1NFSVolumeSource(
                     server=WORKFLOW_NFS_SERVER,
-                    path=self.task.work_dir.replace("/mnt/pipelines/", "/")
+                    path=self.task.nfs_work_dir
                 ),
             )
         )
+        
+        # Volumes for caching
         volumes.append(
             client.V1Volume(
-                name="cache",
+                name="kaniko-cache",
                 nfs=client.V1NFSVolumeSource(
                     server=WORKFLOW_NFS_SERVER,
-                    path=self.pipeline.cache_dir.replace("/mnt/pipelines/", "/")
+                    path=self.pipeline.nfs_docker_cache_dir
                 ),
             )
         )
@@ -199,8 +202,10 @@ class Kaniko(BaseBuildExecutor):
         container_args = []
 
         # Enable image layer caching for imporved performance
-        container_args.append(f"--cache=true")
-        container_args.append(f"--cache-dir={self.pipeline.container_cache_dir}")
+        container_args.append(f"--cache")
+        container_args.append("--cache-run-layers=true")
+        container_args.append("--cache-copy-layers=true")
+        container_args.append(f"--cache-dir={self._container_docker_cache_dir}")
 
         # Source of dockerfile for image to be build
         context = self._resolve_context_string()
@@ -216,7 +221,9 @@ class Kaniko(BaseBuildExecutor):
 
         # Path to the Dockerfile in the repository. All paths prefixed with "/" will
         # have the forward slash removed
-        container_args.append(f"--dockerfile={self.task.context.recipe_file_path}")
+        #TODO REMOVE
+        self.task.context.build_file_path = "/Dockerfile" if self.task.context.build_file_path == "/" else self.task.context.build_file_path
+        container_args.append(f"--dockerfile={self.task.context.build_file_path}")
 
         # the image registry that the image will be pushed to
         destination = self._resolve_destination_string()
@@ -224,19 +231,12 @@ class Kaniko(BaseBuildExecutor):
         destination_arg = f"--destination={destination}"
         if destination == None:
             destination_arg = "--no-push"
-            # NOTE the option below will create a tar file called image.tar
-            # in the volume mount the in the task's output dir. However,
-            # it doesn't seem you can get the tar file WITHOUT also specifiying
-            # a destination, even when using the --no-push option. Makes no sense.
-            # image_name = getattr(self.task.destination, "image_name", None)
-            # image_name = image_name if image_name != None else "image"
-            # container_args.append(f"--tarPath=/mnt/{image_name}.tar")
 
         container_args.append(destination_arg)
 
         # Create the dockerhub config map that will be mounted into the kaniko job container
         if destination != None:
-            self.configmap = self._create_dockerhub_configmap(job_name)
+            self._configmap = self._create_dockerhub_configmap(job_name)
 
         return container_args
 
