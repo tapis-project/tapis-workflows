@@ -13,13 +13,13 @@ from utils.k8s import flavor_to_k8s_resource_reqs
 
 
 class ContainerBuilder:
-    def build(self, task, volume_mounts=[], directives=None):
+    def build(self, task, volume_mounts=[], directives=None, cache_dir="/tmp/cache"):
 
         command = self.resolve_command(task, directives=directives)
 
         container = V1Container(
             name="singularity",
-            env=self.resolve_env(task),
+            env=self.resolve_env(task, cache_dir),
             image=f"{SINGULARITY_IMAGE_URL}:{SINGULARITY_IMAGE_TAG}",
             command=command,
             volume_mounts=volume_mounts,
@@ -85,10 +85,20 @@ class ContainerBuilder:
 
             return command
 
-    def resolve_env(self, task):
+    def resolve_env(self, task, cache_dir):
+        k8s_envvars = []
+
+        # Set the cache dir for Singularity
+        k8s_envvars.append(
+            V1EnvVar(
+                name="SINGULARITY_CACHEDIR",
+                value=cache_dir
+            ),
+        )
+
         # Add the dockerhub username and access token
         if task.destination.type == "dockerhub":
-            return [
+            k8s_envvars = k8s_envvars + [
                 V1EnvVar(
                     name="SINGULARITY_DOCKERHUB_USERNAME",
                     value=task.destination.credentials.username
@@ -100,6 +110,6 @@ class ContainerBuilder:
             ]
 
         # return an empty array by default
-        return []
+        return k8s_envvars
         
 container_builder = ContainerBuilder()

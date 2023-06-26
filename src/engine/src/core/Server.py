@@ -32,7 +32,7 @@ from conf.constants import (
     DUPLICATE_SUBMISSION_POLICY_DEFER,
     PLUGINS,
 )
-from conf.request import WorkflowSubmissionRequest, ValueWithRequirements, EmptyObject
+from owe_python_sdk.schema import WorkflowSubmissionRequest, EmptyObject
 
 from core.workers import WorkerPool
 from core.workflows.executors import WorkflowExecutor

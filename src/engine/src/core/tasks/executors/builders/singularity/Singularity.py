@@ -23,7 +23,7 @@ class Singularity(BaseBuildExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
         BaseBuildExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
 
-        self._container_singularity_cache_dir = "/cache"
+        self._container_singularity_cache_dir = "/tmp/cache"
         
     def execute(self) -> TaskResult:
         # Create the kaniko job return a failed task result on exception
@@ -98,6 +98,7 @@ class Singularity(BaseBuildExecutor):
             self.task,
             volume_mounts=volume_mounts,
             directives=self.directives,
+            cache_dir=self._container_singularity_cache_dir
         )
 
         # List of volume objects
@@ -122,7 +123,9 @@ class Singularity(BaseBuildExecutor):
         # Pod template and pod template spec
         template = V1PodTemplateSpec(
             spec=V1PodSpec(
-                containers=[container], restart_policy="Never", volumes=volumes
+                containers=[container],
+                restart_policy="Never",
+                volumes=volumes
             )
         )
 

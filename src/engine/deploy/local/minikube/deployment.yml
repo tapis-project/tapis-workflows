@@ -79,10 +79,10 @@ spec:
           resources: {}
           tty: true
           volumeMounts:
-            - name: pipelines-mount
+            - name: open-workflow-engine-mount
               mountPath: /var/lib/open-workflow-engine/
       volumes:
-        - name: pipelines-mount
+        - name: open-workflow-engine-mount
           nfs: 
             server: 10.99.53.12
             path: /   
