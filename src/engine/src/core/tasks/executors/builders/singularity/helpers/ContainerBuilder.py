@@ -20,7 +20,8 @@ class ContainerBuilder:
         container = V1Container(
             name="singularity",
             env=self.resolve_env(task, cache_dir),
-            image=f"{SINGULARITY_IMAGE_URL}:{SINGULARITY_IMAGE_TAG}",
+            # image=f"{SINGULARITY_IMAGE_URL}:{SINGULARITY_IMAGE_TAG}",
+            image="tapis/workflows-python-singularity:0.1.0",
             command=command,
             volume_mounts=volume_mounts,
             resources=flavor_to_k8s_resource_reqs(get_flavor("c1lrg"))
@@ -88,7 +89,7 @@ class ContainerBuilder:
     def resolve_env(self, task, cache_dir):
         k8s_envvars = []
 
-        # Set the cache dir for Singularity
+        # # Set the cache dir for Singularity
         k8s_envvars.append(
             V1EnvVar(
                 name="SINGULARITY_CACHEDIR",
