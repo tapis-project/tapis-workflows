@@ -121,9 +121,10 @@ class RestrictedAPIView(View):
 
             return self.prepared_request
         except Exception as e:
-            failure_view = ServerError(str(e))
+            failure_view = ServerError(message=str(e))
 
             self.prepared_request = PreparedRequest(is_valid=False, failure_view=failure_view)
+            return self.prepared_request
 
         self.prepared_request = PreparedRequest(body=request_object)
         return self.prepared_request

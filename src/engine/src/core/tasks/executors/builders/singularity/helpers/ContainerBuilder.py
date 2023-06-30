@@ -11,7 +11,6 @@ from utils import get_flavor
 from utils.k8s import flavor_to_k8s_resource_reqs
 
 
-
 class ContainerBuilder:
     def build(self, task, volume_mounts=[], directives=None, cache_dir="/tmp/cache"):
 
@@ -20,8 +19,7 @@ class ContainerBuilder:
         container = V1Container(
             name="singularity",
             env=self.resolve_env(task, cache_dir),
-            # image=f"{SINGULARITY_IMAGE_URL}:{SINGULARITY_IMAGE_TAG}",
-            image="tapis/workflows-python-singularity:0.1.0",
+            image=f"{SINGULARITY_IMAGE_URL}:{SINGULARITY_IMAGE_TAG}",
             command=command,
             volume_mounts=volume_mounts,
             resources=flavor_to_k8s_resource_reqs(get_flavor("c1lrg"))
@@ -30,7 +28,6 @@ class ContainerBuilder:
         return container
 
     def resolve_command(self, task, directives=None):
-
         # Pull the image from Dockerhub and generate the SIF file
         if task.context.type == "dockerhub":
             cmd = [
@@ -68,7 +65,7 @@ class ContainerBuilder:
                 task.exec_dir,
                 branch=task.context.branch
             )
-
+    
             # Build file path is the exec dir + build file path specified
             # in the context
             build_file_path = os.path.join(
@@ -89,7 +86,7 @@ class ContainerBuilder:
     def resolve_env(self, task, cache_dir):
         k8s_envvars = []
 
-        # # Set the cache dir for Singularity
+        # Set the cache dir for Singularity
         k8s_envvars.append(
             V1EnvVar(
                 name="SINGULARITY_CACHEDIR",

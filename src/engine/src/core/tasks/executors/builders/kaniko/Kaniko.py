@@ -221,9 +221,7 @@ class Kaniko(BaseBuildExecutor):
 
         # Path to the Dockerfile in the repository. All paths prefixed with "/" will
         # have the forward slash removed
-        #TODO REMOVE
-        self.task.context.build_file_path = "/Dockerfile" if self.task.context.build_file_path == "/" else self.task.context.build_file_path
-        container_args.append(f"--dockerfile={self.task.context.build_file_path}")
+        container_args.append(f"--dockerfile={self.task.context.build_file_path.lstrip('/')}")
 
         # the image registry that the image will be pushed to
         destination = self._resolve_destination_string()

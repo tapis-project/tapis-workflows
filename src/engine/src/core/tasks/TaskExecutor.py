@@ -26,15 +26,16 @@ class TaskExecutor(EventPublisher):
 
         # Paths to the workdir for the task inside the workflow engine container
         self.task.work_dir = f"{self.pipeline.work_dir}{self.task.id}/"
-        self.task.exec_dir = f"{self.task.work_dir}exec/"
+        self.task.exec_dir = f"{self.task.work_dir}src/"
         self.task.output_dir = f"{self.task.work_dir}output/"
 
         # Paths to the workdir for the task inside the job container
         self.task.container_work_dir = "/mnt/open-workflow-engine/pipeline/task"
+        self.task.container_exec_dir = f"{self.task.container_work_dir}/src"
 
         # Paths to the workdir inside the nfs-server container
         self.task.nfs_work_dir = f"{self.pipeline.nfs_work_dir}{self.task.id}/"
-        self.task.nfs_exec_dir = f"{self.task.nfs_work_dir}exec/"
+        self.task.nfs_exec_dir = f"{self.task.nfs_work_dir}src/"
         self.task.nfs_output_dir = f"{self.task.nfs_work_dir}output/"
 
         self.group = self.ctx.group

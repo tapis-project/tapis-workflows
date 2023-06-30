@@ -153,7 +153,8 @@ class Singularity(BaseBuildExecutor):
         
         try:
             job = self.batch_v1_api.create_namespaced_job(
-                namespace=KUBERNETES_NAMESPACE, body=body
+                namespace=KUBERNETES_NAMESPACE,
+                body=body
             )
         except ApiException as e:
             raise e

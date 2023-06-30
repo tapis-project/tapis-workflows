@@ -6,12 +6,12 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 
 from backend.views.http.requests import (
+    EnumContextType,
+    EnumDestinationType,
     EnumRuntimeEnvironment,
     EnumTaskFlavor,
     EnumTaskType,
     EnumImageBuilder,
-    EnumContextType,
-    EnumDestinationType,
     EnumVisibility,
     EnumInstaller,
     EnumInvocationMode,

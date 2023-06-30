@@ -24,7 +24,7 @@ from backend.views.http.requests import (
     TapisJobTask,
     TapisActorTask,
     FunctionTask,
-    RegistryDestination,
+    DockerhubDestination,
     LocalDestination,
     EnumTaskIOTypes,
     EnumTaskInputValueFromKey
@@ -44,7 +44,7 @@ TASK_TYPE_REQUEST_MAPPING = {
 }
 
 DESTINATION_TYPE_REQUEST_MAPPING = {
-    DESTINATION_TYPE_DOCKERHUB: RegistryDestination,
+    DESTINATION_TYPE_DOCKERHUB: DockerhubDestination,
     DESTINATION_TYPE_LOCAL: LocalDestination
 }
 
@@ -164,7 +164,7 @@ class TaskService(Service):
             cred_data = {}
             for key, value in dict(credentials).items():
                 if value != None:
-                    cred_data[key] = credentials.get(key)
+                    cred_data[key] = getattr(credentials, key)
             
             try:
                 cred = secret_service.save(f"pipeline:{pipeline.id}", cred_data)

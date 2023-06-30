@@ -360,7 +360,7 @@ class DockerhubDestination(Destination):
     identity_uuid: str = None
     url: str
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def creds_or_identity(csl, values):
         creds, identity = values.get("credentials"), values.get("identity_uuid")
         if creds == None and identity == None:
@@ -555,7 +555,7 @@ class ImageBuildTask(BaseTask):
         LocalDestination
     ]
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def validate_image_build(cls, values):
         builder = values.get("builder")
         context = values.get("context")
@@ -576,7 +576,7 @@ class ImageBuildTask(BaseTask):
 
         return values
     
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def validate_ctx_authn(cls, values):
         # Requester must provide an identity or credential in order
         # to pull from a private repository
