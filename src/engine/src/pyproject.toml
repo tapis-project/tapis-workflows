@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "owe_python_sdk"
-version = "0.0.1a2"
+version = "0.0.1a11"
 description = ""
 authors = ["Nathan Freeman <nfreeman@tacc.utexas.edu.com>"]
 repository = "https://github.com/tapis-project/tapis-workflows"
