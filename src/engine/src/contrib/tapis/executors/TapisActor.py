@@ -8,8 +8,8 @@ from core.tasks.TaskExecutor import TaskExecutor
 
 
 class TapisActor(TaskExecutor):
-    def __init__(self, task, ctx, exchange):
-        TaskExecutor.__init__(self, task, ctx, exchange)
+    def __init__(self, task, ctx, exchange, plugins=[]):
+        TaskExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
         self.executions = []
 
     def execute(self):
