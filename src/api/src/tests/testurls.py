@@ -1,8 +1,8 @@
 import unittest
 
 
-class TestURLs(unittest.TestCase):
-    def testURLs(self):
+class TestUrls(unittest.TestCase):
+    def testurls(self):
         pass
 
 if __name__ == "__main__":
