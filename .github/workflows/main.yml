@@ -8,7 +8,7 @@ on:
 
 jobs:
   Run_Tests:
-    name: Run Tests
+    name: Run_Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,7 +24,7 @@ jobs:
       
   Resolve_Image_Tag:
     needs:
-      - Resolve_Image_Tag
+      - Run_Tests
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.set_image_tag.outputs.image_tag }}
