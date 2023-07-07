@@ -8,10 +8,14 @@ on:
 
 jobs:
   api-tests:
-    name: Run API Tests
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
-      - run: "echo 'running API tests'"
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: OWE_Python_SDK_Tests
+        run: ./src/engine/src/owe_python_sdk/tests/run.sh
+      
 
   Resolve_Image_Tag:
     runs-on: ubuntu-latest
