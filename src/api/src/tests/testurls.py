@@ -1,7 +1,7 @@
 import unittest
 
 
-class TestServer(unittest.TestCase):
+class TestURLs(unittest.TestCase):
     def testURLs(self, pika):
         pass
 
