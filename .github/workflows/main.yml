@@ -119,7 +119,7 @@ jobs:
   Build_Push_Image_Engine_Streams:
     needs:
       - Resolve_Image_Tag
-      - Run_Engine_Streams_Test
+      - Run_Engine_Streams_Tests
     runs-on: ubuntu-latest
     name: Build_Push_Engine_Streams_Image
     steps:
