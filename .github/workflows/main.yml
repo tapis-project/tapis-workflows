@@ -7,17 +7,25 @@ on:
     branches: [ dev, staging, test, release-** ]
 
 jobs:
-  api-tests:
+  Run_Tests:
     name: Run Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Setup_Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: PIP_Install
+        run: "pip install -r ./src/engine/src/requirements.txt"
       - name: OWE_Python_SDK_Tests
         run: ./src/engine/src/owe_python_sdk/tests/run.sh
       
 
   Resolve_Image_Tag:
+    needs:
+      - Resolve_Image_Tag
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.set_image_tag.outputs.image_tag }}
