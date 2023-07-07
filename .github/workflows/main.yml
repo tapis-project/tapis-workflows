@@ -7,8 +7,8 @@ on:
     branches: [ dev, staging, test, release-** ]
 
 jobs:
-  Run_Tests:
-    name: Run_Tests
+  Run_Engine_Tests:
+    name: Run_Engine_Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,10 +21,20 @@ jobs:
         run: "pip install -r ./src/engine/src/requirements.txt"
       - name: OWE_Python_SDK_Tests
         run: ./src/engine/src/owe_python_sdk/tests/run.sh
+
+  Run_API_Tests:
+    name: Run_API_Tests
+    runs-on: ubuntu-latest
+    steps:
+      - run: "echo 'Running API Tests'"
+
+  Run_Engine_Streams_Tests:
+    name: Run_API_Tests
+    runs-on: ubuntu-latest
+    steps:
+      - run: "echo 'Running Engine Streams Tests'"
       
   Resolve_Image_Tag:
-    needs:
-      - Run_Tests
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.set_image_tag.outputs.image_tag }}
@@ -61,6 +71,7 @@ jobs:
   Build_Push_Image_Api:
     needs:
       - Resolve_Image_Tag
+      - Run_API_Tests
     runs-on: ubuntu-latest
     name: Build_Push_Api_Image
     steps:
@@ -84,6 +95,7 @@ jobs:
   Build_Push_Image_Engine:
     needs:
       - Resolve_Image_Tag
+      - Run_Engine_Tests
     runs-on: ubuntu-latest
     name: Build_Push_Engine_Image
     steps:
@@ -107,6 +119,7 @@ jobs:
   Build_Push_Image_Engine_Streams:
     needs:
       - Resolve_Image_Tag
+      - Run_Engine_Streams_Test
     runs-on: ubuntu-latest
     name: Build_Push_Engine_Streams_Image
     steps:
