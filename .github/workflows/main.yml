@@ -22,7 +22,6 @@ jobs:
       - name: OWE_Python_SDK_Tests
         run: ./src/engine/src/owe_python_sdk/tests/run.sh
       
-
   Resolve_Image_Tag:
     needs:
       - Resolve_Image_Tag
