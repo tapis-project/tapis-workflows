@@ -33,7 +33,7 @@ jobs:
       - name: Setup_Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.9.6'
       - name: PIP_Install
         run: "pip install -r ./src/api/src/requirements.txt"
       - name: Run_API_Tests
