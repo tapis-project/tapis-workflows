@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 
 class TestServer(unittest.TestCase):
-    def testServerInit(self, pika):
+    def testServerInit(self):
         pass
         # sys.modules["pika"] = __import__('mock_B')
         # from core.Server import Server

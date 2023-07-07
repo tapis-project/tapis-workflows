@@ -2,7 +2,7 @@ import unittest
 
 
 class TestURLs(unittest.TestCase):
-    def testURLs(self, pika):
+    def testURLs(self):
         pass
 
 if __name__ == "__main__":
