@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #kubectl apply -f storageclass.yml
+
 # here=$(dirname $0)
 
 # Apply secrets
