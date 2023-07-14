@@ -1,4 +1,6 @@
-import os
+import os, re
+
+from uuid import uuid4
 
 from core.tasks.Flavor import Flavor
 from conf.constants import IS_LOCAL
@@ -130,3 +132,12 @@ def get_value_from_params(params, key):
 
 def get_value_from_task_output(key):
     pass
+
+def gen_resource_name(prefix=""):
+    system_prefix = "wf"
+    name = str(uuid4())
+    resource_name = "-".join([system_prefix, name])
+    if prefix != "":
+        resource_name = "-".join([system_prefix, str(prefix), name])
+    
+    return re.sub(r"[-]{2,}", "-", re.sub(r"[^a-zA-Z\d\-]*", "", resource_name).strip("-")).lower()[:45]

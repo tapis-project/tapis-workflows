@@ -1,7 +1,5 @@
 import os, base64, time, shutil
 
-from uuid import uuid4
-
 from kubernetes import client
 
 from core.tasks.TaskExecutor import TaskExecutor
@@ -15,7 +13,7 @@ from conf.constants import (
 )
 from core.resources import JobResource
 from utils import get_flavor
-from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars
+from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars, gen_resource_name
 from errors import WorkflowTerminated
 
 
@@ -54,7 +52,7 @@ class Function(TaskExecutor):
                 self.runtimes[language] = runtimes_for_language
 
     def execute(self):
-        job_name = "wf-fn-" + str(uuid4())
+        job_name = gen_resource_name(prefix="fn")
 
         # Prepares the file system for the Function task by clone 
         # git repsoitories specified by the user in the request
