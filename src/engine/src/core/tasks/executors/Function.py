@@ -14,7 +14,7 @@ from conf.constants import (
 )
 from core.resources import JobResource
 from utils import get_flavor
-from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars
+from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars, gen_resource_name
 from errors import WorkflowTerminated
 
 class ContainerDetails:
@@ -53,7 +53,7 @@ class Function(TaskExecutor):
 
     def execute(self):
         """Create and run the container"""
-        job_name = "wf-fn-" + str(uuid4())
+        job_name = gen_resource_name(prefix="fn")
 
         # List of volume mount objects for the container
         volume_mounts = [

@@ -1,14 +1,12 @@
 import logging
 
-from uuid import uuid4
-
 from kubernetes import client
 
 from core.tasks.TaskExecutor import TaskExecutor
 from conf.constants import KUBERNETES_NAMESPACE
 from core.resources import PodResource
 from utils import get_flavor
-from utils.k8s import flavor_to_k8s_resource_reqs
+from utils.k8s import flavor_to_k8s_resource_reqs, gen_resource_name
 
 
 # TODO Review the Kubernetes attack surface guide.
@@ -16,7 +14,7 @@ from utils.k8s import flavor_to_k8s_resource_reqs
 class Application(TaskExecutor):
     def execute(self):
         """Create a the container"""
-        container_name = str(uuid4())
+        container_name = gen_resource_name()
         # List of volume mount objects for the container
         volume_mounts = [
             # Volume mount for the output
