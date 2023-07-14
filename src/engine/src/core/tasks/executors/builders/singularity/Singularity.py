@@ -18,6 +18,7 @@ from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.tasks.executors.builders.singularity.helpers.ContainerBuilder import container_builder
 from errors import WorkflowTerminated
+from utils.k8s import gen_resource_name
 
 class Singularity(BaseBuildExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
@@ -75,7 +76,7 @@ class Singularity(BaseBuildExecutor):
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
         # Set the name for the k8 job metadata
-        job_name = f"wf.{self.pipeline.run_id}.{self.task.id}"
+        job_name = gen_resource_name(prefix="sib")
         
         # List of volume mount objects for the container 
         volume_mounts = [
