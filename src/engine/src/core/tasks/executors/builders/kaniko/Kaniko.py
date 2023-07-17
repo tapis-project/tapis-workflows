@@ -187,7 +187,7 @@ class Kaniko(BaseBuildExecutor):
             raise e
 
         # Register the job to be deleted after execution
-        # self._register_resource(JobResource(job=job))
+        self._register_resource(JobResource(job=job))
 
         return job
 
@@ -204,13 +204,11 @@ class Kaniko(BaseBuildExecutor):
 
         # Source of dockerfile for image to be build
         context = self._resolve_context_string()
-        print(f"--context={context}")
         container_args.append(f"--context={context}")
 
         # Useful when your context is, for example, a git repository,
         # and you want to build one of its subfolders instead of the root folder
         if self.task.context.sub_path != None:
-            print(f"--context-sub-path={self.task.context.sub_path}")
             container_args.append(f"--context-sub-path={self.task.context.sub_path}")
 
         # The branch to be pulled
@@ -218,7 +216,6 @@ class Kaniko(BaseBuildExecutor):
 
         # Path to the Dockerfile in the repository. All paths prefixed with "/" will
         # have the forward slash removed
-        print(f"--dockerfile={self.task.context.recipe_file_path}")
         container_args.append(f"--dockerfile={self.task.context.recipe_file_path}")
 
         # the image registry that the image will be pushed to
@@ -236,8 +233,6 @@ class Kaniko(BaseBuildExecutor):
             # container_args.append(f"--tarPath=/mnt/{image_name}.tar")
 
         container_args.append(destination_arg)
-        
-        print("CONTAINER ARGS", container_args)
 
         # Create the dockerhub config map that will be mounted into the kaniko job container
         if destination != None:
