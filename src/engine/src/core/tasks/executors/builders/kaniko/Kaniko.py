@@ -187,7 +187,7 @@ class Kaniko(BaseBuildExecutor):
             raise e
 
         # Register the job to be deleted after execution
-        self._register_resource(JobResource(job=job))
+        # self._register_resource(JobResource(job=job))
 
         return job
 
