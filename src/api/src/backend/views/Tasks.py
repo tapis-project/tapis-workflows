@@ -53,7 +53,6 @@ class Tasks(RestrictedAPIView):
         return ModelListResponse(Task.objects.filter(pipeline=pipeline))
     
     def post(self, request, group_id, pipeline_id, *_, **__):
-        print(self.request_body)
         # Validate the request body
         if "type" not in self.request_body:
             return BadRequest(message="Request body missing 'type' property")
