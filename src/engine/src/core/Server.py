@@ -61,7 +61,7 @@ class Server:
         # TODO catch error for worker classes that dont inherit from "Worker"
         self.worker_pool = WorkerPool(
             worker_cls=WorkflowExecutor,
-            starting_worker_count=STARTING_WORKERS,
+            starting_worker_count=100,
             max_workers=MAX_WORKERS,
             worker_kwargs={
                 "plugins": self.plugins
