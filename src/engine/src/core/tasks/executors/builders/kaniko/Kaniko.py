@@ -207,7 +207,7 @@ class Kaniko(BaseBuildExecutor):
         container_args.append(f"--context={context}")
 
         # Useful when your context is, for example, a git repository,
-        #  and you want to build one of its subfolders instead of the root folder
+        # and you want to build one of its subfolders instead of the root folder
         if self.task.context.sub_path != None:
             container_args.append(f"--context-sub-path={self.task.context.sub_path}")
 
