@@ -62,7 +62,7 @@ class Server:
         self.worker_pool = WorkerPool(
             worker_cls=WorkflowExecutor,
             starting_worker_count=100,
-            max_workers=MAX_WORKERS,
+            max_workers=1000,
             worker_kwargs={
                 "plugins": self.plugins
             }
