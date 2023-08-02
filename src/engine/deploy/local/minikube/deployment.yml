@@ -59,7 +59,7 @@ spec:
             - name: TAPIS_SERVICE_TENANT_ID
               value: admin
             - name: WORKFLOW_NFS_SERVER
-              value: 10.99.53.12 
+              value: '{{ NFS_SERVER_SERVICE_IP }}' 
             - name: IS_LOCAL
               value: 'true'
             - name: WORKFLOWS_SERVICE_URL
@@ -84,6 +84,6 @@ spec:
       volumes:
         - name: open-workflow-engine-mount
           nfs: 
-            server: 10.99.53.12
+            server: '{{ NFS_SERVER_SERVICE_IP }}'
             path: /   
       restartPolicy: Always
