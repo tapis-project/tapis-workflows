@@ -3,7 +3,7 @@ image_build = {
     "type": "image_build",
     "description": "build mpm image",
     "builder": "kaniko",
-    "input": {
+    "input": { 
         "from-env": {
             "type": "string",
             "value_from": {

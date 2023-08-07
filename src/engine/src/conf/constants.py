@@ -2,7 +2,7 @@ import os
 
 from pathlib import Path
 
-from core.tasks.Flavor import Flavor
+from owe_python_sdk.schema import EnumTaskFlavor
 
 
 BASE_DIR = str(Path(__file__).resolve().parent.parent) + "/"
@@ -82,17 +82,17 @@ KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"
 KANIKO_IMAGE_TAG = "latest"
 
 FLAVORS = {
-    "c1tiny": {"cpu": "1", "memory": ".5G", "disk": "20GB"},
-    "c1xxsml": {"cpu": "1", "memory": "1G", "disk": "20GB"},
-    "c1xsml": {"cpu": "1", "memory": "2G", "disk": "20GB"},
-    "c1sml": {"cpu": "1", "memory": "4G", "disk": "20GB"},
-    "c1med": {"cpu": "2", "memory": "8G", "disk": "20GB"},
-    "c1lrg": {"cpu": "4", "memory": "16G", "disk": "20GB"},
-    "c1xlrg": {"cpu": "8", "memory": "32G", "disk": "20GB"},
-    "c1xxlrg": {"cpu": "16", "memory": "64G", "disk": "20GB"},
-    "g1nvdsml": {"gpu": "1", "gpu_type": "nvidia.com/gpu", "memory": "4G", "disk": "20GB"},
-    "g1nvdmed": {"gpu": "2", "gpu_type": "nvidia.com/gpu", "memory": "8G", "disk": "20GB"},
-    "g1nvdlrg": {"gpu": "4", "gpu_type": "nvidia.com/gpu", "memory": "6G", "disk": "20GB"}
+    EnumTaskFlavor.C1_TINY: {"cpu": "1", "memory": ".5G", "disk": "20GB"},
+    EnumTaskFlavor.C1_XXSML: {"cpu": "1", "memory": "1G", "disk": "20GB"},
+    EnumTaskFlavor.C1_XSML: {"cpu": "1", "memory": "2G", "disk": "20GB"},
+    EnumTaskFlavor.C1_SML: {"cpu": "1", "memory": "4G", "disk": "20GB"},
+    EnumTaskFlavor.C1_MED: {"cpu": "2", "memory": "8G", "disk": "20GB"},
+    EnumTaskFlavor.C1_LRG: {"cpu": "4", "memory": "16G", "disk": "20GB"},
+    EnumTaskFlavor.C1_XLRG: {"cpu": "8", "memory": "32G", "disk": "20GB"},
+    EnumTaskFlavor.C1_XXLRG: {"cpu": "16", "memory": "64G", "disk": "20GB"},
+    EnumTaskFlavor.G1_NVD_SML: {"gpu": "1", "gpu_type": "nvidia.com/gpu", "memory": "4G", "disk": "20GB"},
+    EnumTaskFlavor.G1_NVD_MED: {"gpu": "2", "gpu_type": "nvidia.com/gpu", "memory": "8G", "disk": "20GB"},
+    EnumTaskFlavor.G1_NVD_LRG: {"gpu": "4", "gpu_type": "nvidia.com/gpu", "memory": "6G", "disk": "20GB"}
 }
 
 SINGULARITY_IMAGE_URL = "quay.io/singularity/singularity"

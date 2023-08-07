@@ -6,7 +6,7 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
 from backend.views.http.responses.errors import Conflict, Forbidden, NotFound, BadRequest, ServerError
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
-from backend.views.http.requests import SystemArchive, S3Archive, IRODSArchive
+from backend.views.http.requests import TapisSystemArchive, S3Archive, IRODSArchive
 from backend.models import (
     Archive, 
     ARCHIVE_TYPE_SYSTEM, 
@@ -18,7 +18,7 @@ from backend.helpers import resource_url_builder
 
 
 ARCHIVE_REQUEST_MAPPING = {
-    ARCHIVE_TYPE_SYSTEM: SystemArchive,
+    ARCHIVE_TYPE_SYSTEM: TapisSystemArchive,
     ARCHIVE_TYPE_S3: S3Archive,
     ARCHIVE_TYPE_IRODS: IRODSArchive
 }

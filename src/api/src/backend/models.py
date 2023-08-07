@@ -33,6 +33,7 @@ TASK_INVOCATION_MODES = [
 ]
 
 TASK_TYPE_IMAGE_BUILD = EnumTaskType.ImageBuild
+TASK_TYPE_APPLICATION = EnumTaskType.Application
 TASK_TYPE_CONTAINER_RUN = EnumTaskType.ContainerRun
 TASK_TYPE_REQUEST = EnumTaskType.Request
 TASK_TYPE_FUNCTION = EnumTaskType.Function
@@ -40,7 +41,7 @@ TASK_TYPE_TAPIS_JOB = EnumTaskType.TapisJob
 TASK_TYPE_TAPIS_ACTOR = EnumTaskType.TapisActor
 TASK_TYPES = [
     (TASK_TYPE_IMAGE_BUILD, EnumTaskType.ImageBuild),
-    (TASK_TYPE_CONTAINER_RUN, EnumTaskType.ContainerRun),
+    (TASK_TYPE_APPLICATION, EnumTaskType.Application),
     (TASK_TYPE_REQUEST, EnumTaskType.Request),
     (TASK_TYPE_FUNCTION, EnumTaskType.Function),
     (TASK_TYPE_TAPIS_JOB, EnumTaskType.TapisJob),
@@ -409,8 +410,9 @@ class PipelineArchive(models.Model):
 
 class PipelineRun(models.Model):
     last_modified = models.DateTimeField(null=True)
+    logs = models.TextField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="runs", on_delete=models.CASCADE)
-    status = models.CharField(max_length=16, choices=RUN_STATUSES, default=RUN_STATUS_PENDING)
+    status = models.CharField(max_length=16, choices=RUN_STATUSES, default=RUN_STATUS_SUBMITTED)
     started_at = models.DateTimeField(null=True)
     uuid = models.UUIDField(primary_key=True)
 
@@ -521,6 +523,7 @@ class Task(models.Model):
 
 class TaskExecution(models.Model):
     last_modified = models.DateTimeField(null=True)
+    last_message = models.TextField(null=True)
     pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="task_executions", on_delete=models.CASCADE)
     started_at = models.DateTimeField(null=True)
     status = models.CharField(max_length=16, choices=TASK_EXECUTION_STATUSES, default=RUN_STATUS_PENDING)

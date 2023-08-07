@@ -10,6 +10,7 @@ from backend.models import Task, Context, Destination, Identity
 from backend.models import (
     TASK_TYPE_REQUEST,
     TASK_TYPE_IMAGE_BUILD,
+    TASK_TYPE_APPLICATION,
     TASK_TYPE_CONTAINER_RUN,
     TASK_TYPE_TAPIS_JOB,
     TASK_TYPE_TAPIS_ACTOR,
@@ -20,7 +21,7 @@ from backend.models import (
 from backend.views.http.requests import (
     RequestTask,
     ImageBuildTask,
-    ContainerRunTask,
+    ApplicationTask,
     TapisJobTask,
     TapisActorTask,
     FunctionTask,
@@ -37,7 +38,8 @@ from backend.errors.api import BadRequestError, ServerError
 TASK_TYPE_REQUEST_MAPPING = {
     TASK_TYPE_IMAGE_BUILD: ImageBuildTask,
     TASK_TYPE_REQUEST: RequestTask,
-    TASK_TYPE_CONTAINER_RUN: ContainerRunTask,
+    TASK_TYPE_APPLICATION: ApplicationTask,
+    TASK_TYPE_CONTAINER_RUN: ApplicationTask,
     TASK_TYPE_TAPIS_JOB: TapisJobTask,
     TASK_TYPE_TAPIS_ACTOR: TapisActorTask,
     TASK_TYPE_FUNCTION: FunctionTask
