@@ -700,11 +700,13 @@ class TaskExecution(BaseModel):
     started_at: str = None
     last_modified: str = None
     uuid: str
+    last_message: str = None
 
 class PipelineRun(BaseModel):
     last_modified: str = None
     status: str = None
     uuid: str
+    logs: str = None
 
 class WorkflowSubmissionRequestMeta(BaseModel):
     idempotency_key: Union[str, List[str]]

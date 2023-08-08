@@ -34,7 +34,7 @@ TASK_INVOCATION_MODES = [
 
 TASK_TYPE_IMAGE_BUILD = EnumTaskType.ImageBuild
 TASK_TYPE_APPLICATION = EnumTaskType.Application
-TASK_TYPE_CONTAINER_RUN = EnumTaskType.ContainerRun
+TASK_TYPE_CONTAINER_RUN = EnumTaskType.ContainerRun  # Keep for backwards compatibility. container_run renamed to application
 TASK_TYPE_REQUEST = EnumTaskType.Request
 TASK_TYPE_FUNCTION = EnumTaskType.Function
 TASK_TYPE_TAPIS_JOB = EnumTaskType.TapisJob

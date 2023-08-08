@@ -1607,12 +1607,13 @@ paths:
           required: true
           schema:
             $ref: "#/components/schemas/EnumRunStatus"
-      # requestBody:
-      #   required: false
-      #   description: Empty JSON object.
-      #   content:
-      #     application/json:
-      #       schema: {}
+      requestBody:
+        required: false
+        description: Empty JSON object.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqPatchPipelineRun"
       responses:
         '200':
           description: Pipeline Run updated.
@@ -1648,12 +1649,13 @@ paths:
           required: true
           schema:
             $ref: "#/components/schemas/EnumRunStatus"
-      # requestBody:
-      #   required: false
-      #   description: Empty JSON object.
-      #   content:
-      #     application/json:
-      #       schema: {}
+      requestBody:
+        required: false
+        description: Empty JSON object.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqPatchTaskExecution"
       responses:
         '200':
           description: Success
@@ -1690,7 +1692,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReqTaskExecution'
+              $ref: '#/components/schemas/ReqCreateTaskExecution'
       responses:
         '200':
           description: Success
@@ -1979,6 +1981,8 @@ components:
           type: string
         last_modified:
           type: string
+        logs:
+          type: string
     
     TaskExecution:
       type: object
@@ -1996,6 +2000,8 @@ components:
         started_at:
           type: string
         last_modified:
+          type: string
+        last_message:
           type: string
 
     # --- Task ---
@@ -2872,7 +2878,7 @@ components:
           items:
             type: string
 
-    ReqTaskExecution:
+    ReqCreateTaskExecution:
       type: object
       required:
         - task_id
@@ -2887,6 +2893,18 @@ components:
         uuid:
           type: string
           format: uuid
+
+    ReqPatchTaskExecution:
+      type: object
+      properties:
+        last_message:
+          type: string
+
+    ReqPatchPipelineRun:
+      type: object
+      properties:
+        logs:
+          type: string
         
 
     # -------------------------------------------------------------------------

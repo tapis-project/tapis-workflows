@@ -11,7 +11,7 @@ from backend.models import (
     TASK_TYPE_REQUEST,
     TASK_TYPE_IMAGE_BUILD,
     TASK_TYPE_APPLICATION,
-    TASK_TYPE_CONTAINER_RUN,
+    TASK_TYPE_CONTAINER_RUN,  # Keep for backwards compatibility. container_run renamed to application
     TASK_TYPE_TAPIS_JOB,
     TASK_TYPE_TAPIS_ACTOR,
     TASK_TYPE_FUNCTION,
@@ -39,7 +39,7 @@ TASK_TYPE_REQUEST_MAPPING = {
     TASK_TYPE_IMAGE_BUILD: ImageBuildTask,
     TASK_TYPE_REQUEST: RequestTask,
     TASK_TYPE_APPLICATION: ApplicationTask,
-    TASK_TYPE_CONTAINER_RUN: ApplicationTask,
+    TASK_TYPE_CONTAINER_RUN: ApplicationTask, # Keep for backwards compatibility. container_run renamed to application
     TASK_TYPE_TAPIS_JOB: TapisJobTask,
     TASK_TYPE_TAPIS_ACTOR: TapisActorTask,
     TASK_TYPE_FUNCTION: FunctionTask

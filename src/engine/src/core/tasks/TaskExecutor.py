@@ -1,5 +1,7 @@
 import os
 
+from pathlib import Path
+
 from kubernetes import config, client
 
 from owe_python_sdk.events.types import TASK_TERMINATED
@@ -83,12 +85,23 @@ class TaskExecutor(EventPublisher):
     def _set_output(self, filename, value, flag="wb"):
         with open(f"{self.task.output_dir}{filename.lstrip('/')}", flag) as file:
             file.write(value)
-    
+
+    def _tail_output(self, filename, flag="rb", max_bytes=5120):
+        with open(f"{self.task.output_dir}{filename.lstrip('/')}", flag) as file:
+            file.seek(max_bytes * -1, os.SEEK_END)
+            return file.read()
+
     def _stdout(self, value, flag="wb"):
         self._set_output(".stdout", value, flag=flag)
 
+    def _tail_stdout(self):
+        return self._tail_output(".stdout")
+
     def _stderr(self, value, flag="wb"):
         self._set_output(".stderr", value, flag=flag)
+
+    def _tail_stderr(self):
+        return self._tail_output(".stderr")
 
     def _initialize_fs(self):
         # Create the base directory for all files and output created during this task execution
@@ -98,7 +111,11 @@ class TaskExecutor(EventPublisher):
         os.makedirs(self.task.exec_dir, exist_ok=True)
 
         # Create the output dir in which the output of the task execution will be stored
-        os.makedirs(self.task.output_dir, exist_ok=True)        
+        os.makedirs(self.task.output_dir, exist_ok=True)
+
+        # Create the stdout and stderr files
+        Path(f"{self.task.output_dir}.stdout").touch()
+        Path(f"{self.task.output_dir}.stderr").touch()
 
     def cleanup(self, terminating=False):
         if terminating: 

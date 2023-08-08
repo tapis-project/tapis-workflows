@@ -17,7 +17,9 @@ class HTTP(TaskExecutor):
                 f"Request Error: Method Not Allowed ({self.task.http_method})"
             )
             return TaskResult(
-                status=405, errors=[f"Method Not Allowed ({self.task.method})"]
+                status=405, errors=[f"Method Not Allowed ({self.task.method})"],
+                stderr=self._tail_stderr(),
+                stdout=self._tail_stdout()
             )
 
         try:
@@ -35,8 +37,10 @@ class HTTP(TaskExecutor):
             return TaskResult(
                 status=0
                 if response.status_code in range(200, 300)
-                else response.status_code
+                else response.status_code,
+                stderr=self._tail_stderr(),
+                stdout=self._tail_stdout()
             )
 
         except Exception as e:
-            return TaskResult(1, errors=[str(e)])
+            return TaskResult(1, errors=[str(e)], stderr=self._tail_stderr(), stdout=self._tail_stdout())

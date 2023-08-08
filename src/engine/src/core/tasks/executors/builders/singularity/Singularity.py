@@ -43,9 +43,9 @@ class Singularity(BaseBuildExecutor):
                 time.sleep(self.polling_interval)
         except WorkflowTerminated as e:
             self.cleanup(terminating=True)
-            return TaskResult(status=2, errors=[e])
+            return TaskResult(status=2, errors=[e], stderr=self._tail_stderr(), stdout=self._tail_stdout())
         except ApiException as e:
-            return TaskResult(status=1, errors=[str(e)])
+            return TaskResult(status=1, errors=[str(e)], stderr=self._tail_stderr(), stdout=self._tail_stdout())
 
 
         # Get the job's pods name
@@ -73,7 +73,7 @@ class Singularity(BaseBuildExecutor):
 
         # TODO implement on_finish_callback
 
-        return TaskResult(status=0 if self._job_succeeded(job) else 1)
+        return TaskResult(status=0 if self._job_succeeded(job) else 1, stderr=self._tail_stderr(), stdout=self._tail_stdout())
 
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
