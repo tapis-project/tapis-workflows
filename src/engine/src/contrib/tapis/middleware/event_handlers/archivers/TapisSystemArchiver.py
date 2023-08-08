@@ -78,7 +78,7 @@ class TapisSystemArchiver(EventHandler):
             # The location in the pipeline service where the outputs for this
             # task are stored
             task_output_dir = os.path.join(pipeline.work_dir, task.id, "output")
-
+            print("TASK_OUTPUT_DIR", task_output_dir)
             # Upload each file
             # TODO support dirs? Maybe zip it?
             for filename in os.listdir(task_output_dir):
@@ -86,6 +86,8 @@ class TapisSystemArchiver(EventHandler):
                 if os.path.isfile(path_to_file):
                     # Upload the files to the system
                     try:
+                        print("PATH_TO_LOCAL_OUTPUT_FILE", path_to_file)
+                        print("DESTINATION_FILE_PATH", os.path.join(archive_output_dir, filename))
                         service_client.upload(
                             system_id=archive.system_id,
                             source_file_path=path_to_file,
