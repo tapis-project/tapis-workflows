@@ -101,7 +101,7 @@ class Singularity(BaseBuildExecutor):
                 name="workdir",
                 nfs=V1NFSVolumeSource(
                     server=WORKFLOW_NFS_SERVER,
-                    path=self.task.work_dir
+                    path=self.task.work_dir.replace("/mnt/pipelines/", "/")
                 ),
             ),
         ]
