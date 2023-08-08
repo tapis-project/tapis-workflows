@@ -19,7 +19,6 @@ class TapisSystemArchiver(EventHandler):
                 self.archive(
                     event.payload.archive,
                     event.payload.pipeline,
-                    event.payload.group,
                     event.payload.params,
                     event.payload.logger
                 )
@@ -33,7 +32,7 @@ class TapisSystemArchiver(EventHandler):
             event.payload.logger.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING COMPLETED] {trunc_uuid(event.payload.pipeline.run_id)}")
         
 
-    def archive(self, archive, pipeline, group, params, logger):
+    def archive(self, archive, pipeline, params, logger):
         try:
             tapis_service_api_gateway = TapisServiceAPIGateway()
             service_client = tapis_service_api_gateway.get_client()
@@ -41,7 +40,7 @@ class TapisSystemArchiver(EventHandler):
             perms = service_client.systems.getUserPerms(
                 systemId=archive.system_id,
                 userName=archive.owner,
-                _x_tapis_tenant=group.params.tapis_tenant_id,
+                _x_tapis_tenant=params.tapis_tenant_id,
                 _x_tapis_user=archive.owner
             )
         except InvalidInputError as e:
