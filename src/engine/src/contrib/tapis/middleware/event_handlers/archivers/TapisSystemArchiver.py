@@ -37,7 +37,11 @@ class TapisSystemArchiver(EventHandler):
             tapis_service_api_gateway = TapisServiceAPIGateway()
             service_client = tapis_service_api_gateway.get_client()
 
-            system = service_client.systems.getSystem(systemId=archive.system_id)
+            system = service_client.systems.getSystem(
+                systemId=archive.system_id,
+                _x_tapis_tenant=params.tapis_tenant_id,
+                _x_tapis_user=archive.owner
+            )
 
             perms = service_client.systems.getUserPerms(
                 systemId=system.id,
