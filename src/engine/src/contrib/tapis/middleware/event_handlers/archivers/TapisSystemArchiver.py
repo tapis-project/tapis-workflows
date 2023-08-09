@@ -37,8 +37,10 @@ class TapisSystemArchiver(EventHandler):
             tapis_service_api_gateway = TapisServiceAPIGateway()
             service_client = tapis_service_api_gateway.get_client()
 
+            system = service_client.systems.getSystem(systemId=archive.system_id)
+
             perms = service_client.systems.getUserPerms(
-                systemId=archive.system_id,
+                systemId=system.id,
                 userName=archive.owner,
                 _x_tapis_tenant=params.tapis_tenant_id,
                 _x_tapis_user=archive.owner
@@ -55,6 +57,7 @@ class TapisSystemArchiver(EventHandler):
         # The base archive directory on the system for this pipeline work.
         # Strip the base work dir from the pipline work dir
         base_archive_dir = os.path.join(
+            system.rootDir.rstrip("/"),
             archive.archive_dir.strip("/"),
             pipeline.work_dir.replace(BASE_WORK_DIR, "").strip("/")
         )
