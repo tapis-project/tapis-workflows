@@ -40,7 +40,7 @@ class TapisSystemArchiver(EventHandler):
             perms = service_client.systems.getUserPerms(
                 systemId=archive.system_id,
                 userName=archive.owner,
-                _x_tapis_tenant=params.get("tapis_tenant_id").value,
+                _x_tapis_tenant=params.tapis_tenant_id,
                 _x_tapis_user=archive.owner
             )
         except InvalidInputError as e:
@@ -55,6 +55,7 @@ class TapisSystemArchiver(EventHandler):
         # The base archive directory on the system for this pipeline work.
         # Strip the base work dir from the pipline work dir
         base_archive_dir = os.path.join(
+            "/",
             archive.archive_dir.strip("/"),
             pipeline.work_dir.replace(BASE_WORK_DIR, "").strip("/")
         )
@@ -63,41 +64,36 @@ class TapisSystemArchiver(EventHandler):
         for task in pipeline.tasks:
             # The archive output dir on the system
             archive_output_dir = os.path.join(base_archive_dir, task.id, "output")
-            
+
             # Create the directories on the system (like an mkdir -p)
             try:
                 service_client.files.mkdir(
                     systemId=archive.system_id,
                     path=archive_output_dir,
-                    _x_tapis_tenant=params.get("tapis_tenant_id").value,
+                    _x_tapis_tenant=params.tapis_tenant_id,
                     _x_tapis_user=archive.owner
                 )
             except Exception as e:
-                logger.error(f"Error creating directories on Tapis System: {e}")
+                logger.error(e)
 
             # The location in the pipeline service where the outputs for this
             # task are stored
             task_output_dir = os.path.join(pipeline.work_dir, task.id, "output")
-
             # Upload each file
             # TODO support dirs? Maybe zip it?
             for filename in os.listdir(task_output_dir):
                 path_to_file = os.path.join(task_output_dir, filename)
                 if os.path.isfile(path_to_file):
-                    # Get the output file contents
-                    content = None
-                    with open(path_to_file, "r") as file:
-                        content = file.read()
-
                     # Upload the files to the system
                     try:
-                        service_client.files.insert(
-                            systemId=archive.system_id,
-                            path=os.path.join(archive_output_dir, filename),
-                            file=content,
-                            _x_tapis_tenant=params.get("tapis_tenant_id").value,
-                            _x_tapis_user=archive.owner
-                        )
-                        logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {path_to_file}")
+                        with open(path_to_file, "rb") as blob:
+                            service_client.files.insert(
+                                systemId=archive.system_id,
+                                path=os.path.join(archive_output_dir, filename),
+                                file=blob,
+                                _x_tapis_tenant=params.tapis_tenant_id,
+                                _x_tapis_user=archive.owner
+                            )
+                        logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {filename}")
                     except Exception as e:
-                        logger.error(f"Error uploading output file to Tapis System: {e}")
+                        logger.error(f"FAILED TO ARCHIVE OUTPUT '{filename}' FOR TASK '{task.id}': {e}")
