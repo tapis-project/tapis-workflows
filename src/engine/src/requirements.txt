@@ -32,9 +32,9 @@ kubernetes==23.3.0
 lazy-object-proxy==1.7.1
 mypy-extensions==0.4.3
 oauthlib==3.2.0
-openapi-core==0.12.0
-openapi-schema-validator==0.2.3
-openapi-spec-validator==0.4.0
+# openapi-core==0.12.0
+# openapi-schema-validator==0.2.3
+# openapi-spec-validator==0.4.0
 pathspec==0.9.0
 pika==1.2.0
 platformdirs==2.5.2
