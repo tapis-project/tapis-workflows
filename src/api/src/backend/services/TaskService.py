@@ -34,6 +34,8 @@ from backend.services.SecretService import service as secret_service
 from backend.services.Service import Service
 from backend.errors.api import BadRequestError, ServerError
 
+from pprint import pprint
+
 
 TASK_TYPE_REQUEST_MAPPING = {
     TASK_TYPE_IMAGE_BUILD: ImageBuildTask,
@@ -79,6 +81,10 @@ class TaskService(Service):
 
         # Create task
         try:
+            print("REQUEST TYPE: ", type(request))
+            print("REQUEST:", request)
+            pprint(request)
+            pprint(request.dict())
             task = Task.objects.create(
                 auth=request.auth,
                 builder=request.builder,
