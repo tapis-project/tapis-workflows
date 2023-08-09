@@ -36,7 +36,7 @@ kubernetes==23.3.0
 # openapi-schema-validator==0.2.3
 # openapi-spec-validator==0.4.0
 # pathspec==0.9.0
-# pika==1.2.0
+pika==1.2.0
 # platformdirs==2.5.2
 # prompt-toolkit==3.0.24
 # pyasn1==0.4.8
