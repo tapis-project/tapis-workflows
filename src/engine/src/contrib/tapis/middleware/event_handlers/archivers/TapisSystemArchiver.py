@@ -71,7 +71,7 @@ class TapisSystemArchiver(EventHandler):
         for task in pipeline.tasks:
             # The archive output dir on the system
             archive_output_dir = os.path.join(base_archive_dir, task.id, "output")
-            
+            print("ARCHIVE_OUTPUT_DIR", archive_output_dir)
             # Create the directories on the system (like an mkdir -p)
             try:
                 service_client.files.mkdir(
