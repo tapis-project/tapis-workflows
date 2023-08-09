@@ -93,7 +93,7 @@ class TapisSystemArchiver(EventHandler):
                                 file=blob,
                                 _x_tapis_tenant=params.tapis_tenant_id,
                                 _x_tapis_user=archive.owner,
-                                _x_tapis_token=service_client.service_tokens["admin"]["access_token"].access_token
+                                # _x_tapis_token=service_client.service_tokens["admin"]["access_token"].access_token
                                 # headers={
                                 #     "X-Tapis-Tenant": params.tapis_tenant_id,
                                 #     "X-Tapis-User": archive.owner,
