@@ -20,23 +20,11 @@ class BaseBuildExecutor(TaskExecutor):
             return None
 
         # Default to latest tag
-        tag = self.task.destination.tag
-        if tag is None:
-            tag = "latest"
+        tag = ""
+        if self.task.destination.tag != None:
+            tag = f":{self.task.destination.tag}"
 
-        # The image tag can be overwritten by specifying directives in the
-        # commit message. Image tagging directives take precedence over the
-        # the image_property of the pipeline.
-        if self.directives is not None:
-            for key, value in dict(self.directives).items():
-                if key == "CUSTOM_TAG" and key is not None:
-                    tag = value
-                elif key == "CUSTOM_TAG" and key is None:
-                    tag = self.task.destination.tag
-                elif key == "TAG_COMMIT_SHA" and self.event.commit_sha is not None:
-                    tag = self.event.commit_sha
-
-        destination = self.task.destination.url + f":{tag}"
+        destination = f"{self.task.destination.url}{tag}"
 
         return destination
 

@@ -40,12 +40,12 @@ class ContainerBuilder:
             if task.destination.filename != None:
                 cmd.append(task.destination.filename)
 
-            # Use latest tag if not specified
-            tag = "latest"
+            # Add the tag to the image url if specified
+            tag = ""
             if task.context.tag != None:
-                tag = task.context.tag
+                tag = f":{task.context.tag}"
 
-            cmd.append(f"docker://{task.context.url}:{tag}")
+            cmd.append(f"docker://{task.context.url}{tag}")
             
             return cmd
 
