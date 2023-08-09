@@ -62,7 +62,8 @@ requests==2.27.1
 # tapipy==1.2.19
 # tapipy==1.3.2
 tapipy==1.4.1
-tapisservice==1.2.6
+# tapisservice==1.2.6
+tapisservice==1.4.0
 # tomli==2.0.1
 # typing_extensions==4.0.1
 # urllib3==1.26.8
