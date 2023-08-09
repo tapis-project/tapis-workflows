@@ -61,7 +61,8 @@ class TapisSystemArchiver(EventHandler):
         # The base archive directory on the system for this pipeline work.
         # Strip the base work dir from the pipline work dir
         base_archive_dir = os.path.join(
-            system.rootDir.rstrip("/"),
+            "/",
+            system.rootDir.strip("/"),
             archive.archive_dir.strip("/"),
             pipeline.work_dir.replace(BASE_WORK_DIR, "").strip("/")
         )
