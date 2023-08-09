@@ -81,41 +81,42 @@ class TaskService(Service):
 
         # Create task
         try:
-            print("REQUEST TYPE: ", type(request))
-            print("REQUEST:", request)
-            pprint(request)
-            pprint(request.dict())
             task = Task.objects.create(
-                auth=request.auth,
-                builder=request.builder,
-                cache=request.cache,
-                code=request.code,
-                command=request.command,
+                auth=getattr(request, "auth", None),
+                builder=getattr(request, "builder", None),
+                cache=getattr(request, "cache", None),
+                code=getattr(request, "code", None),
+                command=getattr(request, "command", None),
                 context=context,
-                data=request.data,
+                data=getattr(request, "data", None),
                 description=request.description,
                 destination=destination,
-                headers=request.headers,
-                http_method=request.http_method,
-                git_repositories=[ dict(item) for item in request.git_repositories ],
-                image=request.image,
+                headers=getattr(request, "headers", None),
+                http_method=getattr(request, "http_method", None),
+                # Set to None if the request contains no git repositories, else, set as an array of dicts of git repos
+                git_repositories=(
+                    [ dict(item) for item in getattr(request, "git_repositories", []) ]
+                    if getattr(request, "git_repositories") != None
+                    else None
+                ),
+                image=getattr(request, "image", None),
                 input=request.input,
-                installer=request.installer,
+                installer=getattr(request, "installer", None),
                 id=request.id,
                 output=request.output,
-                packages=request.packages,
+                packages=getattr(request, "packages", None),
                 pipeline=pipeline,
-                poll=request.poll,
-                query_params=request.query_params,
-                runtime=request.runtime,
+                poll=getattr(request, "poll", None),
+                query_params=getattr(request, "query_params", None),
+                runtime=getattr(request, "runtime", None),
                 type=request.type,
                 depends_on=[ dict(item) for item in request.depends_on ],
-                tapis_job_def=request.tapis_job_def,
-                tapis_actor_id=request.tapis_actor_id,
+                tapis_job_def=getattr(request, "tapis_job_def", None),
+                tapis_actor_id=getattr(request, "tapis_actor_id", None),
                 tapis_actor_message=self._tapis_actor_message_to_str(
-                    request.tapis_actor_message
+                    getattr(request, "tapis_actor_message", None)
                 ),
-                url=request.url,
+                url=getattr(request, "url", None),
                 # Exection profile
                 flavor=request.execution_profile.flavor,
                 max_exec_time=request.execution_profile.max_exec_time,
@@ -278,7 +279,7 @@ class TaskService(Service):
 
     def _tapis_actor_message_to_str(self, message):
         # Simply pass the message back if already a string
-        if type(message) == str:
+        if type(message) in [str, None]:
             return message
 
         # Message is a dictionary. Convert to string and return
