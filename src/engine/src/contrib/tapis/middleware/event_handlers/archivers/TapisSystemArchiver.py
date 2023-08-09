@@ -86,19 +86,20 @@ class TapisSystemArchiver(EventHandler):
                 if os.path.isfile(path_to_file):
                     # Upload the files to the system
                     try:
-                       
-                        service_client.upload(
-                            system_id=archive.system_id,
-                            source_file_path=path_to_file,
-                            dest_file_path=os.path.join(archive_output_dir, filename),
-                            _x_tapis_tenant=params.tapis_tenant_id,
-                            _x_tapis_user=archive.owner,
-                            # headers={
-                            #     "X-Tapis-Tenant": params.tapis_tenant_id,
-                            #     "X-Tapis-User": archive.owner,
-                            #     "X-Tapis-Token": service_client.service_tokens["admin"]["access_token"].access_token
-                            # }
-                        )
+                        print("SIZE OF FILE:", os.path.getsize(path_to_file))
+                        with open(path_to_file, "rb") as blob:
+                            service_client.files.insert(
+                                system_id=archive.system_id,
+                                path=os.path.join(archive_output_dir, filename),
+                                file=blob,
+                                # _x_tapis_tenant=params.tapis_tenant_id,
+                                # _x_tapis_user=archive.owner,
+                                headers={
+                                    "X-Tapis-Tenant": params.tapis_tenant_id,
+                                    "X-Tapis-User": archive.owner,
+                                    "X-Tapis-Token": service_client.service_tokens["admin"]["access_token"].access_token
+                                }
+                            )
                         logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {path_to_file}")
                     except Exception as e:
                         logger.error(e)
