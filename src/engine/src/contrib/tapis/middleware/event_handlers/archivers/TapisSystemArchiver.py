@@ -92,14 +92,8 @@ class TapisSystemArchiver(EventHandler):
                                 path=os.path.join(archive_output_dir, filename),
                                 file=blob,
                                 _x_tapis_tenant=params.tapis_tenant_id,
-                                _x_tapis_user=archive.owner,
-                                # _x_tapis_token=service_client.service_tokens["admin"]["access_token"].access_token
-                                # headers={
-                                #     "X-Tapis-Tenant": params.tapis_tenant_id,
-                                #     "X-Tapis-User": archive.owner,
-                                #     "X-Tapis-Token": service_client.service_tokens["admin"]["access_token"].access_token
-                                # }
+                                _x_tapis_user=archive.owner
                             )
-                        logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {path_to_file}")
+                        logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {filename}")
                     except Exception as e:
-                        logger.error(f"FAILED TO ARCHIVE TASK '{task.id}' OUTPUT '{filename}': {e}")
+                        logger.error(f"FAILED TO ARCHIVE OUTPUT '{filename}' FOR TASK '{task.id}': {e}")
