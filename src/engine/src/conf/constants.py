@@ -16,8 +16,10 @@ CONNECTION_RETRY_DELAY = 5
 
 INSUFFICIENT_WORKER_RETRY_DELAY = 10
 
-STARTING_WORKERS = os.environ.get("MIN_WORKERS", None) or 2
-MAX_WORKERS = os.environ.get("MAX_WORKERS", None) or 10
+# STARTING_WORKERS = os.environ.get("MIN_WORKERS", None) or 2
+STARTING_WORKERS = 100
+# MAX_WORKERS = os.environ.get("MAX_WORKERS", None) or 10
+MAX_WORKERS = 200
 
 # Exchanges
 INBOUND_EXCHANGE = "workflows"
