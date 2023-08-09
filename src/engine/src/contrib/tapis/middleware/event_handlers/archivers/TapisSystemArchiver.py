@@ -89,7 +89,7 @@ class TapisSystemArchiver(EventHandler):
                         print("SIZE OF FILE:", os.path.getsize(path_to_file))
                         with open(path_to_file, "rb") as blob:
                             service_client.files.insert(
-                                system_id=archive.system_id,
+                                systemId=archive.system_id,
                                 path=os.path.join(archive_output_dir, filename),
                                 file=blob,
                                 # _x_tapis_tenant=params.tapis_tenant_id,
@@ -102,4 +102,4 @@ class TapisSystemArchiver(EventHandler):
                             )
                         logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {path_to_file}")
                     except Exception as e:
-                        logger.error(e)
+                        logger.error(f"FAILED TO ARCHIVE TASK '{task.id}' OUTPUT '{filename}': {e}")
