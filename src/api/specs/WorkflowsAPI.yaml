@@ -2003,6 +2003,10 @@ components:
           type: string
         last_message:
           type: string
+        stderr:
+          type: string
+        stdout:
+          type: string
 
     # --- Task ---
     Task:
@@ -2898,6 +2902,10 @@ components:
       type: object
       properties:
         last_message:
+          type: string
+        stdout:
+          type: string
+        stderr:
           type: string
 
     ReqPatchPipelineRun:
