@@ -120,7 +120,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_execution_uuid=event.task.execution_uuid,
             status="active",
-            last_message="Task is Active"
+            last_message="Task is Active",
             **self._kwargs
         )
 
