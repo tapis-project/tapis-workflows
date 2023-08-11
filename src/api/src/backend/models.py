@@ -526,6 +526,8 @@ class TaskExecution(models.Model):
     last_message = models.TextField(null=True)
     pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="task_executions", on_delete=models.CASCADE)
     started_at = models.DateTimeField(null=True)
+    stdout = models.TextField(null=True)
+    stderr = models.TextField(null=True)
     status = models.CharField(max_length=16, choices=TASK_EXECUTION_STATUSES, default=RUN_STATUS_PENDING)
     task = models.ForeignKey("backend.Task", related_name="task_executions", on_delete=models.CASCADE)
     uuid = models.UUIDField(primary_key=True)
