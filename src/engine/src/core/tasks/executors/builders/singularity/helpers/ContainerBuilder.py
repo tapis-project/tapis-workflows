@@ -43,11 +43,11 @@ class ContainerBuilder:
                 cmd.append(task.destination.filename)
 
             # Use latest tag if not specified
-            tag = "latest"
+            tag = ""
             if task.context.tag != None:
-                tag = task.context.tag
+                tag = f":{task.context.tag}"
 
-            cmd.append(f"docker://{task.context.url}:{tag}")
+            cmd.append(f"docker://{task.context.url}{tag}")
             
             return cmd
 

@@ -28,11 +28,12 @@ from conf.constants import (
     DEFERRED_QUEUE,
     DUPLICATE_SUBMISSION_POLICY_TERMINATE,
     DUPLICATE_SUBMISSION_POLICY_DENY,
+    PLUGINS,
 )
 
 from core.workers import WorkerPool
 from core.workflows.executors import WorkflowExecutor
-from utils import bytes_to_json, json_to_object, lbuffer_str as lbuf
+from utils import bytes_to_json, json_to_object, load_plugins, lbuffer_str as lbuf
 from errors import NoAvailableWorkers, WorkflowTerminated
 
 
@@ -43,6 +44,7 @@ class Server:
     def __init__(self):
         self.active_workers = []
         self.worker_pool = None
+        self.plugins = []
 
     def __call__(self):
         """Initializes the dynamic worker pool comprised of WorkflowExecutor
@@ -51,13 +53,19 @@ class Server:
 
         logger.info(f"{lbuf('[SERVER]')} STARTING")
 
+        # Initialize plugins
+        self.plugins = load_plugins(PLUGINS)
+
         # Create a worker pool that consists of the workflow executors that will
         # run the pipelines
         # TODO catch error for worker classes that dont inherit from "Worker"
         self.worker_pool = WorkerPool(
             worker_cls=WorkflowExecutor,
-            starting_worker_count=STARTING_WORKERS,
-            max_workers=MAX_WORKERS,
+            starting_worker_count=100,
+            max_workers=1000,
+            worker_kwargs={
+                "plugins": self.plugins
+            }
         )
         logger.debug(f"{lbuf('[SERVER]')} WORKERS INITIALIZED ({self.worker_pool.count()})")
 
@@ -147,6 +155,11 @@ class Server:
             # this will raise a "NoWorkersAvailabe" error which is handled
             # an the exception block below
             worker = self.worker_pool.check_out()
+
+            # Run request middlewares over the workflow context
+            # NOTE Request middlewares will very likely mutate the workflow context
+            for plugin in self.plugins:
+                ctx = plugin.dispatch("request", ctx)
             
             # Ack the message before running the workflow executor
             cb = partial(self._ack_nack, "ack", channel, delivery_tag)
@@ -228,10 +241,12 @@ class Server:
         delay=0
     ):
         fn = channel.basic_ack if ack_nack == "ack" else channel.basic_nack
+        kwargs = {}
+        if ack_nack == "nack": kwargs = {"requeue": False}
         if channel.is_open:
             # Wait the delay if necessary
             delay == 0 or time.sleep(abs(delay))
-            fn(delivery_tag)
+            fn(delivery_tag, **kwargs)
             return
         
         # TODO do something if channel is closed

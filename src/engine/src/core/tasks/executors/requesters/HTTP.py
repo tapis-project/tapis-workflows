@@ -6,7 +6,7 @@ import requests
 
 from pydantic import BaseModel, ValidationError
 
-from core.tasks.TaskResult import TaskResult
+from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.TaskExecutor import TaskExecutor
 
 

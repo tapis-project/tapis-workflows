@@ -1,11 +1,13 @@
-import os
+import os, re
+
+from uuid import uuid4
 
 from core.tasks.Flavor import Flavor
 from conf.constants import IS_LOCAL
 from types import SimpleNamespace
 
-
 from kubernetes.client import V1ResourceRequirements, V1EnvVar
+
 
 def flavor_to_k8s_resource_reqs(flavor: Flavor):
     if IS_LOCAL: return None
@@ -119,3 +121,12 @@ def input_to_k8s_env_vars(_inputs, ctx, prefix=""):
         )
 
     return k8s_env_vars
+
+def gen_resource_name(prefix=""):
+    system_prefix = "wf"
+    name = str(uuid4())
+    resource_name = "-".join([system_prefix, name])
+    if prefix != "":
+        resource_name = "-".join([system_prefix, str(prefix), name])
+    
+    return re.sub(r"[-]{2,}", "-", re.sub(r"[^a-zA-Z\d\-]*", "", resource_name).strip("-")).lower()[:45]

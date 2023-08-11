@@ -26,7 +26,4 @@ COPY src/shared/conf/configschema.json /src/configschema.json
 COPY src/shared/GraphValidator.py /src/helpers
 COPY src/shared/TapisServiceAPIGateway.py /src/contrib/tapis/helpers
 
-# Open workflow engine python sdk
-COPY src/owe-python-sdk/ /src/owe-python-sdk
-
 RUN chmod +x /src/scripts/start.sh

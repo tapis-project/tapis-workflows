@@ -14,12 +14,16 @@ from kubernetes.client import (
 
 from conf.constants import KUBERNETES_NAMESPACE, WORKFLOW_NFS_SERVER
 from core.resources import JobResource
-from core.tasks.TaskResult import TaskResult
+from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.tasks.executors.builders.singularity.helpers.ContainerBuilder import container_builder
 from errors import WorkflowTerminated
+from utils.k8s import gen_resource_name
 
 class Singularity(BaseBuildExecutor):
+    def __init__(self, task, ctx, exchange, plugins=[]):
+        BaseBuildExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
+        
     def execute(self) -> TaskResult:
         # Create the kaniko job return a failed task result on exception
         # with the error message as the str value of the exception
@@ -72,7 +76,7 @@ class Singularity(BaseBuildExecutor):
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
         # Set the name for the k8 job metadata
-        job_name = f"wf.{self.pipeline.run_id}.{self.task.id}"
+        job_name = gen_resource_name(prefix="sib")
         
         # List of volume mount objects for the container 
         volume_mounts = [
@@ -97,7 +101,7 @@ class Singularity(BaseBuildExecutor):
                 name="workdir",
                 nfs=V1NFSVolumeSource(
                     server=WORKFLOW_NFS_SERVER,
-                    path=self.task.work_dir
+                    path=self.task.work_dir.replace("/mnt/pipelines/", "/")
                 ),
             ),
         ]

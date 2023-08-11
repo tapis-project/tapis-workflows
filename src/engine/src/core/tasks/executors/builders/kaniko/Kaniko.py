@@ -8,11 +8,11 @@ from conf.constants import (
     KANIKO_IMAGE_URL,
     KANIKO_IMAGE_TAG
 )
-from core.tasks.TaskResult import TaskResult
+from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.resources import ConfigMapResource, JobResource
 from utils import get_flavor, lbuffer_str as lbuf
-from utils.k8s import flavor_to_k8s_resource_reqs
+from utils.k8s import flavor_to_k8s_resource_reqs, gen_resource_name
 from errors import WorkflowTerminated
 
 
@@ -20,8 +20,8 @@ PSTR = lbuf('[PIPELINE]')
 TSTR = lbuf('[TASK]')
 
 class Kaniko(BaseBuildExecutor):
-    def __init__(self, task, ctx, exchange):
-        BaseBuildExecutor.__init__(self, task, ctx, exchange)
+    def __init__(self, task, ctx, exchange, plugins=[]):
+        BaseBuildExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
 
         self.configmap = None
 
@@ -85,7 +85,7 @@ class Kaniko(BaseBuildExecutor):
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
         # Set the name for the k8 job metadata
-        job_name = f"wf.{self.pipeline.run_id}.{self.task.id}"
+        job_name = gen_resource_name(prefix="kib")
 
         # Create a list of the container args based on task properties.
         # A by-product of this process is the creation of the dockerhub configmap
@@ -207,7 +207,7 @@ class Kaniko(BaseBuildExecutor):
         container_args.append(f"--context={context}")
 
         # Useful when your context is, for example, a git repository,
-        #  and you want to build one of its subfolders instead of the root folder
+        # and you want to build one of its subfolders instead of the root folder
         if self.task.context.sub_path != None:
             container_args.append(f"--context-sub-path={self.task.context.sub_path}")
 
@@ -243,7 +243,7 @@ class Kaniko(BaseBuildExecutor):
     def _create_dockerhub_configmap(self, job_name):
         self._create_dockerhub_config()
 
-        configmap_name = f"{job_name}.dockerhub.regcred"
+        configmap_name = gen_resource_name(prefix="cm")
 
         # Setup ConfigMap metadata
         metadata = client.V1ObjectMeta(
