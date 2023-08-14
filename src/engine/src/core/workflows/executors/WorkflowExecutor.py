@@ -617,6 +617,7 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         # Update the pipeline logs
         self.state.ctx.pipeline.logs = self._get_logs()
+        print("LOGS:", self.state.ctx.pipeline.logs)
 
         # Publish the termination event
         self.publish(Event(PIPELINE_TERMINATED, self.state.ctx))
