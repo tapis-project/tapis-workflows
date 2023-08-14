@@ -212,14 +212,15 @@ class TapisWorkflowsAPIBackend(EventHandler):
         )
 
     def _tail_output(self, task, filename, flag="rb", max_bytes=5120):
-        print(f"{task.output_dir}{filename.lstrip('/')}")
+        filesize = os.path.getsize(f"{task.output_dir}{filename.lstrip('/')}")
+        offset = max_bytes * -1
+        if filesize < max_bytes:
+            offset = 0
+
         with open(f"{task.output_dir}{filename.lstrip('/')}", flag) as file:
-            print("OPEN SUCCESS")
-            file.seek(max_bytes * -1, os.SEEK_END)
+            file.seek(offset, os.SEEK_END)
             print("SEEK SUCCESS")
-            contents = file.read()
-            print("CONTENTS", str(contents))
-            return contents
+            return file.read()
         
     def _tail_stdout(self, task):
         return self._tail_output(task, ".stdout")
