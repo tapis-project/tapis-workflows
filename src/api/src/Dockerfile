@@ -19,7 +19,7 @@ COPY src/api/src/ /src
 # Shared utils and helpers
 COPY src/shared/GraphValidator.py /src/backend/helpers
 COPY src/shared/TapisServiceAPIGateway.py /src/backend/services
-COPY src/shared/OWESpec.yaml /src/backend/conf
+COPY src/shared/OWESpec.yaml /src/conf
 
 # Tapisservice config and configschema
 COPY src/shared/conf/ /src/backend
