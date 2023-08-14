@@ -12,7 +12,7 @@ class TapisServiceAPIGateway:
         
         self.client = None
         try:
-            self.client = get_service_tapis_client(tenants=tenants, jwt=jwt, custom_spec_dict="local: /src/backend/conf/OWESpec.yaml")
+            self.client = get_service_tapis_client(tenants=tenants, jwt=jwt, custom_spec_dict={"workflows": "local: /src/backend/conf/OWESpec.yaml"})
         except Exception as e:
             logging.error(f'Could not instantiate tapisservice client. Exception: {e}')
 
