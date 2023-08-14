@@ -70,7 +70,8 @@ class TapisWorkflowsAPIBackend(EventHandler):
             thread.start()
             threads.append(thread)
 
-        threads.join()
+        for thread in threads:
+            thread.join()
 
     def _pipeline_completed(self, event):
         self.service_client.workflows.updatePipelineRunStatus(
