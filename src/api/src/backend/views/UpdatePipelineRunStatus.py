@@ -3,7 +3,7 @@ from django.utils import timezone
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.requests import PipelineRun
-from backend.views.http.responses import BaseResponse, BadRequest
+from backend.views.http.responses import BaseResponse
 from backend.views.http.responses.errors import (
     ServerError,
     BadRequest
