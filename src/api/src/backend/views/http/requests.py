@@ -701,6 +701,8 @@ class TaskExecution(BaseModel):
     last_modified: str = None
     uuid: str
     last_message: str = None
+    stdout: str = None
+    stderr: str = None
 
 class PipelineRun(BaseModel):
     last_modified: str = None
