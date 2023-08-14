@@ -48,10 +48,8 @@ class TapisWorkflowsAPIBackend(EventHandler):
         }
 
     def handle(self, event: Event):
-        try:
-            self.handle_fn_mapping[event.type](event)
-        except Exception as e:
-            raise e
+        self.handle_fn_mapping[event.type](event)
+        
 
     def _pipeline_active(self, event):
         self.service_client.workflows.updatePipelineRunStatus(
