@@ -48,8 +48,10 @@ class TapisWorkflowsAPIBackend(EventHandler):
         }
 
     def handle(self, event: Event):
-        self.handle_fn_mapping[event.type](event)
-        
+        try:
+            self.handle_fn_mapping[event.type](event)
+        except Exception as e:
+            raise e
 
     def _pipeline_active(self, event):
         self.service_client.workflows.updatePipelineRunStatus(
@@ -210,6 +212,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
         )
 
     def _tail_output(self, task, filename, flag="rb", max_bytes=5120):
+        print(f"{task.output_dir}{filename.lstrip('/')}")
         with open(f"{task.output_dir}{filename.lstrip('/')}", flag) as file:
             file.seek(max_bytes * -1, os.SEEK_END)
             return file.read()
