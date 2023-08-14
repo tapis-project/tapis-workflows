@@ -9,7 +9,7 @@ RUN apt-get update
 RUN apt-get install -y vim git
 
 RUN mkdir src
-RUN mkdir /var/lib/open-workflow-engine/.config
+RUN mkdir -p /var/lib/open-workflow-engine/.config
 
 COPY src/engine/src/requirements.txt /src/requirements.txt
 
@@ -26,6 +26,6 @@ COPY src/shared/conf/configschema.json /src/configschema.json
 # Shared utils and helpers
 COPY src/shared/GraphValidator.py /src/helpers
 COPY src/shared/TapisServiceAPIGateway.py /src/contrib/tapis/helpers
-COPY src/shared/OWESpec.yaml /var/lib/open-workflow-engine
+COPY src/shared/OWESpec.yaml /var/lib/open-workflow-engine/.config
 
 RUN chmod +x /src/scripts/start.sh
