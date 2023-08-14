@@ -3,6 +3,7 @@ import os, logging
 from threading import Thread, Lock
 from uuid import uuid4
 from functools import partial
+from pathlib import Path
 
 from core.tasks.TaskExecutorFactory import task_executor_factory as factory
 from owe_python_sdk.TaskResult import TaskResult
@@ -161,9 +162,6 @@ class WorkflowExecutor(Worker, EventPublisher):
             # Log the pipeline status change
             self.state.ctx.logger.info(self.p_str("ACTIVE"))
 
-            # Update the pipeline logs
-            self.state.ctx.pipeline.logs = self._get_logs()
-
             # Publish the active event
             self.publish(Event(PIPELINE_ACTIVE, self.state.ctx))
             
@@ -184,13 +182,13 @@ class WorkflowExecutor(Worker, EventPublisher):
         self._set_context(ctx)
         
         # Prepare the file system for this pipeline
-        self._prepare_fs()
+        self._prepare_pipeline_fs()
 
         # Setup the server and the pipeline run loggers
         self._setup_loggers()
 
-        # Set the logs for this pipeline run on the pipeline object
-        self.state.ctx.pipeline.logs = None
+        # Prepare task objects and create the directory structure for task output and execution
+        self._prepare_tasks()
 
         # Set the run id
         self.state.ctx.pipeline.run_id = self.state.ctx.pipeline_run.uuid
@@ -210,17 +208,52 @@ class WorkflowExecutor(Worker, EventPublisher):
             self._set_tasks(self.state.ctx.pipeline.tasks)
         except Exception as e:
             raise e
+        
+    @interceptable()
+    def _prepare_tasks(self):
+        # Create an execution_uuid for each task in the pipeline
+        for task in self.state.ctx.pipeline.tasks:
+            task.execution_uuid = str(uuid4())
+
+            # Paths to the workdir for the task inside the workflow engine container
+            task.work_dir = f"{self.state.ctx.pipeline.work_dir}{task.id}/"
+            task.exec_dir = f"{task.work_dir}src/"
+            task.output_dir = f"{task.work_dir}output/"
+            task.stdout = f"{task.output_dir}.stdout"
+            task.stderr = f"{task.output_dir}.stderr"
+
+            # Paths to the workdir for the task inside the job container
+            task.container_work_dir = "/mnt/open-workflow-engine/pipeline/task"
+            task.container_exec_dir = f"{task.container_work_dir}/src"
+
+            # Paths to the workdir inside the nfs-server container
+            task.nfs_work_dir = f"{self.state.ctx.pipeline.nfs_work_dir}{task.id}/"
+            task.nfs_exec_dir = f"{task.nfs_work_dir}src/"
+            task.nfs_output_dir = f"{task.nfs_work_dir}output/"
+
+            # Create the task's directories and 
+            self._prepare_task_fs(task)
+
+    @interceptable()
+    def _prepare_task_fs(self, task):
+        # Create the base directory for all files and output created during this task execution
+        os.makedirs(task.work_dir, exist_ok=True)
+
+        # Create the exec dir for files created in support of the task execution
+        os.makedirs(task.exec_dir, exist_ok=True)
+
+        # Create the output dir in which the output of the task execution will be stored
+        os.makedirs(task.output_dir, exist_ok=True)
+
+        # Create the stdout and stderr files
+        Path(task.stdout).touch()
+        Path(task.stderr).touch()
+
 
     @interceptable()
     def _start_task(self, task):
-        # Create a uuid for this task execution
-        task.execution_uuid = str(uuid4())
-
         # Log the task active
         self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
-
-        # Update the pipeline logs
-        self.state.ctx.pipeline.logs = self._get_logs()
 
         # Publish the task active event
         self.publish(Event(TASK_ACTIVE, self.state.ctx, task=task))
@@ -291,9 +324,6 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         self.state.ctx.logger.info(self.p_str(msg))
 
-        # Update the pipeline logs
-        self.state.ctx.pipeline.logs = self._get_logs()
-
         # Publish the event. Triggers the archivers if there are any on ...COMPLETE
         self.publish(Event(event, self.state.ctx))
         
@@ -305,9 +335,6 @@ class WorkflowExecutor(Worker, EventPublisher):
     def _on_task_completed(self, task, task_result):
         # Log the completion
         self.state.ctx.logger.info(self.t_str(task, "COMPLETED"))
-
-        # Update the pipeline logs
-        self.state.ctx.pipeline.logs = self._get_logs()
 
         # Notify the subscribers that the task was completed
         self.publish(Event(TASK_COMPLETED, self.state.ctx, task=task, result=task_result))
@@ -321,9 +348,6 @@ class WorkflowExecutor(Worker, EventPublisher):
     def _on_task_fail(self, task, task_result):
         # Log the failure
         self.state.ctx.logger.info(self.t_str(task, f"FAILED: {task_result.errors}"))
-
-        # Update the pipeline logs
-        self.state.ctx.pipeline.logs = self._get_logs()
 
         # Notify the subscribers that the task was completed
         self.publish(Event(TASK_FAILED, self.state.ctx, task=task, result=task_result))
@@ -396,7 +420,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.state.queue = [ task for task in self.state.tasks ]
     
     @interceptable()
-    def _prepare_fs(self):
+    def _prepare_pipeline_fs(self):
         """Creates all of the directories necessary to run the pipeline, store
         temp files, and cache data"""
         server_logger.debug(self.p_str("PREPARING FILESYSTEM"))
@@ -615,10 +639,6 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Log the terminating status
         self.state.ctx.logger.info(self.p_str("TERMINATING"))
 
-        # Update the pipeline logs
-        self.state.ctx.pipeline.logs = self._get_logs()
-        print("LOGS:", self.state.ctx.pipeline.logs)
-
         # Publish the termination event
         self.publish(Event(PIPELINE_TERMINATED, self.state.ctx))
         
@@ -627,8 +647,3 @@ class WorkflowExecutor(Worker, EventPublisher):
             executor.terminate()
     
         self._cleanup_run()
-
-    @interceptable
-    def _get_logs(self):
-        with open(self.state.ctx.pipeline.log_file, "r") as file:
-            return file.read()

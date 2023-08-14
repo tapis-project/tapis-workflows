@@ -26,19 +26,19 @@ class TaskExecutor(EventPublisher):
         self.task = task
         self.pipeline = self.ctx.pipeline
 
-        # Paths to the workdir for the task inside the workflow engine container
-        self.task.work_dir = f"{self.pipeline.work_dir}{self.task.id}/"
-        self.task.exec_dir = f"{self.task.work_dir}src/"
-        self.task.output_dir = f"{self.task.work_dir}output/"
+        # # Paths to the workdir for the task inside the workflow engine container
+        # self.task.work_dir = f"{self.pipeline.work_dir}{self.task.id}/"
+        # self.task.exec_dir = f"{self.task.work_dir}src/"
+        # self.task.output_dir = f"{self.task.work_dir}output/"
 
-        # Paths to the workdir for the task inside the job container
-        self.task.container_work_dir = "/mnt/open-workflow-engine/pipeline/task"
-        self.task.container_exec_dir = f"{self.task.container_work_dir}/src"
+        # # Paths to the workdir for the task inside the job container
+        # self.task.container_work_dir = "/mnt/open-workflow-engine/pipeline/task"
+        # self.task.container_exec_dir = f"{self.task.container_work_dir}/src"
 
-        # Paths to the workdir inside the nfs-server container
-        self.task.nfs_work_dir = f"{self.pipeline.nfs_work_dir}{self.task.id}/"
-        self.task.nfs_exec_dir = f"{self.task.nfs_work_dir}src/"
-        self.task.nfs_output_dir = f"{self.task.nfs_work_dir}output/"
+        # # Paths to the workdir inside the nfs-server container
+        # self.task.nfs_work_dir = f"{self.pipeline.nfs_work_dir}{self.task.id}/"
+        # self.task.nfs_exec_dir = f"{self.task.nfs_work_dir}src/"
+        # self.task.nfs_output_dir = f"{self.task.nfs_work_dir}output/"
 
         self.group = self.ctx.group
         self.event = self.ctx.meta.event
@@ -49,7 +49,7 @@ class TaskExecutor(EventPublisher):
         self.logger = self.ctx.logger
 
         # Initialize the file system
-        self._initialize_fs()
+        # self._initialize_fs()
 
         # Connect to the kubernetes cluster and instatiate the api instances
         config.load_incluster_config()
@@ -86,36 +86,26 @@ class TaskExecutor(EventPublisher):
         with open(f"{self.task.output_dir}{filename.lstrip('/')}", flag) as file:
             file.write(value)
 
-    def _tail_output(self, filename, flag="rb", max_bytes=5120):
-        with open(f"{self.task.output_dir}{filename.lstrip('/')}", flag) as file:
-            file.seek(max_bytes * -1, os.SEEK_END)
-            return file.read()
-
     def _stdout(self, value, flag="wb"):
         self._set_output(".stdout", value, flag=flag)
-
-    def _tail_stdout(self):
-        return self._tail_output(".stdout")
 
     def _stderr(self, value, flag="wb"):
         self._set_output(".stderr", value, flag=flag)
 
-    def _tail_stderr(self):
-        return self._tail_output(".stderr")
 
-    def _initialize_fs(self):
-        # Create the base directory for all files and output created during this task execution
-        os.makedirs(self.task.work_dir, exist_ok=True)
+    # def _initialize_fs(self):
+    #     # Create the base directory for all files and output created during this task execution
+    #     os.makedirs(self.task.work_dir, exist_ok=True)
 
-        # Create the exec dir for files created in support of the task execution
-        os.makedirs(self.task.exec_dir, exist_ok=True)
+    #     # Create the exec dir for files created in support of the task execution
+    #     os.makedirs(self.task.exec_dir, exist_ok=True)
 
-        # Create the output dir in which the output of the task execution will be stored
-        os.makedirs(self.task.output_dir, exist_ok=True)
+    #     # Create the output dir in which the output of the task execution will be stored
+    #     os.makedirs(self.task.output_dir, exist_ok=True)
 
-        # Create the stdout and stderr files
-        Path(f"{self.task.output_dir}.stdout").touch()
-        Path(f"{self.task.output_dir}.stderr").touch()
+    #     # Create the stdout and stderr files
+    #     Path(f"{self.task.output_dir}.stdout").touch()
+    #     Path(f"{self.task.output_dir}.stderr").touch()
 
     def cleanup(self, terminating=False):
         if terminating: 
