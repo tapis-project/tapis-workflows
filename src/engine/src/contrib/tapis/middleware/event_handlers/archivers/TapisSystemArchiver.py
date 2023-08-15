@@ -33,6 +33,8 @@ class TapisSystemArchiver(EventHandler):
         
 
     def archive(self, archive, pipeline, params, logger):
+        print("PARAMS", params)
+        print("TYPE", type(params))
         try:
             tapis_service_api_gateway = TapisServiceAPIGateway()
             service_client = tapis_service_api_gateway.get_client()
