@@ -8,7 +8,7 @@ from backend.views.http.responses.errors import (
     ServerError,
     BadRequest
 )
-from backend.models import PipelineRun
+from backend.models import PipelineRun as PipelineRunModel
 from backend.utils import executor_request_is_valid
 
 
@@ -27,7 +27,7 @@ class UpdatePipelineRunStatus(RestrictedAPIView):
         body = prepared_request.body
 
         try:
-            PipelineRun.objects.filter(
+            PipelineRunModel.objects.filter(
                 uuid=pipeline_run_uuid).update(
                     status=status,
                     last_modified=timezone.now(),
