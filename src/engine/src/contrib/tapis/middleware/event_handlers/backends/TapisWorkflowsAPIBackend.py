@@ -215,7 +215,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
         filesize = os.path.getsize(f"{task.output_dir}{filename.lstrip('/')}")
         offset = max_bytes * -1
         if filesize < max_bytes:
-            offset = 0
+            offset = filesize * -1
 
         with open(f"{task.output_dir}{filename.lstrip('/')}", flag) as file:
             file.seek(offset, os.SEEK_END)
