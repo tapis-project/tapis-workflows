@@ -716,7 +716,7 @@ class PipelineRun(BaseModel):
     uuid: str
     logs: str = None
 
-class ReqPatchPipelineRun():
+class ReqPatchPipelineRun(BaseModel):
     status: str = None
     uuid: str
     logs: str = None
