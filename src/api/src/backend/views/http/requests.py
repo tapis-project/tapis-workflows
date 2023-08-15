@@ -704,8 +704,19 @@ class TaskExecution(BaseModel):
     stdout: str = None
     stderr: str = None
 
+class ReqPatchTaskExecution(BaseModel):
+    uuid: str
+    last_message: str = None
+    stdout: str = None
+    stderr: str = None
+
 class PipelineRun(BaseModel):
     last_modified: str = None
+    status: str = None
+    uuid: str
+    logs: str = None
+
+class ReqPatchPipelineRun():
     status: str = None
     uuid: str
     logs: str = None

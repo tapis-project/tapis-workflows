@@ -2,13 +2,13 @@ from django.db import DatabaseError, IntegrityError, OperationalError
 from django.utils import timezone
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
-from backend.views.http.requests import TaskExecution
+from backend.views.http.requests import ReqPatchTaskExecution
 from backend.views.http.responses import BaseResponse
 from backend.views.http.responses.errors import (
     BadRequest,
     ServerError
 )
-from backend.models import TaskExecution as TaskExecutionModel
+from backend.models import TaskExecution
 from backend.utils import executor_request_is_valid
 
 
@@ -17,7 +17,7 @@ class UpdateTaskExecutionStatus(RestrictedAPIView):
         if not executor_request_is_valid(request):
             return BadRequest(message=f"X-WORKFLOW-EXECUTOR-TOKEN header is invalid")
         
-        prepared_request = self.prepare(TaskExecution, uuid=task_execution_uuid)
+        prepared_request = self.prepare(ReqPatchTaskExecution, uuid=task_execution_uuid)
         
         # Return the failure view instance if validation failed
         if not prepared_request.is_valid:
@@ -27,7 +27,7 @@ class UpdateTaskExecutionStatus(RestrictedAPIView):
         body = prepared_request.body
 
         try:
-            TaskExecutionModel.objects.filter(
+            TaskExecution.objects.filter(
                 uuid=task_execution_uuid).update(
                     status=status,
                     last_modified=timezone.now(),
