@@ -2,11 +2,11 @@ import os, logging
 
 from threading import Thread, Lock
 from uuid import uuid4
-from functools import partial
 from pathlib import Path
 
 from core.tasks.TaskExecutorFactory import task_executor_factory as factory
 from owe_python_sdk.TaskResult import TaskResult
+from owe_python_sdk.ArchiveMiddleware import ArchiveMiddleware
 from owe_python_sdk.events import (
     Event,
     EventPublisher,
@@ -14,10 +14,8 @@ from owe_python_sdk.events import (
     ExchangeConfig
 )
 from owe_python_sdk.events.types import (
-    PIPELINE_ACTIVE, PIPELINE_COMPLETED, PIPELINE_ARCHIVING, PIPELINE_FAILED,
-    PIPELINE_PENDING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, TASK_ACTIVE,
-    TASK_ARCHIVING, TASK_BACKOFF, TASK_COMPLETED, TASK_FAILED, TASK_PENDING,
-    TASK_SUSPENDED, TASK_TERMINATED
+    PIPELINE_ACTIVE, PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED,
+    TASK_ACTIVE, TASK_COMPLETED, TASK_FAILED
 )
 from helpers.GraphValidator import GraphValidator # From shared
 from errors.tasks import (
@@ -26,15 +24,7 @@ from errors.tasks import (
     InvalidDependenciesError,
     CycleDetectedError,
 )
-# Tapis specific middleware
-from contrib.tapis.middleware.event_handlers.backends import TapisWorkflowsAPIBackend
-from contrib.tapis.middleware.event_handlers.archivers import TapisSystemArchiver
-
-# Core middleware
-from core.middleware.archivers import (
-    S3Archiver,
-    IRODSArchiver
-)
+from core.middleware.archivers import S3Archiver, IRODSArchiver
 from conf.constants import BASE_WORK_DIR
 from core.workers import Worker
 from core.state import ReactiveState, Hook, method_hook
@@ -56,7 +46,6 @@ def interceptable(rollback=None): # Decorator factory
 
                 return res
             except Exception as e:
-                # print(str(e)) # DEBUG
                 server_logger.debug(f"Workflow Termination Signal Detected: Terminating:{self.state.terminating}/Terminated:{self.state.terminated}")
                 if self.state.terminating or self.state.terminated:
                     # Run the rollback function by the name provided in the
@@ -153,7 +142,7 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         try:
             # Prepare the workflow executor, temporary results storage,
-            # middleware(backends and archivers), queue the tasks
+            # middleware(notification and archivers), queue the tasks
             self._staging(ctx)
 
             # Get the first tasks
@@ -195,9 +184,9 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         self.state.ctx.logger.info(f'{self.p_str("STAGING")} {self.state.ctx.pipeline.run_id}')
 
-        # Backends are used to relay/persist updates about a pipeline run
+        # Notification handlers are used to relay/persist updates about a pipeline run
         # and its tasks to some external resource
-        self._initialize_backends()
+        self._initialize_notification_handlers()
 
         # Prepares archives to which the results of workflows will be persisted
         self._initialize_archivers()
@@ -548,51 +537,72 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.state.ctx.logger = CompositeLogger([server_logger, run_logger])
         
     @interceptable(rollback="_reset_event_exchange")
-    def _initialize_backends(self):
-        self.state.ctx.logger.debug(self.p_str("INITIALIZING BACKENDS"))
-        # Initialize the backends. Backends are used to persist updates about the
+    def _initialize_notification_handlers(self):
+        self.state.ctx.logger.debug(self.p_str("INITIALIZING NOTIFICATION HANDLERS"))
+        # Initialize the notification event handlers from plugins. Notification event handlers are used to persist updates about the
         # pipeline and its tasks
-        try:
-            backend = TapisWorkflowsAPIBackend(self.state.ctx)
-        except Exception as e:
-            self.state.ctx.logger.error(f"Could not intialize backend. Updates about the pipeline and its task will not be persisited. Error: {str(e)}")
-            return
+        for plugin in self._plugins:
+            for middleware in plugin.notification_middlewares:
+                try:
+                    handler = middleware.handler(self.state.ctx)
+                except Exception as e:
+                    self.state.ctx.logger.error(f"Could not intialize notification middleware. Updates about the pipeline and its task will not be persisited. Error: {str(e)}")
+                    return
 
-        # Add the backend as a subscriber to all events. When these events are "published"
-        # by the workflow executor, the backend will be passed the message to handle it.
-        self.add_subscribers(
-            backend,
-            [
-                PIPELINE_ACTIVE, PIPELINE_COMPLETED, PIPELINE_ARCHIVING, PIPELINE_FAILED,
-                PIPELINE_PENDING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, TASK_ACTIVE,
-                TASK_ARCHIVING, TASK_BACKOFF, TASK_COMPLETED, TASK_FAILED, TASK_PENDING,
-                TASK_SUSPENDED,  TASK_TERMINATED
-            ]
-        )
+                # Add the notification_handler as a subscriber to all events. When these events are "published"
+                # by the workflow executor, the notification_handler will be passed the message to handle it.
+                self.add_subscribers(
+                    handler,
+                    middleware.subscriptions
+                )
 
     @interceptable(rollback="_reset_event_exchange")
     def _initialize_archivers(self):
-        self.state.ctx.logger.debug(self.p_str("INITIALIZING ARCHIVERS"))
         # No archivers specified. Return
         if len(self.state.ctx.archives) < 1: return
+
+        self.state.ctx.logger.debug(self.p_str("INITIALIZING ARCHIVERS"))
 
         # TODO Handle for multiple archives
         self.state.ctx.archive = self.state.ctx.archives[0]
 
-        ARCHIVERS_BY_TYPE = {
-            "system": TapisSystemArchiver,
-            "s3": S3Archiver,
-            "irods": IRODSArchiver
-        }
+        archive_middlewares = [
+            ArchiveMiddleware(
+                "s3",
+                handler=S3Archiver,
+                subsciptions=[PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED]
+            ),
+            ArchiveMiddleware(
+                "irods",
+                handler=IRODSArchiver,
+                subsciptions=[PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED]
+            )
+        ]
+        
+        # Add archive middleware from plugins to
+        for plugin in self._plugins:
+            archive_middlewares = [*archive_middlewares, *plugin.archive_middlewares]
 
         # Get and initialize the archiver
-        archiver = ARCHIVERS_BY_TYPE[self.state.ctx.archive.type]()
+        middleware = next(filter(
+            lambda middleware: middleware.type == self.state.ctx.archive.type,
+            archive_middlewares
+        ), None)
 
-        # Add the backend as a subscriber to all events. When these events are "published"
-        # by the workflow executor, the backend will be passed the message to handle it.
+        if middleware == None:
+            self.state.ctx.logger.error(self.p_str(f"FAILED TO INITIALIZE ARCHIVER: No Archive Middleware found with type {self.state.ctx.archive.type}")) 
+            return
+        
+        try:
+            handler = middleware.handler()
+        except Exception as e:
+            self.state.ctx.logger.error(f"Could not intialize archive middleware. Pipeline results will not be persisted. Error: {str(e)}")
+            return
+        
+        # Add the archiver to the subscribers list
         self.add_subscribers(
-            archiver,
-            [PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED]
+            handler,
+            middleware.subscriptions
         )
 
     def _set_initial_state(self):

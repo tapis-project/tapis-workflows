@@ -90,7 +90,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
         )
 
     def _pipeline_archiving(self, event):
-        print(f"BACKEND: PIPELINE_ARCHIVING: NOT IMPLEMENTED")
+        print(f"NOTIFICATION HANDLER: PIPELINE_ARCHIVING: NOT IMPLEMENTED")
 
     def _pipeline_failed(self, event):
         self.service_client.workflows.updatePipelineRunStatus(
@@ -133,10 +133,10 @@ class TapisWorkflowsAPIBackend(EventHandler):
         )
 
     def _task_archiving(self, event):
-        print(f"BACKEND: TASK_ARCHIVING: NOT IMPLEMENTED")
+        print(f"NOTIFICATION HANDLER: TASK_ARCHIVING: NOT IMPLEMENTED")
 
     def _task_backoff(self, event):
-        print(f"BACKEND: TASK_BACKOFF: NOT IMPLEMENTED")
+        print(f"NOTIFICATION_HANDLER: TASK_BACKOFF: NOT IMPLEMENTED")
 
     def _task_completed(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(

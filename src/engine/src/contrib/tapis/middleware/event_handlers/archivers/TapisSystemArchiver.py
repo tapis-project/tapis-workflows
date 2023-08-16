@@ -1,6 +1,5 @@
 import os
 
-from tapipy.tapis import Tapis
 from tapipy.errors import InvalidInputError  
 
 from owe_python_sdk.events import Event, EventHandler
