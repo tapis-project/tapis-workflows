@@ -211,7 +211,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
             **self._kwargs
         )
 
-    def _tail_output(self, task, filename, flag="rb", max_bytes=5120):
+    def _tail_output(self, task, filename, flag="rb", max_bytes=10000):
         filesize = os.path.getsize(f"{task.output_dir}{filename.lstrip('/')}")
         offset = max_bytes * -1
         if filesize < max_bytes:

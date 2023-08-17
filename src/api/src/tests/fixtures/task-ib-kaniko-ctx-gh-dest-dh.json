@@ -1,0 +1,26 @@
+{
+  "id": "e2e-ib-kghpubdhpriv",
+  "type": "image_build",
+  "description": "build mpm image",
+  "builder": "kaniko",
+  "context": {
+      "type": "github",
+      "url": "joestubbs/mpm",
+      "branch": "master",
+      "build_file_path": "/Dockerfile",
+      "visibility": "public"
+  },
+  "destination": {
+      "type": "dockerhub",
+      "url": "nathandf/mpm-test",
+      "tag": "e2e",
+      "visibility": "private",
+      "credentials": {
+        "username": "nathandf",
+        "token": ""
+      }
+  },
+  "depends_on": [
+      
+  ]
+}
