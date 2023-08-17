@@ -1,5 +1,19 @@
 # from pprint import pprint
-# from src.api.src.backend.views.http.requests import BasePipeline, ImageBuildTask
+from src.api.src.backend.views.http.requests import FunctionTask
+import json
+
+schema = None
+with open("./src/api/src/tests/fixtures/task-fn-env-params-git.json", "r") as file:
+    schema = json.loads(str(file.read()))
+
+fn = FunctionTask(**schema)
+
+# Convert the input to json
+_input = {}
+for key in fn.input:
+    _input[key] = fn.input[key].dict()
+
+print(_input)
 
 # task_props = {
 #     "id": "build",
@@ -80,21 +94,21 @@
 # pprint(ImageBuildTask(**task_props).input)
 # print(BasePipeline(**pipeline_props))
 
-from src.engine.src.owe_python_sdk.client import Runner
+# from src.engine.src.owe_python_sdk.client import Runner
 
-class TapisRunner(Runner):
-    def __init__(self):
-        Runner.__init__(self)
+# class TapisRunner(Runner):
+#     def __init__(self):
+#         Runner.__init__(self)
 
-    def submit(self, request: dict):
-        self._client.workflows.runPipeline(**request)
+#     def submit(self, request: dict):
+#         self._client.workflows.runPipeline(**request)
 
-    class Config:
-        prompt_missing = True
-        env = {
-            "TAPIS_BASE_URL": {"type": str},
-            "TAPIS_USERNAME": {"type": str},
-            "TAPIS_PASSWORD": {"type": str, "secret": True}
-        }
+#     class Config:
+#         prompt_missing = True
+#         env = {
+#             "TAPIS_BASE_URL": {"type": str},
+#             "TAPIS_USERNAME": {"type": str},
+#             "TAPIS_PASSWORD": {"type": str, "secret": True}
+#         }
 
-TapisRunner()
+# TapisRunner()

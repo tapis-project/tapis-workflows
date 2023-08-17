@@ -105,7 +105,7 @@ class TaskService(Service):
                     else None
                 ),
                 image=getattr(request, "image", None),
-                input=request.input,
+                input=_input,
                 installer=getattr(request, "installer", None),
                 id=request.id,
                 output=request.output,
