@@ -59,20 +59,21 @@ class TaskService(Service):
         Service.__init__(self)
 
     def create(self, pipeline, request):
+        context = None
+        destination = None
         try:
-            # Create the context
-            context = None
-            if request.context != None:
-                context = self._create_context(request, pipeline)
-            # Create the destination
-            destination = None
-            if request.destination != None:
-                destination = self._create_destination(request, pipeline)
+            if request.type == "image_build":
+                # Create the context
+                if request.context != None:
+                    context = self._create_context(request, pipeline)
+                # Create the destination
+                if request.destination != None:
+                    destination = self._create_destination(request, pipeline)
 
-            # Validate input TODO move validation logic to pydantic if possible
-            err = self._validate_input(request.input)
-            if err != None:
-                raise Exception(f"Failed to validate input: {err}")
+                # Validate input TODO move validation logic to pydantic if possible
+                err = self._validate_input(request.input)
+                if err != None:
+                    raise Exception(f"Failed to validate input: {err}")
 
         except Exception as e:
             self.rollback()

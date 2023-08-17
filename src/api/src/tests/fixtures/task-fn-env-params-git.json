@@ -1,0 +1,35 @@
+{
+    "id": "fn-env-params-git",
+    "type": "function",
+    "description": "A function task that clones a git repo, uses params and env, and produces some output.",
+    "runtime": "python:3.9",
+    "packages": [ "numpy", "tapipy==1.4.1" ],
+    "installer": "pip",
+    "input": {
+        "NUM1": {
+            "type": "number",
+            "value": 5
+        },
+        "NUM2": {
+            "type": "number",
+            "value_from": {
+                "env": "ENV1"
+            }
+        },
+        "NUM3": {
+            "type": "number",
+            "value_from": {
+                "params": "PARAM1"
+            }
+        }
+    },
+    "git_repositories": [
+        {
+            "url": "https://github.com/tapis-project/tapisv3-cli.git",
+            "branch": "main",
+            "directory": "tapisv3-cli"
+        }
+    ],
+    "code": "aW1wb3J0IG51bXB5CmZyb20gdGFwaXB5LnRhcGlzIGltcG9ydCBUYXBpcwoKIyBVc2UgdGhlIGV4ZWN1dGlvbiBjb250ZXh0IHRvIGZldGNoIGlucHV0IGRhdGEsIHNhdmUgZGF0YSB0byBvdXRwdXRzLAojIGFuZCB0ZXJtaW5hdGUgdGhlIHRhc2sgd2l0aCB0aGUgc3Rkb3V0IGFuZCBzdGRlcnIgZnVuY3Rpb25zCmZyb20gb3dlX3B5dGhvbl9zZGsucnVudGltZSBpbXBvcnQgZXhlY3V0aW9uX2NvbnRleHQgYXMgY3R4CgoKbnVtMSA9IGludChjdHguZ2V0X2lucHV0KCJOVU0xIikpCm51bTIgPSBpbnQoY3R4LmdldF9pbnB1dCgiTlVNMiIpKQpudW0zID0gaW50KGN0eC5nZXRfaW5wdXQoIk5VTTMiKSkKCmN0eC5zZXRfb3V0cHV0KCJzdW0xMjMiLCBudW0xICsgbnVtMiArIG51bTMpCmN0eC5zZXRfb3V0cHV0KCJ0ZXh0LnR4dCIsICJUaGlzIGlzIHNvbWUgdGV4dCIpCgpjdHguc3Rkb3V0KCJIZWxsbyBmcm9tIHN0ZG91dCIpCg==",
+    "command": null
+}
