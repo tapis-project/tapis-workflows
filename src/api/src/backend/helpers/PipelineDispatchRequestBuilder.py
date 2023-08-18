@@ -65,10 +65,6 @@ class PipelineDispatchRequestBuilder:
         # Populate the env for this request. Populate values from SK
         request["env"] = request["pipeline"]["env"]
 
-        req_params = {}
-        for key in params:
-            req_params[key] = params[key].value
-
         # Populate the params for this request
         request["params"] = {
             "workflow_executor_access_token": {

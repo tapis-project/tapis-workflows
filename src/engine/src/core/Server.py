@@ -153,9 +153,7 @@ class Server:
         try:
             # Decode the message body, then convert to an object.
             request = json.loads(bytes_to_json(body))
-            pprint(request)
             request = WorkflowSubmissionRequest(**request)
-            print("SUCCESS")
             
             # Get a workflow executor worker. If there are none available,
             # this will raise a "NoWorkersAvailabe" error which is handled

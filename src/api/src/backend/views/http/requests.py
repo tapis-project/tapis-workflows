@@ -248,7 +248,7 @@ ValueFromSecret = Dict[Literal["secret"], ValueFromSecretRef]
 
 class TaskInputValue(BaseValue):
     type: EnumTaskIOTypes
-    value: Union[str, int, float, bytes] = None
+    value: Union[str, int, float, bool, bytes] = None
     value_from: Union[
         ValueFromEnv,
         ValueFromParams,
@@ -464,7 +464,7 @@ class TaskDependency(BaseModel):
 
 class BaseOutputValue(BaseModel):
     type: EnumTaskIOTypes
-    value: Union[str, int, float, bytes]
+    value: Union[str, int, float, bool, bytes]
 
 # ------------------------------------------------------------------------
 
