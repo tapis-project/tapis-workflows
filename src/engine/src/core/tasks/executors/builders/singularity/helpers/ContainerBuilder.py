@@ -69,7 +69,7 @@ class ContainerBuilder:
             # Build file path is the exec dir + build file path specified
             # in the context
             build_file_path = os.path.join(
-                f"{task.container_work_dir}/exec/",
+                f"{task.container_work_dir}/src/",
                 task.context.build_file_path
             )
 
