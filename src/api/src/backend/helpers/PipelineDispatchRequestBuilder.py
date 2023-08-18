@@ -76,7 +76,7 @@ class PipelineDispatchRequestBuilder:
             "tapis_pipeline_owner": {
                 "value": request["pipeline"]["owner"]
             },
-            **req_params
+            **params
         }
 
         request["meta"] = {}
