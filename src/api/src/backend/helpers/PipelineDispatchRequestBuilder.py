@@ -84,8 +84,6 @@ class PipelineDispatchRequestBuilder:
             **req_params
         }
 
-        pprint(request)
-
         request["meta"] = {}
         # Properties to help uniquely identity a pipeline submission. If the workflow
         # executor is currently running a pipeline with the same values as the

@@ -198,6 +198,8 @@ class BaseValue(BaseModel):
 
     @validator("value", pre=True)
     def value_type_validation(cls, value):
+        # Nothing to validate if there is not value_from property
+        if value == None: return value
         if type(value) not in [str, bool, int, float, bytes]:
             raise TypeError("Variable values must be a string, number, bytes, or boolean'")
 
