@@ -1,5 +1,6 @@
 from uuid import uuid4
 from django.forms import model_to_dict
+from pprint import pprint
 
 from backend.utils.parse_directives import parse_directives as parse
 from backend.conf.constants import WORKFLOW_EXECUTOR_ACCESS_TOKEN
@@ -65,6 +66,10 @@ class PipelineDispatchRequestBuilder:
         # Populate the env for this request. Populate values from SK
         request["env"] = request["pipeline"]["env"]
 
+        # req_params = {}
+        # for key in params:
+        #     req_params[key] = params[key].value
+
         # Populate the params for this request
         request["params"] = {
             "workflow_executor_access_token": {
@@ -78,6 +83,8 @@ class PipelineDispatchRequestBuilder:
             },
             **params
         }
+
+        pprint(request)
 
         request["meta"] = {}
         # Properties to help uniquely identity a pipeline submission. If the workflow
