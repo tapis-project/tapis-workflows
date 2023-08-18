@@ -29,7 +29,7 @@ def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, params={}, prefix=
     k8senvvars = []
     for input_id, _input in _inputs.items():
         # Use input[input_id].value if provided
-        value = _input.get("value", None)
+        value = _input.value
 
         if value != None:
             k8senvvars.append(
@@ -41,7 +41,7 @@ def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, params={}, prefix=
             continue
 
         # Raise exception if both value and value_from are None
-        value_from = _input.get("value_from", None)
+        value_from = _input.value_from
         if value_from == None and value == None:
             raise Exception(f"Invalid input value for '{input_id}'. Value cannot be null/None")
         
@@ -87,7 +87,7 @@ def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, params={}, prefix=
             if contents == None: raise Exception(f"Error: Output '{output_id}' for task '{task_id}' is null")
 
             # Coerce the value of the contents into the value specified in the input
-            input_type = _input.get("type", None)
+            input_type = _input.type
             try:
                 if input_type == "string":
                     k8senvvar_value = str(contents)
