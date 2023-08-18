@@ -152,7 +152,7 @@ class Function(TaskExecutor):
 
             command += [
                 repo.url,
-                os.path.join("exec", repo.directory)
+                os.path.join("src", repo.directory)
             ]
 
             try:
@@ -242,7 +242,7 @@ class Function(TaskExecutor):
             ),
             client.V1EnvVar(
                 name="OWE_EXEC_DIR",
-                value=os.path.join(self.task.container_work_dir, "exec")
+                value=os.path.join(self.task.container_work_dir, "src")
             ),
         ]
 
@@ -294,10 +294,10 @@ class Function(TaskExecutor):
 
         # NOTE Only supporting pip for now
         # Requirements file path inside the container
-        requirements_txt = os.path.join(self.task.container_work_dir, "exec", requirements_filename)
+        requirements_txt = os.path.join(self.task.container_work_dir, "src", requirements_filename)
         
         # Entrypoint path inside the container
-        entrypoint_py = os.path.join(self.task.container_work_dir, "exec", entrypoint_filename)
+        entrypoint_py = os.path.join(self.task.container_work_dir, "src", entrypoint_filename)
         
         # The output file for the install logs inside the container
         dot_install = os.path.join(self.task.container_work_dir, "output", ".install")
