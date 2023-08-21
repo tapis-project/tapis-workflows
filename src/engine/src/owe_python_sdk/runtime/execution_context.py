@@ -22,7 +22,7 @@ class ExecutionContext:
             flag = "w"
             value = str(value)
 
-        with open(os.path.join(self._runtime.output_dir, _id), flag, encoding=encoding) as file:
+        with open(os.path.join(self.output_dir, _id), flag, encoding=encoding) as file:
             file.write(value)
 
     def stderr(self, code: int, message):
