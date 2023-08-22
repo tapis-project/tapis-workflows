@@ -6,6 +6,7 @@ from kubernetes import config, client
 
 from owe_python_sdk.events.types import TASK_TERMINATED
 from owe_python_sdk.events import EventPublisher, EventExchange, Event
+from owe_python_sdk.TaskResult import TaskResult
 from utils import lbuffer_str as lbuf
 from core.resources import Resource, ResourceType
 from conf.constants import (
@@ -73,6 +74,13 @@ class TaskExecutor(EventPublisher):
 
     def _stderr(self, value, flag="wb"):
         self._set_output(".stderr", value, flag=flag)
+
+    def _get_task_output_files(self):
+        return os.listdir(self.task.output_dir)
+    
+    def _task_result(self, code: int, errors=[]):
+        files = self._get_task_output_files()
+        return TaskResult(code, errors=errors, output={self.task.id: files})
 
     def cleanup(self, terminating=False):
         if terminating: 

@@ -1,6 +1,5 @@
 import requests
 
-from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.TaskExecutor import TaskExecutor
 
 
@@ -16,10 +15,8 @@ class HTTP(TaskExecutor):
             self.ctx.logger.info(
                 f"Request Error: Method Not Allowed ({self.task.http_method})"
             )
-            return TaskResult(
-                status=405, errors=[f"Method Not Allowed ({self.task.method})"],
-                stderr=self._tail_stderr(),
-                stdout=self._tail_stdout()
+            return self._task_result(
+                status=405, errors=[f"Method Not Allowed ({self.task.method})"]
             )
 
         try:
@@ -34,13 +31,11 @@ class HTTP(TaskExecutor):
 
             self._stdout(response.content)
 
-            return TaskResult(
+            return self._task_result(
                 status=0
                 if response.status_code in range(200, 300)
-                else response.status_code,
-                stderr=self._tail_stderr(),
-                stdout=self._tail_stdout()
+                else response.status_code
             )
 
         except Exception as e:
-            return TaskResult(1, errors=[str(e)], stderr=self._tail_stderr(), stdout=self._tail_stdout())
+            return self._task_result(1, errors=[str(e)])

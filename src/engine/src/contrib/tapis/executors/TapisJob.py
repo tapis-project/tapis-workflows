@@ -4,7 +4,6 @@ from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY
 from contrib.tapis.schema import TapisJobTaskOutput
 
-from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.TaskExecutor import TaskExecutor
 
 
@@ -44,8 +43,6 @@ class TapisJob(TaskExecutor):
                         _x_tapis_user=self.ctx.params.tapis_pipeline_owner
                     ).status
 
-                output = {"jobUuid": job.uuid, "status": job_status}
-
                 # Job has completed successfully. Get the execSystemOutputDir from the job object
                 # and generate a task output for each file in the directory 
                 if job_status == "FINISHED":
@@ -62,12 +59,12 @@ class TapisJob(TaskExecutor):
                             json.dumps(TapisJobTaskOutput(file=_file).dict())
                         )
 
-                    return TaskResult(0, output=output)
+                    return self._task_result(0)
 
-                return TaskResult(1, output=output)
+                return self._task_result(1)
                 
-            return TaskResult(0, output={"jobUuid": job.uuid, "status": job_status})
+            return self._task_result(0)
 
         except Exception as e:
             self.ctx.logger.error(f"ERROR IN TAPIS JOB: {str(e)}")
-            return TaskResult(1, errors=[str(e)])
+            return self._task_result(1, errors=[str(e)])

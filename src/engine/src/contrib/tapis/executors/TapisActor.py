@@ -3,7 +3,6 @@ import time
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_ACTOR_POLLING_FREQUENCY
 
-from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.TaskExecutor import TaskExecutor
 
 
@@ -29,7 +28,7 @@ class TapisActor(TaskExecutor):
             
             # End the task successfully with empty output
             if not self.task.poll:
-                return TaskResult(0)
+                return self._task_result(0)
 
             # Fetch the execution
             execution = self._get_execution(self.task.tapis_actor_id, res.execution_id)
@@ -42,13 +41,12 @@ class TapisActor(TaskExecutor):
             # Check for any failed executions and return failed task accordingly
             for execution in self.executions:
                 if execution.status == "ERROR":
-                    return TaskResult(1, errors=[f"Actor exited with status 'ERROR'. actor_id: {execution.actor_id} | execution_id: {execution.id}"])
+                    return self._task_result(1, errors=[f"Actor exited with status 'ERROR'. actor_id: {execution.actor_id} | execution_id: {execution.id}"])
 
-            # TODO set outputs on the task result
-            return TaskResult(0)
+            return self._task_result(0)
         except Exception as e:
             self.ctx.logger.error(f"ERROR IN TAPIS ACTOR: {str(e)}")
-            return TaskResult(1, errors=[str(e)])
+            return self._task_result(1, errors=[str(e)])
 
     def _poll_executions_recursively(self, execution):
         # Poll until the execution reaches a terminal state

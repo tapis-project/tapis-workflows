@@ -30,6 +30,8 @@ from core.workers import Worker
 from core.state import ReactiveState, Hook, method_hook
 from utils import lbuffer_str as lbuf, CompositeLogger
 
+from pprint import pprint
+
 
 server_logger = logging.getLogger("server")
 
@@ -119,6 +121,7 @@ class WorkflowExecutor(Worker, EventPublisher):
                 "queue": [],
                 "tasks": [],
                 "executors": {},
+                "output": {},
                 "dependency_graph": {},
                 "is_dry_run": False,
                 "ctx": None,
@@ -220,8 +223,11 @@ class WorkflowExecutor(Worker, EventPublisher):
             task.nfs_exec_dir = f"{task.nfs_work_dir}src/"
             task.nfs_output_dir = f"{task.nfs_work_dir}output/"
 
-            # Create the task's directories and 
+            # Create the task's directories
             self._prepare_task_fs(task)
+
+            # Add a key to the output for the task
+            self.state.output = {task.id: []}
 
     @interceptable()
     def _prepare_task_fs(self, task):
@@ -256,8 +262,13 @@ class WorkflowExecutor(Worker, EventPublisher):
                 self._register_executor(self.state.ctx.pipeline_run.uuid, task, executor)
                 
                 task_result = executor.execute()
+
+                self.state.output = {
+                    **self.state.output,
+                    **task_result.output
+                }
             else:
-                task_result = TaskResult(0, data={"task": task.id}, stdout="***DRY RUN***", stderr="***DRY RUN***")
+                task_result = TaskResult(0, data={"task": task.id})
         except InvalidTaskTypeError as e:
             self.state.ctx.logger.error(str(e))
             task_result = TaskResult(1, errors=[str(e)])
@@ -312,6 +323,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         elif event == PIPELINE_TERMINATED: msg = "TERMINATED"
 
         self.state.ctx.logger.info(self.p_str(msg))
+
+        pprint(self.state.output)
 
         # Publish the event. Triggers the archivers if there are any on ...COMPLETE
         self.publish(Event(event, self.state.ctx))
