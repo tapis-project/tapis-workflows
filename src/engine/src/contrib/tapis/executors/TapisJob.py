@@ -2,6 +2,7 @@ import json, time
 
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY
+from contrib.tapis.schema import TapisJobTaskOutput
 
 from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.TaskExecutor import TaskExecutor
@@ -45,8 +46,22 @@ class TapisJob(TaskExecutor):
 
                 output = {"jobUuid": job.uuid, "status": job_status}
 
-                # Return a task result based on the final status of the tapis job
+                # Job has completed successfully. Get the execSystemOutputDir from the job object
+                # and generate a task output for each file in the directory 
                 if job_status == "FINISHED":
+                    job = service_client.jobs.getJob(
+                        jobUuid=job.uuid,
+                        _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
+                        _x_tapis_user=self.ctx.params.tapis_pipeline_owner
+                    )
+
+                    files = service_client.files.listFiles(systemId=job.execSystemId, path=job.execSystemOutputDir)
+                    for _file in files:
+                        self._set_output(
+                            _file.name,
+                            json.dumps(TapisJobTaskOutput(file=_file).dict())
+                        )
+
                     return TaskResult(0, output=output)
 
                 return TaskResult(1, output=output)
