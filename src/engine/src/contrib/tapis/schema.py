@@ -11,17 +11,17 @@ class EnumTapisTaskOutputType(str, Enum, metaclass=_EnumMeta):
 class BaseTapisTaskOutput(BaseModel):
     type: EnumTapisTaskOutputType
 
-class TapisSystemFileListItem:
+class TapisSystemFileListItem(BaseModel):
     mimeType: str = None
     type: Literal["file", "dir"]
-    owner: Union[str, int]
-    group: Union[str, int]
-    nativePermissions: str
+    owner: Union[str, int] = None
+    group: Union[str, int] = None
+    nativePermissions: str = None
     url: str
-    lastModified: str
+    lastModified: str = None
     name: str
     path: str
-    size: int
+    size: int = None
 
 class TapisJobTaskOutput(BaseTapisTaskOutput):
     type: EnumTapisTaskOutputType.TapisJob
