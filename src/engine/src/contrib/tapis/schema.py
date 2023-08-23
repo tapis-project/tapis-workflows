@@ -1,6 +1,9 @@
+from uuid import uuid4
+
+from typing import Literal, Union, List, Dict
+
 from enum import Enum
-from pydantic import BaseModel
-from typing import Literal, Union
+from pydantic import BaseModel, Extra, root_validator, validator
 
 from owe_python_sdk.schema import _EnumMeta
 
@@ -25,5 +28,30 @@ class TapisSystemFile(BaseModel):
 
 class TapisJobTaskOutput(BaseTapisTaskOutput):
     type: EnumTapisTaskOutputType.TapisJob
-    system_id: str
+    exec_system_output_dir: str
     file: TapisSystemFile
+
+class TapisJob(BaseModel):
+    name: str = None
+    execSystemId: str = None
+    fileInputs: List[Dict] = []
+    fileInputArrays: List[Dict] = []
+    appId: str
+    appVersion: Union[str, int, float]
+
+    class Config:
+        extra = Extra.allow
+
+    @root_validator(pre=True)
+    def create_name(cls, values):
+        if values.get("name", None) == None:
+            values["name"] = "owe-" + str(uuid4())
+
+        return values
+
+    @validator("appVersion")
+    def coerce_app_version(cls, value):
+        if type(value) != str:
+            value = str(value)
+
+        return value

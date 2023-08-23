@@ -2,7 +2,7 @@ import json, time
 
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY, TAPIS_SYSTEM_FILE_REF_EXTENSION
-from contrib.tapis.schema import TapisJobTaskOutput, TapisSystemFile
+from contrib.tapis.schema import TapisJob, TapisJobTaskOutput, TapisSystemFile
 from owe_python_sdk.TaskExecutor import TaskExecutor
 
 
@@ -16,10 +16,30 @@ class TapisJob(TaskExecutor):
             service_client = tapis_service_api_gateway.get_client()
 
             # Recursively convert nested simple namespace objects to dict
-            job_def = json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s)))
+            job_def = TapisJob(**json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s))))
 
-            # Add timestamp on job name to ensure unique name on submit
-            job_def["name"] += str(time.time())
+            # Get the execSystemId from the job def if specified. If not, get the execSystemId from
+            # the app
+            exec_system_id = job_def.execSystemId
+            if exec_system_id == None:
+                app = service_client.apps.getApp(
+                    appId=job_def.appId,
+                    appVersion=job_def.appVersion,
+                    _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
+                    _x_tapis_user=self.ctx.params.tapis_pipeline_owner
+                )
+
+                exec_system_id = app.jobAttributes.execSystemId
+
+            if exec_system_id == None:
+                raise Exception("Exec system id must be specified in either the App or the Job definition")
+            
+            exec_system_input_dir = job_def.execSystemInputDir
+            if exec_system_input_dir == None:
+                exec_system_input_dir = app.jobAttributes.exec_system_input_dir
+
+            if exec_system_input_dir == None:
+                raise Exception("Exec system input dir must be specified in either the App or the Job definition")
 
             # Add TapisSystemFiles from previous task output as fileInput/Arrays to the job definition
             file_input_arrays = []
@@ -34,27 +54,23 @@ class TapisJob(TaskExecutor):
                     
                     # Pull the Tapis System File details from the file
                     with open(output_file.path, flag="r") as file:
-                        tapis_system_file = TapisSystemFile(json.loads(file.read())["file"])
-                        if tapis_system_file.type == "file":
-                            source_urls.append(tapis_system_file.url)
+                        tapis_job_task_output = TapisJobTaskOutput(**json.loads(file.read()))
+                        source_urls.append(tapis_job_task_output.file.url)
                 
                 file_input_arrays.append({
                     "name": f"owe-implicit-input-{parent_task.id}",
                     "description": f"These files were generated as a result of a Tapis Job submission via an Open Workflow Engine task execution for the pipeline '{self.ctx.pipeline.id}' and task '{parent_task.id}'.",
                     "sourceUrls": source_urls,
-                    "targetDir": "*",
+                    "targetDir": exec_system_input_dir,
                     "notes": {}
                 })
 
             # Add the file input arrays to the Tapis Job definition
-            if job_def.get("fileInputArrays", None) == None:
-                job_def["fileInputArrays"] = []
-
-            job_def["fileInputArrays"].extend(file_input_arrays)
+            job_def.fileInputArrays.extend(file_input_arrays)
 
             # Submit the job
             job = service_client.jobs.submitJob(
-                **job_def,
+                **job_def.dict(),
                 _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
                 _x_tapis_user=self.ctx.params.tapis_pipeline_owner
             )
@@ -77,7 +93,12 @@ class TapisJob(TaskExecutor):
                     for _file in files:
                         self._set_output(
                             _file.name + TAPIS_SYSTEM_FILE_REF_EXTENSION,
-                            json.dumps(TapisJobTaskOutput(system_id=job.execSystemId, file=_file).dict())
+                            json.dumps(
+                                TapisJobTaskOutput(
+                                    exec_system_output_dir=job.execSystemOutputDir,
+                                    file=_file
+                                ).dict()
+                            )
                         )
 
                     return self._task_result(0)
