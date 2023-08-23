@@ -32,13 +32,14 @@ class TapisJob(TaskExecutor):
                     if TAPIS_SYSTEM_FILE_REF_EXTENSION not in output_file.name:
                         continue
                     
+                    # Pull the Tapis System File details from the file
                     with open(output_file.path, flag="r") as file:
                         tapis_system_file = TapisSystemFile(json.loads(file.read())["file"])
                         if tapis_system_file.type == "file":
                             source_urls.append(tapis_system_file.url)
                 
                 file_input_arrays.append({
-                    "name": f"implicit-input-from-{parent_task.id}",
+                    "name": f"owe-implicit-input-{parent_task.id}",
                     "description": f"These files were generated as a result of a Tapis Job submission via an Open Workflow Engine task execution for the pipeline '{self.ctx.pipeline.id}' and task '{parent_task.id}'.",
                     "sourceUrls": source_urls,
                     "targetDir": "*",
@@ -50,7 +51,6 @@ class TapisJob(TaskExecutor):
                 job_def["fileInputArrays"] = []
 
             job_def["fileInputArrays"].extend(file_input_arrays)
-
 
             # Submit the job
             job = service_client.jobs.submitJob(
