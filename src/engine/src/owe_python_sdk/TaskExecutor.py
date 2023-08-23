@@ -1,7 +1,5 @@
 import os
 
-from pathlib import Path
-
 from kubernetes import config, client
 
 from owe_python_sdk.events.types import TASK_TERMINATED
@@ -78,7 +76,7 @@ class TaskExecutor(EventPublisher):
     def _get_task_output_files(self):
         return os.listdir(self.task.output_dir)
     
-    def _task_result(self, code: int, errors=[]):
+    def _task_result(self, code: int, errors=[], cls=File):
         files = self._get_task_output_files()
         return TaskResult(code, errors=errors, output={self.task.id: files})
 

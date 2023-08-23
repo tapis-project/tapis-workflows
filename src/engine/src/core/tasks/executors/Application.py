@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from kubernetes import client
 
-from core.tasks.TaskExecutor import TaskExecutor
+from owe_python_sdk.TaskExecutor import TaskExecutor
 from conf.constants import KUBERNETES_NAMESPACE
 from core.resources import PodResource
 from utils import get_flavor

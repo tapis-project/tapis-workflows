@@ -2,7 +2,7 @@ import json, base64, os
 
 from core.tasks.executors.builders.helpers.ContextResolver import context_resolver
 from errors.credentials import CredentialsError
-from core.tasks.TaskExecutor import TaskExecutor
+from owe_python_sdk.TaskExecutor import TaskExecutor
 
 # TODO Move methods of this class to helpers, use the helpers in decendent classes,
 # and delete once complete

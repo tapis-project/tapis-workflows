@@ -1,7 +1,6 @@
 import logging
 
 from owe_python_sdk.events import EventExchange
-from core.tasks.TaskExecutor import TaskExecutor
 from core.tasks.BuildTaskExecutorResolver import build_task_executor_resolver
 from core.tasks.executors.requesters.HTTP import HTTP
 from core.tasks.executors.Function import Function
@@ -10,7 +9,7 @@ from errors.tasks import InvalidTaskTypeError
 
 
 class TaskExecutorFactory:
-    def build(self, task, ctx, exchange: EventExchange, plugins=[]) -> TaskExecutor:
+    def build(self, task, ctx, exchange: EventExchange, plugins=[]):
         fn = getattr(self, f"_{task.type}", None)
         if fn != None:
             try:
@@ -38,19 +37,19 @@ class TaskExecutorFactory:
             hint=f"Update Task with id=={task.id} to have one of the following types: [image_build, container_run, request]",
         )
 
-    def _image_build(self, task, ctx, exchange, plugins) -> TaskExecutor:
+    def _image_build(self, task, ctx, exchange, plugins):
         # Returns a build executor for the specified image builder and
         # deployment type
         executor = build_task_executor_resolver.resolve(task)
         return executor(task, ctx, exchange, plugins=plugins)
 
-    def _request(self, task, ctx, exchange, plugins) -> TaskExecutor:
+    def _request(self, task, ctx, exchange, plugins):
         return HTTP(task, ctx, exchange, plugins=plugins)
     
-    def _application(self, task, ctx, exchange, plugins) -> TaskExecutor:
+    def _application(self, task, ctx, exchange, plugins):
         return Application(task, ctx, exchange, plugins=plugins)
 
-    def _function(self, task, ctx, exchange, plugins) -> TaskExecutor:
+    def _function(self, task, ctx, exchange, plugins):
         return Function(task, ctx, exchange, plugins=plugins)
 
 task_executor_factory = TaskExecutorFactory()

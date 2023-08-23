@@ -2,7 +2,7 @@ import os, base64, time, shutil
 
 from kubernetes import client
 
-from core.tasks.TaskExecutor import TaskExecutor
+from owe_python_sdk.TaskExecutor import TaskExecutor
 from owe_python_sdk.utils import get_schema_extensions
 from owe_python_sdk.constants import FUNCTION_TASK_RUNTIMES
 from conf.constants import (

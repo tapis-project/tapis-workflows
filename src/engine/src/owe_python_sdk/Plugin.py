@@ -1,7 +1,7 @@
 from owe_python_sdk.middleware import RequestMiddleware
+from owe_python_sdk.middleware.NotificationMiddleware import NotificationMiddleware
+from owe_python_sdk.middleware.ArchiveMiddleware import ArchiveMiddleware
 from owe_python_sdk.SchemaExtension import SchemaExtension
-from owe_python_sdk.NotificationMiddleware import NotificationMiddleware
-from owe_python_sdk.ArchiveMiddleware import ArchiveMiddleware
 
 MIDDLEWARE_TYPES = [ "request", "archive", "notification_handler", "task_executor", "schema_extension" ]
 

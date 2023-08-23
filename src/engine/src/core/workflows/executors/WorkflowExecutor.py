@@ -6,7 +6,7 @@ from pathlib import Path
 
 from core.tasks.TaskExecutorFactory import task_executor_factory as factory
 from owe_python_sdk.TaskResult import TaskResult
-from owe_python_sdk.ArchiveMiddleware import ArchiveMiddleware
+from owe_python_sdk.middleware.ArchiveMiddleware import ArchiveMiddleware
 from owe_python_sdk.events import (
     Event,
     EventPublisher,
@@ -323,8 +323,6 @@ class WorkflowExecutor(Worker, EventPublisher):
         elif event == PIPELINE_TERMINATED: msg = "TERMINATED"
 
         self.state.ctx.logger.info(self.p_str(msg))
-
-        pprint(self.state.output)
 
         # Publish the event. Triggers the archivers if there are any on ...COMPLETE
         self.publish(Event(event, self.state.ctx))
