@@ -43,10 +43,10 @@ class Kaniko(BaseBuildExecutor):
             # Log the Termination Error
             self.ctx.logger.error(str(e))
             self.cleanup(terminating=True)
-            return self._task_result(status=2, errors=[e])
+            return self._task_result(2, errors=[e])
         except Exception as e:
             self.ctx.logger.error(str(e))
-            return self._task_result(status=1, errors=[e])
+            return self._task_result(1, errors=[e])
 
         # Get the job's pod name
         pod_list = self.core_v1_api.list_namespaced_pod(
@@ -76,14 +76,14 @@ class Kaniko(BaseBuildExecutor):
 
         except client.rest.ApiException as e:
             self.ctx.logger.error(f"Exception reading pod log: {e}")
-            return self._task_result(status=1, errors=[e])
+            return self._task_result(1, errors=[e])
         except Exception as e:
             self.ctx.logger.error(str(e))
-            return self._task_result(status=1, errors=[e])
+            return self._task_result(1, errors=[e])
 
         # TODO Validate the jobs outputs against outputs in the task definition
 
-        return self._task_result(status=0 if self._job_succeeded(job) else 1)
+        return self._task_result(0 if self._job_succeeded(job) else 1)
 
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""

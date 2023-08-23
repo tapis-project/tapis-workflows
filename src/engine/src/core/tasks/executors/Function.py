@@ -119,7 +119,7 @@ class Function(TaskExecutor):
             self._register_resource(JobResource(job=job))
         except Exception as e:
             self.ctx.logger.error(e)
-            return self._task_result(status=1, errors=[e])
+            return self._task_result(1, errors=[e])
 
         try:
             while not self._job_in_terminal_state(job):
@@ -127,7 +127,7 @@ class Function(TaskExecutor):
                     self.ctx.logger.error("Workflow Terminated")
                     self.cleanup(terminating=True)
                     self._stderr("Workflow Terminated", "w")
-                    return self._task_result(status=2, errors=["Workflow Terminated"])
+                    return self._task_result(2, errors=["Workflow Terminated"])
 
                 job = self.batch_v1_api.read_namespaced_job(
                     job.metadata.name, KUBERNETES_NAMESPACE
@@ -137,9 +137,9 @@ class Function(TaskExecutor):
         except Exception as e:
             self.ctx.logger.error(str(e))
             self._stderr(str(e), "w")
-            return self._task_result(status=1, errors=[e])
+            return self._task_result(1, errors=[e])
 
-        return self._task_result(status=0 if self._job_succeeded(job) else 1)
+        return self._task_result(0 if self._job_succeeded(job) else 1)
 
     def _run_git_clone_jobs(self, job_name):
         job_name = job_name.replace("wf-fn", "wf-fn-init")
@@ -202,7 +202,7 @@ class Function(TaskExecutor):
             except Exception as e:
                 self.ctx.logger.error(e)
                 self._stderr(str(e), "w")
-                return self._task_result(status=1, errors=[str(e)])
+                return self._task_result(1, errors=[str(e)])
                 
             try:
                 while not self._job_in_terminal_state(job):
@@ -210,7 +210,7 @@ class Function(TaskExecutor):
                         self.ctx.logger.error("Workflow Terminated")
                         self.cleanup(terminating=True)
                         self._stderr("Workflow Terminated", "w")
-                        return self._task_result(status=2, errors=["Workflow Terminated"])
+                        return self._task_result(2, errors=["Workflow Terminated"])
 
                     job = self.batch_v1_api.read_namespaced_job(
                         job.metadata.name,
@@ -221,9 +221,9 @@ class Function(TaskExecutor):
             except Exception as e:
                 self.ctx.logger.error(str(e))
                 self._stderr(str(e), "w")
-                return self._task_result(status=1, errors=[str(e)])
+                return self._task_result(1, errors=[str(e)])
 
-        return self._task_result(status=0 if self._job_succeeded(job) else 1)
+        return self._task_result(0 if self._job_succeeded(job) else 1)
 
     def _setup_container(self) -> ContainerDetails:
         if self.task.runtime in self.runtimes["python"]:
