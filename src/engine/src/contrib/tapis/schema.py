@@ -11,7 +11,7 @@ class EnumTapisTaskOutputType(str, Enum, metaclass=_EnumMeta):
 class BaseTapisTaskOutput(BaseModel):
     type: EnumTapisTaskOutputType
 
-class TapisSystemFileListItem(BaseModel):
+class TapisSystemFile(BaseModel):
     mimeType: str = None
     type: Literal["file", "dir"]
     owner: Union[str, int] = None
@@ -25,4 +25,5 @@ class TapisSystemFileListItem(BaseModel):
 
 class TapisJobTaskOutput(BaseTapisTaskOutput):
     type: EnumTapisTaskOutputType.TapisJob
-    file: TapisSystemFileListItem
+    system_id: str
+    file: TapisSystemFile

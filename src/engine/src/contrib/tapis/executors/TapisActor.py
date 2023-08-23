@@ -2,8 +2,7 @@ import time
 
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_ACTOR_POLLING_FREQUENCY
-
-from core.tasks.TaskExecutor import TaskExecutor
+from owe_python_sdk.TaskExecutor import TaskExecutor
 
 
 class TapisActor(TaskExecutor):

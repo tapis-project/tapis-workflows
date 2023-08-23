@@ -30,8 +30,6 @@ from core.workers import Worker
 from core.state import ReactiveState, Hook, method_hook
 from utils import lbuffer_str as lbuf, CompositeLogger
 
-from pprint import pprint
-
 
 server_logger = logging.getLogger("server")
 
@@ -121,7 +119,6 @@ class WorkflowExecutor(Worker, EventPublisher):
                 "queue": [],
                 "tasks": [],
                 "executors": {},
-                "output": {},
                 "dependency_graph": {},
                 "is_dry_run": False,
                 "ctx": None,
@@ -227,7 +224,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             self._prepare_task_fs(task)
 
             # Add a key to the output for the task
-            self.state.output = {task.id: []}
+            self.state.ctx.output = {task.id: []}
 
     @interceptable()
     def _prepare_task_fs(self, task):
@@ -263,8 +260,8 @@ class WorkflowExecutor(Worker, EventPublisher):
                 
                 task_result = executor.execute()
 
-                self.state.output = {
-                    **self.state.output,
+                self.state.ctx.output = {
+                    **self.state.ctx.output,
                     **task_result.output
                 }
             else:
