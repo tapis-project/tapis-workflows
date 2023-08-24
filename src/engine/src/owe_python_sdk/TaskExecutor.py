@@ -85,8 +85,8 @@ class TaskExecutor(EventPublisher):
             output={
                 self.task.id: [
                     TaskOutputFile(
-                        name=file.name,
-                        path=file.path
+                        name=file,
+                        path=os.path.join(self.task.output_dir, file)
                     )
                     for file in files
                 ]

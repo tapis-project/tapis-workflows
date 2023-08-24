@@ -31,11 +31,12 @@ class TapisJobTaskOutput(BaseTapisTaskOutput):
     exec_system_output_dir: str
     file: TapisSystemFile
 
-class TapisJob(BaseModel):
+class ReqSubmitJob(BaseModel):
     name: str = None
     execSystemId: str = None
     fileInputs: List[Dict] = []
     fileInputArrays: List[Dict] = []
+    execSystemInputDir: str
     appId: str
     appVersion: Union[str, int, float]
 

@@ -1,8 +1,8 @@
-import json, time
+import json, time, os
 
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY, TAPIS_SYSTEM_FILE_REF_EXTENSION
-from contrib.tapis.schema import TapisJob as TapisJobModel, TapisJobTaskOutput, TapisSystemFile
+from contrib.tapis.schema import ReqSubmitJob, TapisJobTaskOutput, TapisSystemFile
 from owe_python_sdk.TaskExecutor import TaskExecutor
 
 
@@ -16,7 +16,7 @@ class TapisJob(TaskExecutor):
             service_client = tapis_service_api_gateway.get_client()
 
             # Recursively convert nested simple namespace objects to dict
-            job_def = TapisJobModel(**json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s))))
+            job_def = ReqSubmitJob(**json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s))))
             
             exec_system_input_dir = job_def.execSystemInputDir
             if exec_system_input_dir == None:
@@ -26,7 +26,7 @@ class TapisJob(TaskExecutor):
                     _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
                     _x_tapis_user=self.ctx.params.tapis_pipeline_owner
                 )
-                exec_system_input_dir = app.jobAttributes.exec_system_input_dir
+                exec_system_input_dir = app.jobAttributes.execSystemInputDir
 
             if exec_system_input_dir == None:
                 raise Exception("Exec system input dir must be specified in either the App or the Job definition")
@@ -36,14 +36,14 @@ class TapisJob(TaskExecutor):
             for parent_task in self.task.depends_on:
                 parent_task_output = self.ctx.output[parent_task.id]
                 source_urls = []
-                for output_file in parent_task_output.files:
+                for parent_task_output_file in parent_task_output.files:
                     # Skip all output files that do not contain the Tapis
                     # system file reference extension
-                    if TAPIS_SYSTEM_FILE_REF_EXTENSION not in output_file.name:
+                    if TAPIS_SYSTEM_FILE_REF_EXTENSION not in parent_task_output_file.name:
                         continue
                     
                     # Pull the Tapis System File details from the file
-                    with open(output_file.path, flag="r") as file:
+                    with open(parent_task_output_file.path, flag="r") as file:
                         tapis_job_task_output = TapisJobTaskOutput(**json.loads(file.read()))
                         source_urls.append(tapis_job_task_output.file.url)
                 
