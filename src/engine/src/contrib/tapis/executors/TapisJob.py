@@ -2,7 +2,7 @@ import json, time
 
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY, TAPIS_SYSTEM_FILE_REF_EXTENSION
-from contrib.tapis.schema import TapisJob, TapisJobTaskOutput, TapisSystemFile
+from contrib.tapis.schema import TapisJob as TapisJobModel, TapisJobTaskOutput, TapisSystemFile
 from owe_python_sdk.TaskExecutor import TaskExecutor
 
 
@@ -16,7 +16,7 @@ class TapisJob(TaskExecutor):
             service_client = tapis_service_api_gateway.get_client()
 
             # Recursively convert nested simple namespace objects to dict
-            job_def = TapisJob(**json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s))))
+            job_def = TapisJobModel(**json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s))))
             
             exec_system_input_dir = job_def.execSystemInputDir
             if exec_system_input_dir == None:
