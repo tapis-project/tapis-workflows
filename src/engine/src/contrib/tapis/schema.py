@@ -36,7 +36,7 @@ class ReqSubmitJob(BaseModel):
     execSystemId: str = None
     fileInputs: List[Dict] = []
     fileInputArrays: List[Dict] = []
-    execSystemInputDir: str
+    execSystemInputDir: str = None
     appId: str
     appVersion: Union[str, int, float]
 
