@@ -2,7 +2,7 @@ import json, time, os
 
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY, TAPIS_SYSTEM_FILE_REF_EXTENSION
-from contrib.tapis.schema import ReqSubmitJob, TapisJobTaskOutput, TapisSystemFile
+from contrib.tapis.schema import ReqSubmitJob, TapisJobTaskOutput
 from owe_python_sdk.TaskExecutor import TaskExecutor
 
 
@@ -23,8 +23,8 @@ class TapisJob(TaskExecutor):
                 app = service_client.apps.getApp(
                     appId=job_def.appId,
                     appVersion=job_def.appVersion,
-                    _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
-                    _x_tapis_user=self.ctx.params.tapis_pipeline_owner
+                    _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
+                    _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
                 )
                 exec_system_input_dir = app.jobAttributes.execSystemInputDir
 
@@ -61,8 +61,8 @@ class TapisJob(TaskExecutor):
             # Submit the job
             job = service_client.jobs.submitJob(
                 **job_def.dict(),
-                _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
-                _x_tapis_user=self.ctx.params.tapis_pipeline_owner
+                _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
+                _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
             )
 
             if self.task.poll:
@@ -72,8 +72,8 @@ class TapisJob(TaskExecutor):
                     time.sleep(TAPIS_JOB_POLLING_FREQUENCY)
                     job = service_client.jobs.getJob(
                         jobUuid=job.uuid,
-                        _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
-                        _x_tapis_user=self.ctx.params.tapis_pipeline_owner
+                        _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
+                        _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
                     )
 
                 # Job has completed successfully. Get the execSystemOutputDir from the job object
