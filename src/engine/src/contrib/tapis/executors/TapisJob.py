@@ -5,6 +5,7 @@ from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY, TAPIS_SYSTEM_FI
 from contrib.tapis.schema import ReqSubmitJob, TapisJobTaskOutput
 from owe_python_sdk.TaskExecutor import TaskExecutor
 
+from pprint import pprint
 
 class TapisJob(TaskExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
@@ -17,6 +18,10 @@ class TapisJob(TaskExecutor):
 
             # Recursively convert nested simple namespace objects to dict
             job_def = ReqSubmitJob(**json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s))))
+
+            pprint(job_def.dict())
+            print(self.ctx.params.get("tapis_tenant_id").value)
+            print(self.ctx.params.get("tapis_pipeline_owner").value)
             
             exec_system_input_dir = job_def.execSystemInputDir
             if exec_system_input_dir == None:
@@ -98,5 +103,4 @@ class TapisJob(TaskExecutor):
             return self._task_result(0)
 
         except Exception as e:
-            self.ctx.logger.error(f"ERROR IN TAPIS JOB: {str(e)}")
             return self._task_result(1, errors=[str(e)])
