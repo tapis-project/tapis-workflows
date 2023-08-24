@@ -17,25 +17,15 @@ class TapisJob(TaskExecutor):
 
             # Recursively convert nested simple namespace objects to dict
             job_def = TapisJob(**json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s))))
-
-            # Get the execSystemId from the job def if specified. If not, get the execSystemId from
-            # the app
-            exec_system_id = job_def.execSystemId
-            if exec_system_id == None:
+            
+            exec_system_input_dir = job_def.execSystemInputDir
+            if exec_system_input_dir == None:
                 app = service_client.apps.getApp(
                     appId=job_def.appId,
                     appVersion=job_def.appVersion,
                     _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
                     _x_tapis_user=self.ctx.params.tapis_pipeline_owner
                 )
-
-                exec_system_id = app.jobAttributes.execSystemId
-
-            if exec_system_id == None:
-                raise Exception("Exec system id must be specified in either the App or the Job definition")
-            
-            exec_system_input_dir = job_def.execSystemInputDir
-            if exec_system_input_dir == None:
                 exec_system_input_dir = app.jobAttributes.exec_system_input_dir
 
             if exec_system_input_dir == None:
