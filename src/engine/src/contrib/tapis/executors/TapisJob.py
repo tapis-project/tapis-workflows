@@ -7,8 +7,8 @@ from owe_python_sdk.TaskExecutor import TaskExecutor
 
 
 class TapisJob(TaskExecutor):
-    def __init__(self, task, ctx, exchange):
-        TaskExecutor.__init__(self, task, ctx, exchange)
+    def __init__(self, task, ctx, exchange, plugins=[]):
+        TaskExecutor.__init__(self, task, ctx, exchange, plugins)
 
     def execute(self):
         try:
