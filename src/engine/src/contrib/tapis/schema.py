@@ -33,7 +33,6 @@ class TapisJobTaskOutput(BaseTapisTaskOutput):
 
 class ReqSubmitJob(BaseModel):
     name: str = None
-    execSystemId: str = None
     fileInputs: List[Dict] = []
     fileInputArrays: List[Dict] = []
     execSystemInputDir: str = None
