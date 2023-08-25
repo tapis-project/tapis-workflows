@@ -87,12 +87,13 @@ class TapisJob(TaskExecutor):
                     )
                     for _file in files:
                         print(_file)
+                        print(dict(file))
                         self._set_output(
                             _file.name + TAPIS_SYSTEM_FILE_REF_EXTENSION,
                             json.dumps(
                                 TapisJobTaskOutput(
                                     exec_system_output_dir=job.execSystemOutputDir,
-                                    file=_file
+                                    file=dict(_file)
                                 ).dict()
                             )
                         )

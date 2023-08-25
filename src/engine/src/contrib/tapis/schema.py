@@ -27,7 +27,7 @@ class TapisSystemFile(BaseModel):
     size: int = None
 
 class TapisJobTaskOutput(BaseTapisTaskOutput):
-    type: EnumTapisTaskOutputType.TapisJob
+    type: EnumTapisTaskOutputType = EnumTapisTaskOutputType.TapisJob
     exec_system_output_dir: str
     file: TapisSystemFile
 
