@@ -93,7 +93,8 @@ class TapisJob(TaskExecutor):
                                     exec_system_output_dir=job.execSystemOutputDir,
                                     file=file.__dict__
                                 ).dict()
-                            )
+                            ),
+                            flag="w"
                         )
 
                     return self._task_result(0)
