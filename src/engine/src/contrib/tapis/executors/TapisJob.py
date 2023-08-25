@@ -47,13 +47,14 @@ class TapisJob(TaskExecutor):
                         tapis_job_task_output = TapisJobTaskOutput(**json.loads(file.read()))
                         source_urls.append(tapis_job_task_output.file.url)
                 
-                file_input_arrays.append({
-                    "name": f"owe-implicit-input-{parent_task.id}",
-                    "description": f"These files were generated as a result of a Tapis Job submission via an Open Workflow Engine task execution for the pipeline '{self.ctx.pipeline.id}' and task '{parent_task.id}'.",
-                    "sourceUrls": source_urls,
-                    "targetDir": exec_system_input_dir,
-                    "notes": {}
-                })
+                if len(source_urls) > 0:
+                    file_input_arrays.append({
+                        "name": f"owe-implicit-input-{parent_task.id}",
+                        "description": f"These files were generated as a result of a Tapis Job submission via an Open Workflow Engine task execution for the pipeline '{self.ctx.pipeline.id}' and task '{parent_task.id}'.",
+                        "sourceUrls": source_urls,
+                        "targetDir": exec_system_input_dir,
+                        "notes": {}
+                    })
 
             # Add the file input arrays to the Tapis Job definition
             job_def.fileInputArrays.extend(file_input_arrays)
@@ -85,6 +86,7 @@ class TapisJob(TaskExecutor):
                         _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
                     )
                     for _file in files:
+                        print(_file)
                         self._set_output(
                             _file.name + TAPIS_SYSTEM_FILE_REF_EXTENSION,
                             json.dumps(
