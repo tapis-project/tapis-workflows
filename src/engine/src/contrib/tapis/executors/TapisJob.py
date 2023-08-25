@@ -91,7 +91,7 @@ class TapisJob(TaskExecutor):
                             json.dumps(
                                 TapisJobTaskOutput(
                                     exec_system_output_dir=job.execSystemOutputDir,
-                                    file=json.loads(json.dumps(file))
+                                    file=file.__dict__
                                 ).dict()
                             )
                         )
