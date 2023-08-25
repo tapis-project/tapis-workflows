@@ -20,7 +20,6 @@ class TapisJob(TaskExecutor):
             
             exec_system_input_dir = job_def.execSystemInputDir
             if exec_system_input_dir == None:
-                print("PRE getApp")
                 app = service_client.apps.getApp(
                     appId=job_def.appId,
                     appVersion=job_def.appVersion,
@@ -28,7 +27,7 @@ class TapisJob(TaskExecutor):
                     _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
                 )
                 exec_system_input_dir = app.jobAttributes.execSystemInputDir
-                print("POST getApp")
+                
             if exec_system_input_dir == None:
                 raise Exception("Exec system input dir must be specified in either the App or the Job definition")
 
@@ -60,13 +59,11 @@ class TapisJob(TaskExecutor):
             job_def.fileInputArrays.extend(file_input_arrays)
 
             # Submit the job
-            print("PRE submitJob")
             job = service_client.jobs.submitJob(
                 **job_def.dict(),
                 _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
                 _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
             )
-            print("POST submitJob")
 
             if self.task.poll:
                 # Keep polling until the job is complete
@@ -78,11 +75,15 @@ class TapisJob(TaskExecutor):
                         _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
                         _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
                     )
-
                 # Job has completed successfully. Get the execSystemOutputDir from the job object
                 # and generate a task output for each file in the directory 
                 if job.status == "FINISHED":
-                    files = service_client.files.listFiles(systemId=job.execSystemId, path=job.execSystemOutputDir)
+                    files = service_client.files.listFiles(
+                        systemId=job.execSystemId,
+                        path=job.execSystemOutputDir,
+                        _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
+                        _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
+                    )
                     for _file in files:
                         self._set_output(
                             _file.name + TAPIS_SYSTEM_FILE_REF_EXTENSION,
