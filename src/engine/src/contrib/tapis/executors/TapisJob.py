@@ -85,15 +85,13 @@ class TapisJob(TaskExecutor):
                         _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
                         _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
                     )
-                    for _file in files:
-                        print(_file)
-                        print(dict(_file))
+                    for file in files:
                         self._set_output(
-                            _file.name + TAPIS_SYSTEM_FILE_REF_EXTENSION,
+                            file.name + TAPIS_SYSTEM_FILE_REF_EXTENSION,
                             json.dumps(
                                 TapisJobTaskOutput(
                                     exec_system_output_dir=job.execSystemOutputDir,
-                                    file=dict(_file)
+                                    file=json.loads(json.dumps(file))
                                 ).dict()
                             )
                         )
