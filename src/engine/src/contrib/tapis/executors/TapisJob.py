@@ -87,7 +87,7 @@ class TapisJob(TaskExecutor):
                     )
                     for _file in files:
                         print(_file)
-                        print(dict(file))
+                        print(dict(_file))
                         self._set_output(
                             _file.name + TAPIS_SYSTEM_FILE_REF_EXTENSION,
                             json.dumps(
