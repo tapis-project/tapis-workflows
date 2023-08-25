@@ -1,11 +1,10 @@
-import json, time, os
+import json, time
 
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY, TAPIS_SYSTEM_FILE_REF_EXTENSION
 from contrib.tapis.schema import ReqSubmitJob, TapisJobTaskOutput
 from owe_python_sdk.TaskExecutor import TaskExecutor
 
-from pprint import pprint
 
 class TapisJob(TaskExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
@@ -18,13 +17,10 @@ class TapisJob(TaskExecutor):
 
             # Recursively convert nested simple namespace objects to dict
             job_def = ReqSubmitJob(**json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s))))
-
-            pprint(job_def.dict())
-            print(self.ctx.params.get("tapis_tenant_id").value)
-            print(self.ctx.params.get("tapis_pipeline_owner").value)
             
             exec_system_input_dir = job_def.execSystemInputDir
             if exec_system_input_dir == None:
+                print("PRE getApp")
                 app = service_client.apps.getApp(
                     appId=job_def.appId,
                     appVersion=job_def.appVersion,
@@ -32,7 +28,7 @@ class TapisJob(TaskExecutor):
                     _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
                 )
                 exec_system_input_dir = app.jobAttributes.execSystemInputDir
-
+                print("POST getApp")
             if exec_system_input_dir == None:
                 raise Exception("Exec system input dir must be specified in either the App or the Job definition")
 
@@ -64,11 +60,13 @@ class TapisJob(TaskExecutor):
             job_def.fileInputArrays.extend(file_input_arrays)
 
             # Submit the job
+            print("PRE submitJob")
             job = service_client.jobs.submitJob(
                 **job_def.dict(),
                 _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
                 _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
             )
+            print("POST submitJob")
 
             if self.task.poll:
                 # Keep polling until the job is complete
