@@ -43,7 +43,7 @@ class TapisJob(TaskExecutor):
                         continue
                     
                     # Pull the Tapis System File details from the file
-                    with open(parent_task_output_file.path, flag="r") as file:
+                    with open(parent_task_output_file.path, mode="r") as file:
                         tapis_job_task_output = TapisJobTaskOutput(**json.loads(file.read()))
                         source_urls.append(tapis_job_task_output.file.url)
                 
