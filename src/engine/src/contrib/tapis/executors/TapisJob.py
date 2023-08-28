@@ -35,9 +35,8 @@ class TapisJob(TaskExecutor):
             file_input_arrays = []
             for parent_task in self.task.depends_on:
                 parent_task_output = self.ctx.output[parent_task.id]
-                print("PARENT_TASK_OUTPUT", parent_task_output)
                 source_urls = []
-                for parent_task_output_file in parent_task_output.files:
+                for parent_task_output_file in parent_task_output:
                     # Skip all output files that do not contain the Tapis
                     # system file reference extension
                     if TAPIS_SYSTEM_FILE_REF_EXTENSION not in parent_task_output_file.name:
@@ -59,6 +58,8 @@ class TapisJob(TaskExecutor):
 
             # Add the file input arrays to the Tapis Job definition
             job_def.fileInputArrays.extend(file_input_arrays)
+
+            print(job_def.dict())
 
             # Submit the job
             job = service_client.jobs.submitJob(
