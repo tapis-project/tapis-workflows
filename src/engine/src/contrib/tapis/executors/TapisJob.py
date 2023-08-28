@@ -59,8 +59,6 @@ class TapisJob(TaskExecutor):
             # Add the file input arrays to the Tapis Job definition
             job_def.fileInputArrays.extend(file_input_arrays)
 
-            print(job_def.dict())
-
             # Submit the job
             job = service_client.jobs.submitJob(
                 **job_def.dict(),
