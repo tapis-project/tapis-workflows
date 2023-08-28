@@ -35,6 +35,7 @@ class TapisJob(TaskExecutor):
             file_input_arrays = []
             for parent_task in self.task.depends_on:
                 parent_task_output = self.ctx.output[parent_task.id]
+                print("PARENT_TASK_OUTPUT", parent_task_output)
                 source_urls = []
                 for parent_task_output_file in parent_task_output.files:
                     # Skip all output files that do not contain the Tapis
