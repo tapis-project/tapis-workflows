@@ -26,9 +26,7 @@ class TapisSystemFile(BaseModel):
     path: str
     size: int = None
 
-class TapisJobTaskOutput(BaseTapisTaskOutput):
-    type: EnumTapisTaskOutputType = EnumTapisTaskOutputType.TapisJob
-    exec_system_output_dir: str
+class TapisSystemFileOutput(BaseTapisTaskOutput):
     file: TapisSystemFile
 
 class ReqSubmitJob(BaseModel):

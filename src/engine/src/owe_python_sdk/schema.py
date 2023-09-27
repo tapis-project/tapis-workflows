@@ -697,6 +697,7 @@ class CIPipeline(BasePipeline):
     url: str = None
 
 # Pipeline runs and task executions
+# TODO rename ReqCreateTaskExecution
 class TaskExecution(BaseModel):
     task_id: str
     started_at: str = None
@@ -779,3 +780,5 @@ class PreparedRequest:
         self.body = body
         self.message = message
         self.failure_view = failure_view
+
+

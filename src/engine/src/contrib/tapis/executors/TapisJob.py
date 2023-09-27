@@ -2,7 +2,7 @@ import json, time
 
 from contrib.tapis.helpers import TapisServiceAPIGateway
 from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY, TAPIS_SYSTEM_FILE_REF_EXTENSION
-from contrib.tapis.schema import ReqSubmitJob, TapisJobTaskOutput
+from contrib.tapis.schema import ReqSubmitJob, TapisSystemFileOutput
 from owe_python_sdk.TaskExecutor import TaskExecutor
 
 
@@ -44,13 +44,13 @@ class TapisJob(TaskExecutor):
                     
                     # Pull the Tapis System File details from the file
                     with open(parent_task_output_file.path, mode="r") as file:
-                        tapis_job_task_output = TapisJobTaskOutput(**json.loads(file.read()))
-                        source_urls.append(tapis_job_task_output.file.url)
+                        tapis_system_file_output = TapisSystemFileOutput(**json.loads(file.read()))
+                        source_urls.append(tapis_system_file_output.file.url)
                 
                 if len(source_urls) > 0:
                     file_input_arrays.append({
                         "name": f"owe-implicit-input-{parent_task.id}",
-                        "description": f"These files were generated as a result of a Tapis Job submission via an Open Workflow Engine task execution for the pipeline '{self.ctx.pipeline.id}' and task '{parent_task.id}'.",
+                        "description": f"These files were generated as a result of an Open Workflow Engine task execution for the pipeline '{self.ctx.pipeline.id}' and task '{parent_task.id}'.",
                         "sourceUrls": source_urls,
                         "targetDir": exec_system_input_dir,
                         "notes": {}
@@ -87,10 +87,9 @@ class TapisJob(TaskExecutor):
                     )
                     for file in files:
                         self._set_output(
-                            file.name + TAPIS_SYSTEM_FILE_REF_EXTENSION,
+                            file.name + "." + TAPIS_SYSTEM_FILE_REF_EXTENSION,
                             json.dumps(
-                                TapisJobTaskOutput(
-                                    exec_system_output_dir=job.execSystemOutputDir,
+                                TapisSystemFileOutput(
                                     file=file.__dict__
                                 ).dict()
                             ),
