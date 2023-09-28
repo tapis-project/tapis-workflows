@@ -8,12 +8,6 @@ from pydantic import BaseModel, Extra, root_validator, validator
 from owe_python_sdk.schema import _EnumMeta
 
 
-class EnumTapisTaskOutputType(str, Enum, metaclass=_EnumMeta):
-    TapisJob = "tapis_job"
-
-class BaseTapisTaskOutput(BaseModel):
-    type: EnumTapisTaskOutputType
-
 class TapisSystemFile(BaseModel):
     mimeType: str = None
     type: Literal["file", "dir"]
@@ -26,7 +20,7 @@ class TapisSystemFile(BaseModel):
     path: str
     size: int = None
 
-class TapisSystemFileOutput(BaseTapisTaskOutput):
+class TapisSystemFileOutput(BaseModel):
     file: TapisSystemFile
 
 class ReqSubmitJob(BaseModel):
