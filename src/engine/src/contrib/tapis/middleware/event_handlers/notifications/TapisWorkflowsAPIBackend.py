@@ -10,6 +10,7 @@ from owe_python_sdk.events.types import (
     TASK_ACTIVE, TASK_ARCHIVING, TASK_BACKOFF, TASK_COMPLETED, TASK_FAILED, 
     TASK_PENDING, TASK_SUSPENDED, TASK_TERMINATED, TASK_SKIPPED
 )
+from owe_python_sdk.constants import STDERR, STDOUT
 
 
 class TapisWorkflowsAPIBackend(EventHandler):
@@ -222,7 +223,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
             return str(file.read())
         
     def _tail_stdout(self, task):
-        return self._tail_output(task, ".stdout")
+        return self._tail_output(task, STDOUT)
     
     def _tail_stderr(self, task):
-        return self._tail_output(task, ".stderr")
+        return self._tail_output(task, STDERR)

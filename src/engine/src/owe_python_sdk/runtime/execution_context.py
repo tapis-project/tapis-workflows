@@ -8,6 +8,7 @@ class ExecutionContext:
     def __init__(self, runtime: Runtime):
         self._runtime = runtime
         self.output_dir = runtime.OUTPUT_DIR
+        self.input_dir = runtime.INPUT_DIR
         self.exec_dir = runtime.EXEC_DIR
 
     def get_input(self, key, default=None):
@@ -34,7 +35,7 @@ class ExecutionContext:
 
         sys.exit(code)
 
-    def stdout(self, value):
+    def stdout(self, value, code=0):
         with open(self._runtime.STDOUT, "w") as file:
             if type(value) == dict:
                 value = json.dumps(value)

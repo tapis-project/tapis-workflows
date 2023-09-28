@@ -6,6 +6,7 @@ from owe_python_sdk.events.types import TASK_TERMINATED
 from owe_python_sdk.events import EventPublisher, EventExchange, Event
 from owe_python_sdk.TaskResult import TaskResult
 from owe_python_sdk.TaskOutputFile import TaskOutputFile
+from owe_python_sdk.constants import STDERR, STDOUT
 from utils import lbuffer_str as lbuf
 from core.resources import Resource, ResourceType
 from conf.constants import (
@@ -69,10 +70,10 @@ class TaskExecutor(EventPublisher):
             file.write(value)
 
     def _stdout(self, value, flag="wb"):
-        self._set_output(".stdout", value, flag=flag)
+        self._set_output(STDOUT, value, flag=flag)
 
     def _stderr(self, value, flag="wb"):
-        self._set_output(".stderr", value, flag=flag)
+        self._set_output(STDERR, value, flag=flag)
 
     def _get_task_output_files(self):
         return os.listdir(self.task.output_dir)
