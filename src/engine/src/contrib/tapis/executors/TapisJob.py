@@ -44,7 +44,7 @@ class TapisJob(TaskExecutor):
                     
                     # Pull the Tapis System File details from the file
                     with open(parent_task_output_file.path, mode="r") as file:
-                        tapis_system_file_output = TapisSystemFileOutput(**json.loads(file.read()))
+                        tapis_system_file_output = TapisSystemFileOutput(file=json.loads(file.read()))
                         source_urls.append(tapis_system_file_output.file.url)
                 
                 if len(source_urls) > 0:

@@ -253,7 +253,6 @@ class WorkflowExecutor(Worker, EventPublisher):
         Path(task.stdout).touch()
         Path(task.stderr).touch()
 
-
     @interceptable()
     def _start_task(self, task):
         # Log the task active
