@@ -4,7 +4,7 @@ from kubernetes import client
 
 from owe_python_sdk.TaskExecutor import TaskExecutor
 from owe_python_sdk.utils import get_schema_extensions
-from owe_python_sdk.constants import FUNCTION_TASK_RUNTIMES
+from owe_python_sdk.constants import FUNCTION_TASK_RUNTIMES, STDERR, STDOUT
 from conf.constants import (
     WORKFLOW_NFS_SERVER,
     KUBERNETES_NAMESPACE,
@@ -301,11 +301,11 @@ class Function(TaskExecutor):
         # The output file for the install logs inside the container
         dot_install = os.path.join(self.task.container_work_dir, "output", ".install")
 
-        # .stderr path inside the container
-        stderr = os.path.join(self.task.container_work_dir, "output", ".stderr")
+        # stderr path inside the container
+        stderr = os.path.join(self.task.container_work_dir, "output", STDERR)
 
         # .stdout path inside the container
-        stdout = os.path.join(self.task.container_work_dir, "output", ".stdout")
+        stdout = os.path.join(self.task.container_work_dir, "output", STDOUT)
 
         install_cmd = ""
         if has_packages:
