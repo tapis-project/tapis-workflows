@@ -35,7 +35,6 @@ class TapisJob(TaskExecutor):
             file_input_arrays = []
             for parent_task in self.task.depends_on:
                 parent_task_output = self.ctx.output[parent_task.id]
-                print(f"Parent Task Output: {parent_task.id}:", parent_task_output)
                 source_urls = []
                 for parent_task_output_file in parent_task_output:
                     # Skip all output files that do not contain the Tapis
@@ -45,8 +44,7 @@ class TapisJob(TaskExecutor):
                     
                     # Pull the Tapis System File details from the file
                     with open(parent_task_output_file.path, mode="r") as file:
-                        print(f"{parent_task_output_file.path}: Contents:", file.read())
-                        tapis_system_file_output = TapisSystemFileOutput(file=json.loads(file.read()))
+                        tapis_system_file_output = TapisSystemFileOutput(**json.loads(file.read()))
                         source_urls.append(tapis_system_file_output.file.url)
                 
                 if len(source_urls) > 0:
