@@ -492,17 +492,25 @@ class TaskExecutionProfile(BaseExecutionProfile):
 
 class GitRepository(BaseModel):
     url: str
-    branch: str = None # If no branch specified, the default branch will be used
+    branch: str = None
+    auth: GithubAuth = None
+
+class ClonedGitRepository(GitRepository):
     directory: str
+
+class Uses(BaseModel):
+    repository: GitRepository
+    
 
 class BaseTask(BaseModel):
     id: ID
     type: LiteralTaskTypes
+    uses: Uses = None
     depends_on: List[TaskDependency] = []
     description: str = None
     execution_profile: TaskExecutionProfile = TaskExecutionProfile()
     input: Dict[str, TaskInputValue] = {}
-    _if: str = None
+    condition: str = None
     output: Dict[str, BaseOutputValue] = {}
 
     class Config:
@@ -605,7 +613,7 @@ class RequestTask(BaseTask):
 
 class FunctionTask(BaseTask):
     type: Literal["function"]
-    git_repositories: List[GitRepository] = []
+    git_repositories: List[ClonedGitRepository] = []
     runtime: EnumRuntimeEnvironment
     packages: List[str] = []
     installer: EnumInstaller
