@@ -35,6 +35,7 @@ class TapisJob(TaskExecutor):
             file_input_arrays = []
             for parent_task in self.task.depends_on:
                 parent_task_output = self.ctx.output[parent_task.id]
+                print(f"Parent Task Output: {parent_task.id}:", parent_task_output)
                 source_urls = []
                 for parent_task_output_file in parent_task_output:
                     # Skip all output files that do not contain the Tapis
@@ -44,6 +45,7 @@ class TapisJob(TaskExecutor):
                     
                     # Pull the Tapis System File details from the file
                     with open(parent_task_output_file.path, mode="r") as file:
+                        print(f"{parent_task_output_file.path}: Contents:", file.read())
                         tapis_system_file_output = TapisSystemFileOutput(file=json.loads(file.read()))
                         source_urls.append(tapis_system_file_output.file.url)
                 
@@ -66,41 +68,43 @@ class TapisJob(TaskExecutor):
                 _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
             )
 
-            if self.task.poll:
-                # Keep polling until the job is complete
-                while job.status not in ["FINISHED", "CANCELLED", "FAILED"]:
-                    # Wait the polling frequency time then try poll again
-                    time.sleep(TAPIS_JOB_POLLING_FREQUENCY)
-                    job = service_client.jobs.getJob(
-                        jobUuid=job.uuid,
-                        _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
-                        _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
-                    )
-                # Job has completed successfully. Get the execSystemOutputDir from the job object
-                # and generate a task output for each file in the directory 
-                if job.status == "FINISHED":
-                    files = service_client.files.listFiles(
-                        systemId=job.execSystemId,
-                        path=job.execSystemOutputDir,
-                        _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
-                        _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
-                    )
-                    for file in files:
-                        self._set_output(
-                            file.name + "." + TAPIS_SYSTEM_FILE_REF_EXTENSION,
-                            json.dumps(
-                                TapisSystemFileOutput(
-                                    file=file.__dict__
-                                ).dict()
-                            ),
-                            flag="w"
-                        )
+            # Return with success if not polling
+            if not self.task.poll:
+                return self._task_result(0)
+            
+            # Keep polling until the job is complete
+            while job.status not in ["FINISHED", "CANCELLED", "FAILED"]:
+                # Wait the polling frequency time then try poll again
+                time.sleep(TAPIS_JOB_POLLING_FREQUENCY)
+                job = service_client.jobs.getJob(
+                    jobUuid=job.uuid,
+                    _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
+                    _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
+                )
 
-                    return self._task_result(0)
+            # Job has completed successfully. Get the execSystemOutputDir from the job object
+            # and generate a task output for each file in the directory 
+            if job.status == "FINISHED":
+                files = service_client.files.listFiles(
+                    systemId=job.execSystemId,
+                    path=job.execSystemOutputDir,
+                    _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
+                    _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
+                )
+                for file in files:
+                    self._set_output(
+                        file.name + "." + TAPIS_SYSTEM_FILE_REF_EXTENSION,
+                        json.dumps(
+                            TapisSystemFileOutput(
+                                file=file.__dict__
+                            ).dict()
+                        ),
+                        flag="w"
+                    )
 
-                return self._task_result(1)
+                return self._task_result(0)
+
+            return self._task_result(1)
                 
-            return self._task_result(0)
-
         except Exception as e:
             return self._task_result(1, errors=[str(e)])
