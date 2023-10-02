@@ -430,7 +430,7 @@ class Task(models.Model):
 
     # Props
     id = models.CharField(validators=[validate_id], max_length=128)
-    _if = models.TextField(null=True)
+    condition = models.TextField(null=True)
     cache = models.BooleanField(null=True)
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
@@ -447,6 +447,7 @@ class Task(models.Model):
     poll = models.BooleanField(null=True)
     retry_policy = models.CharField(max_length=32, default=EnumRetryPolicy.ExponentialBackoff)
     type = models.CharField(max_length=32, choices=TASK_TYPES)
+    uses = models.JSONField(null=True)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
 
     # Image build specific properties
