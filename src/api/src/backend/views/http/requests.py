@@ -115,9 +115,10 @@ class EnumTaskFlavor(str, Enum, metaclass=_EnumMeta):
     G1_NVD_MED = "g1nvdmed"
     G1_NVD_LRG = "g1nvdlrg"
 
-LiteralTaskTypes = Literal["function", "application", "request", "image_build", "tapis_job", "tapis_actor"]
+LiteralTaskTypes = Literal["template", "function", "application", "request", "image_build", "tapis_job", "tapis_actor"]
 TaskTypes = list(get_args(LiteralTaskTypes))
 class EnumTaskType(str, Enum, metaclass=_EnumMeta):
+    Template = "template"
     ImageBuild = "image_build"
     Request = "request"
     Function = "function"
@@ -499,17 +500,16 @@ class ClonedGitRepository(GitRepository):
     directory: str
 
 class Uses(BaseModel):
-    repository: GitRepository
+    name: str
+    git_repository: GitRepository
 
 class BaseTask(BaseModel):
     id: ID
     type: LiteralTaskTypes
-    uses: Uses = None
     depends_on: List[TaskDependency] = []
     description: str = None
     execution_profile: TaskExecutionProfile = TaskExecutionProfile()
     input: Dict[str, TaskInputValue] = {}
-    _if: str = None
     output: Dict[str, BaseOutputValue] = {}
 
     class Config:
@@ -536,6 +536,9 @@ class BaseTask(BaseModel):
                 }
 
         return values
+    
+class TemplateTask(BaseTask):
+    uses: Uses
 
 class ApplicationTask(BaseTask):
     type: Literal["application", "container_run"]
@@ -623,6 +626,7 @@ class FunctionTask(BaseTask):
 
 Task = Annotated[
     Union[
+        TemplateTask,
         ApplicationTask,
         ImageBuildTask,
         FunctionTask,
@@ -639,6 +643,7 @@ class BasePipeline(BaseModel):
     tasks: List[
         Annotated[
             Union[
+                TemplateTask,
                 ApplicationTask,
                 ImageBuildTask,
                 FunctionTask,
