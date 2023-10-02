@@ -500,7 +500,6 @@ class ClonedGitRepository(GitRepository):
 
 class Uses(BaseModel):
     repository: GitRepository
-    
 
 class BaseTask(BaseModel):
     id: ID
@@ -510,7 +509,7 @@ class BaseTask(BaseModel):
     description: str = None
     execution_profile: TaskExecutionProfile = TaskExecutionProfile()
     input: Dict[str, TaskInputValue] = {}
-    condition: str = None
+    _if: str = None
     output: Dict[str, BaseOutputValue] = {}
 
     class Config:
