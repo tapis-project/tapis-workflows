@@ -509,7 +509,6 @@ class BaseTask(BaseModel):
     description: str = None
     execution_profile: TaskExecutionProfile = TaskExecutionProfile()
     input: Dict[str, TaskInputValue] = {}
-    conditional: str = None
     output: Dict[str, BaseOutputValue] = {}
 
     class Config:
