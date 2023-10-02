@@ -12,7 +12,9 @@ COPY src/api/src/requirements.txt /src/requirements.txt
 
 WORKDIR /src
 
-RUN pip3 install -r requirements.txt
+RUN pip install --upgrade pip
+
+RUN pip install -r requirements.txt
 
 COPY src/api/src/ /src
 
