@@ -1,6 +1,8 @@
-FROM python:3.9
+FROM python:3.10
 
-RUN apt-get clean && apt-get update
+RUN apt-get clean
+
+RUN apt-get update
 
 RUN apt-get install -y vim
 
