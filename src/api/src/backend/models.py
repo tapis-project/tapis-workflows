@@ -532,4 +532,3 @@ class TaskExecution(models.Model):
     status = models.CharField(max_length=16, choices=TASK_EXECUTION_STATUSES, default=RUN_STATUS_PENDING)
     task = models.ForeignKey("backend.Task", related_name="task_executions", on_delete=models.CASCADE)
     uuid = models.UUIDField(primary_key=True)
-    
