@@ -9,7 +9,9 @@ python backend/setup.py
 
 # Migrates the db schema
 chmod a+x ./scripts/migrate.sh
+echo "BEFORE MIGRATE"
 ./scripts/migrate.sh
+echo "AFTER MIGRATE"
 
 # Uses the envrionment variables to resolve superuser username,
 # password, and email

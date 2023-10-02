@@ -430,7 +430,7 @@ class Task(models.Model):
 
     # Props
     id = models.CharField(validators=[validate_id], max_length=128)
-    conditional = models.TextField(null=True)
+    _if = models.TextField(null=True)
     cache = models.BooleanField(null=True)
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
