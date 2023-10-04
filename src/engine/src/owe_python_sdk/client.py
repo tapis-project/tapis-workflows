@@ -61,7 +61,7 @@ class Pipeline(Runnable):
         runner_class: Runner,
         runner_config_override={}
     ):
-        self.schema = owe_schema.BasePipeline(**schema)
+        self.schema = owe_schema.Pipeline(**schema)
         self._set_runner_class(runner_class, runner_config_override=runner_config_override)
 
     def add_task(self, task: Task, *tasks: List[Task]):

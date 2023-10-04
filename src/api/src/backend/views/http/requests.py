@@ -180,17 +180,62 @@ class ID(str):
             raise ValueError("Invalid 'id' format. Must start with alphanumeric chars followed by 0 or more alphanumeric chars, '_', and '-'")
         return v
 
-class BaseValue(BaseModel):
-    type: EnumTaskIOTypes = EnumTaskIOTypes.String
-    value: Union[str, int, float, bool, bytes] = None
-    value_from: Dict[str, str] = None
+class TaskOutputRef(BaseModel):
+    task_id: str
+    output_id: str
+
+LiteralHostRefTypes = Literal["kubernetes_secret", "kubernetes_config_map"]
+class ValueFromHostRef(BaseModel):
+    type: LiteralHostRefTypes
+    name: str
+    field_selector: str = None
+
+class ValueFromSecretRef(BaseModel):
+    engine: str
+    pk: str
+    field_selector: str = None
+
+ValueFromEnv = Dict[Literal["env"], str]
+ValueFromParams = Dict[Literal["params"], str]
+ValueFromTaskOutput = Dict[Literal["task_output"], TaskOutputRef]
+ValueFromHost = Dict[Literal["host"], ValueFromHostRef]
+ValueFromSecret = Dict[Literal["secret"], ValueFromSecretRef]
+ValueFromAll = Union[
+    ValueFromEnv,
+    ValueFromParams,
+    ValueFromTaskOutput,
+    ValueFromHost,
+    ValueFromSecret
+]
+
+EnvSpecValueFrom = Union[
+    ValueFromSecret,
+    ValueFromHost
+]
+
+# NOTE Same as EnvSpecValueFrom for now, but may diverge. Delete this NOTE once it does
+# Also, no good name for the combination of the 2. EnvParamSpecValueFrom?? No thanks.
+ParamSpecValueFrom = Union[
+    ValueFromSecret,
+    ValueFromHost
+]
+
+Value = Union[str, int, float, bool, bytes]
+
+class Spec(BaseModel):
+    required: bool = False
+    type: EnumTaskIOTypes
+    value: Value = None
+    value_from: ValueFromAll = None
 
     @root_validator(pre=True)
     def value_or_value_from(cls, values):
         # Either 'value' or 'value_from' must be set on every variable
         if (
-            values.get("value", None) == None
-            and values.get("value_from", None) == None
+            (
+                values.get("value", None) == None
+                and values.get("value_from", None) == None
+            ) and values.get("required")
         ):
             raise ValueError(
                 "Missing 'value' or 'value_from' property in variable values")
@@ -226,44 +271,25 @@ class BaseValue(BaseModel):
                 "Task Input Value Error: 'value_from' property must be a single key-value pair where the key is oneOf ['env', 'params', 'task_input', 'host', 'secret'] and the value is a non-empty string if key is oneOf ['env', 'params'] or an object if key is oneOf ['task_input', 'host', 'secret']"
             )
         return value
-    
 
-class TaskOutputRef(BaseModel):
-    task_id: str
-    output_id: str
+class TaskInputSpec(Spec):
+    value: Value = None
+    value_from: ValueFromAll = None
 
-LiteralHostRefTypes = Literal["kubernetes_secret", "kubernetes_config_map"]
-class ValueFromHostRef(BaseModel):
-    type: LiteralHostRefTypes
-    name: str
-    field_selector: str = None
+class EnvSpec(Spec):
+    value: Value = None
+    value_from: EnvSpecValueFrom = None
 
-class ValueFromSecretRef(BaseModel):
-    engine: str
-    pk: str
-    field_selector: str = None
+Env = Dict[str, EnvSpec]
 
-ValueFromEnv = Dict[Literal["env"], str]
-ValueFromParams = Dict[Literal["params"], str]
-ValueFromTaskOutput = Dict[Literal["task_output"], TaskOutputRef]
-ValueFromHost = Dict[Literal["host"], ValueFromHostRef]
-ValueFromSecret = Dict[Literal["secret"], ValueFromSecretRef]
-
-class TaskInputValue(BaseValue):
+class ParamSpec(Spec):
     type: EnumTaskIOTypes
-    value: Union[str, int, float, bool, bytes] = None
-    value_from: Union[
-        ValueFromEnv,
-        ValueFromParams,
-        ValueFromTaskOutput,
-        ValueFromHost,
-        ValueFromSecret
-    ] = None
+    value: Value = None
+    value_from: ParamSpecValueFrom = None
 
-class ValueWithRequirements(BaseValue):
-    required: bool = False
+Params = Dict[str, ParamSpec]
 
-KeyVal = Dict[str, BaseValue]
+KeyVal = Dict[str, Spec]
 ################## /Common ###################
 
 class S3Auth(BaseModel):
@@ -362,7 +388,7 @@ class IdentityCreateRequest(BaseModel):
         DockerhubAuth
     ]
 
-class BaseContext(BaseModel):
+class Context(BaseModel):
     type: LiteralContextTypes
     branch: str = None
     build_file_path: str = None
@@ -379,14 +405,14 @@ class BaseContext(BaseModel):
     class Config:
         extra: Extra.allow
 
-class GithubContext(BaseContext):
+class GithubContext(Context):
     type: Literal["github"]
     credentials: GithubAuth = None
     branch: str
     build_file_path: str = None
     sub_path: str = None
 
-class DockerhubContext(BaseContext):
+class DockerhubContext(Context):
     type: Literal["dockerhub"]
     credentials: DockerhubAuth = None
 
@@ -427,7 +453,7 @@ class BaseEvent(BaseModel):
     username: str = None
 
 class APIEvent(BaseEvent):
-    params: KeyVal = {}
+    params: Params = {}
     directives: List[str] = None
 
 class WebhookEvent(BaseEvent):
@@ -465,9 +491,8 @@ class TaskDependency(BaseModel):
 
 # Output -----------------------------------------------------------------
 
-class BaseOutputValue(BaseModel):
+class TaskOutputSpec(BaseModel):
     type: EnumTaskIOTypes
-    value: Union[str, int, float, bool, bytes]
 
 # ------------------------------------------------------------------------
 
@@ -500,8 +525,14 @@ class ClonedGitRepository(GitRepository):
     directory: str
 
 class Uses(BaseModel):
-    name: str
-    git_repository: GitRepository
+    source: GitRepository
+    name: str = None
+    path: str = None
+
+    @root_validator
+    def must_provide_name_or_path(cls, values):
+        if values.get("name", None) == None and values.get("path", None) == None:
+            raise ValueError("The 'uses' property of a Template Task must specify either a 'name' or 'path' property")
 
 class BaseTask(BaseModel):
     id: ID
@@ -509,8 +540,8 @@ class BaseTask(BaseModel):
     depends_on: List[TaskDependency] = []
     description: str = None
     execution_profile: TaskExecutionProfile = TaskExecutionProfile()
-    input: Dict[str, TaskInputValue] = {}
-    output: Dict[str, BaseOutputValue] = {}
+    input: Dict[str, TaskInputSpec] = {}
+    output: Dict[str, TaskOutputSpec] = {}
 
     class Config:
         arbitrary_types_allowed = True
@@ -538,7 +569,7 @@ class BaseTask(BaseModel):
         return values
     
 class TemplateTask(BaseTask):
-    uses: Uses
+    uses: Union[str, Uses]
 
 class ApplicationTask(BaseTask):
     type: Literal["application", "container_run"]
@@ -637,7 +668,7 @@ Task = Annotated[
     Field(discriminator="type")
 ]
 
-class BasePipeline(BaseModel):
+class Pipeline(BaseModel):
     id: ID
     type: EnumPipelineType = EnumPipelineType.Workflow
     tasks: List[
@@ -658,8 +689,8 @@ class BasePipeline(BaseModel):
         max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
     cron: str = None
     archive_ids: List[str] = []
-    env: KeyVal = {}
-    params: Dict[str, ValueWithRequirements] = {}
+    env: Env = {}
+    params: Params = {}
 
     # NOTE This pre validation transformer is for backwards-compatibility
     # Previous pipelines did not have environments or parmas
@@ -681,10 +712,10 @@ class BasePipeline(BaseModel):
     class Config:
         extra = Extra.allow
 
-class WorkflowPipeline(BasePipeline):
+class WorkflowPipeline(Pipeline):
     pass
 
-class CIPipeline(BasePipeline):
+class CIPipeline(Pipeline):
     cache: bool = False
     builder: str
     context: Annotated[
@@ -701,12 +732,6 @@ class CIPipeline(BasePipeline):
         ],
         Field(discriminator="type")
     ] = None
-    auth: dict = None
-    data: dict = None
-    headers: dict = None
-    http_method: str = None
-    query_params: dict = None
-    url: str = None
 
 # Pipeline runs and task executions
 # TODO rename ReqCreateTaskExecution
@@ -748,10 +773,10 @@ class Group(BaseModel):
 
 class WorkflowSubmissionRequest(BaseModel):
     archives: List[Archive] = []
-    env: KeyVal = {}
-    params: KeyVal = {}
+    env: Env = {}
+    params: Params = {}
     group: Group
-    pipeline: BasePipeline
+    pipeline: Pipeline
     pipeline_run: PipelineRun
     meta: WorkflowSubmissionRequestMeta
 
