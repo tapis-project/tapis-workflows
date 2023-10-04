@@ -6,9 +6,21 @@ standard_workflow = {
     "archive_ids": [],
     "tasks": [image_build, request],
     "env": {
-        "TAPIS_SYSTEM_ID": "my-system-id",
-        "MANIFEST_FILES_PATH": "/",
-        "TAPIS_USERNAME": "testuser2",
-        "TAPIS_PASSWORD": "testuser2"
+        "TAPIS_SYSTEM_ID": {
+            "type": "string",
+            "value": "my-system-id"
+        },
+        "MANIFEST_FILES_PATH": {
+            "type": "string",
+            "value": "/"
+        },
+        "TAPIS_USERNAME": {
+            "type": "string",
+            "value": "testuser2"
+        },
+        "TAPIS_PASSWORD": {
+            "type": "string",
+            "value": "testuser2"
+        }
     }
 }
