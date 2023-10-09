@@ -60,6 +60,10 @@ class ETLPipelines(RestrictedAPIView):
         # Check that the id of the pipeline is unique
         if PipelineModel.objects.filter(id=body.id, group=group).exists():
             return Conflict(f"A Pipeline already exists with the id '{body.id}'")
+        
+        # Check that the pipeline contains at least 1 tapis job definition
+        if len(body.jobs) < 1:
+            return BadRequest("An ETL pipeline must contain at least 1 Tapis Job definition")
 
         # Create the pipeline
         try:
@@ -67,6 +71,7 @@ class ETLPipelines(RestrictedAPIView):
                 id=body.id,
                 group=group,
                 owner=request.username,
+                uses=request.uses.dict(),
                 max_exec_time=body.execution_profile.max_exec_time,
                 invocation_mode=body.execution_profile.invocation_mode,
                 max_retries=body.execution_profile.max_retries,

@@ -20,6 +20,7 @@ django-debug-toolbar==3.2.2
 djangorestframework==3.13.1
 djantic==0.7.0
 gevent==21.12.0
+GitPython==3.1.27
 greenlet==1.1.2
 gunicorn==20.1.0
 idna==3.3
