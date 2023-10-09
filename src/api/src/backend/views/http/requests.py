@@ -674,6 +674,7 @@ Task = Annotated[
 class Pipeline(BaseModel):
     id: ID
     type: EnumPipelineType = EnumPipelineType.Workflow
+    uses: Union[str, Uses]
     tasks: List[
         Annotated[
             Union[
@@ -715,9 +716,6 @@ class Pipeline(BaseModel):
         return values
     class Config:
         extra = Extra.allow
-
-class WorkflowPipeline(Pipeline):
-    pass
 
 class CIPipeline(Pipeline):
     cache: bool = False

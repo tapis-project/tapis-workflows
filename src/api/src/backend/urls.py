@@ -48,7 +48,7 @@ urlpatterns = [
 
     # Pipelines
     path("groups/<str:group_id>/ci", Pipelines.as_view(), name="ci"),
-     path("groups/<str:group_id>/etl", ETLPipelines.as_view(), name="etl"),
+    path("groups/<str:group_id>/etl", ETLPipelines.as_view(), name="etl"),
     path("groups/<str:group_id>/pipelines", Pipelines.as_view(), name="pipelines"),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>", Pipelines.as_view(), name="pipeline"),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/owner/<str:username>", ChangePipelineOwner.as_view(), name="changePipelineOwner"),

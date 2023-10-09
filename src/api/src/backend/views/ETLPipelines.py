@@ -11,12 +11,11 @@ from backend.views.http.responses.errors import (
     Forbidden,
     ServerError as ServerErrorResp
 )
-from backend.views.http.responses.models import ModelListResponse
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
-from backend.views.http.requests import WorkflowPipeline, CIPipeline, ImageBuildTask
+from backend.views.http.requests import ImageBuildTask
 from backend.views.http.etl import TapisETLPipeline
 from backend.models import (
-    Pipeline,
+    Pipeline as PipelineModel,
     Archive,
     PipelineArchive,
     TASK_TYPE_IMAGE_BUILD
@@ -40,7 +39,16 @@ class ETLPipelines(RestrictedAPIView):
             return Forbidden(message="You do not have access to this group")
 
         # Validate the request body based on the type of pipeline specified
-        prepared_request = self.prepare(TapisETLPipeline)
+        prepared_request = self.prepare(
+            TapisETLPipeline,
+            uses={
+                "name": "tapis/etl-pipeline@v1beta",
+                "source": {
+                    "url": "https://github.com/tapis-project/tapis-owe-templates.git",
+                    "branch": "master"
+                }
+            }
+        )
 
         # Return the failure view instance if validation failed
         if not prepared_request.is_valid:
@@ -50,12 +58,12 @@ class ETLPipelines(RestrictedAPIView):
         body = prepared_request.body
         
         # Check that the id of the pipeline is unique
-        if Pipeline.objects.filter(id=body.id, group=group).exists():
+        if PipelineModel.objects.filter(id=body.id, group=group).exists():
             return Conflict(f"A Pipeline already exists with the id '{body.id}'")
 
         # Create the pipeline
         try:
-            pipeline = Pipeline.objects.create(
+            pipeline = PipelineModel.objects.create(
                 id=body.id,
                 group=group,
                 owner=request.username,
@@ -100,49 +108,8 @@ class ETLPipelines(RestrictedAPIView):
             [pipeline_archive.delete() for pipeline_archive in pipeline_archives]
             return BadRequest(message=e.__cause__)
 
-        # Fetch the function for building the pipeline according to its type.
-        fn = getattr(self, PIPELINE_TYPE_MAPPING[body.type])
 
         return fn(request, body, pipeline)
-
-    def delete(self, request, group_id, pipeline_id, *_, **__):
-        # Get the group
-        group = group_service.get(group_id, request.tenant_id)
-        if group == None:
-            return NotFound(f"No group found with id '{group_id}'")
-
-        # Check that the user belongs to the group
-        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
-            return Forbidden(message="You do not have access to this group")
-
-        # Get the pipeline by the id provided in the path params
-        pipeline = Pipeline.objects.filter(
-            id=pipeline_id,
-            group=group
-        ).prefetch_related("tasks").first()
-
-
-        if pipeline == None:
-            return NotFound(f"Pipeline not found with id '{pipeline_id}'")
-
-        # Delete operation only allowed by owner
-        if request.username != pipeline.owner:
-            return Forbidden(message="Only the owner of this pipeline can delete it")
-
-        # Delete the pipeline
-        try:
-            # Delete the tasks
-            tasks = pipeline.tasks.all()
-            task_service.delete(tasks)
-        except (DatabaseError, OperationalError) as e:
-            return ServerErrorResp(message=e.__cause__)
-        except ServerError as e:
-            return ServerErrorResp(message=e)
-        
-        pipeline.delete()
-
-        msg = f"Pipeline '{pipeline_id}' deleted. {len(tasks)} task(s) deleted."
-        return BaseResponse(message=msg, result=msg)
 
     def build_ci_pipeline(self, request, body, pipeline):
         try:

@@ -3,7 +3,7 @@ from typing import List, Dict, Union
 
 from pydantic import BaseModel
 
-from . import _EnumMeta
+from .requests import _EnumMeta, Pipeline
 
 
 class EnumManifestGenerationPolicy(str, Enum, metaclass=_EnumMeta):
@@ -51,7 +51,7 @@ class S3RemoteInbox(BaseModel):
     url: str
     bucket: str
 
-class TapisETLPipeline(BaseModel):
+class TapisETLPipeline(Pipeline):
     remote_outbox: Dict = None
     local_inbox: LocalInbox
     jobs: List[Dict]
@@ -60,4 +60,4 @@ class TapisETLPipeline(BaseModel):
         GlobusRemoteInbox,
         S3RemoteInbox
     ]
-    follow_tasks: List[Dict] = []
+    followup_tasks: List[Dict] = []

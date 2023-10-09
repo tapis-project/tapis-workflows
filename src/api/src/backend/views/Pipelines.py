@@ -13,7 +13,7 @@ from backend.views.http.responses.errors import (
 )
 from backend.views.http.responses.models import ModelListResponse
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
-from backend.views.http.requests import WorkflowPipeline, CIPipeline, ImageBuildTask
+from backend.views.http.requests import Pipeline, CIPipeline, ImageBuildTask
 from backend.models import (
     Pipeline,
     Archive,
@@ -96,8 +96,8 @@ class Pipelines(RestrictedAPIView):
         ):
             return BadRequest(f"Request body must inlcude a 'type' property with one of the following values: {PIPELINE_TYPES}")
         
-        # Determine the proper request type. Default will be a WorkflowPipeline request
-        PipelineCreateRequest = WorkflowPipeline
+        # Determine the proper request type. Default will be a normal pipeline request
+        PipelineCreateRequest = Pipeline
         if self.request_body["type"] == PIPELINE_TYPE_CI:
             PipelineCreateRequest = CIPipeline
 
