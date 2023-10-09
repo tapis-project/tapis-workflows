@@ -12,6 +12,7 @@ class TapisServiceAPIGateway:
         
         self.client = None
         try:
+            # NOTE FIXME Remove custom_spec_dict when the updated workflows openapi spec added to tapipy 10/4/23
             self.client = get_service_tapis_client(tenants=tenants, jwt=jwt, custom_spec_dict={"workflows": "local: /src/conf/OWESpec.yaml"})
         except Exception as e:
             logging.error(f'Could not instantiate tapisservice client. Exception: {e}')

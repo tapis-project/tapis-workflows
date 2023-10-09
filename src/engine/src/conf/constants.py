@@ -84,6 +84,7 @@ KANIKO_IMAGE_URL = "gcr.io/kaniko-project/executor"
 KANIKO_IMAGE_TAG = "latest"
 
 FLAVORS = {
+    # EnumTaskFlavor.C1_XTINY: {"cpu": "1", "memory": ".01G", "disk": "1GB"},
     EnumTaskFlavor.C1_TINY: {"cpu": "1", "memory": ".5G", "disk": "20GB"},
     EnumTaskFlavor.C1_XXSML: {"cpu": "1", "memory": "1G", "disk": "20GB"},
     EnumTaskFlavor.C1_XSML: {"cpu": "1", "memory": "2G", "disk": "20GB"},

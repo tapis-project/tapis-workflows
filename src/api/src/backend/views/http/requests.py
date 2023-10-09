@@ -225,6 +225,8 @@ Value = Union[str, int, float, bool, bytes]
 class Spec(BaseModel):
     required: bool = False
     type: EnumTaskIOTypes
+
+class SpecWithValue(Spec):
     value: Value = None
     value_from: ValueFromAll = None
 
@@ -272,24 +274,24 @@ class Spec(BaseModel):
             )
         return value
 
-class TaskInputSpec(Spec):
+class TaskInputSpec(SpecWithValue):
     value: Value = None
     value_from: ValueFromAll = None
 
-class EnvSpec(Spec):
+class EnvSpec(SpecWithValue):
     value: Value = None
     value_from: EnvSpecValueFrom = None
 
 Env = Dict[str, EnvSpec]
 
-class ParamSpec(Spec):
+class ParamSpec(SpecWithValue):
     type: EnumTaskIOTypes
     value: Value = None
     value_from: ParamSpecValueFrom = None
 
 Params = Dict[str, ParamSpec]
 
-KeyVal = Dict[str, Spec]
+PipelineParams = Dict[str, Spec]
 ################## /Common ###################
 
 class S3Auth(BaseModel):
@@ -524,6 +526,7 @@ class GitRepository(BaseModel):
 class ClonedGitRepository(GitRepository):
     directory: str
 
+
 class Uses(BaseModel):
     source: GitRepository
     name: str = None
@@ -686,11 +689,12 @@ class Pipeline(BaseModel):
         ]
     ] = []
     execution_profile: PipelineExecutionProfile = PipelineExecutionProfile(
-        max_exec_time=DEFAULT_MAX_EXEC_TIME*3)
+        max_exec_time=DEFAULT_MAX_EXEC_TIME*3
+    )
     cron: str = None
     archive_ids: List[str] = []
     env: Env = {}
-    params: Params = {}
+    params: PipelineParams = {}
 
     # NOTE This pre validation transformer is for backwards-compatibility
     # Previous pipelines did not have environments or parmas

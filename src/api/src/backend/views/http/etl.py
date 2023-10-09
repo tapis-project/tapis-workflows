@@ -21,7 +21,7 @@ class LocalIOBox(BaseModel):
     manifest_generation_policy: EnumManifestGenerationPolicy
     manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
     manifests_path: str = None
-    exclude_pattern: str = None
+    exclude_pattern: List[str] = []
 
 class LocalInbox(LocalIOBox):
     manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.OnePerFile
@@ -42,9 +42,22 @@ class GlobusRemoteInbox(BaseModel):
     globus_endpoint_id: str
     globus_client_id: str
 
+class S3Auth:
+    access_key: str
+    access_secret: str
+
+class S3RemoteInbox(BaseModel):
+    s3_auth: S3Auth
+    url: str
+    bucket: str
+
 class TapisETLPipeline(BaseModel):
     remote_outbox: Dict = None
     local_inbox: LocalInbox
     jobs: List[Dict]
     local_outbox: LocalOutbox
-    remote_inbox: GlobusRemoteInbox
+    remote_inbox: Union[
+        GlobusRemoteInbox,
+        S3RemoteInbox
+    ]
+    follow_tasks: List[Dict] = []
