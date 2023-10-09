@@ -374,6 +374,7 @@ class Pipeline(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     env = models.JSONField(null=True)
     params = models.JSONField(null=True)
+    uses = models.JSONField(null=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
     invocation_mode = models.CharField(max_length=16, default=EnumInvocationMode.Async)
     max_exec_time = models.BigIntegerField(
