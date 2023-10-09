@@ -42,7 +42,7 @@ class GlobusRemoteInbox(BaseModel):
     globus_endpoint_id: str
     globus_client_id: str
 
-class S3Auth:
+class S3Auth(BaseModel):
     access_key: str
     access_secret: str
 
