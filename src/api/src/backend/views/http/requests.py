@@ -535,6 +535,8 @@ class Uses(BaseModel):
     def must_provide_name_or_path(cls, values):
         if values.get("name", None) == None and values.get("path", None) == None:
             raise ValueError("The 'uses' property of a Template Task must specify either a 'name' or 'path' property")
+        
+        return values
 
 class BaseTask(BaseModel):
     id: ID
