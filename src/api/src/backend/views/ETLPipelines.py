@@ -82,7 +82,7 @@ class ETLPipelines(RestrictedAPIView):
             
             # Clone the git repository that contains the pipeline and task definitions that will be used
             tapis_owe_templates_dir = "/tmp/git/tapis-owe-templates"
-            if os.path.exists(tapis_owe_templates_dir):
+            if not os.path.exists(tapis_owe_templates_dir):
                 try:
                     Repo.clone_from(
                         uses.source.url,
