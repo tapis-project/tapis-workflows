@@ -1,7 +1,10 @@
+import os, json
+
 from typing import List
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
 from django.forms import model_to_dict
+from git import Repo
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import (
@@ -9,21 +12,32 @@ from backend.views.http.responses.errors import (
     BadRequest,
     NotFound,
     Forbidden,
-    ServerError as ServerErrorResp
+    ServerError as ServerErrorResp,
+    UnprocessableEntity
 )
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
-from backend.views.http.requests import ImageBuildTask
+from backend.views.http.requests import (
+    Uses,
+    GitRepository,
+    TemplateTask,
+    TapisJobTask,
+    TaskDependency
+)
 from backend.views.http.etl import TapisETLPipeline
 from backend.models import (
     Pipeline as PipelineModel,
     Archive,
-    PipelineArchive,
-    TASK_TYPE_IMAGE_BUILD
+    PipelineArchive
 )
 from backend.services.TaskService import service as task_service
 from backend.services.GroupService import service as group_service
 from backend.errors.api import BadRequestError, ServerError
 from backend.helpers import resource_url_builder
+from backend.conf.constants import (
+    LATEST_TAPIS_ETL_PIPELINE_TEMPLATE_NAME,
+    TAPIS_ETL_TEMPLATE_REPO_BRANCH,
+    TAPIS_ETL_TEMPLATE_REPO_URL
+)
 
 
 class ETLPipelines(RestrictedAPIView):
@@ -38,16 +52,20 @@ class ETLPipelines(RestrictedAPIView):
         if not group_service.user_in_group(request.username, group_id, request.tenant_id):
             return Forbidden(message="You do not have access to this group")
 
+        # Git repository that contains the pipeline and task definitions for the
+        # tapis etl pipeline
+        uses = Uses(
+            name=LATEST_TAPIS_ETL_PIPELINE_TEMPLATE_NAME,
+            source=GitRepository(
+                url=TAPIS_ETL_TEMPLATE_REPO_URL,
+                branch=TAPIS_ETL_TEMPLATE_REPO_BRANCH
+            )
+        )
+
         # Validate the request body based on the type of pipeline specified
         prepared_request = self.prepare(
             TapisETLPipeline,
-            uses={
-                "name": "tapis/etl-pipeline@v1beta",
-                "source": {
-                    "url": "https://github.com/tapis-project/tapis-owe-templates.git",
-                    "branch": "master"
-                }
-            }
+            uses=uses
         )
 
         # Return the failure view instance if validation failed
@@ -61,24 +79,83 @@ class ETLPipelines(RestrictedAPIView):
         if PipelineModel.objects.filter(id=body.id, group=group).exists():
             return Conflict(f"A Pipeline already exists with the id '{body.id}'")
         
-        # Check that the pipeline contains at least 1 tapis job definition
-        if len(body.jobs) < 1:
-            return BadRequest("An ETL pipeline must contain at least 1 Tapis Job definition")
+        # Clone the git repository that contains the pipeline and task definitions that will be used
+        tapis_owe_templates_dir = "/tmp/git/tapis-owe-templates"
+        try:
+            Repo.clone(uses.source.url, tapis_owe_templates_dir)
+        except Exception as e:
+            return ServerErrorResp(f"Error cloning the Tapis OWE Template repository: {str(e)}")
+        
+        try:
+            # Open the owe-config.json file
+            with open(os.path.join(tapis_owe_templates_dir, "owe-config.json")) as file:
+                owe_config = json.loads(file.read())
+
+            # Open the etl pipeline schema.json
+            with open(
+                os.path.join(
+                    tapis_owe_templates_dir,
+                    owe_config.get(LATEST_TAPIS_ETL_PIPELINE_TEMPLATE_NAME).get("path")
+                )
+            ) as file:
+                pipeline_template = json.loads(file.read())
+        except Exception as e:
+            return UnprocessableEntity(f"Configuration Error (owe-config.json): {str(e)}")
+
 
         # Create the pipeline
         try:
             pipeline = PipelineModel.objects.create(
                 id=body.id,
+                description=getattr(body, "description", None) or pipeline_template.get("description"),
                 group=group,
                 owner=request.username,
-                uses=request.uses.dict(),
-                max_exec_time=body.execution_profile.max_exec_time,
-                invocation_mode=body.execution_profile.invocation_mode,
-                max_retries=body.execution_profile.max_retries,
-                retry_policy=body.execution_profile.retry_policy,
-                duplicate_submission_policy=body.execution_profile.duplicate_submission_policy,
-                env=body.dict()["env"],
-                params=body.dict()["params"]
+                **body.execution_profile,
+                duplicate_submission_policy=(
+                    pipeline_template
+                        .get("execution_profile")
+                        .get("duplicate_submission_policy")
+                ),
+                env={
+                    **pipeline_template.env,
+                    "LOCAL_INBOX_SYSTEM_ID": {
+                        "type": "string",
+                        "value": body.local_inbox.system_id
+                    },
+                    "LOCAL_INBOX_DATA_PATH": {
+                        "type": "string",
+                        "value": body.local_inbox.data_path
+                    },
+                    "LOCAL_INBOX_MANIFEST_PATH": {
+                        "type": "string",
+                        "value": body.local_inbox.manifest_path
+                    },
+                    "LOCAL_OUTBOX_SYSTEM_ID": {
+                        "type": "string",
+                        "value": body.local_outbox.system_id
+                    },
+                    "LOCAL_OUTBOX_DATA_PATH": {
+                        "type": "string",
+                        "value": body.local_outbox.data_path
+                    },
+                    "LOCAL_OUTBOX_MANIFEST_PATH": {
+                        "type": "string",
+                        "value": body.local_outbox.manifest_path
+                    },
+                    "GLOBUS_SOURCE_ENDPOINT_ID": {
+                        "type": "string",
+                        "value": body.local_outbox.globus_endpoint_id
+                    },
+                    "GLOBUS_DESTINATION_ENDPOINT_ID": {
+                        "type": "string",
+                        "value": body.remote_inbox.globus_endpoint_id
+                    },
+                    "GLOBUS_CLIENT_ID": {
+                        "type": "string",
+                        "value": body.remote_inbox.globus_client_id
+                    }
+                },
+                params=pipeline_template.get("params")
             )
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
@@ -113,46 +190,49 @@ class ETLPipelines(RestrictedAPIView):
             [pipeline_archive.delete() for pipeline_archive in pipeline_archives]
             return BadRequest(message=e.__cause__)
 
+        # The first tapis job should be dependent on the gen-inbound-manifests task
+        last_task_id = "gen-inbound-manifests"
 
-        return fn(request, body, pipeline)
-
-    def build_ci_pipeline(self, request, body, pipeline):
-        try:
-            # Build an task_request from the pipeline request body
-            task_request = ImageBuildTask(
-                id="build",
-                builder=body.builder,
-                cache=body.cache,
-                description="Build an image from a repository and push it to an image registry",
-                destination=body.destination,
-                context=body.context,
-                pipeline_id=pipeline.id,
-                type=TASK_TYPE_IMAGE_BUILD
-            )
-
-            # Create 'build' task
-            task_service.create(pipeline, task_request)
-        except (ValidationError, BadRequestError) as e:
-            pipeline.delete()
-            return BadRequest(message=e)
-        except (IntegrityError, OperationalError, DatabaseError) as e:
-            pipeline.delete()
-            return BadRequest(message=e.__cause__)
-        except Exception as e:
-            pipeline.delete()
-            return ServerErrorResp(message=e)
-
-        return ResourceURLResponse(
-            url=resource_url_builder(request.url.replace("/ci", "/pipelines"), pipeline.id))
-
-    def build_workflow_pipeline(self, request, body, pipeline):
-        # Create tasks
-        # TODO Use the TaskService to delete Tasks so it can delete
-        # all the secrets/credentials associated with it
+        # Create a tapis job task for each job provided in the request.
         tasks = []
-        for task_request in body.tasks:
+        for i, job in enumerate(request.jobs, start=1):
+            task_id = f"etl-job-{i}"
+            tasks.append(
+                TapisJobTask({
+                    "id": task_id,
+                    "type": "tapis_job",
+                    "tapis_job_def": job,
+                    "dependencies": [{"id": last_task_id}]
+                })
+            )
+            last_task_id = task_id
+
+        # Add the tasks from the template to the tasks list
+        tasks.extend([TemplateTask(**task) for task in pipeline_template.tasks])
+
+        # Update the dependecies of the gen-outbound-manifests task to
+        # include the last tapis job task
+        gen_outbound_manifests_task = next(filter(lambda t: t.id == "gen-outbound-manifests", ))
+        gen_outbound_manifests_task.depends_on.append(
+            TaskDependency(id=last_task_id)
+        )
+        
+        # Add the tasks to the database
+        for i, job in enumerate(request.jobs, start=1):
+            task_id = f"job-{i}"
             try:
-                tasks.append(task_service.create(pipeline, task_request))
+                tasks.append(
+                    task_service.create(
+                        pipeline, 
+                        {
+                            "id": task_id,
+                            "type": "tapis_job",
+                            "tapis_job_def": job,
+                            "dependencies": [{"id": last_task_id}]
+                        }
+                    )
+                )
+                last_task_id = task_id
             except (ValidationError, BadRequestError) as e:
                 pipeline.delete()
                 task_service.delete(tasks)
@@ -169,4 +249,6 @@ class ETLPipelines(RestrictedAPIView):
                 return ServerErrorResp(message=e)
 
         return ResourceURLResponse(
-            url=resource_url_builder(request.url, pipeline.id))
+            url=resource_url_builder(request.url, pipeline.id)
+        )
+        

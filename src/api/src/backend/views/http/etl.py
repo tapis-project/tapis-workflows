@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Dict, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from .requests import _EnumMeta, Pipeline
 
@@ -55,9 +55,15 @@ class TapisETLPipeline(Pipeline):
     remote_outbox: Dict = None
     local_inbox: LocalInbox
     jobs: List[Dict]
-    local_outbox: LocalOutbox
+    local_outbox: GlobusLocalOutbox
     remote_inbox: Union[
         GlobusRemoteInbox,
         S3RemoteInbox
     ]
     followup_tasks: List[Dict] = []
+
+    @validator("jobs")
+    def one_or_more_jobs(cls, value):
+        # Check that the pipeline contains at least 1 tapis job definition
+        if len(value) < 1:
+            raise ValueError("An ETL pipeline must contain at least 1 Tapis Job definition")
