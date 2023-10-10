@@ -114,12 +114,15 @@ class ETLPipelines(RestrictedAPIView):
                     description=getattr(body, "description", None) or pipeline_template.get("description"),
                     group=group,
                     owner=request.username,
-                    **body.execution_profile.dict(),
-                    duplicate_submission_policy=(
-                        pipeline_template
+                    # Here we are using the execution profile provided in the request, but
+                    # overwritting the 'duplicate_submission_policy' defined in the
+                    # the pipeline template.
+                    **{
+                        **body.execution_profile.dict(),
+                        "duplicate_submission_policy": pipeline_template
                             .get("execution_profile")
                             .get("duplicate_submission_policy")
-                    ),
+                    },
                     env={
                         **pipeline_template.get("env"),
                         "LOCAL_INBOX_SYSTEM_ID": {
