@@ -130,8 +130,16 @@ class ETLPipelines(RestrictedAPIView):
                         "type": "string",
                         "value": body.local_inbox.manifest_path
                     },
-                    "LOCAL_OUTBOX_SYSTEM_ID": {
+                    "LOCAL_INBOX_MANIFEST_GENERATION_POLICY": {
                         "type": "string",
+                        "value": body.local_inbox.manifest_generation_policy
+                    },
+                    "LOCAL_INBOX_MANIFEST_PRIORITY": {
+                        "type": "string",
+                        "value": body.local_inbox.manifest_priority
+                    },
+                    "LOCAL_OUTBOX_SYSTEM_ID": {
+                        "type": "string", 
                         "value": body.local_outbox.system_id
                     },
                     "LOCAL_OUTBOX_DATA_PATH": {
@@ -141,6 +149,14 @@ class ETLPipelines(RestrictedAPIView):
                     "LOCAL_OUTBOX_MANIFEST_PATH": {
                         "type": "string",
                         "value": body.local_outbox.manifest_path
+                    },
+                    "LOCAL_OUTBOX_MANIFEST_GENERATION_POLICY": {
+                        "type": "string",
+                        "value": body.local_outbox.manifest_generation_policy
+                    },
+                    "LOCAL_OUTBOX_MANIFEST_PRIORITY": {
+                        "type": "string",
+                        "value": body.local_outbox.manifest_priority
                     },
                     "GLOBUS_SOURCE_ENDPOINT_ID": {
                         "type": "string",
@@ -212,27 +228,15 @@ class ETLPipelines(RestrictedAPIView):
 
         # Update the dependecies of the gen-outbound-manifests task to
         # include the last tapis job task
-        gen_outbound_manifests_task = next(filter(lambda t: t.id == "gen-outbound-manifests", ))
+        gen_outbound_manifests_task = next(filter(lambda t: t.id == "gen-outbound-manifests", tasks))
         gen_outbound_manifests_task.depends_on.append(
             TaskDependency(id=last_task_id)
         )
         
         # Add the tasks to the database
-        for i, job in enumerate(request.jobs, start=1):
-            task_id = f"job-{i}"
+        for task in tasks:
             try:
-                tasks.append(
-                    task_service.create(
-                        pipeline, 
-                        {
-                            "id": task_id,
-                            "type": "tapis_job",
-                            "tapis_job_def": job,
-                            "dependencies": [{"id": last_task_id}]
-                        }
-                    )
-                )
-                last_task_id = task_id
+                task_service.create(pipeline, task)
             except (ValidationError, BadRequestError) as e:
                 pipeline.delete()
                 task_service.delete(tasks)

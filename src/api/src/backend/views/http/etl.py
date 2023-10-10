@@ -60,7 +60,6 @@ class TapisETLPipeline(Pipeline):
         GlobusRemoteInbox,
         S3RemoteInbox
     ]
-    followup_tasks: List[Dict] = []
 
     @validator("jobs")
     def one_or_more_jobs(cls, value):
