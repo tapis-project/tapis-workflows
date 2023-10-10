@@ -132,7 +132,7 @@ class ETLPipelines(RestrictedAPIView):
                         },
                         "LOCAL_INBOX_MANIFEST_PATH": {
                             "type": "string",
-                            "value": body.local_inbox.manifest_path
+                            "value": body.local_inbox.manifests_path
                         },
                         "LOCAL_INBOX_MANIFEST_GENERATION_POLICY": {
                             "type": "string",
@@ -152,7 +152,7 @@ class ETLPipelines(RestrictedAPIView):
                         },
                         "LOCAL_OUTBOX_MANIFEST_PATH": {
                             "type": "string",
-                            "value": body.local_outbox.manifest_path
+                            "value": body.local_outbox.manifests_path
                         },
                         "LOCAL_OUTBOX_MANIFEST_GENERATION_POLICY": {
                             "type": "string",
