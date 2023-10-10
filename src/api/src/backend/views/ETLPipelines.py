@@ -44,7 +44,6 @@ class ETLPipelines(RestrictedAPIView):
     def post(self, request, group_id, *_, **__):
         try:
             """ETL Pipelines"""
-            print("START")
             # Get the group
             group = group_service.get(group_id, request.tenant_id)
             if group == None:
@@ -53,7 +52,7 @@ class ETLPipelines(RestrictedAPIView):
             # Check that the user belongs to the group
             if not group_service.user_in_group(request.username, group_id, request.tenant_id):
                 return Forbidden(message="You do not have access to this group")
-            print("AFTER GROUP CHECK")
+            
             # Git repository that contains the pipeline and task definitions for the
             # tapis etl pipeline
             uses = Uses(**{
@@ -63,40 +62,40 @@ class ETLPipelines(RestrictedAPIView):
                     "branch": TAPIS_ETL_TEMPLATE_REPO_BRANCH
                 }
             })
-            print("AFTER USES")
+            
             # Validate the request body based on the type of pipeline specified
             prepared_request = self.prepare(
                 TapisETLPipeline,
                 uses=uses
             )
-            print("AFTER REQUEST PREP")
+            
             # Return the failure view instance if validation failed
             if not prepared_request.is_valid:
                 return prepared_request.failure_view
-            print("AFTER PREPARED REQUEST CHECK")
+            
             # Get the JSON encoded body from the validation result
             body = prepared_request.body
             
             # Check that the id of the pipeline is unique
             if PipelineModel.objects.filter(id=body.id, group=group).exists():
                 return Conflict(f"A Pipeline already exists with the id '{body.id}'")
-            print("AFTER PIPELINE CONFLICT CHECK")
+            
             # Clone the git repository that contains the pipeline and task definitions that will be used
             tapis_owe_templates_dir = "/tmp/git/tapis-owe-templates"
-            try:
-                Repo.clone_from(
-                    uses.source.url,
-                    tapis_owe_templates_dir
-                )
-            except Exception as e:
-                return ServerErrorResp(f"Error cloning the Tapis OWE Template repository: {str(e)}")
-            print("AFTER GIT CLONE")
+            if os.path.exists(tapis_owe_templates_dir):
+                try:
+                    Repo.clone_from(
+                        uses.source.url,
+                        tapis_owe_templates_dir
+                    )
+                except Exception as e:
+                    return ServerErrorResp(f"Error cloning the Tapis OWE Template repository: {str(e)}")
+            
             try:
                 # Open the owe-config.json file
                 with open(os.path.join(tapis_owe_templates_dir, "owe-config.json")) as file:
                     owe_config = json.loads(file.read())
 
-                print("AFTER CONFIG LOAD")
                 # Open the etl pipeline schema.json
                 with open(
                     os.path.join(
@@ -105,7 +104,6 @@ class ETLPipelines(RestrictedAPIView):
                     )
                 ) as file:
                     pipeline_template = json.loads(file.read())
-                print("AFTER SCHEMA LOAD")
             except Exception as e:
                 return UnprocessableEntity(f"Configuration Error (owe-config.json): {str(e)}")
 
@@ -116,7 +114,7 @@ class ETLPipelines(RestrictedAPIView):
                     description=getattr(body, "description", None) or pipeline_template.get("description"),
                     group=group,
                     owner=request.username,
-                    **body.execution_profile,
+                    **body.execution_profile.dict(),
                     duplicate_submission_policy=(
                         pipeline_template
                             .get("execution_profile")
