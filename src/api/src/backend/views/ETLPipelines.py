@@ -55,13 +55,13 @@ class ETLPipelines(RestrictedAPIView):
         print("AFTER GROUP CHECK")
         # Git repository that contains the pipeline and task definitions for the
         # tapis etl pipeline
-        uses = Uses(
-            name=LATEST_TAPIS_ETL_PIPELINE_TEMPLATE_NAME,
-            source=GitRepository(
-                url=TAPIS_ETL_TEMPLATE_REPO_URL,
-                branch=TAPIS_ETL_TEMPLATE_REPO_BRANCH
-            )
-        )
+        uses = Uses(**{
+            "name": LATEST_TAPIS_ETL_PIPELINE_TEMPLATE_NAME,
+            "source": {
+                "url": TAPIS_ETL_TEMPLATE_REPO_URL,
+                "branch": TAPIS_ETL_TEMPLATE_REPO_BRANCH
+            }
+        })
         print("AFTER USES")
         # Validate the request body based on the type of pipeline specified
         prepared_request = self.prepare(

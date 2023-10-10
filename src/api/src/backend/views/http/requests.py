@@ -526,7 +526,6 @@ class GitRepository(BaseModel):
 class ClonedGitRepository(GitRepository):
     directory: str
 
-
 class Uses(BaseModel):
     source: GitRepository
     name: str = None
