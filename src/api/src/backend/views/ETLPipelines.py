@@ -121,7 +121,7 @@ class ETLPipelines(RestrictedAPIView):
                             .get("duplicate_submission_policy")
                     ),
                     env={
-                        **pipeline_template.env,
+                        **pipeline_template.get("env"),
                         "LOCAL_INBOX_SYSTEM_ID": {
                             "type": "string",
                             "value": body.local_inbox.system_id
