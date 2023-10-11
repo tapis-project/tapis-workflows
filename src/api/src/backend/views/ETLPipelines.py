@@ -220,8 +220,6 @@ class ETLPipelines(RestrictedAPIView):
 
             # Create a tapis job task for each job provided in the request.
             tasks = []
-            print("BODY")
-            pprint(body)
             for i, job in enumerate(body.jobs, start=1):
                 task_id = f"etl-job-{i}"
                 tasks.append(
@@ -229,16 +227,13 @@ class ETLPipelines(RestrictedAPIView):
                         "id": task_id,
                         "type": "tapis_job",
                         "tapis_job_def": job,
-                        "dependencies": [{"id": last_task_id}]
+                        "depends_on": [{"id": last_task_id}]
                     })
                 )
                 last_task_id = task_id
 
-                print("TASKS")
-                pprint(tasks)
-
             # Add the tasks from the template to the tasks list
-            tasks.extend([TemplateTask(**task) for task in pipeline_template.tasks])
+            tasks.extend([TemplateTask(**task) for task in pipeline_template.get("tasks")])
 
             print("AFTER TASK REQUEST CREATE")
             # Update the dependecies of the gen-outbound-manifests task to
@@ -252,6 +247,7 @@ class ETLPipelines(RestrictedAPIView):
             for task in tasks:
                 try:
                     task_service.create(pipeline, task)
+                    print("TASK CREATED", task)
                 except (ValidationError, BadRequestError) as e:
                     pipeline.delete()
                     task_service.delete(tasks)
