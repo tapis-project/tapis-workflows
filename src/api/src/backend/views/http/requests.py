@@ -224,7 +224,7 @@ Value = Union[str, int, float, bool, bytes]
 
 class Spec(BaseModel):
     required: bool = False
-    type: EnumTaskIOTypes
+    type: EnumTaskIOTypes = EnumTaskIOTypes.String
 
 class SpecWithValue(Spec):
     value: Value = None
