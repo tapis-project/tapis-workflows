@@ -285,14 +285,13 @@ class EnvSpec(SpecWithValue):
 
 Env = Dict[str, EnvSpec]
 
-class ParamSpec(SpecWithValue):
-    type: EnumTaskIOTypes
+class ArgSpec(SpecWithValue):
     value: Value = None
     value_from: ParamSpecValueFrom = None
 
-Params = Dict[str, ParamSpec]
+Args = Dict[str, ArgSpec]
 
-PipelineParams = Dict[str, Spec]
+Params = Dict[str, Spec]
 ################## /Common ###################
 
 class S3Auth(BaseModel):
@@ -456,7 +455,7 @@ class BaseEvent(BaseModel):
     username: str = None
 
 class APIEvent(BaseEvent):
-    params: Params = {}
+    args: Args = {}
     directives: List[str] = None
 
 class WebhookEvent(BaseEvent):
@@ -697,7 +696,7 @@ class Pipeline(BaseModel):
     cron: str = None
     archive_ids: List[str] = []
     env: Env = {}
-    params: PipelineParams = {}
+    params: Params = {}
 
     # NOTE This pre validation transformer is for backwards-compatibility
     # Previous pipelines did not have environments or parmas
@@ -778,7 +777,7 @@ class Group(BaseModel):
 class WorkflowSubmissionRequest(BaseModel):
     archives: List[Archive] = []
     env: Env = {}
-    params: Params = {}
+    args: Args = {}
     group: Group
     pipeline: Pipeline
     pipeline_run: PipelineRun
