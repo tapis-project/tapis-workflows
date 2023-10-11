@@ -1,5 +1,7 @@
 import os, json
 
+from pprint import pprint
+
 from typing import List
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
@@ -218,6 +220,8 @@ class ETLPipelines(RestrictedAPIView):
 
             # Create a tapis job task for each job provided in the request.
             tasks = []
+            print("BODY")
+            pprint(body)
             for i, job in enumerate(body.jobs, start=1):
                 task_id = f"etl-job-{i}"
                 tasks.append(
@@ -229,6 +233,9 @@ class ETLPipelines(RestrictedAPIView):
                     })
                 )
                 last_task_id = task_id
+
+                print("TASKS")
+                pprint(tasks)
 
             # Add the tasks from the template to the tasks list
             tasks.extend([TemplateTask(**task) for task in pipeline_template.tasks])
