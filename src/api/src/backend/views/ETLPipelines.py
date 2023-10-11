@@ -184,7 +184,6 @@ class ETLPipelines(RestrictedAPIView):
                 return BadRequest(message=e.__cause__)
             except Exception as e:
                 return ServerErrorResp(f"{e}")
-            print("AFTER PIPELINE CREATE")
 
             # Fetch the archives specified in the request then create relations
             # between them and the pipline
@@ -213,13 +212,13 @@ class ETLPipelines(RestrictedAPIView):
                 # Delete the pipeline archive relationships that were just created
                 [pipeline_archive.delete() for pipeline_archive in pipeline_archives]
                 return BadRequest(message=e.__cause__)
-            print("AFTER ARCHIVE CREATE")
+            
             # The first tapis job should be dependent on the gen-inbound-manifests task
             last_task_id = "gen-inbound-manifests"
 
             # Create a tapis job task for each job provided in the request.
             tasks = []
-            for i, job in enumerate(request.jobs, start=1):
+            for i, job in enumerate(body.jobs, start=1):
                 task_id = f"etl-job-{i}"
                 tasks.append(
                     TapisJobTask({
