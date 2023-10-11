@@ -225,7 +225,7 @@ class ETLPipelines(RestrictedAPIView):
             for i, job in enumerate(body.jobs, start=1):
                 task_id = f"etl-job-{i}"
                 tasks.append(
-                    TapisJobTask({
+                    TapisJobTask(**{
                         "id": task_id,
                         "type": "tapis_job",
                         "tapis_job_def": job,
