@@ -371,6 +371,7 @@ class Identity(models.Model):
 
 class Pipeline(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128)
+    description = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     env = models.JSONField(null=True)
     params = models.JSONField(null=True)
@@ -473,6 +474,7 @@ class Task(models.Model):
     command = models.TextField(null=True)
     installer = models.CharField(max_length=64, null=True)
     packages = models.JSONField(null=True, default=list)
+    entrypoint = models.TextField(null=True)
 
     # Container run specific properties
     # Full image name for container run. includes scheme.
