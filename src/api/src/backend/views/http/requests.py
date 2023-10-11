@@ -275,6 +275,7 @@ class SpecWithValue(Spec):
         return value
 
 class TaskInputSpec(SpecWithValue):
+    required: bool = True
     value: Value = None
     value_from: ValueFromAll = None
 
