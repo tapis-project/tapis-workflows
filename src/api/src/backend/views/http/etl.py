@@ -66,3 +66,5 @@ class TapisETLPipeline(Pipeline):
         # Check that the pipeline contains at least 1 tapis job definition
         if len(value) < 1:
             raise ValueError("An ETL pipeline must contain at least 1 Tapis Job definition")
+        
+        return value
