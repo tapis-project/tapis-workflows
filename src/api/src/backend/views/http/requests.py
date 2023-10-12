@@ -93,11 +93,11 @@ class EnumTaskIOTypes(str, Enum, metaclass=_EnumMeta):
     TapisFileInput = "tapis_file_input"
     TapisFileInputArray = "tapis_file_input_array"
 
-LiteralTaskInputValueFromKeys = Literal["env", "params", "task_output"]
+LiteralTaskInputValueFromKeys = Literal["env", "args", "task_output"]
 TaskInputValueFromKeys = list(get_args(LiteralTaskInputValueFromKeys))
 class EnumTaskInputValueFromKey(str, Enum, metaclass=_EnumMeta):
     Env = "env"
-    Params = "params"
+    Args = "args"
     TaskOutput = "task_output"
 
 LiteralTaskFlavors = Literal["c1tiny", "c1xxsml", "c1xsml", "c1sml", "c1med", "c1lrg", "c1xlrg", "c1xxlrg", "g1nvdsml", "g1nvdmed", "g1nvdlrg"]
@@ -196,13 +196,13 @@ class ValueFromSecretRef(BaseModel):
     field_selector: str = None
 
 ValueFromEnv = Dict[Literal["env"], str]
-ValueFromParams = Dict[Literal["params"], str]
+ValueFromArgs = Dict[Literal["args"], str]
 ValueFromTaskOutput = Dict[Literal["task_output"], TaskOutputRef]
 ValueFromHost = Dict[Literal["host"], ValueFromHostRef]
 ValueFromSecret = Dict[Literal["secret"], ValueFromSecretRef]
 ValueFromAll = Union[
     ValueFromEnv,
-    ValueFromParams,
+    ValueFromArgs,
     ValueFromTaskOutput,
     ValueFromHost,
     ValueFromSecret
@@ -214,8 +214,8 @@ EnvSpecValueFrom = Union[
 ]
 
 # NOTE Same as EnvSpecValueFrom for now, but may diverge. Delete this NOTE once it does
-# Also, no good name for the combination of the 2. EnvParamSpecValueFrom?? No thanks.
-ParamSpecValueFrom = Union[
+# Also, no good name for the combination of the 2. EnvArgSpecValueFrom?? No thanks.
+ArgSpecValueFrom = Union[
     ValueFromSecret,
     ValueFromHost
 ]
@@ -263,14 +263,14 @@ class SpecWithValue(Spec):
             (
                 type(k) == str 
                 and (
-                    (k in ["env", "params"] and type(value[k]) == str)
+                    (k in ["env", "args"] and type(value[k]) == str)
                     or (k in ["task_output", "secret", "host"] and type(value[k]) == dict)
                 )
             )
         )]) < 1
         if (not is_dict or (is_dict and is_valid)):
             raise TypeError(
-                "Task Input Value Error: 'value_from' property must be a single key-value pair where the key is oneOf ['env', 'params', 'task_input', 'host', 'secret'] and the value is a non-empty string if key is oneOf ['env', 'params'] or an object if key is oneOf ['task_input', 'host', 'secret']"
+                "Task Input Value Error: 'value_from' property must be a single key-value pair where the key is oneOf ['env', 'args', 'task_input', 'host', 'secret'] and the value is a non-empty string if key is oneOf ['env', 'args'] or an object if key is oneOf ['task_input', 'host', 'secret']"
             )
         return value
 
@@ -287,7 +287,7 @@ Env = Dict[str, EnvSpec]
 
 class ArgSpec(SpecWithValue):
     value: Value = None
-    value_from: ParamSpecValueFrom = None
+    value_from: ArgSpecValueFrom = None
 
 Args = Dict[str, ArgSpec]
 
@@ -682,7 +682,7 @@ class Pipeline(BaseModel):
     # Previous pipelines did not have environments or parmas
     @root_validator(pre=True)
     def backwards_compatibility_transforms(cls, values):
-        props_to_transfom = ["env", "params"]
+        props_to_transfom = ["env", "args"]
         for prop in props_to_transfom:
             if values.get(prop, None) == None:
                 values[prop] = {}
@@ -770,7 +770,7 @@ class WorkflowSubmissionRequest(BaseModel):
     # Previous workflow submissions did not have environments or parmas
     @root_validator(pre=True)
     def backwards_compatibility_transforms(cls, values):
-        props_to_transfom = ["env", "params"]
+        props_to_transfom = ["env", "args"]
         for prop in props_to_transfom:
             if values.get(prop, None) == None:
                 values[prop] = {}

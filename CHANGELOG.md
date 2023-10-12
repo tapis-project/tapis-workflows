@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 - Initial release of the owe-python-sdk. Used in both the workflow engine and Tapis Workflows API
-- Added 'params' to Pipeline model - tasks can consume params as inputs
+- Added 'args' to Pipeline model - tasks can consume args as inputs
 - **Function Tasks**
     - Added ability to specify git repositories to clone into the function runtime
     - Introduced custom entrypoints
