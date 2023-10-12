@@ -251,7 +251,7 @@ class Function(TaskExecutor):
             self.task.input,
             self.ctx.pipeline.work_dir,
             env=self.ctx.env,
-            params=self.ctx.params,
+            args=self.ctx.args,
             prefix="_OWE_WORKFLOW_INPUT_"
         )
         

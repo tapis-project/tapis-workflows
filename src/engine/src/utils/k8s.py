@@ -25,7 +25,7 @@ def flavor_to_limits(flavor: Flavor):
     
     return {"cpu": flavor.cpu, "memory": flavor.memory, **gpu_specs}
 
-def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, params={}, prefix=""):
+def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, args={}, prefix=""):
     k8senvvars = []
     for input_id, _input in _inputs.items():
         # Use input[input_id].value if provided
@@ -56,10 +56,10 @@ def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, params={}, prefix=
             if k8senvvar_value == None:
                 raise Exception(f"No value found for environment variable '{value_from.get('env')}'")
             k8senvvar_value_source_key = key
-        elif value_from.get("params", None) != None:
-            k8senvvar_value_source = "params"
-            key = value_from.get("params")
-            k8senvvar_value = get_value_from_params(params, key)
+        elif value_from.get("args", None) != None:
+            k8senvvar_value_source = "args"
+            key = value_from.get("args")
+            k8senvvar_value = get_value_from_args(args, key)
             k8senvvar_value_source_key = key
         elif hasattr(value_from, "task_output"):
             k8senvvar_value_source = "task_output"
@@ -103,7 +103,7 @@ def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, params={}, prefix=
                 raise Exception(f"Error: Could not coerce output '{output_id}' for task '{task_id}' to {input_type}. Details: {e.message}")
 
         else:
-            raise Exception("Invalid 'value_from' type: Must be oneOf type [env, params, task_output]")
+            raise Exception("Invalid 'value_from' type: Must be oneOf type [env, args, task_output]")
         
         if k8senvvar_value == None:
             source_key_error_message = ""
@@ -125,8 +125,8 @@ def get_value_from_env(env, key):
     if value == None: return None
     return value.value
 
-def get_value_from_params(params, key):
-    value = params.get(key, None)
+def get_value_from_args(args, key):
+    value = args.get(key, None)
     if value == None: return None
     return value.value
 

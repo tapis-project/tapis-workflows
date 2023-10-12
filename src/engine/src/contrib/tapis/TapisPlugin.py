@@ -12,7 +12,7 @@ from owe_python_sdk.events.types import (
 
 from contrib.tapis.middleware.request import (
     ValueFromTapisSecurityKernal,
-    ParamsValidator
+    ArgsValidator
 )
 from contrib.tapis.middleware.event_handlers.archivers import TapisSystemArchiver
 from contrib.tapis.middleware.event_handlers.notifications import TapisWorkflowsAPIBackend
@@ -25,7 +25,7 @@ class TapisPlugin(Plugin):
         Plugin.__init__(self, name)
         
         self.register("request", ValueFromTapisSecurityKernal())
-        self.register("request", ParamsValidator())
+        self.register("request", ArgsValidator())
         self.register(
             "notification_handler",
             NotificationMiddleware(

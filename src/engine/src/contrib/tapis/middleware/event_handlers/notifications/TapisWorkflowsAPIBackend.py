@@ -41,10 +41,10 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
         self._kwargs = {
             "_tapis_set_x_headers_from_service": True,
-            "_x_tapis_tenant": ctx.params["tapis_tenant_id"].value,
-            "_x_tapis_user": ctx.params["tapis_pipeline_owner"].value,
+            "_x_tapis_tenant": ctx.args["tapis_tenant_id"].value,
+            "_x_tapis_user": ctx.args["tapis_pipeline_owner"].value,
             "_tapis_headers": {
-                "X-WORKFLOW-EXECUTOR-TOKEN": ctx.params["workflow_executor_access_token"].value
+                "X-WORKFLOW-EXECUTOR-TOKEN": ctx.args["workflow_executor_access_token"].value
             }
         }
 

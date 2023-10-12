@@ -73,7 +73,7 @@ class Pipeline(Runnable):
             self.schema.tasks.append(new_task.schema)
 
     def start(self,
-        params: owe_schema.KeyVal={},
+        args: owe_schema.KeyVal={},
         runner_args=[],
         runner_kwargs={},
     ):
@@ -81,7 +81,7 @@ class Pipeline(Runnable):
             raise Exception("Missing Runner: No Runner specified for this Pipeline")
 
         self.runner = self.runner_class(*runner_args, **runner_kwargs)
-        self.runner.submit({"pipeline": self.schema.dict(), "params": params})
+        self.runner.submit({"pipeline": self.schema.dict(), "args": args})
 
 class Runner:
     def __init__(self):

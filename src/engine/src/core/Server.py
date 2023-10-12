@@ -356,17 +356,17 @@ class Server:
             for constraint in request.meta.idempotency_key:
                 (obj, prop) = constraint.split(".")
                 key_part = None
-                params_error = ""
-                if obj != "params":
+                args_error = ""
+                if obj != "args":
                     key_part = getattr(getattr(request, obj, EmptyObject()), prop, None)
                 else:
-                    # Access the value property if the object in the idemp key is params
-                    param_obj = getattr(request, obj, {}).get(prop, None)
-                    key_part = param_obj.value if param_obj != None else None
-                    params_error = ".value"
+                    # Access the value property if the object in the idemp key is args
+                    arg_obj = getattr(request, obj, {}).get(prop, None)
+                    key_part = arg_obj.value if arg_obj != None else None
+                    args_error = ".value"
 
                 if key_part == None:
-                    raise AttributeError(f"Value not found for 'request.{obj}.{prop}{params_error}'")
+                    raise AttributeError(f"Value not found for 'request.{obj}.{prop}{args_error}'")
                 
                 if idempotency_key == "":
                     idempotency_key = str(key_part)

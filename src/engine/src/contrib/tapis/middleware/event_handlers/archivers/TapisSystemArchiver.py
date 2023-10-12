@@ -18,7 +18,7 @@ class TapisSystemArchiver(EventHandler):
                 self.archive(
                     event.payload.archive,
                     event.payload.pipeline,
-                    event.payload.params,
+                    event.payload.args,
                     event.payload.logger
                 )
             except ArchiveError as e:
@@ -31,7 +31,7 @@ class TapisSystemArchiver(EventHandler):
             event.payload.logger.info(f"[PIPELINE] {event.payload.pipeline.id} [ARCHIVING COMPLETED] {trunc_uuid(event.payload.pipeline.run_id)}")
         
 
-    def archive(self, archive, pipeline, params, logger):
+    def archive(self, archive, pipeline, args, logger):
         try:
             tapis_service_api_gateway = TapisServiceAPIGateway()
             service_client = tapis_service_api_gateway.get_client()
@@ -39,7 +39,7 @@ class TapisSystemArchiver(EventHandler):
             perms = service_client.systems.getUserPerms(
                 systemId=archive.system_id,
                 userName=archive.owner,
-                _x_tapis_tenant=params.get("tapis_tenant_id").value,
+                _x_tapis_tenant=args.get("tapis_tenant_id").value,
                 _x_tapis_user=archive.owner
             )
         except InvalidInputError as e:
@@ -69,7 +69,7 @@ class TapisSystemArchiver(EventHandler):
                 service_client.files.mkdir(
                     systemId=archive.system_id,
                     path=archive_output_dir,
-                    _x_tapis_tenant=params.get("tapis_tenant_id").value,
+                    _x_tapis_tenant=args.get("tapis_tenant_id").value,
                     _x_tapis_user=archive.owner
                 )
             except Exception as e:
@@ -90,7 +90,7 @@ class TapisSystemArchiver(EventHandler):
                                 systemId=archive.system_id,
                                 path=os.path.join(archive_output_dir, filename),
                                 file=blob,
-                                _x_tapis_tenant=params.get("tapis_tenant_id").value,
+                                _x_tapis_tenant=args.get("tapis_tenant_id").value,
                                 _x_tapis_user=archive.owner
                             )
                         logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {filename}")

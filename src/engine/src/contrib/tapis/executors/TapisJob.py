@@ -23,8 +23,8 @@ class TapisJob(TaskExecutor):
                 app = service_client.apps.getApp(
                     appId=job_def.appId,
                     appVersion=job_def.appVersion,
-                    _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
-                    _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
+                    _x_tapis_tenant=self.ctx.args.get("tapis_tenant_id").value,
+                    _x_tapis_user=self.ctx.args.get("tapis_pipeline_owner").value
                 )
                 exec_system_input_dir = app.jobAttributes.execSystemInputDir
                 
@@ -62,8 +62,8 @@ class TapisJob(TaskExecutor):
             # Submit the job
             job = service_client.jobs.submitJob(
                 **job_def.dict(),
-                _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
-                _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
+                _x_tapis_tenant=self.ctx.args.get("tapis_tenant_id").value,
+                _x_tapis_user=self.ctx.args.get("tapis_pipeline_owner").value
             )
 
             # Return with success if not polling
@@ -76,8 +76,8 @@ class TapisJob(TaskExecutor):
                 time.sleep(TAPIS_JOB_POLLING_FREQUENCY)
                 job = service_client.jobs.getJob(
                     jobUuid=job.uuid,
-                    _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
-                    _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
+                    _x_tapis_tenant=self.ctx.args.get("tapis_tenant_id").value,
+                    _x_tapis_user=self.ctx.args.get("tapis_pipeline_owner").value
                 )
 
             # Job has completed successfully. Get the execSystemOutputDir from the job object
@@ -86,8 +86,8 @@ class TapisJob(TaskExecutor):
                 files = service_client.files.listFiles(
                     systemId=job.execSystemId,
                     path=job.execSystemOutputDir,
-                    _x_tapis_tenant=self.ctx.params.get("tapis_tenant_id").value,
-                    _x_tapis_user=self.ctx.params.get("tapis_pipeline_owner").value
+                    _x_tapis_tenant=self.ctx.args.get("tapis_tenant_id").value,
+                    _x_tapis_user=self.ctx.args.get("tapis_pipeline_owner").value
                 )
                 for file in files:
                     self._set_output(

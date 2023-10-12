@@ -13,7 +13,7 @@ image_build = {
         "from-params": {
             "type": "string",
             "value_from": {
-                "params": "TEST"
+                "args": "TEST"
             }
         },
         "from-task-output": {
