@@ -15,7 +15,7 @@ from backend.helpers.PipelineDispatchRequestBuilder import PipelineDispatchReque
 from backend.services.PipelineDispatcher import service as pipeline_dispatcher
 from backend.services.GroupService import service as group_service
 from backend.services.SecretService import service as secret_service
-from backend.models import Event, Pipeline
+from backend.models import  Pipeline
 
 
 request_builder = PipelineDispatchRequestBuilder(secret_service)

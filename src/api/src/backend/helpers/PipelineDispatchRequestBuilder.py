@@ -15,7 +15,6 @@ class PipelineDispatchRequestBuilder:
         base_url,
         group,
         pipeline,
-        event,
         commit=None,
         directives=None,
         params={}
@@ -97,7 +96,6 @@ class PipelineDispatchRequestBuilder:
         ]
 
         request["meta"]["origin"] = base_url # Origin of the request
-        request["meta"]["event"] = model_to_dict(event)
 
         request["pipeline_run"] = {}
         
