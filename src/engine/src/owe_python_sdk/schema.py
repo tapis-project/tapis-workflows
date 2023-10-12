@@ -224,7 +224,7 @@ Value = Union[str, int, float, bool, bytes]
 
 class Spec(BaseModel):
     required: bool = False
-    type: EnumTaskIOTypes
+    type: EnumTaskIOTypes = EnumTaskIOTypes.String
 
 class SpecWithValue(Spec):
     value: Value = None
@@ -275,6 +275,7 @@ class SpecWithValue(Spec):
         return value
 
 class TaskInputSpec(SpecWithValue):
+    required: bool = True
     value: Value = None
     value_from: ValueFromAll = None
 
@@ -284,14 +285,13 @@ class EnvSpec(SpecWithValue):
 
 Env = Dict[str, EnvSpec]
 
-class ParamSpec(SpecWithValue):
-    type: EnumTaskIOTypes
+class ArgSpec(SpecWithValue):
     value: Value = None
     value_from: ParamSpecValueFrom = None
 
-Params = Dict[str, ParamSpec]
+Args = Dict[str, ArgSpec]
 
-PipelineParams = Dict[str, Spec]
+Params = Dict[str, Spec]
 ################## /Common ###################
 
 class S3Auth(BaseModel):
@@ -443,29 +443,9 @@ class LocalDestination(BaseDestination):
     type: Literal["local"]
     filename: str = None
 
-# Events
-class BaseEvent(BaseModel):
-    branch: str = None
-    directives: str = None
-    commit: str = None
-    commit_sha: str = None
-    context_url: str = None
-    pipeline_id: str = None
-    source: str = None
-    username: str = None
-
-class APIEvent(BaseEvent):
-    params: Params = {}
+class ReqRunPipeline(BaseModel):
+    args: Args = {}
     directives: List[str] = None
-
-class WebhookEvent(BaseEvent):
-    branch: str
-    commit: str
-    commit_sha: str
-    source: str
-    context_url: str
-    username: str
-    tenant_id: str
 
 # Groups and Users
 class GroupUserReq(BaseModel):
@@ -526,7 +506,6 @@ class GitRepository(BaseModel):
 class ClonedGitRepository(GitRepository):
     directory: str
 
-
 class Uses(BaseModel):
     source: GitRepository
     name: str = None
@@ -536,6 +515,8 @@ class Uses(BaseModel):
     def must_provide_name_or_path(cls, values):
         if values.get("name", None) == None and values.get("path", None) == None:
             raise ValueError("The 'uses' property of a Template Task must specify either a 'name' or 'path' property")
+        
+        return values
 
 class BaseTask(BaseModel):
     id: ID
@@ -674,6 +655,7 @@ Task = Annotated[
 class Pipeline(BaseModel):
     id: ID
     type: EnumPipelineType = EnumPipelineType.Workflow
+    uses: Union[str, Uses]
     tasks: List[
         Annotated[
             Union[
@@ -694,7 +676,7 @@ class Pipeline(BaseModel):
     cron: str = None
     archive_ids: List[str] = []
     env: Env = {}
-    params: PipelineParams = {}
+    params: Params = {}
 
     # NOTE This pre validation transformer is for backwards-compatibility
     # Previous pipelines did not have environments or parmas
@@ -715,9 +697,6 @@ class Pipeline(BaseModel):
         return values
     class Config:
         extra = Extra.allow
-
-class WorkflowPipeline(Pipeline):
-    pass
 
 class CIPipeline(Pipeline):
     cache: bool = False
@@ -778,7 +757,7 @@ class Group(BaseModel):
 class WorkflowSubmissionRequest(BaseModel):
     archives: List[Archive] = []
     env: Env = {}
-    params: Params = {}
+    args: Args = {}
     group: Group
     pipeline: Pipeline
     pipeline_run: PipelineRun
@@ -821,5 +800,3 @@ class PreparedRequest:
         self.body = body
         self.message = message
         self.failure_view = failure_view
-
-

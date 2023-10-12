@@ -800,5 +800,3 @@ class PreparedRequest:
         self.body = body
         self.message = message
         self.failure_view = failure_view
-
-
