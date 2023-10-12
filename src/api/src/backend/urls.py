@@ -3,8 +3,7 @@ from django.conf import settings
 
 from backend.views.Tasks import Tasks
 from backend.views.Auth import Auth
-from backend.views.RunPipelineWebhook import RunPipelineWebhook
-from backend.views.Events import Events
+from backend.views.RunPipeline import RunPipeline
 from backend.views.Groups import Groups
 from backend.views.HealthCheck import HealthCheck
 from backend.views.Identities import Identities
@@ -63,11 +62,7 @@ urlpatterns = [
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/archives/remove", RemovePipelineArchive.as_view(), name="removePipelineArchive"),
     
     # Trigger pipelines
-    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/webhook", RunPipelineWebhook.as_view(), name="runPipelineWebhook"),
-    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/events", Events.as_view(), name="events"),
-
-    # Events
-    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/events/<str:event_uuid>", Events.as_view(), name="event"),
+    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/run", RunPipeline.as_view(), name="runPipeline"),
 
     # Pipeline Runs
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs", PipelineRuns.as_view(), name="pipelineRuns"),

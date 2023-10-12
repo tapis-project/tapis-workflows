@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Changes
 - runPipeline request schema changed. 'params' was changed to 'args'
+- runPipeline response schema change. Now returns a RespPipelineRun; previously return RespEvent
+- runPipeline OpenAPI spec to reflect the change in the request and response schema - requires regenerating tapipy and tapis-typescript. Will break UI that depend on tapis-typescript
+- removed the Event model and all associated endpoints, req/resp schemas, and req/resp models in the OpenAPI spec 
+- changed the endpoint of the runPipeline operation from `.../events` to `.../run`
+- updated the OpenAPI spec to reflect the change in the url endpoint for the runPipeline operation
+- removed the runPipelineWebhook endpoints, req/resp schemas, and req/resp models in the OpenAPI spec
 
 ### Features
 - Initial release of the owe-python-sdk. Used in both the workflow engine and Tapis Workflows API
@@ -20,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Templating and Inheritence**
     - Introduced the template type task
     - Added pipeline and task inheritence via the 'uses' property on pipelines and tasks
+- **Tapis ETL Pipeline**
+    - 
 
 ### non-Breaking Changes
 - Refactored Tapis-specific logic from the workflow engine into a Plugin

@@ -309,26 +309,6 @@ class Destination(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.CASCADE)
 
-class Event(models.Model):
-    branch = models.CharField(max_length=255, null=True)
-    commit = models.TextField(max_length=255, null=True)
-    commit_sha = models.CharField(max_length=128, null=True)
-    context_url = models.CharField(max_length=128, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    cron = models.CharField(null=True, max_length=128)
-    directives = models.JSONField(null=True)
-    group = models.ForeignKey("backend.Group", related_name="events", null=True, on_delete=models.CASCADE)
-    message = models.TextField()
-    pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
-    source = models.CharField(max_length=255)
-    username = models.CharField(max_length=64, null=True)
-    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    class Meta:
-        indexes = [
-            models.Index(fields=["pipeline_id"]),
-            models.Index(fields=["username"])
-        ]
-
 class Group(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)

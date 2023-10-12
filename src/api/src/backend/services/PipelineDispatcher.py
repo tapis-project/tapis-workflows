@@ -57,6 +57,8 @@ class PipelineDispatcher:
             message = f"Failed publish the service request to the message broker: {e.__cause__}"
             logging.error(message)
             raise ServerError(message=message)
+        
+        return pipeline_run
 
     def _uuid_convert(self, obj):
         if isinstance(obj, UUID):

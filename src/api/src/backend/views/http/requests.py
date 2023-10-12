@@ -443,29 +443,9 @@ class LocalDestination(BaseDestination):
     type: Literal["local"]
     filename: str = None
 
-# Events
-class BaseEvent(BaseModel):
-    branch: str = None
-    directives: str = None
-    commit: str = None
-    commit_sha: str = None
-    context_url: str = None
-    pipeline_id: str = None
-    source: str = None
-    username: str = None
-
-class APIEvent(BaseEvent):
+class ReqRunPipeline(BaseModel):
     args: Args = {}
     directives: List[str] = None
-
-class WebhookEvent(BaseEvent):
-    branch: str
-    commit: str
-    commit_sha: str
-    source: str
-    context_url: str
-    username: str
-    tenant_id: str
 
 # Groups and Users
 class GroupUserReq(BaseModel):

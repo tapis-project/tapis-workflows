@@ -39,8 +39,6 @@ tags:
     description: Manage collections of tasks. Create, retrieve and delete.
   - name: Tasks
     description: Manage tasks to be executed as part of a workflow. Create, retrieve and delete.
-  - name: Events
-    description: Trigger workflows. Create and retrieve.
   - name: CI/CD
     description: Create CI/CD-specific workflows (Image builds and http requests).
 
@@ -1345,40 +1343,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/RespError'
 
-  '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/webhook':
-    post:
-      tags:
-        - Events
-      summary: Trigger a pipeline run
-      description: |
-        Trigger a pipeline run
-      operationId: runPipelineWebhook
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-        - name: pipeline_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-      requestBody:
-        required: true
-        description: A JSON object specifying information for the pipeline to be created.
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ReqWebhookEvent'
-      responses:
-        '200':
-          description: Events found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RespEvent'
-
   '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/tasks':
     post:
       tags:
@@ -1773,35 +1737,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/RespTaskExecutionList'
 
-  '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/events':
-    get:
-      tags:
-        - Events
-      summary: Retrieve Event details
-      description: |
-        Retrieve all events for a given pipeline
-      operationId: listEvents
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-        - name: pipeline_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-      responses:
-        '200':
-          description: Events found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RespEvent'
+  '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/run':
     post:
       tags:
-        - Events
+        - Pipelines
       summary: Trigger a pipeline run
       description: |
         Trigger a pipeline run
@@ -1826,11 +1765,11 @@ paths:
               $ref: '#/components/schemas/ReqRunPipeline'
       responses:
         '200':
-          description: Events found.
+          description: Pipeline triggered successfully.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespEvent'
+                $ref: '#/components/schemas/RespPipelineRun'
 
 # ------------------------------------------------------------------------------
 # --- Components ---------------------------------------------------------------
@@ -1852,6 +1791,10 @@ components:
       additionalProperties: true
     
     Params:
+      type: object
+      additionalProperties: true
+
+    Args:
       type: object
       additionalProperties: true
 
@@ -2248,38 +2191,6 @@ components:
           format: uuid
         credentials:
           type: string
-
-    Event:
-      type: object
-      properties:
-        branch:
-          type: string
-          default: null
-        commit:
-          type: string
-          default: null
-        commit_sha:
-          type: string
-          default: null
-        context_url:
-          type: string
-          default: null
-        directives:
-          type: string
-        message:
-          type: string
-        pipeline:
-          type: string
-        source:
-          type: string
-        username:
-          $ref: '#/components/schemas/Username'
-        identity:
-          type: string
-          default: null
-        uuid:
-          type: string
-          format: uuid
 
     GitRepository:
       type: object
@@ -2856,27 +2767,11 @@ components:
     ReqTapisJobDef:
       $ref: "https://raw.githubusercontent.com/tapis-project/tapis-client-java/prod/jobs-client/src/main/resources/JobsAPI.yaml#components/schemas/ReqSubmitJob"
 
-    ReqWebhookEvent:
-      type: object
-      properties:
-        branch:
-          type: string
-        commit:
-          type: string
-        commit_sha:
-          type: string
-        source:
-          $ref: '#/components/schemas/EnumContextType'
-        context_url:
-          type: string
-        username:
-          type: string
-
     ReqRunPipeline:
       type: object
       properties:
-        params:
-          $ref: "#/components/schemas/Params"
+        args:
+          $ref: "#/components/schemas/Args"
         directives:
           type: array
           items:
@@ -2913,7 +2808,6 @@ components:
       properties:
         logs:
           type: string
-        
 
     # -------------------------------------------------------------------------
     # --- Response objects ----------------------------------------------------
@@ -3134,24 +3028,6 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Task'
-
-    RespEvent:
-      allOf:
-        - $ref: '#/components/schemas/RespObject'
-        - type: object
-          properties:
-            result:
-              $ref: '#/components/schemas/Event'
-
-    # RespEventList:
-    #   allOf:
-    #     - $ref: '#/components/schemas/RespList' 
-    #     - type: object
-    #       properties:
-    #         result:
-    #           type: array
-    #           items:
-    #             $ref: '#/components/schemas/Event'
 
     # -------------------------------------------------------------------------
     # --- Enums ---------------------------------------------------------------
