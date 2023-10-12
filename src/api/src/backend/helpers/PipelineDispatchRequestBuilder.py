@@ -17,7 +17,7 @@ class PipelineDispatchRequestBuilder:
         pipeline,
         commit=None,
         directives=None,
-        params={}
+        args={}
     ):
         # Get the pipeline tasks, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
@@ -65,12 +65,12 @@ class PipelineDispatchRequestBuilder:
         # Populate the env for this request. Populate values from SK
         request["env"] = request["pipeline"]["env"]
 
-        req_params = {}
-        for key in params:
-            req_params[key] = params[key].dict()
+        req_args = {}
+        for key in args:
+            req_args[key] = args[key].dict()
 
-        # Populate the params for this request
-        request["params"] = {
+        # Populate the args for this request
+        request["args"] = {
             "workflow_executor_access_token": {
                 "value": WORKFLOW_EXECUTOR_ACCESS_TOKEN
             },
@@ -80,7 +80,7 @@ class PipelineDispatchRequestBuilder:
             "tapis_pipeline_owner": {
                 "value": request["pipeline"]["owner"]
             },
-            **req_params
+            **req_args
         }
 
         request["meta"] = {}
@@ -91,7 +91,7 @@ class PipelineDispatchRequestBuilder:
         # pipeline.duplicate_submission_policy (allow, allow_terminate, deny)
         request["meta"]["idempotency_key"] = [
             "group.id",
-            "params.tapis_tenant_id",
+            "args.tapis_tenant_id",
             "pipeline.id"
         ]
 

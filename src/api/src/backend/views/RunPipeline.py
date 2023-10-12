@@ -63,7 +63,7 @@ class RunPipeline(RestrictedAPIView):
                 group,
                 pipeline,
                 directives=body.directives,
-                params=body.params
+                args=body.args
             )
             
             # Dispatch the request
