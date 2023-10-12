@@ -655,7 +655,7 @@ Task = Annotated[
 class Pipeline(BaseModel):
     id: ID
     type: EnumPipelineType = EnumPipelineType.Workflow
-    uses: Union[str, Uses] = {}
+    uses: Union[str, Uses] = None
     tasks: List[
         Annotated[
             Union[
