@@ -166,6 +166,9 @@ class PipelineDispatchRequestBuilder:
 
     def _application(self, task_request, _):
         return task_request
+    
+    def _template(self, task_request, _):
+        return task_request
 
     def _tapis_job(self, task_request, _):
         return task_request
