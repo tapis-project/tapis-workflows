@@ -237,7 +237,10 @@ class ETLPipelines(RestrictedAPIView):
                 print(task.get("id"), task.get("uses"))
 
             tasks.extend([TemplateTask(**task) for task in pipeline_template.get("tasks")])
-            
+
+            for task in tasks:
+                print(task.id, task.uses)
+
 
             # Update the dependecies of the gen-outbound-manifests task to
             # include the last tapis job task
