@@ -1,12 +1,9 @@
 import os, json
 
-from pprint import pprint
+import git
 
-from typing import List
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
-from django.forms import model_to_dict
-from git import Repo
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import (
@@ -83,14 +80,18 @@ class ETLPipelines(RestrictedAPIView):
         
         # Clone the git repository that contains the pipeline and task definitions that will be used
         tapis_owe_templates_dir = "/tmp/git/tapis-owe-templates"
-        if not os.path.exists(tapis_owe_templates_dir):
+        cloned = os.path.exists(tapis_owe_templates_dir)
+        if not cloned:
             try:
-                Repo.clone_from(
+                git.Repo.clone_from(
                     uses.source.url,
                     tapis_owe_templates_dir
                 )
             except Exception as e:
                 return ServerErrorResp(f"Error cloning the Tapis OWE Template repository: {str(e)}")
+            
+        # A local tapis owe templates repo exists, update it with a git pull
+        git.cmd.Git(tapis_owe_templates_dir).pull()
         
         try:
             # Open the owe-config.json file
