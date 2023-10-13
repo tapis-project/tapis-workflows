@@ -180,7 +180,7 @@ class ETLPipelines(RestrictedAPIView):
                         "value": body.remote_inbox.globus_client_id
                     }
                 },
-                params=pipeline_template.get("params")
+                params=pipeline_template.get("params", {})
             )
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
@@ -234,14 +234,7 @@ class ETLPipelines(RestrictedAPIView):
                 last_task_id = task_id
 
             # Add the tasks from the template to the tasks list
-            for task in pipeline_template.get("tasks"):
-                print(task.get("id"), task.get("uses"))
-
             tasks.extend([TemplateTask(**task) for task in pipeline_template.get("tasks")])
-
-            for task in tasks:
-                print(task.id, getattr(task, "uses", None))
-
 
             # Update the dependecies of the gen-outbound-manifests task to
             # include the last tapis job task
