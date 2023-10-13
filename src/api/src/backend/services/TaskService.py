@@ -15,6 +15,7 @@ from backend.models import (
     TASK_TYPE_TAPIS_JOB,
     TASK_TYPE_TAPIS_ACTOR,
     TASK_TYPE_FUNCTION,
+    TASK_TYPE_TEMPLATE,
     DESTINATION_TYPE_LOCAL,
     DESTINATION_TYPE_DOCKERHUB,
 )
@@ -25,6 +26,7 @@ from backend.views.http.requests import (
     TapisJobTask,
     TapisActorTask,
     FunctionTask,
+    TemplateTask,
     DockerhubDestination,
     LocalDestination,
     EnumTaskIOTypes,
@@ -44,7 +46,8 @@ TASK_TYPE_REQUEST_MAPPING = {
     TASK_TYPE_CONTAINER_RUN: ApplicationTask, # Keep for backwards compatibility. container_run renamed to application
     TASK_TYPE_TAPIS_JOB: TapisJobTask,
     TASK_TYPE_TAPIS_ACTOR: TapisActorTask,
-    TASK_TYPE_FUNCTION: FunctionTask
+    TASK_TYPE_FUNCTION: FunctionTask,
+    TASK_TYPE_TEMPLATE: TemplateTask
 }
 
 DESTINATION_TYPE_REQUEST_MAPPING = {
@@ -84,6 +87,11 @@ class TaskService(Service):
         for key in request.input:
             _input[key] = request.input[key].dict()
 
+        # Prepare the uses property
+        uses = getattr(request, "uses", None)
+        if uses != None:
+            uses = uses.dict()
+
         # Create task
         try:
             task = Task.objects.create(
@@ -122,6 +130,7 @@ class TaskService(Service):
                     getattr(request, "tapis_actor_message", None)
                 ),
                 url=getattr(request, "url", None),
+                uses=uses,
                 # Exection profile
                 flavor=request.execution_profile.flavor,
                 max_exec_time=request.execution_profile.max_exec_time,
