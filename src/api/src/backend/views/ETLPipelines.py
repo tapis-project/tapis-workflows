@@ -239,7 +239,7 @@ class ETLPipelines(RestrictedAPIView):
             tasks.extend([TemplateTask(**task) for task in pipeline_template.get("tasks")])
 
             for task in tasks:
-                print(task.id, task.uses)
+                print(task.id, getattr(task, "uses", None))
 
 
             # Update the dependecies of the gen-outbound-manifests task to
