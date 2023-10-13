@@ -553,6 +553,7 @@ class BaseTask(BaseModel):
         return values
     
 class TemplateTask(BaseTask):
+    type: Literal["template"]
     uses: Union[str, Uses]
 
 class ApplicationTask(BaseTask):
