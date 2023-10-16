@@ -3047,8 +3047,9 @@ components:
     EnumRunStatus:
       type: string
       enum:
-        - active
+        - staging
         - submitted
+        - active
         - pending
         - backoff
         - completed

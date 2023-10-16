@@ -8,7 +8,7 @@ from owe_python_sdk.events.types import (
     PIPELINE_ACTIVE, PIPELINE_ARCHIVING, PIPELINE_COMPLETED, PIPELINE_FAILED,
     PIPELINE_STAGING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, PIPELINE_SKIPPED, 
     TASK_ACTIVE, TASK_ARCHIVING, TASK_BACKOFF, TASK_COMPLETED, TASK_FAILED, 
-    TASK_PENDING, TASK_SUSPENDED, TASK_TERMINATED, TASK_SKIPPED
+    TASK_PENDING, TASK_STAGING, TASK_SUSPENDED, TASK_TERMINATED, TASK_SKIPPED
 )
 from owe_python_sdk.constants import STDERR, STDOUT
 
@@ -31,6 +31,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
             TASK_COMPLETED:      self._task_completed,
             TASK_FAILED:         self._task_failed,
             TASK_PENDING:        self._task_pending,
+            TASK_STAGING:        self._task_staging,
             TASK_SUSPENDED:      self._task_suspended,
             TASK_TERMINATED:     self._task_terminated,
             # TASK_SKIPPED:        self._task_skipped
@@ -196,7 +197,16 @@ class TapisWorkflowsAPIBackend(EventHandler):
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
             task_execution_uuid=event.task.execution_uuid,
             status="pending",
-            last_message="Task waiting to be executed",
+            last_message="Task awaiting execution",
+            **self._kwargs
+        )
+
+    def _task_staging(self, event):
+        self.service_client.workflows.updateTaskExecutionStatus(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
+            task_execution_uuid=event.task.execution_uuid,
+            status="staging",
+            last_message="Workflow executor preparing to execute task",
             **self._kwargs
         )
     

@@ -16,7 +16,7 @@ from owe_python_sdk.events import (
 )
 from owe_python_sdk.events.types import (
     PIPELINE_ACTIVE, PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED,
-    TASK_ACTIVE, TASK_COMPLETED, TASK_FAILED
+    PIPELINE_STAGING, TASK_STAGING, TASK_ACTIVE, TASK_COMPLETED, TASK_FAILED
 )
 from helpers.GraphValidator import GraphValidator # From shared
 from helpers.GitCacheService import GitCacheService
@@ -174,6 +174,9 @@ class WorkflowExecutor(Worker, EventPublisher):
         
         # Prepare the file system for this pipeline and handle pipeline templating
         self._prepare_pipeline()
+
+        # Publish the active event
+        self.publish(Event(PIPELINE_STAGING, self.state.ctx))
 
         # Setup the server and the pipeline run loggers
         self._setup_loggers()
