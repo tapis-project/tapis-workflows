@@ -14,10 +14,9 @@ from backend.views.http.responses.errors import (
     ServerError as ServerErrorResp,
     UnprocessableEntity
 )
-from backend.views.http.responses import BaseResponse, ResourceURLResponse
+from backend.views.http.responses import ResourceURLResponse
 from backend.views.http.requests import (
     Uses,
-    GitRepository,
     TemplateTask,
     TapisJobTask,
     TaskDependency

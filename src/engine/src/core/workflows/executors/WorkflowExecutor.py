@@ -1,4 +1,4 @@
-import os, logging
+import os, logging, json
 
 from threading import Thread, Lock
 from uuid import uuid4
@@ -19,6 +19,7 @@ from owe_python_sdk.events.types import (
     TASK_ACTIVE, TASK_COMPLETED, TASK_FAILED
 )
 from helpers.GraphValidator import GraphValidator # From shared
+from helpers.GitCacheService import GitCacheService
 from errors.tasks import (
     InvalidTaskTypeError,
     MissingInitialTasksError,
@@ -171,8 +172,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         # should be made via 'self.state.ctx'
         self._set_context(ctx)
         
-        # Prepare the file system for this pipeline
-        self._prepare_pipeline_fs()
+        # Prepare the file system for this pipeline and handle pipeline templating
+        self._prepare_pipeline()
 
         # Setup the server and the pipeline run loggers
         self._setup_loggers()
@@ -385,7 +386,7 @@ class WorkflowExecutor(Worker, EventPublisher):
                     invalid_deps += 1
                     invalid_deps_message = (
                         invalid_deps_message
-                        + f"#{invalid_deps} An task cannot be dependent on itself: {task.id} | "
+                        + f"#{invalid_deps} A task cannot be dependent on itself: {task.id} | "
                     )
                 if dep.id not in task_ids:
                     invalid_deps += 1
@@ -421,6 +422,42 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         # Add all tasks to the queue
         self.state.queue = [ task for task in self.state.tasks ]
+
+    @interceptable
+    def _prepare_pipeline(self):
+        # Create all of the directories needed for the pipeline to run and persist results and cache
+        self._prepare_pipeline_fs()
+
+        # Clone git repository specified on the pipeline.uses if exists
+        git_cache_service = GitCacheService(cache_dir=self.state.ctx.pipeline.git_cache_dir)
+        if self.state.ctx.pipeline.uses != None:
+            git_cache_service.add_or_update(
+                self.state.ctx.pipeline.uses.source.url,
+                # NOTE Using the url as the directory to clone into is intentional
+                self.state.ctx.pipeline.uses.source.url
+            )
+
+            template_root_dir = os.path.join(
+                self.state.ctx.pipeline.git_cache_dir,
+                self.state.ctx.pipeline.uses.source.url,
+            )
+            
+            try:
+                # Open the owe-config.json file
+                with open(os.path.join(template_root_dir, "owe-config.json")) as file:
+                    owe_config = json.loads(file.read())
+
+                # Open the etl pipeline schema.json
+                with open(
+                    os.path.join(
+                        template_root_dir,
+                        owe_config.get(self.state.ctx.pipeline.uses.name).get("path")
+                    )
+                ) as file:
+                    pipeline_template = json.loads(file.read())
+            except Exception as e:
+                raise Exception(f"Templating configuration Error (owe-config.json): {str(e)}")
+
     
     @interceptable()
     def _prepare_pipeline_fs(self):
@@ -434,6 +471,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.state.ctx.pipeline.nfs_cache_dir = f"{self.state.ctx.pipeline.nfs_root_dir}cache/"
         self.state.ctx.pipeline.nfs_docker_cache_dir = f"{self.state.ctx.pipeline.nfs_cache_dir}docker"
         self.state.ctx.pipeline.nfs_singularity_cache_dir = f"{self.state.ctx.pipeline.nfs_cache_dir}singularity"
+        self.state.ctx.pipeline.nfs_git_cache_dir = f"{self.state.ctx.pipeline.nfs_cache_dir}git"
         self.state.ctx.pipeline.nfs_work_dir = f"{self.state.ctx.pipeline.nfs_root_dir}runs/{self.state.ctx.pipeline_run.uuid}/"
 
         # The pipeline root dir. All files and directories produced by a workflow
@@ -452,6 +490,10 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         self.state.ctx.pipeline.singularity_cache_dir = f"{self.state.ctx.pipeline.cache_dir}singularity"
         os.makedirs(f"{self.state.ctx.pipeline.singularity_cache_dir}", exist_ok=True)
+
+        # Create the github cache dir
+        self.state.ctx.pipeline.git_cache_dir = f"{self.state.ctx.pipeline.cache_dir}git"
+        os.makedirs(f"{self.state.ctx.pipeline.git_cache_dir}", exist_ok=True)
 
         # The directory for this particular run of the workflow
         self.state.ctx.pipeline.work_dir = f"{self.state.ctx.pipeline.root_dir}runs/{self.state.ctx.pipeline_run.uuid}/"
@@ -629,7 +671,6 @@ class WorkflowExecutor(Worker, EventPublisher):
 
     @interceptable()
     def _set_context(self, ctx):
-        # TODO validate the ctx here. Maybe pydantic
         self.state.ctx = ctx
 
     def _reset_event_exchange(self):

@@ -33,7 +33,7 @@ class TaskExecutorFactory:
         # No task executors found with for the provided task type so
         # raise an error
         raise InvalidTaskTypeError(
-            f"Task '{task.name}' uses task type '{task.type}' which does not exist.",
+            f"Task '{task.id}' uses task type '{task.type}' which does not exist.",
             hint=f"Update Task with id=={task.id} to have one of the following types: [image_build, container_run, request]",
         )
 
