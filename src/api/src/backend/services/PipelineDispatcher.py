@@ -6,7 +6,7 @@ from django.db import IntegrityError, DatabaseError, OperationalError
 from django.utils import timezone
 
 from backend.services.MessageBroker import service as broker
-from backend.models import Pipeline, PipelineRun, RUN_STATUS_PENDING
+from backend.models import Pipeline, PipelineRun, RUN_STATUS_SUBMITTED
 from backend.errors.api import ServerError
 
 
@@ -21,7 +21,7 @@ class PipelineDispatcher:
             # Create the pipeline run object
             pipeline_run = PipelineRun.objects.create(
                 pipeline=pipeline,
-                status=RUN_STATUS_PENDING,
+                status=RUN_STATUS_SUBMITTED,
                 uuid=service_request["pipeline_run"]["uuid"],
                 started_at=now,
                 last_modified=now
