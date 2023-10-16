@@ -6,7 +6,7 @@ from contrib.tapis.helpers import TapisServiceAPIGateway
 from owe_python_sdk.events import Event, EventHandler
 from owe_python_sdk.events.types import (
     PIPELINE_ACTIVE, PIPELINE_ARCHIVING, PIPELINE_COMPLETED, PIPELINE_FAILED,
-    PIPELINE_PENDING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, PIPELINE_SKIPPED, 
+    PIPELINE_STAGING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, PIPELINE_SKIPPED, 
     TASK_ACTIVE, TASK_ARCHIVING, TASK_BACKOFF, TASK_COMPLETED, TASK_FAILED, 
     TASK_PENDING, TASK_SUSPENDED, TASK_TERMINATED, TASK_SKIPPED
 )
@@ -17,7 +17,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
     def __init__(self, ctx):
         # Create a mapping of functions to events
         self.handle_fn_mapping = {
-            PIPELINE_PENDING:    self._pipeline_pending,
+            PIPELINE_STAGING:    self._pipeline_staging,
             PIPELINE_ACTIVE:     self._pipeline_active,
             PIPELINE_ARCHIVING:  self._pipeline_archiving,
             PIPELINE_COMPLETED:  self._pipeline_completed,
@@ -101,10 +101,10 @@ class TapisWorkflowsAPIBackend(EventHandler):
             **self._kwargs
         )
 
-    def _pipeline_pending(self, event):
+    def _pipeline_staging(self, event):
         self.service_client.workflows.updatePipelineRunStatus(
             pipeline_run_uuid=event.payload.pipeline_run.uuid,
-            status="pending",
+            status="staging",
             logs=self._get_logs(event.payload.pipeline.log_file),
             **self._kwargs
         )

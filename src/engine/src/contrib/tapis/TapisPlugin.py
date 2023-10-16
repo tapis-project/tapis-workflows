@@ -4,7 +4,7 @@ from owe_python_sdk.middleware.NotificationMiddleware import NotificationMiddlew
 from owe_python_sdk.middleware.ArchiveMiddleware import ArchiveMiddleware
 from owe_python_sdk.events.types import (
     PIPELINE_ACTIVE, PIPELINE_COMPLETED, PIPELINE_ARCHIVING, PIPELINE_FAILED,
-    PIPELINE_PENDING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, TASK_ACTIVE,
+    PIPELINE_STAGING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, TASK_ACTIVE,
     TASK_ARCHIVING, TASK_BACKOFF, TASK_COMPLETED, TASK_FAILED, TASK_PENDING,
     TASK_SUSPENDED, TASK_TERMINATED
 )
@@ -32,7 +32,7 @@ class TapisPlugin(Plugin):
                 handler=TapisWorkflowsAPIBackend,
                 subscriptions=[
                     PIPELINE_ACTIVE, PIPELINE_COMPLETED, PIPELINE_ARCHIVING, PIPELINE_FAILED,
-                    PIPELINE_PENDING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, TASK_ACTIVE,
+                    PIPELINE_STAGING, PIPELINE_SUSPENDED, PIPELINE_TERMINATED, TASK_ACTIVE,
                     TASK_ARCHIVING, TASK_BACKOFF, TASK_COMPLETED, TASK_FAILED, TASK_PENDING,
                     TASK_SUSPENDED, TASK_TERMINATED
                 ]
