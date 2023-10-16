@@ -170,7 +170,8 @@ ACCESS_CONTROLS = [
 ]
 
 RUN_STATUS_SUBMITTED = "submitted"
-RUN_STATUS_PENDING = "pending"
+RUN_STATUS_STAGING = "staging"
+RUN_STATUS_PENDING = "pending"  # NOTE deprecated. Remove pending backwards compatibility check
 RUN_STATUS_ACTIVE = "active"
 RUN_STATUS_BACKOFF = "backoff"
 RUN_STATUS_COMPLETED = "completed"
@@ -181,7 +182,8 @@ RUN_STATUS_TERMINATED = "terminated"
 RUN_STATUS_DEFERRED = "deferred"
 
 RUN_STATUSES = [
-    (RUN_STATUS_PENDING, "pending"),
+    (RUN_STATUS_PENDING, "pending"),  # NOTE deprecated. Remove pending backwards compatibility check
+    (RUN_STATUS_STAGING, "staging"),
     (RUN_STATUS_ACTIVE, "active"),
     (RUN_STATUS_BACKOFF, "backoff"),
     (RUN_STATUS_COMPLETED, "completed"),
@@ -195,6 +197,7 @@ RUN_STATUSES = [
 
 EXEC_STATUS_PENDING = "pending"
 EXEC_STATUS_ACTIVE = "active"
+EXEC_STATUS_STAGING = "staging"
 EXEC_STATUS_BACKOFF = "backoff"
 EXEC_STATUS_COMPLETED = "completed"
 EXEC_STATUS_FAILED = "failed"
@@ -205,6 +208,7 @@ EXEC_STATUS_SKIPPED = "skipped"
 
 TASK_EXECUTION_STATUSES = EXEC_STATUSES = [
     (EXEC_STATUS_PENDING, "pending"),
+    (EXEC_STATUS_STAGING, "staging"),
     (EXEC_STATUS_ACTIVE, "active"),
     (EXEC_STATUS_BACKOFF, "backoff"),
     (EXEC_STATUS_COMPLETED, "completed"),
