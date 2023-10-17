@@ -19,7 +19,8 @@ from owe_python_sdk.events.types import (
     PIPELINE_STAGING, TASK_STAGING, TASK_ACTIVE, TASK_COMPLETED, TASK_FAILED
 )
 from helpers.GraphValidator import GraphValidator # From shared
-from helpers.GitCacheService import GitCacheService
+from helpers.TemplateMapper import TemplateMapper
+from helpers.TemplateRepository import TemplateRepository
 from errors.tasks import (
     InvalidTaskTypeError,
     MissingInitialTasksError,
@@ -123,8 +124,8 @@ class WorkflowExecutor(Worker, EventPublisher):
                 "executors": {},
                 "dependency_graph": {},
                 "is_dry_run": False,
-                "ctx": None,
                 "ready_tasks": [],
+                "ctx": None,
             },
             lock=self.lock
         )
@@ -168,14 +169,16 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Resets the workflow executor to its initial state
         self._set_initial_state()
         
-        # Validates and sets the context. All subsequent references to the context
-        # should be made via 'self.state.ctx'
+        # Sets the execution context to the ReactiveState of the WorkflowExecutor.
+        # All subsequent references to the context should be made via 'self.state.ctx'
         self._set_context(ctx)
         
         # Prepare the file system for this pipeline and handle pipeline templating
         self._prepare_pipeline()
 
-        # Publish the active event
+        # Publish the PIPELINE_STAGING event
+        # NOTE Events can only be published AFTER the '_prepare_pipeline' method is called
+        # because the directory structure in which the logs do not exists until it is called.
         self.publish(Event(PIPELINE_STAGING, self.state.ctx))
 
         # Setup the server and the pipeline run loggers
@@ -184,10 +187,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Prepare task objects and create the directory structure for task output and execution
         self._prepare_tasks()
 
-        # Set the run id
-        self.state.ctx.pipeline.run_id = self.state.ctx.pipeline_run.uuid
-
-        self.state.ctx.logger.info(f'{self.p_str("STAGING")} {self.state.ctx.pipeline.run_id}')
+        self.state.ctx.logger.info(f'{self.p_str("STAGING")} {self.state.ctx.pipeline_run.uuid}')
 
         # Notification handlers are used to relay/persist updates about a pipeline run
         # and its tasks to some external resource
@@ -205,8 +205,13 @@ class WorkflowExecutor(Worker, EventPublisher):
         
     @interceptable()
     def _prepare_tasks(self):
-        # Create an execution_uuid for each task in the pipeline
+        """This function adds information about the pipeline context to the task
+        objects, prepares the file system for each task execution, handles task templating,
+        and generates and registers the task executors that will be called to perform the
+        work detailed in the task definition."""
+
         for task in self.state.ctx.pipeline.tasks:
+            # Create an execution_uuid for each task in the pipeline
             task.execution_uuid = str(uuid4())
 
             # Paths to the workdir for the task inside the workflow engine container
@@ -229,6 +234,11 @@ class WorkflowExecutor(Worker, EventPublisher):
 
             # Create the task's directories
             self._prepare_task_fs(task)
+
+            # Fetch task templates
+            if task.uses != None:
+                template_mapper = TemplateMapper(cache_dir=self.state.ctx.pipeline.git_cache_dir)
+                task = template_mapper.map(task, task.uses)
 
             # Add a key to the output for the task
             self.state.ctx.output = {task.id: []}
@@ -431,37 +441,13 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Create all of the directories needed for the pipeline to run and persist results and cache
         self._prepare_pipeline_fs()
 
-        # Clone git repository specified on the pipeline.uses if exists
-        git_cache_service = GitCacheService(cache_dir=self.state.ctx.pipeline.git_cache_dir)
-        if self.state.ctx.pipeline.uses != None:
-            git_cache_service.add_or_update(
-                self.state.ctx.pipeline.uses.source.url,
-                # NOTE Using the url as the directory to clone into is intentional
-                self.state.ctx.pipeline.uses.source.url
-            )
+        template = TemplateRepository(
+            self.state.ctx.pipeline.uses,
+            cache_dir=self.state.ctx.pipeline.git_cache_dir
+        )
 
-            template_root_dir = os.path.join(
-                self.state.ctx.pipeline.git_cache_dir,
-                self.state.ctx.pipeline.uses.source.url,
-            )
-            
-            try:
-                # Open the owe-config.json file
-                with open(os.path.join(template_root_dir, "owe-config.json")) as file:
-                    owe_config = json.loads(file.read())
+        # TODO map the template props to the pipeline
 
-                # Open the etl pipeline schema.json
-                with open(
-                    os.path.join(
-                        template_root_dir,
-                        owe_config.get(self.state.ctx.pipeline.uses.name).get("path")
-                    )
-                ) as file:
-                    pipeline_template = json.loads(file.read())
-            except Exception as e:
-                raise Exception(f"Templating configuration Error (owe-config.json): {str(e)}")
-
-    
     @interceptable()
     def _prepare_pipeline_fs(self):
         """Creates all of the directories necessary to run the pipeline, store
@@ -544,25 +530,25 @@ class WorkflowExecutor(Worker, EventPublisher):
         len(self.state.queue) == 0 or self.state.queue.pop(self.state.queue.index(task))
 
     @interceptable()
-    def _register_executor(self, run_id, task, executor):
-        self.state.executors[f"{run_id}.{task.id}"] = executor
+    def _register_executor(self, run_uuid, task, executor):
+        self.state.executors[f"{run_uuid}.{task.id}"] = executor
 
     @interceptable()
-    def _get_executor(self, run_id, task, default=None):
-        return self.state.executors.get(f"{run_id}.{task.id}", None)
+    def _get_executor(self, run_uuid, task, default=None):
+        return self.state.executors.get(f"{run_uuid}.{task.id}", None)
 
     @interceptable()
-    def _deregister_executor(self, run_id, task):
+    def _deregister_executor(self, run_uuid, task):
         # Clean up the resources created by the task executor
-        executor = self._get_executor(run_id, task)
+        executor = self._get_executor(run_uuid, task)
         executor.cleanup()
-        del self.state.executors[f"{run_id}.{task.id}"]
+        del self.state.executors[f"{run_uuid}.{task.id}"]
         # TODO use server logger below
         # self.state.ctx.logger.debug(self.t_str(task, "EXECUTOR DEREGISTERED"))
 
     @interceptable()
-    def _get_executor(self, run_id, task):
-        return self.state.executors[f"{run_id}.{task.id}"]
+    def _get_executor(self, run_uuid, task):
+        return self.state.executors[f"{run_uuid}.{task.id}"]
     
     def _cleanup_run(self):
         # TODO use server logger below
