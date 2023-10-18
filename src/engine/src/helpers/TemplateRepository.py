@@ -13,12 +13,13 @@ class TemplateRepository:
         self.git_cache_service = GitCacheService(cache_dir=cache_dir)
     
     def get_by_uses(self, uses: Uses):
+        git_repo_dir = self._url_to_directory(uses.source.url)
         self.git_cache_service.add_or_update(
             uses.source.url,
-            self._url_to_directory(uses.source.url)
+            git_repo_dir
         )
 
-        template_root_dir = os.path.join(self.cache_dir, uses.source.url)
+        template_root_dir = os.path.join(self.cache_dir, git_repo_dir)
         
         try:
             # Open the owe-config.json file
@@ -44,5 +45,5 @@ class TemplateRepository:
             parsed_url.hostname,
             *[part.lstrip("/") for part in parsed_url.path.split("/")]
         )
-        
+
         return directory
