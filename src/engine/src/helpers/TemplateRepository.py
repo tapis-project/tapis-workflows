@@ -1,7 +1,7 @@
 import os,json
 
-from .GitCacheService import GitCacheService
-from ..owe_python_sdk.schema import Uses
+from GitCacheService import GitCacheService
+from owe_python_sdk.schema import Uses
 
 class TemplateRepository:
     def __init__(self, cache_dir: str):
