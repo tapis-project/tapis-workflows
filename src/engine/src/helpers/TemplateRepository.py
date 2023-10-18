@@ -20,23 +20,22 @@ class TemplateRepository:
         )
 
         template_root_dir = os.path.join(self.cache_dir, git_repo_dir)
-
-        print("USES", uses)
         
         try:
             # Open the owe-config.json file
             with open(os.path.join(template_root_dir, "owe-config.json")) as file:
                 owe_config = json.loads(file.read())
-                print("OWECONFIG", owe_config)
 
             # Open the etl pipeline schema.json
-            print("TEMPLATE DIR", template_root_dir)
-            with open(
-                os.path.join(
-                    template_root_dir,
-                    owe_config.get(uses.name).get("path")
-                )
-            ) as file:
+            template_ref = owe_config.get(uses.name, None)
+            if template_ref == None:
+                raise Exception(f"Template reference for key '{uses.name}' not found in the config file")
+            
+            path_to_template = template_ref.get("path", None)
+            if path_to_template == None:
+                raise Exception(f"The template reference object for template '{uses.name}' is undefined")
+            
+            with open(os.path.join(template_root_dir, path_to_template)) as file:
                 template = json.loads(file.read())
         except Exception as e:
             raise Exception(f"Templating configuration Error (owe-config.json): {str(e)}")
