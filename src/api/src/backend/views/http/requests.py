@@ -635,9 +635,16 @@ class FunctionTask(BaseTask):
     runtime: EnumRuntimeEnvironment
     packages: List[str] = []
     installer: EnumInstaller
-    code: str
+    code: str = None
+    entrypoint: str = None
     command: str = None
 
+    @root_validator(pre=True)
+    def code_or_entrypoint(cls, values):
+        if values.get("code", None) == None and values.get("entrypoint", None) == None:
+            raise ValueError("Function tasks must define at least one of the following: [code, entrypoint] | Neither were defined")
+
+        return values
 # Pipelines
 
 Task = Annotated[
@@ -696,6 +703,7 @@ class Pipeline(BaseModel):
                 }
         
         return values
+    
     class Config:
         extra = Extra.allow
 
