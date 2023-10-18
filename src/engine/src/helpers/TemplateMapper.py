@@ -16,7 +16,6 @@ from ..owe_python_sdk.schema import (
 
 class TemplateMapper:
     def __init__(self, cache_dir: str):
-        self.cache_dir = cache_dir
         self.task_map_by_type = {
             "function": FunctionTask,
             "application": ApplicationTask,
@@ -25,6 +24,7 @@ class TemplateMapper:
             "tapis_job": TapisJobTask,
             "tapis_actor": TapisActorTask
         }
+        self.template_repo = TemplateRepository(cache_dir=cache_dir)
 
     def map(self, obj: Union[Pipeline, Task], uses: Uses) -> Union[Pipeline, Task]:
         """This method takes an object(Pipeline or Task object), and updates its
@@ -35,7 +35,7 @@ class TemplateMapper:
         """
 
         # Clone git repository specified on the pipeline.uses if exists
-        template = TemplateRepository(uses, cache_dir=self.cache_dir)
+        template = self.template_repo.get_by_uses(uses)
 
         # Resolve which class the final object should have
         obj_class = Pipeline

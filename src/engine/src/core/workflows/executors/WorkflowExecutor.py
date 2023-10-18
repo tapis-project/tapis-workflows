@@ -20,7 +20,6 @@ from owe_python_sdk.events.types import (
 )
 from helpers.GraphValidator import GraphValidator # From shared
 from helpers.TemplateMapper import TemplateMapper
-from helpers.TemplateRepository import TemplateRepository
 from errors.tasks import (
     InvalidTaskTypeError,
     MissingInitialTasksError,
@@ -441,12 +440,12 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Create all of the directories needed for the pipeline to run and persist results and cache
         self._prepare_pipeline_fs()
 
-        template = TemplateRepository(
-            self.state.ctx.pipeline.uses,
-            cache_dir=self.state.ctx.pipeline.git_cache_dir
-        )
-
-        # TODO map the template props to the pipeline
+        # template_mapper = TemplateMapper(cache_dir=self.state.ctx.pipeline.git_cache_dir)
+        # if self.state.ctx.pipeline.uses != None:
+        #     self.state.ctx.pipeline = template_mapper.map(
+        #         self.state.ctx.pipeline,
+        #         self.state.ctx.pipeline.uses
+        #     )
 
     @interceptable()
     def _prepare_pipeline_fs(self):
