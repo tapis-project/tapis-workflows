@@ -1,6 +1,6 @@
 import os,json
 
-from GitCacheService import GitCacheService
+from .GitCacheService import GitCacheService
 from owe_python_sdk.schema import Uses
 
 class TemplateRepository:
