@@ -209,7 +209,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         objects, prepares the file system for each task execution, handles task templating,
         and generates and registers the task executors that will be called to perform the
         work detailed in the task definition."""
-
+        self.state.ctx.output = {}
         for task in self.state.ctx.pipeline.tasks:
             # Create an execution_uuid for each task in the pipeline
             task.execution_uuid = str(uuid4())
@@ -241,7 +241,7 @@ class WorkflowExecutor(Worker, EventPublisher):
                 task = template_mapper.map(task, task.uses)
 
             # Add a key to the output for the task
-            self.state.ctx.output = {task.id: []}
+            self.state.ctx.output[task.id] = None
 
             # Resolve and register the task executor
             executor = factory.build(task, self.state.ctx, self.exchange, plugins=self._plugins)
@@ -284,10 +284,10 @@ class WorkflowExecutor(Worker, EventPublisher):
 
                 self.state.ctx.output = {
                     **self.state.ctx.output,
-                    **task_result.output
+                    **{task.id: task_result.output}
                 }
             else:
-                task_result = TaskResult(0, data={"task": task.id})
+                task_result = TaskResult(0, output={task.id: None})
         except InvalidTaskTypeError as e:
             self.state.ctx.logger.error(str(e))
             task_result = TaskResult(1, errors=[str(e)])
