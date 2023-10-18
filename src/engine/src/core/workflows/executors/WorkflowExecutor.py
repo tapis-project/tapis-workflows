@@ -435,10 +435,11 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Add all tasks to the queue
         self.state.queue = [ task for task in self.state.tasks ]
 
-    @interceptable
+    @interceptable()
     def _prepare_pipeline(self):
         # Create all of the directories needed for the pipeline to run and persist results and cache
         self._prepare_pipeline_fs()
+        print(self.state.ctx)
 
         # template_mapper = TemplateMapper(cache_dir=self.state.ctx.pipeline.git_cache_dir)
         # if self.state.ctx.pipeline.uses != None:

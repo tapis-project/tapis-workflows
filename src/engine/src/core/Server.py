@@ -39,7 +39,6 @@ from core.workflows.executors import WorkflowExecutor
 from utils import bytes_to_json, load_plugins, lbuffer_str as lbuf
 from errors import NoAvailableWorkers, WorkflowTerminated
 
-from pprint import pprint
 
 logger = logging.getLogger("server")
 
@@ -152,9 +151,8 @@ class Server:
         acked = False # Indicates that the message as been acked
         try:
             # Decode the message body, then convert to an object.
-            json_request = json.loads(bytes_to_json(body))
-            pprint(json_request)
-            request = WorkflowSubmissionRequest(**json_request)
+            deserialized_request = json.loads(bytes_to_json(body))
+            request = WorkflowSubmissionRequest(**deserialized_request)
             
             # Get a workflow executor worker. If there are none available,
             # this will raise a "NoWorkersAvailabe" error which is handled
