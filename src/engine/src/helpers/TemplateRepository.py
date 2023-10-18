@@ -20,13 +20,17 @@ class TemplateRepository:
         )
 
         template_root_dir = os.path.join(self.cache_dir, git_repo_dir)
+
+        print("USES", uses)
         
         try:
             # Open the owe-config.json file
             with open(os.path.join(template_root_dir, "owe-config.json")) as file:
                 owe_config = json.loads(file.read())
+                print("OWECONFIG", owe_config)
 
             # Open the etl pipeline schema.json
+            print("TEMPLATE DIR", template_root_dir)
             with open(
                 os.path.join(
                     template_root_dir,
