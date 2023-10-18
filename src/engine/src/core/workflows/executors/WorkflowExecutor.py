@@ -490,9 +490,9 @@ class WorkflowExecutor(Worker, EventPublisher):
         # The log file for this pipeline run
         self.state.ctx.pipeline.log_file = f"{self.state.ctx.pipeline.work_dir}logs.txt"
         
-        # Set the work_dir on the WorkflowExecutor as well. Will be used for
-        # cleaning up all the temporary files/dirs after the state is reset.
-        # (Which means that ther will be no self.state.ctx.pipeline.work_dir)
+        # Set the work_dir on the WorkflowExecutor as well.
+        # NOTE Will be used for cleaning up all the temporary files/dirs after 
+        # the state is reset. (Which means that ther will be no self.state.ctx.pipeline.work_dir)
         self.work_dir = self.state.ctx.pipeline.work_dir
 
     @interceptable()

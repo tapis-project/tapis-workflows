@@ -39,7 +39,7 @@ class TemplateMapper:
         # Resolve which class the final object should have
         obj_class = Pipeline
         if not issubclass(obj.__class__, Pipeline):
-            obj_class = self.task_map_by_type.get(obj.get("type"), None)
+            obj_class = self.task_map_by_type.get(obj.type, None)
 
         # Raise exception if no class could be resolved from the template
         if obj_class == None:
@@ -47,6 +47,8 @@ class TemplateMapper:
 
         dict_obj = obj.dict()
 
+        # Create a dictionary of the original object and map the properties of the template
+        # onto the dictionary
         for attr in template.keys():
             # For pipelines only. Skip the tasks property as they should be handled
             # seperately in another call to the map method of the Template ampper
@@ -59,18 +61,21 @@ class TemplateMapper:
                 dict_obj["type"] = template.get(attr)
                 continue
 
-            if obj.get(attr, None) == None:
+            if getattr(obj, attr, None) == None:
                 dict_obj[attr] = template[attr]
 
+        # Create a new object out of the modified dict representation of the original object
         new_obj = obj_class(**dict_obj)
 
-        for attr in vars(new_obj):
+        # Now add all of the properties to the original object from the new object.
+        # NOTE this allows us to return the exact same object that was passed as and
+        # argument but with the modifications, there by maintaining the objects identity. 
+        for attr in new_obj.dict().keys():
             if attr == "tasks":
                 continue
 
             updated_value = getattr(new_obj, attr)
-            original_value = getattr(obj, attr)
-            if original_value != updated_value:
+            if getattr(obj, attr) != updated_value:
                 setattr(obj, attr, updated_value)
 
         return obj
