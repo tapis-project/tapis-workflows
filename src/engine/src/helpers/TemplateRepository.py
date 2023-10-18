@@ -1,7 +1,10 @@
-import os,json
+import os, json
+
+from urllib.parse import urlparse
 
 from .GitCacheService import GitCacheService
 from owe_python_sdk.schema import Uses
+
 
 class TemplateRepository:
     def __init__(self, cache_dir: str):
@@ -12,8 +15,7 @@ class TemplateRepository:
     def get_by_uses(self, uses: Uses):
         self.git_cache_service.add_or_update(
             uses.source.url,
-            # NOTE Using the url as the directory to clone into is intentional
-            uses.source.url
+            self._url_to_directory(uses.source.url)
         )
 
         template_root_dir = os.path.join(self.cache_dir, uses.source.url)
@@ -35,3 +37,12 @@ class TemplateRepository:
             raise Exception(f"Templating configuration Error (owe-config.json): {str(e)}")
             
         return template
+    
+    def _url_to_directory(self, url):
+        parsed_url = urlparse(url)
+        directory = os.path.join(
+            parsed_url.hostname,
+            *[part.lstrip("/") for part in parsed_url.path.split("/")]
+        )
+        
+        return directory
