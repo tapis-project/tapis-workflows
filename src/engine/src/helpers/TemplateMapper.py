@@ -38,7 +38,7 @@ class TemplateMapper:
         # Clone git repository specified on the pipeline.uses if exists
         template = self.template_repo.get_by_uses(uses)
         print("TEMPLATE TO BE MAPPED")
-        pprint()
+        pprint(template)
         # Resolve which class the final object should have
         obj_class = Pipeline
         if not issubclass(obj.__class__, Pipeline):
