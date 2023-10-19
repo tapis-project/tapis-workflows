@@ -11,10 +11,10 @@ class GitCacheService:
         git.Repo.clone_from(url, os.path.join(self._cache_dir, directory.lstrip("/")))
 
     def repo_exists(self, path):
-        return os.path.exists(self._cache_dir, path.lstrip("/"))
+        return os.path.exists(os.path.join(self._cache_dir, path.lstrip("/")))
     
     def update(self, directory):
-        git.cmd.Git(self._cache_dir, directory.lstrip("/")).pull()
+        git.cmd.Git(os.path.join(self._cache_dir, directory.lstrip("/"))).pull()
 
     def add_or_update(self, url, directory):
         if not self.repo_exists(directory):
