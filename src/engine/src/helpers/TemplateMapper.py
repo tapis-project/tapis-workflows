@@ -13,7 +13,6 @@ from owe_python_sdk.schema import (
     TapisActorTask
 )
 
-from pprint import pprint
 
 class TemplateMapper:
     def __init__(self, cache_dir: str):
@@ -37,8 +36,7 @@ class TemplateMapper:
 
         # Clone git repository specified on the pipeline.uses if exists
         template = self.template_repo.get_by_uses(uses)
-        print("TEMPLATE TO BE MAPPED")
-        pprint(template)
+        
         # Resolve which class the final object should have
         obj_class = Pipeline
         if not issubclass(obj.__class__, Pipeline):
@@ -82,3 +80,4 @@ class TemplateMapper:
                 setattr(obj, attr, updated_value)
 
         return obj
+
