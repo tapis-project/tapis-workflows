@@ -6,6 +6,7 @@ from owe_python_sdk.schema import Params, Args
 def params_validator(params: Params, args: Args):
     required_params = [key for key in params if params[key].required]
     missing_args = []
+    print("ARGS", args)
     for param in required_params:
         if getattr(args.get(param, None), "value", None) == None:
             missing_args.append(param)
