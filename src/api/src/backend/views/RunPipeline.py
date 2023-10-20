@@ -55,7 +55,7 @@ class RunPipeline(RestrictedAPIView):
             "tasks__destination__identity",
         ).first()
 
-
+        print("BODY.ARGS", body.args)
         try:
             # Build the pipeline dispatch request
             pipeline_dispatch_request = request_builder.build(

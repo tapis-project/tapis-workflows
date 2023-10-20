@@ -64,8 +64,8 @@ class PipelineDispatchRequestBuilder:
 
         # Populate the env for this request. Populate values from SK
         request["env"] = request["pipeline"]["env"]
-        print("BEFORE")
-        pprint(request)
+        print("ARGS")
+        pprint(args)
         req_args = {}
         for key in args:
             req_args[key] = args[key].dict()
