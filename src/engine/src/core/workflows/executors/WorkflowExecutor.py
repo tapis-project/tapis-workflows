@@ -18,6 +18,7 @@ from owe_python_sdk.events.types import (
     PIPELINE_ACTIVE, PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED,
     PIPELINE_STAGING, TASK_STAGING, TASK_ACTIVE, TASK_COMPLETED, TASK_FAILED
 )
+from helpers import params_validator
 from helpers.GraphValidator import GraphValidator # From shared
 from helpers.TemplateMapper import TemplateMapper
 from errors.tasks import (
@@ -175,6 +176,15 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Prepare the file system for this pipeline and handle pipeline templating
         self._prepare_pipeline()
 
+        # Validate the pipeline submission args against the pipeline's parameters
+        (validated, err) = params_validator(
+            self.state.ctx.pipeline.params,
+            self.state.ctx.args
+        )
+
+        if not validated:
+            raise Exception(err)
+
         # Publish the PIPELINE_STAGING event
         # NOTE Events can only be published AFTER the '_prepare_pipeline' method is called
         # because the directory structure in which the logs do not exists until it is called.
@@ -197,10 +207,7 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         # Validate the tasks. Kill the pipeline if it contains cycles
         # or invalid dependencies
-        try:
-            self._set_tasks(self.state.ctx.pipeline.tasks)
-        except Exception as e:
-            raise e
+        self._set_tasks(self.state.ctx.pipeline.tasks)
         
     @interceptable()
     def _prepare_tasks(self):

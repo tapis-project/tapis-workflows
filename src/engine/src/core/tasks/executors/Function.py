@@ -267,16 +267,18 @@ class Function(TaskExecutor):
         # The code provided in the request is expected to be base64 encoded. Decode, then
         # encode in UTF-8
         entrypoint_filename = "entrypoint.sh"
-        local_entrypoint_file_path = f"{self.task.exec_dir}{entrypoint_filename}"
+        local_entrypoint_file_path = os.path.join(self.task.exec_dir, entrypoint_filename)
         self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
 
     def _setup_python_container(self):
         # Create entrypoint file that will be mounted into the container via NFS mount.
         # The code provided in the request is expected to be base64 encoded. Decode, then
         # encode in UTF-8
-        entrypoint_filename = "entrypoint.py"
-        local_entrypoint_file_path = f"{self.task.exec_dir}{entrypoint_filename}"
-        self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
+        entrypoint_filename = self.task.entrypoint.lstrip("/")
+        if self.task.entrypoint == None:
+            entrypoint_filename = "entrypoint.py"
+            local_entrypoint_file_path = os.path.join(self.task.exec_dir, entrypoint_filename)
+            self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
         
         # Create requirements file that will be mounted into the functions container
         # via NFS mount. This file will be used with the specified installer to install

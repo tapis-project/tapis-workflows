@@ -26,6 +26,7 @@ def flavor_to_limits(flavor: Flavor):
     return {"cpu": flavor.cpu, "memory": flavor.memory, **gpu_specs}
 
 def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, args={}, prefix=""):
+    print("INPUTS", _inputs)
     k8senvvars = []
     for input_id, _input in _inputs.items():
         # Use input[input_id].value if provided
@@ -98,7 +99,7 @@ def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, args={}, prefix=""
                 elif input_type == "binary":
                     pass
                 else:
-                    raise Exception(f"Error: Unsupported coercion. Cannot coerce task output '{output_id}' for task '{task_id}' to type {input_type}")
+                    raise Exception(f"Error: Unsupported input type. Cannot coerce task output '{output_id}' for task '{task_id}' to type {input_type}")
             except Exception as e:
                 raise Exception(f"Error: Could not coerce output '{output_id}' for task '{task_id}' to {input_type}. Details: {e.message}")
 
