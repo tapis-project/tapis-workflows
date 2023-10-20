@@ -64,11 +64,13 @@ class PipelineDispatchRequestBuilder:
 
         # Populate the env for this request. Populate values from SK
         request["env"] = request["pipeline"]["env"]
-
+        print("BEFORE")
+        pprint(request)
         req_args = {}
         for key in args:
             req_args[key] = args[key].dict()
-
+        print("REQ_ARGS")
+        pprint(req_args)
         # Populate the args for this request
         request["args"] = {
             "workflow_executor_access_token": {
@@ -82,6 +84,8 @@ class PipelineDispatchRequestBuilder:
             },
             **req_args
         }
+        print("AFTER")
+        pprint(request)
 
         request["meta"] = {}
         # Properties to help uniquely identity a pipeline submission. If the workflow
