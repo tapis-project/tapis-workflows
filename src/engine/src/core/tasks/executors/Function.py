@@ -13,6 +13,7 @@ from conf.constants import (
 from core.resources import JobResource
 from utils import get_flavor
 from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars, gen_resource_name
+from helpers.GitCacheService import GitCacheService
 from errors import WorkflowTerminated
 
 
@@ -52,16 +53,16 @@ class Function(TaskExecutor):
 
     def execute(self):
         job_name = gen_resource_name(prefix="fn")
-
         # Prepares the file system for the Function task by clone 
-        # git repsoitories specified by the user in the request
-        init_jobs_success = True
-        if len(self.task.git_repositories) > 0:
-            init_jobs_task_result = self._run_git_clone_jobs(job_name)
-            init_jobs_success = init_jobs_task_result.success
-        
-        if not init_jobs_success:
-            return init_jobs_task_result
+        # git repsoitories specified in the request
+        try:
+            for repo in self.task.git_respositories:
+                git_cache_service = GitCacheService(
+                    cache_dir=os.path.join(self.task.exec_dir, repo.directory)
+                )
+                git_cache_service.add(repo.url, branch=repo.branch)
+        except Exception as e:
+            return self._task_result(1, errors=[str(e)])
         
         # Set up the container details for the task's specified runtime
         container_details = self._setup_container()
@@ -138,90 +139,6 @@ class Function(TaskExecutor):
             self.ctx.logger.error(str(e))
             self._stderr(str(e), "w")
             return self._task_result(1, errors=[e])
-
-        return self._task_result(0 if self._job_succeeded(job) else 1)
-
-    def _run_git_clone_jobs(self, job_name):
-        job_name = job_name.replace("wf-fn", "wf-fn-init")
-        for i, repo in enumerate(self.task.git_repositories):
-            # Create the command for the container. Add the branch to
-            # the command if specified
-            command = ["git", "clone"]
-            if repo.branch != None: command += ["-b", repo.branch]
-
-            command += [
-                repo.url,
-                os.path.join("src", repo.directory)
-            ]
-
-            try:
-                job = self.batch_v1_api.create_namespaced_job(
-                    namespace=KUBERNETES_NAMESPACE,
-                    body=client.V1Job(
-                        metadata=client.V1ObjectMeta(
-                            labels=dict(job=job_name + str(i)),
-                            name=job_name + str(i),
-                            namespace=KUBERNETES_NAMESPACE,
-                        ),
-                        spec=client.V1JobSpec(
-                            backoff_limit=0,
-                            template=client.V1PodTemplateSpec(
-                                spec=client.V1PodSpec(
-                                    containers=[
-                                        client.V1Container(
-                                            name=job_name + str(i),
-                                            image="alpine/git:latest",
-                                            command=command,
-                                            volume_mounts=[
-                                                client.V1VolumeMount(
-                                                    name="task-workdir",
-                                                    mount_path=self.task.container_work_dir
-                                                )
-                                            ],
-                                            working_dir=self.task.container_work_dir,
-                                            resources=flavor_to_k8s_resource_reqs(get_flavor("c1tiny"))
-                                        )
-                                    ],
-                                    restart_policy="Never",
-                                    volumes=[
-                                        client.V1Volume(
-                                            name="task-workdir",
-                                            nfs=client.V1NFSVolumeSource(
-                                                server=WORKFLOW_NFS_SERVER,
-                                                path=self.task.nfs_work_dir
-                                            ),
-                                        )
-                                    ]
-                                )
-                            )
-                        )
-                    )
-                )
-                # Register the job to be deleted after execution
-                self._register_resource(JobResource(job=job))
-            except Exception as e:
-                self.ctx.logger.error(e)
-                self._stderr(str(e), "w")
-                return self._task_result(1, errors=[str(e)])
-                
-            try:
-                while not self._job_in_terminal_state(job):
-                    if self.terminating:
-                        self.ctx.logger.error("Workflow Terminated")
-                        self.cleanup(terminating=True)
-                        self._stderr("Workflow Terminated", "w")
-                        return self._task_result(2, errors=["Workflow Terminated"])
-
-                    job = self.batch_v1_api.read_namespaced_job(
-                        job.metadata.name,
-                        KUBERNETES_NAMESPACE
-                    )
-
-                    time.sleep(self.polling_interval)
-            except Exception as e:
-                self.ctx.logger.error(str(e))
-                self._stderr(str(e), "w")
-                return self._task_result(1, errors=[str(e)])
 
         return self._task_result(0 if self._job_succeeded(job) else 1)
 
