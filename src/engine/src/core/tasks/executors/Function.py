@@ -55,16 +55,19 @@ class Function(TaskExecutor):
         job_name = gen_resource_name(prefix="fn")
         # Prepares the file system for the Function task by clone 
         # git repsoitories specified in the request
+        print("Initialize git cache")
         git_cache_service = GitCacheService(cache_dir=self.task.exec_dir)
         try:
             for repo in self.task.git_repositories:
+                print("repo", repo)
                 git_cache_service.add(repo.url, repo.directory, branch=repo.branch)
+                print("cloned successfully")
         except Exception as e:
             return self._task_result(1, errors=[str(e)])
         
         # Set up the container details for the task's specified runtime
         container_details = self._setup_container()
-
+        print("V1JOB body")
         # Job body
         body = client.V1Job(
             metadata=client.V1ObjectMeta(
