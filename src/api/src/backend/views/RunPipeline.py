@@ -64,7 +64,6 @@ class RunPipeline(RestrictedAPIView):
                 directives=body.directives,
                 args=body.args
             )
-
             # Dispatch the request
             pipeline_run = pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline)
         except ServerError as e:

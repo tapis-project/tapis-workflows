@@ -56,7 +56,6 @@ class Function(TaskExecutor):
         # Prepares the file system for the Function task by clone 
         # git repsoitories specified by the user in the request
         init_jobs_success = True
-        print("GIT_REPOSITORIES", self.task.git_repositories)
         if len(self.task.git_repositories) > 0:
             init_jobs_task_result = self._run_git_clone_jobs(job_name)
             init_jobs_success = init_jobs_task_result.success

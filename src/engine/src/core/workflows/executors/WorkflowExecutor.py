@@ -246,6 +246,8 @@ class WorkflowExecutor(Worker, EventPublisher):
                 template_mapper = TemplateMapper(cache_dir=self.state.ctx.pipeline.git_cache_dir)
                 task = template_mapper.map(task, task.uses)
 
+            print("TASK", task.id, "\n", task, "\n\n")
+
             # Add a key to the output for the task
             self.state.ctx.output[task.id] = None
 
