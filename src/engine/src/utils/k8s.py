@@ -26,7 +26,6 @@ def flavor_to_limits(flavor: Flavor):
     return {"cpu": flavor.cpu, "memory": flavor.memory, **gpu_specs}
 
 def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, args={}, prefix=""):
-    print("INPUTS", _inputs)
     k8senvvars = []
     for input_id, _input in _inputs.items():
         # Use input[input_id].value if provided
