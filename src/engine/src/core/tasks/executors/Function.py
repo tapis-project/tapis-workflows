@@ -55,12 +55,10 @@ class Function(TaskExecutor):
         job_name = gen_resource_name(prefix="fn")
         # Prepares the file system for the Function task by clone 
         # git repsoitories specified in the request
+        git_cache_service = GitCacheService(cache_dir=self.task.exec_dir)
         try:
             for repo in self.task.git_repositories:
-                git_cache_service = GitCacheService(
-                    cache_dir=os.path.join(self.task.exec_dir, repo.directory)
-                )
-                git_cache_service.add(repo.url, branch=repo.branch)
+                git_cache_service.add(repo.url, repo.directory, branch=repo.branch)
         except Exception as e:
             return self._task_result(1, errors=[str(e)])
         
