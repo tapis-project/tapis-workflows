@@ -56,7 +56,7 @@ class Function(TaskExecutor):
         # Prepares the file system for the Function task by clone 
         # git repsoitories specified in the request
         try:
-            for repo in self.task.git_respositories:
+            for repo in self.task.git_repositories:
                 git_cache_service = GitCacheService(
                     cache_dir=os.path.join(self.task.exec_dir, repo.directory)
                 )
