@@ -61,8 +61,13 @@ class TemplateMapper:
             if attr == "type":
                 dict_obj["type"] = template.get(attr)
                 continue
-
-            if getattr(obj, attr, None) == None:
+            
+            # Add the template's value for this attribute if the original object's
+            # value is not None, or if the object's og value is falsy and the templates value is not
+            if (
+                getattr(obj, attr, None) in [[], {}, "", None]
+                and template[attr] not in [[], {}, "", None]
+            ):
                 dict_obj[attr] = template[attr]
 
         # Create a new object out of the modified dict representation of the original object
