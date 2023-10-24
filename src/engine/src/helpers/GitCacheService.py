@@ -11,9 +11,7 @@ class GitCacheService:
         kwargs = {}
         if branch != None:
             kwargs["branch"] = branch
-        print("BEFORE CLONE")
         git.Repo.clone_from(url, os.path.join(self._cache_dir, directory.lstrip("/")), **kwargs)
-        print("AFTER CLONE")
 
     def repo_exists(self, path):
         return os.path.exists(os.path.join(self._cache_dir, path.lstrip("/")))
