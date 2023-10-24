@@ -24,7 +24,7 @@ class ContainerDetails:
         command,
         args,
         working_dir=None,
-        env=None
+        env=[]
     ):
         self.image = image
         self.command = command
@@ -163,22 +163,26 @@ class Function(TaskExecutor):
                 value=self.ctx.pipeline_run.uuid
             ),
             client.V1EnvVar(
+                name="_OWE_WORK_DIR",
+                value=self.task.container_work_dir
+            ), 
+            client.V1EnvVar(
                 name="_OWE_INPUT_DIR",
-                value=os.path.join(self.task.container_work_dir, "input")
+                value=self.task.container_input_dir
             ),
             client.V1EnvVar(
                 name="_OWE_OUTPUT_DIR",
-                value=os.path.join(self.task.container_work_dir, "output")
+                value=self.task.container_output_dir
             ),
             client.V1EnvVar(
                 name="_OWE_EXEC_DIR",
-                value=os.path.join(self.task.container_work_dir, "src")
+                value=os.path.join(self.task.container_exec_dir)
             ),
         ]
 
         # Convert defined workflow inputs into the function containers env vars with
         # the open workflow engine input prefix
-        container_details.env = env + input_to_k8s_env_vars(
+        container_details.env = container_details.env + env + input_to_k8s_env_vars(
             self.task.input,
             self.ctx.pipeline.work_dir,
             env=self.ctx.env,
@@ -205,12 +209,20 @@ class Function(TaskExecutor):
         # Create entrypoint file that will be mounted into the container via NFS mount.
         # The code provided in the request is expected to be base64 encoded. Decode, then
         # encode in UTF-8
+        env = []
         entrypoint_filename = self.task.entrypoint.lstrip("/")
         if self.task.entrypoint == None:
             entrypoint_filename = "entrypoint.py"
             local_entrypoint_file_path = os.path.join(self.task.exec_dir, entrypoint_filename)
             self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
         
+        env.append(
+            client.V1EnvVar(
+                name="_OWE_ENTRYPOINT_FILE_PATH",
+                value=os.path.join(self.task.container_exec_dir, entrypoint_filename)
+            )
+        )
+
         # Create requirements file that will be mounted into the functions container
         # via NFS mount. This file will be used with the specified installer to install
         # the necessary python packages
