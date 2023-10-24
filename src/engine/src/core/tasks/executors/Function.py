@@ -263,7 +263,7 @@ class Function(TaskExecutor):
         shutil.copytree(OWE_PYTHON_SDK_DIR, owe_python_sdk_local_path, dirs_exist_ok=True)
 
         # entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
-        entrypoint_cmd = f"python3"
+        entrypoint_cmd = f"sleep 60m"
         args = [f"{install_cmd} {entrypoint_cmd}"]
 
         return ContainerDetails(
