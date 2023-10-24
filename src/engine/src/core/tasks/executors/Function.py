@@ -151,11 +151,27 @@ class Function(TaskExecutor):
          # Set up env vars for the container
         env = [
             client.V1EnvVar(
-                name="OWE_OUTPUT_DIR",
+                name="_OWE_TASK_ID",
+                value=self.task.id
+            ),
+            client.V1EnvVar(
+                name="_OWE_PIPELINE_ID",
+                value=self.ctx.pipeline.id
+            ),
+            client.V1EnvVar(
+                name="_OWE_PIPELINE_RUN_UUID",
+                value=self.ctx.pipeline_run.id
+            ),
+            client.V1EnvVar(
+                name="_OWE_INPUT_DIR",
+                value=os.path.join(self.task.container_work_dir, "input")
+            ),
+            client.V1EnvVar(
+                name="_OWE_OUTPUT_DIR",
                 value=os.path.join(self.task.container_work_dir, "output")
             ),
             client.V1EnvVar(
-                name="OWE_EXEC_DIR",
+                name="_OWE_EXEC_DIR",
                 value=os.path.join(self.task.container_work_dir, "src")
             ),
         ]
