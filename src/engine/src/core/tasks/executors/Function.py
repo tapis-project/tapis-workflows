@@ -160,7 +160,7 @@ class Function(TaskExecutor):
             ),
             client.V1EnvVar(
                 name="_OWE_PIPELINE_RUN_UUID",
-                value=self.ctx.pipeline_run.id
+                value=self.ctx.pipeline_run.uuid
             ),
             client.V1EnvVar(
                 name="_OWE_INPUT_DIR",
