@@ -30,7 +30,6 @@ def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, args={}, prefix=""
     for input_id, _input in _inputs.items():
         # Use input[input_id].value if provided
         value = _input.value
-        print(input_id, _input, "\n\n")
         if value != None:
             k8senvvars.append(
                 V1EnvVar(
@@ -61,10 +60,10 @@ def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, args={}, prefix=""
             key = value_from.get("args")
             k8senvvar_value = get_value_from_args(args, key)
             k8senvvar_value_source_key = key
-        elif hasattr(value_from, "task_output"):
+        elif value_from.get("task_output", None) != None:
             k8senvvar_value_source = "task_output"
-            task_id = value_from.task_output.task_id
-            output_id = value_from.task_output.output_id
+            task_id = value_from.get("task_output").task_id
+            output_id = value_from.get("task_output").output_id
             
             # Get the value from the output of a previous task
             previous_task_output_path = os.path.join(
