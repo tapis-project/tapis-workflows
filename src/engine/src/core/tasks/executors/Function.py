@@ -216,8 +216,10 @@ class Function(TaskExecutor):
             name="_OWE_ENTRYPOINT_FILE_PATH",
             value=os.path.join(self.task.container_exec_dir, entrypoint_filename)
         )
+        # If the task has an entrypoint defined, set the code to be executed in the entrypoint
+        # to the bootstrap code 
         if self.task.entrypoint != None:
-            self.task.code = base64.encode(inspect.getsource(function))
+            self.task.code = base64.encode(inspect.getsource(function_bootstrap))
             entrypoint_env_var = client.V1EnvVar(
                 name="_OWE_ENTRYPOINT_FILE_PATH",
                 value=os.path.join(self.task.container_exec_dir, self.task.entrypoint.lstrip("/"))
