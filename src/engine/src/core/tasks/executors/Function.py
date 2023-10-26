@@ -219,7 +219,9 @@ class Function(TaskExecutor):
         # If the task has an entrypoint defined, set the code to be executed in the entrypoint
         # to the bootstrap code 
         if self.task.entrypoint != None:
-            self.task.code = base64.encode(inspect.getsource(function_bootstrap))
+            self.task.code = base64.b64encode(
+                bytes(inspect.getsource(function_bootstrap), encoding="utf8")
+            )
             entrypoint_env_var = client.V1EnvVar(
                 name="_OWE_ENTRYPOINT_FILE_PATH",
                 value=os.path.join(self.task.container_exec_dir, self.task.entrypoint.lstrip("/"))
@@ -266,7 +268,8 @@ class Function(TaskExecutor):
         owe_python_sdk_local_path = os.path.join(self.task.work_dir, "src/owe_python_sdk")
         shutil.copytree(OWE_PYTHON_SDK_DIR, owe_python_sdk_local_path, dirs_exist_ok=True)
 
-        entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
+        # entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
+        entrypoint_cmd = "sleep 60m"
         args = [f"{install_cmd} {entrypoint_cmd}"]
 
         return ContainerDetails(
