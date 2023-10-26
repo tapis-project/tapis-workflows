@@ -225,7 +225,6 @@ class Function(TaskExecutor):
                 value=os.path.join(self.task.container_exec_dir, self.task.entrypoint.lstrip("/"))
             )
                 
-        
         self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
 
         # Create requirements file that will be mounted into the functions container
