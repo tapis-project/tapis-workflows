@@ -1,4 +1,4 @@
-import os, base64, time, shutil
+import os, base64, time, shutil, inspect
 
 from kubernetes import client
 
@@ -13,6 +13,7 @@ from conf.constants import (
 from core.resources import JobResource
 from utils import get_flavor
 from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars, gen_resource_name
+from helpers import function_bootstrap
 from helpers.GitCacheService import GitCacheService
 from errors import WorkflowTerminated
 
@@ -209,19 +210,21 @@ class Function(TaskExecutor):
         # Create entrypoint file that will be mounted into the container via NFS mount.
         # The code provided in the request is expected to be base64 encoded. Decode, then
         # encode in UTF-8
-        env = []
-        entrypoint_filename = self.task.entrypoint.lstrip("/")
-        if self.task.entrypoint == None:
-            entrypoint_filename = "entrypoint.py"
-            local_entrypoint_file_path = os.path.join(self.task.exec_dir, entrypoint_filename)
-            self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
-        
-        env.append(
-            client.V1EnvVar(
-                name="_OWE_ENTRYPOINT_FILE_PATH",
-                value=os.path.join(self.task.container_exec_dir, entrypoint_filename)
-            )
+        entrypoint_filename = "entrypoint.py"
+        local_entrypoint_file_path = os.path.join(self.task.exec_dir, entrypoint_filename)
+        entrypoint_env_var = client.V1EnvVar(
+            name="_OWE_ENTRYPOINT_FILE_PATH",
+            value=os.path.join(self.task.container_exec_dir, entrypoint_filename)
         )
+        if self.task.entrypoint != None:
+            self.task.code = base64.encode(inspect.getsource(function))
+            entrypoint_env_var = client.V1EnvVar(
+                name="_OWE_ENTRYPOINT_FILE_PATH",
+                value=os.path.join(self.task.container_exec_dir, self.task.entrypoint.lstrip("/"))
+            )
+                
+        
+        self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
 
         # Create requirements file that will be mounted into the functions container
         # via NFS mount. This file will be used with the specified installer to install
@@ -262,12 +265,12 @@ class Function(TaskExecutor):
         owe_python_sdk_local_path = os.path.join(self.task.work_dir, "src/owe_python_sdk")
         shutil.copytree(OWE_PYTHON_SDK_DIR, owe_python_sdk_local_path, dirs_exist_ok=True)
 
-        # entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
-        entrypoint_cmd = f"sleep 60m"
+        entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
         args = [f"{install_cmd} {entrypoint_cmd}"]
 
         return ContainerDetails(
             image=self.task.runtime,
             command=command,
-            args=args
+            args=args,
+            env=[entrypoint_env_var]
         )
