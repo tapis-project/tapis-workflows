@@ -30,7 +30,7 @@ def input_to_k8s_env_vars(_inputs, pipeline_work_dir, env={}, args={}, prefix=""
     for input_id, _input in _inputs.items():
         # Use input[input_id].value if provided
         value = _input.value
-
+        print(input_id, _input, "\n\n")
         if value != None:
             k8senvvars.append(
                 V1EnvVar(
