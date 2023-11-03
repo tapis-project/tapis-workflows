@@ -29,7 +29,8 @@ class TapisJob(TaskExecutor):
                 exec_system_input_dir = app.jobAttributes.execSystemInputDir
                 
             if exec_system_input_dir == None:
-                raise Exception("Exec system input dir must be specified in either the App or the Job definition")
+                exec_system_input_dir = "*"
+                # raise Exception("Exec system input dir must be specified in either the App or the Job definition")
 
             # Add TapisSystemFiles from previous task output as fileInput/Arrays to the job definition
             file_input_arrays = []
@@ -102,7 +103,7 @@ class TapisJob(TaskExecutor):
 
                 return self._task_result(0)
 
-            return self._task_result(1)
+            return self._task_result(1, errors=[f"Job '{job.name}' ended with status {job.status}. Last Message: {job.lastMessage}"])
                 
         except Exception as e:
             return self._task_result(1, errors=[str(e)])
