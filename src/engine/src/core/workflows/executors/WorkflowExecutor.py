@@ -292,7 +292,7 @@ class WorkflowExecutor(Worker, EventPublisher):
 
                 self.state.ctx.output = {
                     **self.state.ctx.output,
-                    **{task.id: task_result.output}
+                    **task_result.output
                 }
             else:
                 task_result = TaskResult(0, output={task.id: None})
