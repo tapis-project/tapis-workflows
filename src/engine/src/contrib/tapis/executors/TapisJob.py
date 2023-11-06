@@ -17,20 +17,6 @@ class TapisJob(TaskExecutor):
 
             # Recursively convert nested simple namespace objects to dict
             job_def = ReqSubmitJob(**json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s))))
-            
-            exec_system_input_dir = job_def.execSystemInputDir
-            if exec_system_input_dir == None:
-                app = service_client.apps.getApp(
-                    appId=job_def.appId,
-                    appVersion=job_def.appVersion,
-                    _x_tapis_tenant=self.ctx.args.get("tapis_tenant_id").value,
-                    _x_tapis_user=self.ctx.args.get("tapis_pipeline_owner").value
-                )
-                exec_system_input_dir = app.jobAttributes.execSystemInputDir
-                
-            if exec_system_input_dir == None:
-                exec_system_input_dir = "*"
-                # raise Exception("Exec system input dir must be specified in either the App or the Job definition")
 
             # Add TapisSystemFiles from previous task output as fileInput/Arrays to the job definition
             file_input_arrays = []
@@ -53,7 +39,7 @@ class TapisJob(TaskExecutor):
                         "name": f"owe-implicit-input-{parent_task.id}",
                         "description": f"These files were generated as a result of an Open Workflow Engine task execution for the pipeline '{self.ctx.pipeline.id}' and task '{parent_task.id}'.",
                         "sourceUrls": source_urls,
-                        "targetDir": exec_system_input_dir,
+                        "targetDir": "*",
                         "notes": {}
                     })
 
