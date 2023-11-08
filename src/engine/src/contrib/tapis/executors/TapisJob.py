@@ -22,13 +22,15 @@ class TapisJob(TaskExecutor):
             file_input_arrays = []
             for parent_task in self.task.depends_on:
                 parent_task_output = self.ctx.output[parent_task.id]
-                print("OUTPUT", self.ctx.output)
                 source_urls = []
                 for parent_task_output_file in parent_task_output:
                     # Skip all output files that do not contain the Tapis
                     # system file reference extension
-                    print("PARENT TASK OUTPUT FILE", parent_task_output_file)
-                    if TAPIS_SYSTEM_FILE_REF_EXTENSION not in parent_task_output_file.name:
+                    # NOTE TODO FIXME Also skip files that contain tapisjob.out
+                    if (
+                        TAPIS_SYSTEM_FILE_REF_EXTENSION not in parent_task_output_file.name
+                        or "tapisjob.out" in parent_task_output_file.name
+                    ):
                         continue
                     
                     # Pull the Tapis System File details from the file
@@ -79,7 +81,6 @@ class TapisJob(TaskExecutor):
                     _x_tapis_user=self.ctx.args.get("tapis_pipeline_owner").value
                 )
                 for file in files:
-                    print("FILE", file)
                     self._set_output(
                         file.name + "." + TAPIS_SYSTEM_FILE_REF_EXTENSION,
                         json.dumps(
@@ -91,7 +92,7 @@ class TapisJob(TaskExecutor):
                     )
 
                 return self._task_result(0)
-            print("JOB", job)
+                
             return self._task_result(1, errors=[f"Job '{job.name}' ended with status {job.status}. Last Message: {job.lastMessage}"])
                 
         except Exception as e:
