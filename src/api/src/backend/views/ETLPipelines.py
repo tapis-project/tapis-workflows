@@ -239,7 +239,7 @@ class ETLPipelines(RestrictedAPIView):
             # include the last tapis job task
             update_inbound_manifests_task = next(filter(lambda t: t.id == "update-inbound-manifests", tasks))
             update_inbound_manifests_task.depends_on.append(
-                TaskDependency(id=last_task_id)
+                TaskDependency(id=last_task_id, can_fail=True)
             )
         except ValidationError as e:
             return BadRequest(str(e))
