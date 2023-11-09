@@ -235,10 +235,10 @@ class ETLPipelines(RestrictedAPIView):
             # Add the tasks from the template to the tasks list
             tasks.extend([TemplateTask(**task) for task in pipeline_template.get("tasks")])
 
-            # Update the dependecies of the gen-outbound-manifests task to
+            # Update the dependecies of the update-inbound-manifests task to
             # include the last tapis job task
-            gen_outbound_manifests_task = next(filter(lambda t: t.id == "gen-outbound-manifests", tasks))
-            gen_outbound_manifests_task.depends_on.append(
+            update_inbound_manifests_task = next(filter(lambda t: t.id == "update-inbound-manifests", tasks))
+            update_inbound_manifests_task.depends_on.append(
                 TaskDependency(id=last_task_id)
             )
         except ValidationError as e:
