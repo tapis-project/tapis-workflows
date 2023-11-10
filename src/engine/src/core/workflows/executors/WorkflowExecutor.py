@@ -246,7 +246,11 @@ class WorkflowExecutor(Worker, EventPublisher):
             # Fetch task templates
             if task.uses != None:
                 template_mapper = TemplateMapper(cache_dir=self.state.ctx.pipeline.git_cache_dir)
-                task = template_mapper.map(task, task.uses)
+                try:
+                    task = template_mapper.map(task, task.uses)
+                except Exception as e:
+                    # Trigger the terminal state callback.
+                    self._on_pipeline_terminal_state(event=PIPELINE_FAILED, message=str(e))
 
             # Add a key to the output for the task
             self.state.ctx.output[task.id] = None
@@ -337,15 +341,15 @@ class WorkflowExecutor(Worker, EventPublisher):
         return self._fetch_ready_tasks()
 
     @interceptable()
-    def _on_pipeline_terminal_state(self, event=None):
+    def _on_pipeline_terminal_state(self, event=None, message=""):
         # No event was provided. Determine if complete or failed from number
         # of failed tasks
         if event == None:
             event = PIPELINE_FAILED if len(self.state.failed) > 0 else PIPELINE_COMPLETED
     
         msg = "COMPLETED"
-        if event == PIPELINE_FAILED: msg = "FAILED"
-        elif event == PIPELINE_TERMINATED: msg = "TERMINATED"
+        if event == PIPELINE_FAILED: msg = "FAILED" + f" {message}"
+        elif event == PIPELINE_TERMINATED: msg = "TERMINATED" + f" {message}"
 
         self.state.ctx.logger.info(self.p_str(msg))
 

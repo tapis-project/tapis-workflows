@@ -174,6 +174,10 @@ class ETLPipelines(RestrictedAPIView):
                         "type": "string",
                         "value": body.remote_inbox.globus_endpoint_id
                     },
+                    "GLOBUS_DESTINATION_PATH": {
+                        "type": "string",
+                        "value": body.remote_inbox.globus_destination_path
+                    },
                     "GLOBUS_CLIENT_ID": {
                         "type": "string",
                         "value": body.remote_inbox.globus_client_id

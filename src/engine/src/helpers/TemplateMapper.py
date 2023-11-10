@@ -35,7 +35,10 @@ class TemplateMapper:
         """
 
         # Clone git repository specified on the pipeline.uses if exists
-        template = self.template_repo.get_by_uses(uses)
+        try:
+            template = self.template_repo.get_by_uses(uses)
+        except Exception as e:
+            raise Exception(f"Template mapping error: {e}")
         
         # Resolve which class the final object should have
         obj_class = Pipeline
