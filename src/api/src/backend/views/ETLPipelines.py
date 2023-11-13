@@ -166,21 +166,13 @@ class ETLPipelines(RestrictedAPIView):
                         "type": "string",
                         "value": body.local_outbox.manifest_priority
                     },
-                    "GLOBUS_SOURCE_ENDPOINT_ID": {
-                        "type": "string",
-                        "value": body.local_outbox.globus_endpoint_id
-                    },
-                    "GLOBUS_DESTINATION_ENDPOINT_ID": {
-                        "type": "string",
-                        "value": body.remote_inbox.globus_endpoint_id
-                    },
                     "GLOBUS_DESTINATION_PATH": {
                         "type": "string",
                         "value": body.remote_inbox.globus_destination_path
                     },
-                    "GLOBUS_CLIENT_ID": {
+                    "REMOTE_INBOX_SYSTEM_ID": {
                         "type": "string",
-                        "value": body.remote_inbox.globus_client_id
+                        "value": body.remote_inbox.system_id
                     }
                 },
                 params=pipeline_template.get("params", {})
