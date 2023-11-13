@@ -43,6 +43,10 @@ class GlobusRemoteInbox(BaseModel):
     globus_client_id: str
     globus_destination_path: str
 
+class TapisGlobusSystemRemoteInbox(BaseModel):
+    system_id: str
+    globus_destination_path: str
+
 class S3Auth(BaseModel):
     access_key: str
     access_secret: str
@@ -58,6 +62,7 @@ class TapisETLPipeline(Pipeline):
     jobs: List[Dict]
     local_outbox: GlobusLocalOutbox
     remote_inbox: Union[
+        TapisGlobusSystemRemoteInbox,
         GlobusRemoteInbox,
         S3RemoteInbox
     ]
