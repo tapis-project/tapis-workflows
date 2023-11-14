@@ -541,7 +541,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         # We check the failed tasks list because some tasks are permitted to 
         # fail if all of their dependencies specify can_fail = True
         for dep in task.depends_on:
-            if dep.id not in self.state.finished or dep.id not in self.state.failed:
+            if dep.id not in self.state.finished and dep.id not in self.state.failed:
                 return False
 
         return True
