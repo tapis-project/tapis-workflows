@@ -345,6 +345,9 @@ class WorkflowExecutor(Worker, EventPublisher):
         # of failed tasks
         if event == None:
             event = PIPELINE_FAILED if len(self.state.failed) > 0 else PIPELINE_COMPLETED
+
+        if event == PIPELINE_FAILED:
+            self._deregister_all_executors()
     
         msg = "COMPLETED"
         if event == PIPELINE_FAILED: msg = "FAILED" + f" {message}"
@@ -556,6 +559,11 @@ class WorkflowExecutor(Worker, EventPublisher):
         del self.state.executors[f"{run_uuid}.{task.id}"]
         # TODO use server logger below
         # self.state.ctx.logger.debug(self.t_str(task, "EXECUTOR DEREGISTERED"))
+
+    def _deregister_all_executors(self):
+        for key in self.state.executors:
+            self.state.executors[key].cleanup()
+            del self.state.executors[key]
 
     @interceptable()
     def _get_executor(self, run_uuid, task):
