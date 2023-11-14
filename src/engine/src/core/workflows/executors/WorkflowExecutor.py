@@ -347,6 +347,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             event = PIPELINE_FAILED if len(self.state.failed) > 0 else PIPELINE_COMPLETED
 
         if event == PIPELINE_FAILED:
+            self.terminate()
             self._deregister_all_executors()
     
         msg = "COMPLETED"
