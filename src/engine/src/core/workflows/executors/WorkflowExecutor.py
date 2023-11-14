@@ -434,12 +434,12 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.state.dependency_graph = {}
 
         for task in self.state.tasks:
-            self.state.dependency_graph = {task.id: []}
+            self.state.dependency_graph[task.id] = []
             task.can_fail = True if len(task.depends_on) > 0 else False
             for parent_task in task.depends_on:
+                self.state.dependency_graph[parent_task.id].append(task.id)
                 if parent_task.can_fail == False:
                     task.can_fail == False
-                self.state.dependency_graph[parent_task.id].append(task.id)
 
         # Detect loops in the graph
         try:
