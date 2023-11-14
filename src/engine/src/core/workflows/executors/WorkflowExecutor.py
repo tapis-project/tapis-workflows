@@ -156,6 +156,7 @@ class WorkflowExecutor(Worker, EventPublisher):
 
             if not validated:
                 self._on_pipeline_terminal_state(event=PIPELINE_FAILED, message=err)
+                return
 
             # Get the first tasks
             unstarted_threads = self._fetch_ready_tasks()
@@ -170,7 +171,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             self.state.ready_tasks += unstarted_threads
         except Exception as e:
             # Trigger the terminal state callback.
-            self._on_pipeline_terminal_state(event=PIPELINE_FAILED)
+            self._on_pipeline_terminal_state(event=PIPELINE_FAILED, message=str(e))
 
     @interceptable()
     def _staging(self, ctx):
@@ -346,11 +347,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         if event == None:
             event = PIPELINE_FAILED if len(self.state.failed) > 0 else PIPELINE_COMPLETED
 
-        if event == PIPELINE_FAILED:
-            self.terminate()
-            self._deregister_all_executors()
-    
         msg = "COMPLETED"
+
         if event == PIPELINE_FAILED: msg = "FAILED" + f" {message}"
         elif event == PIPELINE_TERMINATED: msg = "TERMINATED" + f" {message}"
 
@@ -560,11 +558,6 @@ class WorkflowExecutor(Worker, EventPublisher):
         del self.state.executors[f"{run_uuid}.{task.id}"]
         # TODO use server logger below
         # self.state.ctx.logger.debug(self.t_str(task, "EXECUTOR DEREGISTERED"))
-
-    def _deregister_all_executors(self):
-        for key in self.state.executors:
-            self.state.executors[key].cleanup()
-            del self.state.executors[key]
 
     @interceptable()
     def _get_executor(self, run_uuid, task):
