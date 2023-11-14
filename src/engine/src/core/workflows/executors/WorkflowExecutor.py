@@ -162,7 +162,6 @@ class WorkflowExecutor(Worker, EventPublisher):
         except Exception as e:
             # Trigger the terminal state callback.
             self._on_pipeline_terminal_state(event=PIPELINE_FAILED)
-            raise e
 
     @interceptable()
     def _staging(self, ctx):
@@ -183,7 +182,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         )
 
         if not validated:
-            raise Exception(err)
+            self._on_pipeline_terminal_state(event=PIPELINE_FAILED, message=err)
 
         # Publish the PIPELINE_STAGING event
         # NOTE Events can only be published AFTER the '_prepare_pipeline' method is called
