@@ -430,11 +430,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Build a mapping between each task and the tasks that depend on them.
         # Doing this here saves us from having to perform the dependency
         # look-ups when queueing tasks, improving performance
-        # self.state.dependency_graph = {task.id: [] for task in self.state.tasks}
-        self.state.dependency_graph = {}
-
+        self.state.dependency_graph = {task.id: [] for task in self.state.tasks}
         for task in self.state.tasks:
-            self.state.dependency_graph[task.id] = []
             task.can_fail = True if len(task.depends_on) > 0 else False
             for parent_task in task.depends_on:
                 self.state.dependency_graph[parent_task.id].append(task.id)
