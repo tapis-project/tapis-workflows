@@ -212,6 +212,8 @@ class WorkflowExecutor(Worker, EventPublisher):
             self._set_tasks(self.state.ctx.pipeline.tasks)
         except InvalidDependenciesError as e:
             self._on_pipeline_terminal_state(PIPELINE_FAILED, message=str(e))
+        except Exception as e:
+            self._on_pipeline_terminal_state(PIPELINE_FAILED, message=str(e))
         
     @interceptable()
     def _prepare_tasks(self):
