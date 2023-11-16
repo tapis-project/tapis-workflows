@@ -448,6 +448,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         # - All can_fail flags for a given parent task's children's task_dependency object == True 
         try:
             for parent_task_id in self.state.dependency_graph:
+                parent_task = self._get_task_by_id(parent_task_id)
+                parent_task.can_fail = False
                 child_tasks = [
                     self._get_task_by_id(child_task_id)
                     for child_task_id
@@ -459,7 +461,10 @@ class WorkflowExecutor(Worker, EventPublisher):
                     parent_can_fail_flags.append(dep.can_fail)
 
                 # If the length of can_fail_flags == 0, then this task has no child tasks
-                parent_task.can_fail = False if len(parent_can_fail_flags) == 0 else all(parent_can_fail_flags)
+                parent_task.can_fail = (
+                    False if len(parent_can_fail_flags) == 0
+                    else all(parent_can_fail_flags)
+                )
         except Exception as e:
             raise Exception(f"Error resolving can_fail flag for parent task '{parent_task_id}': {e}")
 
