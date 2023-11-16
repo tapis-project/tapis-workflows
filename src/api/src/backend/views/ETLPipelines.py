@@ -78,7 +78,7 @@ class ETLPipelines(RestrictedAPIView):
             return Conflict(f"A Pipeline already exists with the id '{body.id}'")
         
         # Clone the git repository that contains the pipeline and task definitions that will be used
-        tapis_owe_templates_dir = "/tmp/git/tapis-owe-templates"
+        tapis_owe_templates_dir = "/tmp/git/tapis-workflows-task-templates"
         cloned = os.path.exists(tapis_owe_templates_dir)
         if not cloned:
             try:
