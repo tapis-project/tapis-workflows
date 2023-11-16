@@ -439,9 +439,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         # The first is a mapping between each task and the tasks that depend on them,
         # and the second is a mapping between a task and tasks it depends on.
         # Suboptimal? Yes, Space complexity is ~O(n^2), but makes for easy lookups
-        graph_scaffold = {task.id: [] for task in self.state.tasks}
-        self.state.dependency_graph = graph_scaffold
-        self.state.reverse_dependency_graph = graph_scaffold
+        self.state.dependency_graph = {task.id: [] for task in self.state.tasks}
+        self.state.reverse_dependency_graph = {task.id: [] for task in self.state.tasks}
         for child_task in self.state.tasks:
             for parent_task in child_task.depends_on:
                 self.state.dependency_graph[parent_task.id].append(child_task.id)
