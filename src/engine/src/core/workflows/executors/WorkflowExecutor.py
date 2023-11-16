@@ -117,6 +117,7 @@ class WorkflowExecutor(Worker, EventPublisher):
                 "terminated": False,
                 "terminating": False,
                 "failed": [],
+                "failures_permitted": [],
                 "succeeded": [],
                 "finished": [],
                 "queue": [],
@@ -207,7 +208,10 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         # Validate the tasks. Kill the pipeline if it contains cycles
         # or invalid dependencies
-        self._set_tasks(self.state.ctx.pipeline.tasks)
+        try:
+            self._set_tasks(self.state.ctx.pipeline.tasks)
+        except InvalidDependenciesError as e:
+            self._on_pipeline_terminal_state(PIPELINE_FAILED, message=str(e))
         
     @interceptable()
     def _prepare_tasks(self):
@@ -397,7 +401,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             )
 
         return initial_tasks
-
+    
     @interceptable()
     def _set_tasks(self, tasks):
         # Create a list of the ids of the tasks
@@ -427,16 +431,32 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         self.state.tasks = tasks
 
-        # Build a mapping between each task and the tasks that depend on them.
-        # Doing this here saves us from having to perform the dependency
-        # look-ups when queueing tasks, improving performance
-        self.state.dependency_graph = {task.id: [] for task in self.state.tasks}
+        # Build 2 graphs:
+        # The first is a mapping between each task and the tasks that depend on them,
+        # and the second is a mapping between a task and tasks it depends on.
+        # Suboptimal? Yes, Space complexity is ~O(n^2), but makes for easy lookups
+        graph_scaffold = {task.id: [] for task in self.state.tasks}
+        self.state.dependency_graph = graph_scaffold
+        self.state.reverse_dependency_graph = graph_scaffold
+        for child_task in self.state.tasks:
+            for parent_task in child_task.depends_on:
+                self.state.dependency_graph[parent_task.id].append(child_task.id)
+                self.state.reverse_dependency_graph[child_task.id].append(parent_task.id)
+
+        # Determine if a task can fail and set the tasks' can_fail flags.
+        # A parent task is permitted to fail iff all of the following criteria are met:
+        # - It has children
+        # - All can_fail flags for a given parent task's children's task_dependency object == True 
         for task in self.state.tasks:
-            task.can_fail = True if len(task.depends_on) > 0 else False
-            for parent_task in task.depends_on:
-                self.state.dependency_graph[parent_task.id].append(task.id)
-                if parent_task.can_fail == False:
-                    task.can_fail == False
+            can_fail_flags = []
+            for child_task_id in self.state.reverse_dependency_graph[task.id]:
+                # Get the task
+                child_task = self._get_task_by_id(child_task_id)
+                dep = next(filter(lambda dep: dep.task_id == task.id, child_task.depends_on))
+                can_fail_flags.append(dep.can_fail)
+
+            # If the length of can_fail_flags == 0, then this task has no child tasks
+            task.can_fail = False if len(can_fail_flags) == 0 else all(can_fail_flags)
 
         # Detect loops in the graph
         try:
@@ -535,13 +555,22 @@ class WorkflowExecutor(Worker, EventPublisher):
         # All tasks without dependencies are ready immediately
         if len(task.depends_on) == 0: return True
 
-        # We check the failed tasks list because some tasks are permitted to 
-        # fail if all of their dependencies specify can_fail = True
         for dep in task.depends_on:
-            if dep.id not in self.state.finished and dep.id not in self.state.failed:
+            dep_task = self._get_task_by_id(dep.id)
+            if dep_task == None:
+                raise Exception(f"Illegal dependency: Task with id '{dep.id}' doesn't exist")
+            
+            if dep_task.can_fail and dep_task.id in self.state.failed:
+                continue
+
+            if dep_task.id not in self.state.finished:
                 return False
 
         return True
+    
+    @interceptable()
+    def _get_task_by_id(self, task_id):
+        return next(filter(lambda t: t.id == task_id,self.state.tasks), None)
 
     @interceptable()
     def _remove_from_queue(self, task):

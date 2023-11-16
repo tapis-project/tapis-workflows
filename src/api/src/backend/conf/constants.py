@@ -68,5 +68,5 @@ PERMITTED_SERVICES = [
 ]
 
 LATEST_TAPIS_ETL_PIPELINE_TEMPLATE_NAME = "tapis/etl-pipeline@v1beta"
-TAPIS_ETL_TEMPLATE_REPO_URL = "https://github.com/tapis-project/tapis-owe-templates.git"
+TAPIS_ETL_TEMPLATE_REPO_URL = "https://github.com/tapis-project/tapis-workflows-task-templates.git"
 TAPIS_ETL_TEMPLATE_REPO_BRANCH = "master"
