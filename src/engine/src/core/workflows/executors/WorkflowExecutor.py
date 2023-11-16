@@ -452,7 +452,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             for child_task_id in self.state.reverse_dependency_graph[task.id]:
                 # Get the task
                 child_task = self._get_task_by_id(child_task_id)
-                dep = next(filter(lambda dep: dep.task_id == task.id, child_task.depends_on))
+                dep = next(filter(lambda dep: dep.id == task.id, child_task.depends_on))
                 can_fail_flags.append(dep.can_fail)
 
             # If the length of can_fail_flags == 0, then this task has no child tasks
