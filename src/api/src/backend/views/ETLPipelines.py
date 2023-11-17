@@ -149,7 +149,7 @@ class ETLPipelines(RestrictedAPIView):
                     "LOCAL_OUTBOX_SYSTEM_ID": {
                         "type": "string",
                         # TODO remove below when insert operation available for Globus-type Tapis Systems
-                        "value": body.local_outbox.system_id
+                        "value": body.local_inbox.system_id
                         # TODO uncomment below when insert operation available for Globus-type Tapis Systems
                         # "value": body.local_outbox.system_id
                     },
