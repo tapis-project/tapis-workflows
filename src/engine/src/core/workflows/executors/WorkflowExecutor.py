@@ -361,6 +361,15 @@ class WorkflowExecutor(Worker, EventPublisher):
         if event == PIPELINE_FAILED: msg = "FAILED" + f" {message}"
         elif event == PIPELINE_TERMINATED: msg = "TERMINATED" + f" {message}"
 
+        # TODO what happens in the scenario in which all final tasks fail. Should
+        # that be considered a success?? Probably not. Also, consider adding a property
+        # to the pipeline.execution_profile object that allows users to control
+        # how success is interpreted. 
+        # Examples:
+        # - pipeline.execution_profile.success_condidition = TASKS_WITH_NO_PARENT_TASKS_MUST_SUCCEED
+        # - pipeline.execution_profile.success_condidition = ALL_TASKS_MUST_COMPLETE
+        # - pipeline.execution_profile.success_condidition = ALL_TASKS_MUST_FAIL
+
         self.state.ctx.logger.info(self.p_str(msg))
 
         # Publish the event. Triggers the archivers if there are any on ...COMPLETE

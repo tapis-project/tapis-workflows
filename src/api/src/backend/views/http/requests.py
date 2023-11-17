@@ -223,6 +223,7 @@ ArgSpecValueFrom = Union[
 Value = Union[str, int, float, bool, bytes]
 
 class Spec(BaseModel):
+    description = None
     required: bool = False
     type: EnumTaskIOTypes = EnumTaskIOTypes.String
 
