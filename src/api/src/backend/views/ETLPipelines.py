@@ -147,8 +147,11 @@ class ETLPipelines(RestrictedAPIView):
                         "value": body.local_inbox.manifest_priority
                     },
                     "LOCAL_OUTBOX_SYSTEM_ID": {
-                        "type": "string", 
+                        "type": "string",
+                        # TODO remove below when insert operation available for Globus-type Tapis Systems
                         "value": body.local_outbox.system_id
+                        # TODO uncomment below when insert operation available for Globus-type Tapis Systems
+                        # "value": body.local_outbox.system_id
                     },
                     "LOCAL_OUTBOX_DATA_PATH": {
                         "type": "string",
