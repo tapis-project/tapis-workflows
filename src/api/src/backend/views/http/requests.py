@@ -477,6 +477,7 @@ class GroupCreateRequest(BaseModel):
 class TaskDependency(BaseModel):
     id: ID
     can_fail: bool = False
+    can_skip: bool = False
 
     # Validators
     # _validate_id = validator("id", allow_reuse=True)(validate_id)
