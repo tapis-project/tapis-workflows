@@ -34,7 +34,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
             TASK_STAGING:        self._task_staging,
             TASK_SUSPENDED:      self._task_suspended,
             TASK_TERMINATED:     self._task_terminated,
-            # TASK_SKIPPED:        self._task_skipped
+            TASK_SKIPPED:        self._task_skipped
         }
 
         service_api_gateway = TapisServiceAPIGateway()
@@ -173,13 +173,16 @@ class TapisWorkflowsAPIBackend(EventHandler):
             **self._kwargs
         )
     
-    # def _task_skipped(self, event):
-    #     self.service_client.workflows.updateTaskExecutionStatus(
-    #         pipeline_run_uuid=event.payload.pipeline_run.uuid,
-    #         task_execution_uuid=event.task.execution_uuid,
-    #         status="skipped",
-    #         **self._kwargs
-    #     )
+    def _task_skipped(self, event):
+        self.service_client.workflows.updateTaskExecutionStatus(
+            pipeline_run_uuid=event.payload.pipeline_run.uuid,
+            task_execution_uuid=event.task.execution_uuid,
+            status="skipped",
+            last_message="Task skipped",
+            stdout="",
+            stderr="",
+            **self._kwargs
+        )
 
     def _task_terminated(self, event):
         self.service_client.workflows.updateTaskExecutionStatus(
