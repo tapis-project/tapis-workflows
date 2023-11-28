@@ -8,6 +8,7 @@ from pathlib import Path
 
 from core.tasks.TaskExecutorFactory import task_executor_factory as factory
 from owe_python_sdk.TaskResult import TaskResult
+from owe_python_sdk.TaskExecutor import TaskExecutor
 from owe_python_sdk.constants import STDERR, STDOUT
 from owe_python_sdk.middleware.ArchiveMiddleware import ArchiveMiddleware
 from owe_python_sdk.events import (
@@ -122,6 +123,7 @@ class WorkflowExecutor(Worker, EventPublisher):
                 "failures_permitted": [],
                 "succeeded": [],
                 "finished": [],
+                "skipped": [],
                 "queue": [],
                 "tasks": [],
                 "executors": {},
@@ -225,6 +227,14 @@ class WorkflowExecutor(Worker, EventPublisher):
         work detailed in the task definition."""
         self.state.ctx.output = {}
         for task in self.state.ctx.pipeline.tasks:
+            self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
+
+            # Publish the task active event
+            self.publish(Event(TASK_STAGING, self.state.ctx, task=task))
+
+            # Set the can fail flag for each task to False
+            task.can_fail = False
+
             # Create an execution_uuid for each task in the pipeline
             task.execution_uuid = str(uuid4())
 
@@ -296,18 +306,15 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.publish(Event(TASK_ACTIVE, self.state.ctx, task=task))
 
         try:
-            if not self.state.is_dry_run:
-                # Get the task executor
-                executor = self._get_executor(self.state.ctx.pipeline_run.uuid, task)
-                
-                task_result = executor.execute()
+            executor: TaskExecutor = self._get_executor(self.state.ctx.pipeline_run.uuid, task)
+            
+            task_result = executor.execute()
 
-                self.state.ctx.output = {
-                    **self.state.ctx.output,
-                    **task_result.output
-                }
-            else:
-                task_result = TaskResult(0, output={task.id: None})
+            self.state.ctx.output = {
+                **self.state.ctx.output,
+                **task_result.output
+            }
+            
         except InvalidTaskTypeError as e:
             self.state.ctx.logger.error(str(e))
             task_result = TaskResult(1, errors=[str(e)])
@@ -458,7 +465,6 @@ class WorkflowExecutor(Worker, EventPublisher):
         try:
             for parent_task_id in self.state.dependency_graph:
                 parent_task = self._get_task_by_id(parent_task_id)
-                parent_task.can_fail = False
                 child_tasks = [
                     self._get_task_by_id(child_task_id)
                     for child_task_id

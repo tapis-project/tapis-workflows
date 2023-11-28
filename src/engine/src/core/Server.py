@@ -35,7 +35,7 @@ from conf.constants import (
 from owe_python_sdk.schema import WorkflowSubmissionRequest, EmptyObject
 
 from core.workers import WorkerPool
-from core.workflows.executors import WorkflowExecutor
+from core.WorkflowExecutor import WorkflowExecutor
 from utils import bytes_to_json, load_plugins, lbuffer_str as lbuf
 from errors import NoAvailableWorkers, WorkflowTerminated
 

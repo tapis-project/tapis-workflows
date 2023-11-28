@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 import re
 
 from enum import Enum, EnumMeta
-from typing import List, Literal, Union, Dict, TypedDict, get_args
+from typing import List, Literal, Union, Dict, TypedDict, get_args, Tuple
 from typing_extensions import Annotated
-from pydantic import BaseModel, validator, root_validator, Field, Extra
+from pydantic import BaseModel, validator, root_validator, Field, Extra, conlist
+
 
 ### Enums ###
-class _EnumMeta(EnumMeta):  
-    def __contains__(cls, item): 
+class _EnumMeta(EnumMeta):
+    def __contains__(cls, item):
         try:
             cls(item)
         except ValueError:
@@ -184,13 +187,17 @@ class TaskOutputRef(BaseModel):
     task_id: str
     output_id: str
 
+class TaskInputRef(BaseModel):
+    task_id: str
+    input_id: str
+
 LiteralHostRefTypes = Literal["kubernetes_secret", "kubernetes_config_map"]
-class ValueFromHostRef(BaseModel):
+class HostRef(BaseModel):
     type: LiteralHostRefTypes
     name: str
     field_selector: str = None
 
-class ValueFromSecretRef(BaseModel):
+class SecretRef(BaseModel):
     engine: str
     pk: str
     field_selector: str = None
@@ -198,12 +205,14 @@ class ValueFromSecretRef(BaseModel):
 ValueFromEnv = Dict[Literal["env"], str]
 ValueFromArgs = Dict[Literal["args"], str]
 ValueFromTaskOutput = Dict[Literal["task_output"], TaskOutputRef]
-ValueFromHost = Dict[Literal["host"], ValueFromHostRef]
-ValueFromSecret = Dict[Literal["secret"], ValueFromSecretRef]
-ValueFromAll = Union[
+ValueFromTaskInput = Dict[Literal["task_input"], TaskInputRef]
+ValueFromHost = Dict[Literal["host"], HostRef]
+ValueFromSecret = Dict[Literal["secret"], SecretRef]
+ValueFrom = Union[
     ValueFromEnv,
     ValueFromArgs,
     ValueFromTaskOutput,
+    ValueFromTaskInput,
     ValueFromHost,
     ValueFromSecret
 ]
@@ -229,7 +238,7 @@ class Spec(BaseModel):
 
 class SpecWithValue(Spec):
     value: Value = None
-    value_from: ValueFromAll = None
+    value_from: ValueFrom = None
 
     @root_validator(pre=True)
     def value_or_value_from(cls, values):
@@ -278,7 +287,7 @@ class SpecWithValue(Spec):
 class TaskInputSpec(SpecWithValue):
     required: bool = True
     value: Value = None
-    value_from: ValueFromAll = None
+    value_from: ValueFrom = None
 
 class EnvSpec(SpecWithValue):
     value: Value = None
@@ -519,6 +528,67 @@ class Uses(BaseModel):
         
         return values
 
+
+Operand = Union[str, int, float, bool, bytes, TaskInputRef, None]
+
+ComparisonOperator = Literal["eq", "neq", "gt", "lt", "gte", "lte"]
+
+ComparisonOperands = conlist(Operand, min_items=2, max_items=2) # NOTE only allowing 2 items in list. Gotta draw the line somewhere
+
+ComparisonOperation = Dict[ComparisonOperator, ComparisonOperands]
+
+MembershipOperator = Literal["in"]
+
+MembershipNeedle = Operand
+
+MembershipHaystack = List[Operand]
+
+MembershipOperands = Tuple[MembershipNeedle, MembershipHaystack]
+
+MembershipOperation = Dict[MembershipOperator, MembershipOperands]
+
+LogicalOperator = Literal["and", "or", "xor", "nand", "nor", "xnor"]
+
+# NOTE TODO Delete NaiveLogical* types when recursive conditionals fully implemented
+NaiveLogicalOperand = Union[ComparisonOperation, MembershipOperation]
+
+NaiveLogicalOperands = conlist(NaiveLogicalOperand, min_items=2)
+
+NaiveLogicalOperation = Dict[LogicalOperator, NaiveLogicalOperands]
+
+NegationOperator = Literal["not"]
+
+NegationOperand = Union[ComparisonOperation, MembershipOperation, NaiveLogicalOperation]
+
+NegationOperation = Dict[NegationOperator, NegationOperand]
+
+# LogicalOperation = Dict[LogicalOperator, "LogicalOperands"] # NOTE LogicalOperand is a string here because it is a ForwardRef
+
+# LogicalOperand = Union[ComparisonOperation, MembershipOperation, LogicalOperation, "AssociativeOperation"] # NOTE AssociativeOperation is a string here because it is a ForwardRef
+
+# LogicalOperands = conlist(LogicalOperand, min_items=2)
+
+# AssociativeOperator = Literal["expr"]
+
+# AssociativeOperation = Dict[
+#     AssociativeOperator,
+#     "AssociativeOperand"
+# ] # NOTE AssociativeOperand is a string here because it is a ForwardRef
+
+# AssociativeOperand = Union[ComparisonOperation, MembershipOperation, LogicalOperation, AssociativeOperation]
+
+# AssociativeOperands = conlist(List[AssociativeOperand], min_items=2)
+
+ConditionalExpression = Union[
+    NaiveLogicalOperation, # TODO Remove when full logcal implementation is completed
+    #LogicalOperation,
+    ComparisonOperation,
+    MembershipOperation,
+    #AssociativeOperation # TODO uncomment when associative operation supported
+]
+
+ConditionalExpressions = List[ConditionalExpression]
+
 class BaseTask(BaseModel):
     id: ID
     type: LiteralTaskTypes
@@ -527,6 +597,7 @@ class BaseTask(BaseModel):
     execution_profile: TaskExecutionProfile = TaskExecutionProfile()
     input: Dict[str, TaskInputSpec] = {}
     output: Dict[str, TaskOutputSpec] = {}
+    conditions: ConditionalExpressions = []
 
     class Config:
         arbitrary_types_allowed = True

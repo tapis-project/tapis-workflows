@@ -406,15 +406,15 @@ class PipelineRun(models.Model):
 
 class Task(models.Model):
     class Meta:
-            constraints = [
-                models.UniqueConstraint(
-                    fields=["id", "pipeline_id"],
-                    name="task_id_pipeline_id"
-                )
-            ]
-            indexes = [
-                models.Index(fields=["id", "pipeline_id"])
-            ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id", "pipeline_id"],
+                name="task_id_pipeline_id"
+            )
+        ]
+        indexes = [
+            models.Index(fields=["id", "pipeline_id"])
+        ]
 
     # Props
     id = models.CharField(validators=[validate_id], max_length=128)
@@ -422,6 +422,7 @@ class Task(models.Model):
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
     flavor = models.CharField(max_length=32, choices=TASK_FLAVORS, default=TASK_FLAVOR_C1_MED)
+    # conditions = models.JSONField(null=True)
     input = models.JSONField(null=True)
     invocation_mode = models.CharField(max_length=16, default=EnumInvocationMode.Async)
     max_exec_time = models.BigIntegerField(
