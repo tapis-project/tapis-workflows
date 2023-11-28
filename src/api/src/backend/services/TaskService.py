@@ -101,6 +101,7 @@ class TaskService(Service):
                 code=getattr(request, "code", None),
                 command=getattr(request, "command", None),
                 context=context,
+                conditions=getattr(request, "conditions", []),
                 data=getattr(request, "data", None),
                 description=request.description,
                 destination=destination,
