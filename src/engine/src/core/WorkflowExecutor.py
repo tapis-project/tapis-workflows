@@ -311,7 +311,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Evaluate the task's conditions if the previous task was not skipped
         if not skip:
             evaluator = ConditionalExpressionEvaluator()
-            skip = not evaluator.evaluate_all(task.conditions, self.state.ctx)
+            skip = not evaluator.evaluate_all(task.conditions, ctx=self.state.ctx)
 
         # Default TaskResult is a task skipped. Will be overwritten if task not skipped
         task_result = TaskResult(-1)

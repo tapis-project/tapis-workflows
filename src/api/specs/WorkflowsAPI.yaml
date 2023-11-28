@@ -2094,6 +2094,8 @@ components:
           $ref: "#/components/schemas/ID"
         can_fail:
           type: boolean
+        can_skip:
+          type: boolean
         
     # --- Context ---
     Context:
