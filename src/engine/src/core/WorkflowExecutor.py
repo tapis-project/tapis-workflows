@@ -1,7 +1,5 @@
 import os, logging
 
-from pprint import pprint
-
 from threading import Thread, Lock
 from uuid import uuid4
 from pathlib import Path
@@ -19,11 +17,13 @@ from owe_python_sdk.events import (
 )
 from owe_python_sdk.events.types import (
     PIPELINE_ACTIVE, PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED,
-    PIPELINE_STAGING, TASK_STAGING, TASK_ACTIVE, TASK_COMPLETED, TASK_FAILED
+    PIPELINE_STAGING, TASK_STAGING, TASK_ACTIVE, TASK_COMPLETED, TASK_FAILED,
+    TASK_SKIPPED
 )
 from helpers import params_validator
 from helpers.GraphValidator import GraphValidator # From shared
 from helpers.TemplateMapper import TemplateMapper
+from helpers.ConditionalExpressionEvaluator import ConditionalExpressionEvaluator
 from errors.tasks import (
     InvalidTaskTypeError,
     MissingInitialTasksError,
@@ -299,28 +299,49 @@ class WorkflowExecutor(Worker, EventPublisher):
 
     @interceptable()
     def _start_task(self, task):
-        # Log the task active
-        self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
+        # Check if any of the previous task was skipped. If any were and the current
+        # task's dependency specifies a can_skip to False for any of the skipped tasks,
+        # this task will also be skipped
+        skip = False
+        for dep in task.depends_on:
+            if dep.id in self.state.skipped and dep.can_skip == False:
+                skip = True
+                break
 
-        # Publish the task active event
-        self.publish(Event(TASK_ACTIVE, self.state.ctx, task=task))
+        # Evaluate the task's conditions if the previous task was not skipped
+        if not skip:
+            evaluator = ConditionalExpressionEvaluator()
+            skip = not evaluator.evaluate_all(task.conditions, self.state.ctx)
 
-        try:
-            executor: TaskExecutor = self._get_executor(self.state.ctx.pipeline_run.uuid, task)
-            
-            task_result = executor.execute()
+        # Default TaskResult is a task skipped. Will be overwritten if task not skipped
+        task_result = TaskResult(-1)
 
-            self.state.ctx.output = {
-                **self.state.ctx.output,
-                **task_result.output
-            }
-            
-        except InvalidTaskTypeError as e:
-            self.state.ctx.logger.error(str(e))
-            task_result = TaskResult(1, errors=[str(e)])
-        except Exception as e:
-            self.state.ctx.logger.error(str(e))
-            task_result = TaskResult(1, errors=[str(e)])
+        # Execute the task
+        if not skip:
+            # Log the task status
+            self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
+
+            # Publish the task active event
+            self.publish(Event(TASK_ACTIVE, self.state.ctx, task=task))
+
+            try:
+                # Fetch the executor
+                executor: TaskExecutor = self._get_executor(self.state.ctx.pipeline_run.uuid, task)
+                
+                # Run the task executor and get the task result
+                task_result = executor.execute()
+
+                # Set the output of the task
+                self.state.ctx.output = {
+                    **self.state.ctx.output,
+                    **task_result.output
+                }
+            except InvalidTaskTypeError as e:
+                self.state.ctx.logger.error(str(e))
+                task_result = TaskResult(1, errors=[str(e)])
+            except Exception as e:
+                self.state.ctx.logger.error(str(e))
+                task_result = TaskResult(1, errors=[str(e)])
 
         # Get the next queued tasks if any
         unstarted_threads = self._on_task_terminal_state(task, task_result)
@@ -330,8 +351,14 @@ class WorkflowExecutor(Worker, EventPublisher):
 
     @interceptable()
     def _on_task_terminal_state(self, task, task_result):
-        # Determine the correct callback to use
-        callback = self._on_task_completed if task_result.success else self._on_task_fail
+        # Determine the correct callback to use.
+        callback = self._on_task_completed
+
+        if task_result.skipped:
+            callback = self._on_task_skipped
+
+        if not task_result.success and not task_result.skipped:
+            callback = self._on_task_failed
 
         # Call the callback. Marks task as completed or failed.
         # Also publishes a TASK_COMPLETED or TASK_FAILED based on the result
@@ -349,7 +376,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             self._on_pipeline_terminal_state(event=PIPELINE_COMPLETED)
             return []
         
-        if task_result.status != 0 and task.can_fail == False:
+        if task_result.status > 0 and task.can_fail == False:
             self._on_pipeline_terminal_state(event=PIPELINE_FAILED)
             return []
 
@@ -400,7 +427,19 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.state.succeeded.append(task.id)
 
     @interceptable()
-    def _on_task_fail(self, task, task_result):
+    def _on_task_skipped(self, task, _):
+        # Log the task active
+        self.state.ctx.logger.info(self.t_str(task, "SKIPPED"))
+
+        # Publish the task active event
+        self.publish(Event(TASK_SKIPPED, self.state.ctx, task=task))
+
+        # Add the task to the finished and skipped list
+        self.state.finished.append(task.id)
+        self.state.skipped.append(task.id)
+
+    @interceptable()
+    def _on_task_failed(self, task, task_result):
         # Log the failure
         self.state.ctx.logger.info(self.t_str(task, f"FAILED: {task_result.errors}"))
 

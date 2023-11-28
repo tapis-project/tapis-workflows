@@ -10,5 +10,6 @@ class TaskResult:
         ):
         self.errors = errors
         self.success = True if status == 0 else False
+        self.skipped = False if status >= 0 else True
         self.status = status
         self.output = output
