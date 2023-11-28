@@ -17,10 +17,10 @@ class ConditionalExpressionEvaluator:
         self._logical_operators = list(get_args(LogicalOperator))
         self._membership_operators = list(get_args(MembershipOperator))
 
-    def evaluate_all(self, conditions: ConditionalExpressions):
+    def evaluate_all(self, conditions: ConditionalExpressions, ctx=None):
         evaluations = []
         for condition in conditions:
-            evaluations.append(self.evaluate(condition))
+            evaluations.append(self.evaluate(condition, ctx=ctx))
 
         return all(evaluations)
 
