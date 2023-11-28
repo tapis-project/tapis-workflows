@@ -422,7 +422,7 @@ class Task(models.Model):
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
     flavor = models.CharField(max_length=32, choices=TASK_FLAVORS, default=TASK_FLAVOR_C1_MED)
-    # conditions = models.JSONField(null=True)
+    conditions = models.JSONField(null=True, default=list)
     input = models.JSONField(null=True)
     invocation_mode = models.CharField(max_length=16, default=EnumInvocationMode.Async)
     max_exec_time = models.BigIntegerField(
