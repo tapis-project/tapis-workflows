@@ -227,7 +227,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         work detailed in the task definition."""
         self.state.ctx.output = {}
         for task in self.state.ctx.pipeline.tasks:
-            self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
+            self.state.ctx.logger.info(self.t_str(task, "STAGING"))
 
             # Publish the task active event
             self.publish(Event(TASK_STAGING, self.state.ctx, task=task))
