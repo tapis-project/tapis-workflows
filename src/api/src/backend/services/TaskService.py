@@ -152,6 +152,7 @@ class TaskService(Service):
             self.rollback()
             raise e
         except Exception as e:
+            print(f"Unexpected Error: {e}", flush=True)
             self.rollback()
             raise e
 
@@ -314,9 +315,10 @@ class TaskService(Service):
                 items.append(self.recursive_pydantic_model_to_dict(item))
             return items
         if type(obj) == dict:
+            modified_dict = {}
             for key in obj:
-                obj[key] = self.recursive_pydantic_model_to_dict(obj)
-            return obj
+                modified_dict[key] = self.recursive_pydantic_model_to_dict(obj[key])
+            return modified_dict
         if isinstance(obj, BaseModel):
             dict_obj = obj.dict()
             for key in obj:
