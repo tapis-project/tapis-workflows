@@ -145,17 +145,14 @@ class TaskService(Service):
         except (IntegrityError, OperationalError, DatabaseError) as e:
             self.rollback()
             raise e
-
         except BadRequestError as e:
             self.rollback()
             raise e
-
         except ModelValidationError as e:
             self.rollback()
             raise e
-
         except Exception as e:
-            print("Generic Exception", request.id, flush=True)
+            print(f"Generic Exception: {e}", request.id, flush=True)
             raise e
 
         return task
