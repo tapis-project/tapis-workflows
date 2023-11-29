@@ -307,6 +307,7 @@ class TaskService(Service):
                 raise ServerError(message=str(e))
             
     def _recursive_pydantic_model_to_dict(self, obj):
+        print("OBJ:", obj, flush=True)
         if type(obj) == list:
             items = []
             for item in obj:
