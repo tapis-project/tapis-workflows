@@ -73,10 +73,12 @@ class TaskService(Service):
             self.rollback()
             raise e
 
-        # Convert the input to json
+        # Convert the input to jsonserializable
         _input = {}
         for key in request.input:
             _input[key] = request.input[key].dict()
+
+        # Convert condition to jsonserializable
 
         # Prepare the uses property
         uses = getattr(request, "uses", None)
@@ -85,7 +87,7 @@ class TaskService(Service):
 
         # Create task
         try:
-            print(getattr(request, "conditions", []), flush=True)
+            print(self._recursive_pydantic_model_to_dict(getattr(request, "conditions", [])), flush=True)
             task = Task.objects.create(
                 auth=getattr(request, "auth", None),
                 builder=getattr(request, "builder", None),
@@ -304,22 +306,22 @@ class TaskService(Service):
             except Exception as e:
                 raise ServerError(message=str(e))
             
-def recursive_pydantic_model_to_dict(obj):
-    if type(obj) == list:
-        items = []
-        for item in obj:
-            items.append(recursive_pydantic_model_to_dict(item))
-        return items
-    if type(obj) == dict:
-        for key in obj:
-            obj[key] = recursive_pydantic_model_to_dict(obj)
-        return obj
-    if isinstance(obj, BaseModel):
-        dict_obj = dict(obj)
-        for key in obj:
-            obj[key] = recursive_pydantic_model_to_dict(obj[key])
-        return dict_obj
+    def _recursive_pydantic_model_to_dict(self, obj):
+        if type(obj) == list:
+            items = []
+            for item in obj:
+                items.append(self.recursive_pydantic_model_to_dict(item))
+            return items
+        if type(obj) == dict:
+            for key in obj:
+                obj[key] = self.recursive_pydantic_model_to_dict(obj)
+            return obj
+        if isinstance(obj, BaseModel):
+            dict_obj = obj.dict()
+            for key in obj:
+                dict_obj[key] = self.recursive_pydantic_model_to_dict(dict_obj[key])
+            return dict_obj
 
-    return obj
+        return obj
 
 service = TaskService()
