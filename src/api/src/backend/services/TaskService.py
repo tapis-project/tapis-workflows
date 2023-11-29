@@ -85,7 +85,7 @@ class TaskService(Service):
 
         # Create task
         try:
-            print(task.conditions, flush=True)
+            print(getattr(request, "conditions", []), flush=True)
             task = Task.objects.create(
                 auth=getattr(request, "auth", None),
                 builder=getattr(request, "builder", None),
