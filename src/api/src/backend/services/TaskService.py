@@ -101,7 +101,7 @@ class TaskService(Service):
                 code=getattr(request, "code", None),
                 command=getattr(request, "command", None),
                 context=context,
-                conditions=getattr(request, "conditions", []),
+                conditions=getattr(request, "conditions", []).model_dump(),
                 data=getattr(request, "data", None),
                 description=request.description,
                 destination=destination,
@@ -151,8 +151,9 @@ class TaskService(Service):
         except ModelValidationError as e:
             self.rollback()
             raise e
-        except Exception as e:
-            print(f"Generic Exception: {e}", request.id, flush=True)
+        except ServerError as e:
+            self.rollback()
+            # print(f"Generic Exception: {e}", request.id, flush=True)
             raise e
 
         return task

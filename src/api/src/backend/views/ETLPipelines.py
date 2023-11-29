@@ -261,6 +261,8 @@ class ETLPipelines(RestrictedAPIView):
                 task_service.delete(tasks)
                 return BadRequest(message=e.__cause__)
             except ServerError as e:
+                pipeline.delete()
+                task_service.delete(tasks)
                 return ServerErrorResp(message=e)
             except Exception as e:
                 task_service.delete(tasks)
