@@ -78,8 +78,6 @@ class TaskService(Service):
         for key in request.input:
             _input[key] = request.input[key].dict()
 
-        # Convert condition to jsonserializable
-
         # Prepare the uses property
         uses = getattr(request, "uses", None)
         if uses != None:
@@ -321,9 +319,11 @@ class TaskService(Service):
             return modified_dict
         if isinstance(obj, BaseModel):
             dict_obj = obj.dict()
-            for key in obj:
-                dict_obj[key] = self._recursive_pydantic_model_to_dict(dict_obj[key])
-            return dict_obj
+            print("IS INSTANCE", dict_obj, flush=True)
+            modified_dict = {}
+            for key in dict_obj:
+                modified_dict[key] = self._recursive_pydantic_model_to_dict(dict_obj[key])
+            return modified_dict
 
         return obj
 

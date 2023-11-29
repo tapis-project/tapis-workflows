@@ -3,6 +3,7 @@ from functools import partial
 
 class Service:
     def __init__(self):
+        self.errors: list[str] = []
         self.rollbacks = []
         self.services = {}
     
@@ -13,6 +14,7 @@ class Service:
                 rollback()
             except Exception as e:
                 success = False
+                self.errors.append(str(e))
                 if raise_exception:
                     raise e
 
