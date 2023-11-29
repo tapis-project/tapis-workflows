@@ -265,8 +265,8 @@ class ETLPipelines(RestrictedAPIView):
                 task_service.delete(tasks)
                 return ServerErrorResp(message=e)
             except Exception as e:
-                task_service.delete(tasks)
                 pipeline.delete()
+                task_service.delete(tasks)
                 return ServerErrorResp(message=e)
         return ResourceURLResponse(
             url=resource_url_builder(request.url, pipeline.id)

@@ -1,8 +1,8 @@
-import json, re
+import json
 
-from typing import AnyStr, List
+from typing import List
 
-from pydantic import ValidationError
+from pydantic import ValidationError, BaseModel
 from django.db import DatabaseError, IntegrityError, OperationalError
 from django.core.exceptions import ValidationError as ModelValidationError
 
@@ -85,7 +85,7 @@ class TaskService(Service):
 
         # Create task
         try:
-            print()
+            print(task.conditions)
             task = Task.objects.create(
                 auth=getattr(request, "auth", None),
                 builder=getattr(request, "builder", None),
@@ -93,7 +93,10 @@ class TaskService(Service):
                 code=getattr(request, "code", None),
                 command=getattr(request, "command", None),
                 context=context,
-                conditions=[dict(c) for c in getattr(request, "conditions", [])],
+                conditions=[
+                    recursive_pydantic_model_to_dict(c) 
+                    for c in getattr(request, "conditions", [])
+                ],
                 data=getattr(request, "data", None),
                 description=request.description,
                 destination=destination,
@@ -144,12 +147,10 @@ class TaskService(Service):
             self.rollback()
             raise e
         except ServerError as e:
-            print("SERVER ERROR HERE")
             self.rollback()
             raise e
         except Exception as e:
             self.rollback()
-            print(f"Generic Exception: {e}", request.id, flush=True)
             raise e
 
         return task
@@ -302,5 +303,24 @@ class TaskService(Service):
                 raise ServerError(message=e.__cause__)
             except Exception as e:
                 raise ServerError(message=str(e))
+            
+def recursive_pydantic_model_to_dict(obj):
+    if type(obj) == list:
+        items = []
+        for item in obj:
+            items.append(recursive_pydantic_model_to_dict(item))
+        
+        return items
+    if type(obj) == dict:
+        for key in obj:
+            obj[key] = recursive_pydantic_model_to_dict(obj)
+        return obj
+    if isinstance(obj, BaseModel):
+        dict_obj = dict(obj)
+        for key in obj:
+            obj[key] = recursive_pydantic_model_to_dict(obj[key])
+        return dict_obj
+
+    return obj
 
 service = TaskService()
