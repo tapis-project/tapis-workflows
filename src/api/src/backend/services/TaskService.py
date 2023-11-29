@@ -94,7 +94,7 @@ class TaskService(Service):
                 command=getattr(request, "command", None),
                 context=context,
                 conditions=[
-                    recursive_pydantic_model_to_dict(c) 
+                    dict(c) 
                     for c in getattr(request, "conditions", [])
                 ],
                 data=getattr(request, "data", None),
@@ -309,7 +309,6 @@ def recursive_pydantic_model_to_dict(obj):
         items = []
         for item in obj:
             items.append(recursive_pydantic_model_to_dict(item))
-        
         return items
     if type(obj) == dict:
         for key in obj:
