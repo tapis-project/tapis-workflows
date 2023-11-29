@@ -187,10 +187,6 @@ class TaskOutputRef(BaseModel):
     task_id: str
     output_id: str
 
-class TaskInputRef(BaseModel):
-    task_id: str
-    input_id: str
-
 LiteralHostRefTypes = Literal["kubernetes_secret", "kubernetes_config_map"]
 class HostRef(BaseModel):
     type: LiteralHostRefTypes
@@ -205,14 +201,12 @@ class SecretRef(BaseModel):
 ValueFromEnv = Dict[Literal["env"], str]
 ValueFromArgs = Dict[Literal["args"], str]
 ValueFromTaskOutput = Dict[Literal["task_output"], TaskOutputRef]
-ValueFromTaskInput = Dict[Literal["task_input"], TaskInputRef]
 ValueFromHost = Dict[Literal["host"], HostRef]
 ValueFromSecret = Dict[Literal["secret"], SecretRef]
 ValueFrom = Union[
     ValueFromEnv,
     ValueFromArgs,
     ValueFromTaskOutput,
-    ValueFromTaskInput,
     ValueFromHost,
     ValueFromSecret
 ]
@@ -529,8 +523,13 @@ class Uses(BaseModel):
         
         return values
 
+OperandValueFrom = Union[
+    ValueFromEnv,
+    ValueFromArgs,
+    ValueFromTaskOutput
+]
 
-Operand = Union[str, int, float, bool, bytes, TaskInputRef, None]
+Operand = Union[str, int, float, bool, bytes, OperandValueFrom, None]
 
 ComparisonOperator = Literal["eq", "neq", "gt", "lt", "gte", "lte"]
 

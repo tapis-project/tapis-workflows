@@ -31,59 +31,65 @@ from tests.fixtures.conditional_expressions import (
 class TestConditionalExpressionEvaluator(unittest.TestCase):
     def setUp(self):
         self.evaluator = ConditionalExpressionEvaluator()
-        
-    def testCompare(self):
+
+    def testEvaluateCompare(self):
         # comparison
         self.assertTrue(self.evaluator.evaluate(comparison_true))
         self.assertFalse(self.evaluator.evaluate(comparison_false))
 
-    def testAnd(self):
+    def testEvaluateAnd(self):
         # and
         self.assertTrue(self.evaluator.evaluate(and_true))
         self.assertFalse(self.evaluator.evaluate(and_false))
 
-    def testNot(self):
+    def testEvaluateNot(self):
         # not
         self.assertTrue(self.evaluator.evaluate(not_op_true))
         self.assertFalse(self.evaluator.evaluate(not_op_false))
 
-    def testOr(self):
+    def testEvaluateOr(self):
         # or
         self.assertTrue(self.evaluator.evaluate(or_true))
         self.assertFalse(self.evaluator.evaluate(or_false))
 
-    def testXor(self):
+    def testEvaluateXor(self):
         # xor
         self.assertTrue(self.evaluator.evaluate(xor_true))
         self.assertFalse(self.evaluator.evaluate(xor_false1))
         self.assertFalse(self.evaluator.evaluate(xor_false2))
 
-    def testXnor(self):
+    def testEvaluateXnor(self):
         # xnor
         self.assertTrue(self.evaluator.evaluate(xnor_true1))
         self.assertTrue(self.evaluator.evaluate(xnor_true2))
         self.assertFalse(self.evaluator.evaluate(xnor_false))
 
-    def testNor(self):
+    def testEvaluateNor(self):
         # nor
         self.assertTrue(self.evaluator.evaluate(nor_true))
         self.assertFalse(self.evaluator.evaluate(nor_false1))
         self.assertFalse(self.evaluator.evaluate(nor_false2))
 
-    def testMembership(self):
+    def testEvaluateMembership(self):
         # in
         self.assertTrue(self.evaluator.evaluate(in_true))
         self.assertFalse(self.evaluator.evaluate(in_false))
 
-    def testNestedAnd(self):
+    def testEvaluateNestedAnd(self):
         # nested and
         self.assertTrue(self.evaluator.evaluate(nested_and_true))
         self.assertFalse(self.evaluator.evaluate(nested_and_false))
 
-    def testNestedAndOr(self):
+    def testEvaluateNestedAndOr(self):
         # nested and or
         self.assertTrue(self.evaluator.evaluate(nested_and_or_true))
         self.assertFalse(self.evaluator.evaluate(nested_and_or_false))
+
+    def testEvaluateAllTrue(self):
+        self.assertTrue(self.evaluator.evaluate_all([and_true, not_op_true, nested_and_or_true]))
+
+    def testEvaluateAllFalse(self):
+        self.assertFalse(self.evaluator.evaluate_all([and_true, not_op_true, nested_and_or_false]))
 
 if __name__ == "__main__":
     unittest.main()

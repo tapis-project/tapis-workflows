@@ -223,7 +223,15 @@ class ETLPipelines(RestrictedAPIView):
                         "id": task_id,
                         "type": "tapis_job",
                         "tapis_job_def": job,
-                        "depends_on": [{"id": last_task_id}]
+                        "depends_on": [{"id": last_task_id}],
+                        "conditions": [
+                            {
+                                "eq": [
+                                    {"args": "RESUBMIT_OUTBOUND"},
+                                    None
+                                ]
+                            }
+                        ]
                     })
                 )
                 last_task_id = task_id
