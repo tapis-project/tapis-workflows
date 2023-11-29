@@ -312,17 +312,17 @@ class TaskService(Service):
         if type(obj) == list:
             items = []
             for item in obj:
-                items.append(self.recursive_pydantic_model_to_dict(item))
+                items.append(self._recursive_pydantic_model_to_dict(item))
             return items
         if type(obj) == dict:
             modified_dict = {}
             for key in obj:
-                modified_dict[key] = self.recursive_pydantic_model_to_dict(obj[key])
+                modified_dict[key] = self._recursive_pydantic_model_to_dict(obj[key])
             return modified_dict
         if isinstance(obj, BaseModel):
             dict_obj = obj.dict()
             for key in obj:
-                dict_obj[key] = self.recursive_pydantic_model_to_dict(dict_obj[key])
+                dict_obj[key] = self._recursive_pydantic_model_to_dict(dict_obj[key])
             return dict_obj
 
         return obj
