@@ -85,7 +85,6 @@ class TaskService(Service):
 
         # Create task
         try:
-            print(self._recursive_pydantic_model_to_dict(getattr(request, "conditions", [])), flush=True)
             task = Task.objects.create(
                 auth=getattr(request, "auth", None),
                 builder=getattr(request, "builder", None),
@@ -94,7 +93,7 @@ class TaskService(Service):
                 command=getattr(request, "command", None),
                 context=context,
                 conditions=[
-                    dict(c) 
+                    self._recursive_pydantic_model_to_dict(c) 
                     for c in getattr(request, "conditions", [])
                 ],
                 data=getattr(request, "data", None),
