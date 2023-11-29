@@ -28,15 +28,11 @@ from backend.views.http.requests import (
     FunctionTask,
     TemplateTask,
     DockerhubDestination,
-    LocalDestination,
-    EnumTaskIOTypes,
-    EnumTaskInputValueFromKey
+    LocalDestination
 )
 from backend.services.SecretService import service as secret_service
 from backend.services.Service import Service
 from backend.errors.api import BadRequestError, ServerError
-
-from pprint import pprint
 
 
 TASK_TYPE_REQUEST_MAPPING = {
@@ -76,11 +72,6 @@ class TaskService(Service):
         except Exception as e:
             self.rollback()
             raise e
-        
-        # # Validate input TODO move validation logic to pydantic if possible
-        # err = self._validate_input(request.input)
-        # if err != None:
-        #     raise Exception(f"Failed to validate input: {err}")
 
         # Convert the input to json
         _input = {}
@@ -94,6 +85,7 @@ class TaskService(Service):
 
         # Create task
         try:
+            print()
             task = Task.objects.create(
                 auth=getattr(request, "auth", None),
                 builder=getattr(request, "builder", None),
@@ -101,7 +93,7 @@ class TaskService(Service):
                 code=getattr(request, "code", None),
                 command=getattr(request, "command", None),
                 context=context,
-                conditions=[c.model_dump() for c in getattr(request, "conditions", [])],
+                conditions=[dict(c) for c in getattr(request, "conditions", [])],
                 data=getattr(request, "data", None),
                 description=request.description,
                 destination=destination,
@@ -152,8 +144,12 @@ class TaskService(Service):
             self.rollback()
             raise e
         except ServerError as e:
+            print("SERVER ERROR HERE")
             self.rollback()
-            # print(f"Generic Exception: {e}", request.id, flush=True)
+            raise e
+        except Exception as e:
+            self.rollback()
+            print(f"Generic Exception: {e}", request.id, flush=True)
             raise e
 
         return task
@@ -297,52 +293,6 @@ class TaskService(Service):
 
         # Message is a dictionary. Convert to string and return
         return json.dumps(message)
-
-    def _validate_input(self, _input):
-        input_key_pattern = r"^[_]?[a-zA-Z]+[a-zA-Z0-9_]*"
-        for key in _input:
-            # Validate input key
-            if not re.match(input_key_pattern, key):
-                return "Disallowed input key: must conform to the following pattern: ^[_]*[a-zA-Z]+[a-zA-Z0-9]*"
-
-            # Validate input value
-            if type(_input[key]) != dict:
-                return f"Input value must be a dict: type {type(_input[key])} found for key {key}"
-
-            # Validate input value type property
-            if _input[key].get("type", None) not in EnumTaskIOTypes:
-                return f"'type' property input value of key {key} must be oneOf: {[item.value for item in EnumTaskIOTypes]}"
-
-            # Return if the value property exists and is not None
-            if _input[key].get("value", None) != None:
-                return
-            
-            # Validate the value_from property of the input value
-            value_from = _input[key].get("value_from", None)
-            if type(value_from) != dict:
-                return f"Input validation error at key {key}: 'value_from' must be a dictionary"
-
-            # Validate the key of the value_from property
-            value_from_key = list(value_from.keys())[0]
-            if len(value_from) > 1 or value_from_key not in EnumTaskInputValueFromKey:
-                return f"Input validation error at key {key}: The key in 'value_from' must be oneOf: {[item.value for item in EnumTaskInputValueFromKey]}" 
-            
-            # Validate value_from value for 'env' and 'params'
-            value_from_value = value_from[value_from_key]
-            if value_from_key != "task_output" and type(value_from_value) not in [str, int, float, AnyStr]:
-                return f"Input validation error at key {key}: 'value_from' value type for keys [env|params] must be oneOf types [string, number, binary]"
-
-            # Validate value_from value for "task_output"
-            if (
-                value_from_key == "task_output"
-                and (
-                    type(value_from_value) != dict
-                    or value_from_value.get("task_id", None) == None
-                    or value_from_value.get("output_id", None) == None
-                )
-                
-            ):
-                return f"Input validation error at key {key}: When referencing task outputs, 'value_from' value must be a dictionary with the following properties ['task_id', 'output_id']"
 
     def delete(self, tasks: List[Task]):
         for task in tasks:
