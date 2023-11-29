@@ -309,8 +309,8 @@ class TaskService(Service):
             
     def _recursive_pydantic_model_to_dict(self, obj):
         print("OBJ:", obj, flush=True)
-        if type(obj) == list:
-            items = []
+        if type(obj) in [list, tuple]:
+            items = type(obj)()
             for item in obj:
                 items.append(self._recursive_pydantic_model_to_dict(item))
             return items
