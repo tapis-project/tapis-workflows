@@ -1,13 +1,13 @@
 import sys
 import unittest
 
-# from core.server import Server
+from core.Server import Server
 
 
 class TestServer(unittest.TestCase):
     def testServerInit(self):
-        # self.server = Server()
-        # self.assertEqual(self.server, type(Server))
+        self.server = Server()
+        self.assertEqual(type(self.server), Server)
         pass
 
 if __name__ == "__main__":

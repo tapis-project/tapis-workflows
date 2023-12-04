@@ -29,7 +29,7 @@ from errors.tasks import (
 )
 from core.middleware.archivers import S3Archiver, IRODSArchiver
 from conf.constants import BASE_WORK_DIR
-from core.server import Worker
+from core.workers import Worker
 from core.state import Hook, method_hook
 
 from core.workflows import params_validator
