@@ -2,7 +2,7 @@ from collections import deque
 from threading import Lock
 
 from errors import WorkerLimitExceed, NoAvailableWorkers
-from core.server import Worker
+from core.workers import Worker
 
 
 class WorkerPool:
