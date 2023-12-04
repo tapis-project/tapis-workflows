@@ -3,8 +3,6 @@ import copy
 from typing import Any
 from threading import Lock
 
-from core.state import Hook
-
 
 class ReactiveState(object):
     """ReactiveState is a thread-safe state management mechanism that allows
@@ -14,12 +12,17 @@ class ReactiveState(object):
     and refrences created to this object will not 
     """
 
-    def __init__(self):
-        super(ReactiveState, self).__setattr__("_hooks", [])
-        super(ReactiveState, self).__setattr__("_initial_state", {})
-        super(ReactiveState, self).__setattr__("_state", {})
-        super(ReactiveState, self).__setattr__("_lock", Lock())
+    def __init__(
+        self,
+        hooks,
+        initial_state={},
+        lock=Lock()
+    ):
+        super(ReactiveState, self).__setattr__("_hooks", hooks)
+        super(ReactiveState, self).__setattr__("_lock", lock)
         super(ReactiveState, self).__setattr__("_called_externally", True)
+        super(ReactiveState, self).__setattr__("_initial_state", initial_state)
+        super(ReactiveState, self).__setattr__("_state", copy.deepcopy(initial_state))
         
     def __setattr__(self, __name: str, __value: Any) -> None:
         if self._called_externally:
@@ -87,10 +90,3 @@ class ReactiveState(object):
 
     def reset(self):
         super(ReactiveState, self).__setattr__("_state", copy.deepcopy(self._initial_state))
-
-    def set_initial_state(self, state: dict):
-        super(ReactiveState, self).__setattr__("_initial_state", state)
-        super(ReactiveState, self).__setattr__("_state", copy.deepcopy(state))
-
-    def register_hooks(self, hooks: list[Hook]):
-        super(ReactiveState, self).__setattr__("_hooks", hooks)

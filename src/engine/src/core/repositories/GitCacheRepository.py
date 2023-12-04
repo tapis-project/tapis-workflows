@@ -3,7 +3,7 @@ import os
 import git
 
 
-class GitCacheService:
+class GitCacheRepository:
     def __init__(self, cache_dir):
         self._cache_dir = cache_dir
 

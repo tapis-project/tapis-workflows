@@ -37,26 +37,31 @@ BASE_WORK_DIR = "/var/lib/open-workflow-engine/"
 
 LOG_FILE = BASE_DIR + "logs/service.log"
 
-LOG_LEVEL = os.environ["LOG_LEVEL"]
+LOG_LEVEL = os.environ.get("LOG_LEVEL", None)
 
-BROKER_USER = os.environ["BROKER_USER"]
-BROKER_PASSWORD = os.environ["BROKER_PASSWORD"]
-BROKER_HOST = os.environ["BROKER_URL"]
-BROKER_PORT = os.environ["BROKER_PORT"]
+BROKER_USER = os.environ.get("BROKER_USER", None)
+BROKER_PASSWORD = os.environ.get("BROKER_PASSWORD", None)
+BROKER_HOST = os.environ.get("BROKER_URL", None)
+BROKER_PORT = os.environ.get("BROKER_PORT", None)
 
-DB_USER = os.environ["DB_USER"]
-DB_PASSWORD = os.environ["DB_PASSWORD"]
-DB_HOST = os.environ["DB_HOST"]
-DB_PORT = os.environ["DB_PORT"]
-DB_NAME = os.environ["DB_NAME"]
+DB_USER = os.environ.get("DB_USER", None)
+DB_PASSWORD = os.environ.get("DB_PASSWORD", None)
+DB_HOST = os.environ.get("DB_HOST", None)
+DB_PORT = os.environ.get("DB_PORT", None)
+DB_NAME = os.environ.get("DB_NAME", None)
 
-LOG_LEVEL = os.environ["LOG_LEVEL"]
+LOG_LEVEL = os.environ.get("LOG_LEVEL", None)
 
 BROKER_URL = f"amqp://{BROKER_USER}:{BROKER_PASSWORD}@{BROKER_HOST}:{BROKER_PORT}"
 BACKEND_URL = f"db+mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 # Read the kubernetes namespace from the serviceaccount namespace directly
-KUBERNETES_NAMESPACE = open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read()
+try:
+    KUBERNETES_NAMESPACE = open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read()
+except Exception:
+    pass
+finally:
+    KUBERNETES_NAMESPACE = "default"
 
 WORKFLOW_NFS_SERVER = os.environ.get("WORKFLOW_NFS_SERVER")
 

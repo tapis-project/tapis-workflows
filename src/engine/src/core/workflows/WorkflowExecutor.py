@@ -20,10 +20,7 @@ from owe_python_sdk.events.types import (
     PIPELINE_STAGING, TASK_STAGING, TASK_ACTIVE, TASK_COMPLETED, TASK_FAILED,
     TASK_SKIPPED
 )
-from helpers import params_validator
-from helpers.GraphValidator import GraphValidator # From shared
-from helpers.TemplateMapper import TemplateMapper
-from helpers.ConditionalExpressionEvaluator import ConditionalExpressionEvaluator
+from core.templating import TemplateMapper
 from errors.tasks import (
     InvalidTaskTypeError,
     MissingInitialTasksError,
@@ -32,8 +29,11 @@ from errors.tasks import (
 )
 from core.middleware.archivers import S3Archiver, IRODSArchiver
 from conf.constants import BASE_WORK_DIR
-from core.workers import Worker
-from core.state import ReactiveState, Hook, method_hook
+from core.server import Worker
+from core.state import Hook, method_hook
+
+from core.workflows import params_validator
+from core.ioc import IOCContainerFactory
 from utils import lbuffer_str as lbuf, CompositeLogger
 
 
@@ -97,11 +97,27 @@ class WorkflowExecutor(Worker, EventPublisher):
             )
         )
 
-        # Thread lock
-        self.lock = Lock()
+        self.container = IOCContainerFactory()
 
-        self.state = ReactiveState(
-            hooks=[
+        self.state = self.container.load("ReactiveState")
+        self.state.set_initial_state({
+            "threads": [],
+            "terminated": False,
+            "terminating": False,
+            "failed": [],
+            "failures_permitted": [],
+            "succeeded": [],
+            "finished": [],
+            "skipped": [],
+            "queue": [],
+            "tasks": [],
+            "executors": {},
+            "dependency_graph": {},
+            "ready_tasks": [],
+            "ctx": None,
+        })
+        self.state.register_hooks(
+            [
                 Hook(
                     self._on_change_state,
                     attrs=[] # No attrs means all state gets/sets triggers this hook
@@ -114,25 +130,7 @@ class WorkflowExecutor(Worker, EventPublisher):
                     self._on_change_ready_task,
                     attrs=["ready_tasks"]
                 )
-            ],
-            initial_state={
-                "threads": [],
-                "terminated": False,
-                "terminating": False,
-                "failed": [],
-                "failures_permitted": [],
-                "succeeded": [],
-                "finished": [],
-                "skipped": [],
-                "queue": [],
-                "tasks": [],
-                "executors": {},
-                "dependency_graph": {},
-                "is_dry_run": False,
-                "ready_tasks": [],
-                "ctx": None,
-            },
-            lock=self.lock
+            ]
         )
 
         self._set_initial_state()
@@ -307,11 +305,12 @@ class WorkflowExecutor(Worker, EventPublisher):
             if dep.id in self.state.skipped and dep.can_skip == False:
                 skip = True
                 break
-
-        # Evaluate the task's conditions if the previous task was not skipped
+        
+        # Determine if the task should be skipped
         if not skip:
-            evaluator = ConditionalExpressionEvaluator()
-            skip = not evaluator.evaluate_all(task.conditions, ctx=self.state.ctx)
+            # Evaluate the task's conditions if the previous task was not skipped
+            evaluator = self.container.load("ConditionalExpressionEvaluator")
+            skip = not evaluator.evaluate_all(task.conditions)
 
         # Default TaskResult is a task skipped. Will be overwritten if task not skipped
         task_result = TaskResult(-1)
@@ -525,7 +524,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Detect loops in the graph
         try:
             initial_tasks = self._get_initial_tasks(self.state.tasks)
-            graph_validator = GraphValidator()
+            graph_validator = self.container.load("GraphValidator")
             if graph_validator.has_cycle(self.state.dependency_graph, initial_tasks):
                 raise CycleDetectedError("Cyclic dependencies detected")
         except (
@@ -592,7 +591,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         self.state.ctx.pipeline.log_file = f"{self.state.ctx.pipeline.work_dir}logs.txt"
         
         # Set the work_dir on the WorkflowExecutor as well.
-        # NOTE Will be used for cleaning up all the temporary files/dirs after 
+        # NOTE Will be used for cleaning up all the temporary files/dirs after
         # the state is reset. (Which means that ther will be no self.state.ctx.pipeline.work_dir)
         self.work_dir = self.state.ctx.pipeline.work_dir
 
@@ -662,11 +661,9 @@ class WorkflowExecutor(Worker, EventPublisher):
         return self.state.executors[f"{run_uuid}.{task.id}"]
     
     def _cleanup_run(self):
-        # TODO use server logger below
-        #self.state.ctx.logger.info(self.p_str("WORKFLOW EXECUTOR CLEANUP"))
-        pass
         # TODO remove comment below and pass above
         # os.system(f"rm -rf {self.work_dir}")
+        pass
     
     def terminate(self):
         # NOTE SIDE EFFECT. Triggers the _on_terminate_hook in the
@@ -794,12 +791,6 @@ class WorkflowExecutor(Worker, EventPublisher):
         This is invoked by the WorkflowExecutors ReactiveState object when the intercept 
         condition is met, i.e. when the 'terminate' method changes 'self.state.terminated' 
         to True.
-
-        NOTE
-        NO thread locking should occur here (self.lock.acquire()).
-        The ReactiveState object will acquire a thread lock with the WorkflowExecutor's
-        Lock object(self.lock that was passed to it during it's instantiation) and release it
-        once this function finishes
         """
         if not state.terminating or state.terminated:
             return
@@ -809,6 +800,10 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         # Publish the termination event
         self.publish(Event(PIPELINE_TERMINATED, self.state.ctx))
+
+        # Set the skip flag for all tasks to True
+        for task in self.state.ctx.pipeline.tasks:
+            task.skip = True
         
         # Terminate the Task Executors
         for _, executor in state.executors.items():

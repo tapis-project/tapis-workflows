@@ -1,6 +1,11 @@
 import unittest
 
-from helpers.ConditionalExpressionEvaluator import ConditionalExpressionEvaluator
+from unittest.mock import Mock
+
+from core.expressions import (
+    ConditionalExpressionEvaluator,
+    
+)
 from tests.fixtures.conditional_expressions import (
     and_true,
     and_false,
@@ -30,7 +35,9 @@ from tests.fixtures.conditional_expressions import (
 
 class TestConditionalExpressionEvaluator(unittest.TestCase):
     def setUp(self):
-        self.evaluator = ConditionalExpressionEvaluator()
+        operand_resolver = Mock()
+        operand_resolver.resolve = lambda v: v # Will return whatever is passed to it
+        self.evaluator = ConditionalExpressionEvaluator(operand_resolver)
 
     def testEvaluateCompare(self):
         # comparison

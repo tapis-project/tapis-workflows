@@ -1,6 +1,6 @@
 from typing import Union
 
-from .TemplateRepository import TemplateRepository
+from core.repositories import TemplateRepository
 from owe_python_sdk.schema import (
     Uses,
     Pipeline,

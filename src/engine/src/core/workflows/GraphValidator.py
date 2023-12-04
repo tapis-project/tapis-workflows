@@ -33,10 +33,3 @@ class GraphValidator:
         # self.traversed_edges = [] # TODO reset traversed edges here?
 
         return False
-
-class GraphValidator2:
-    def has_cycle(self,):
-        pass
-
-    def traverse(self,):
-        pass

@@ -13,8 +13,8 @@ from conf.constants import (
 from core.resources import JobResource
 from utils import get_flavor
 from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars, gen_resource_name
-from helpers import function_bootstrap
-from helpers.GitCacheService import GitCacheService
+from core.tasks import function_bootstrap
+from core.repositories import GitCacheRepository
 from errors import WorkflowTerminated
 
 
@@ -56,10 +56,10 @@ class Function(TaskExecutor):
         job_name = gen_resource_name(prefix="fn")
         # Prepares the file system for the Function task by clone 
         # git repsoitories specified in the request
-        git_cache_service = GitCacheService(cache_dir=self.task.exec_dir)
+        git_cache_repo = GitCacheRepository(cache_dir=self.task.exec_dir)
         try:
             for repo in self.task.git_repositories:
-                git_cache_service.add(repo.url, repo.directory, branch=repo.branch)
+                git_cache_repo.add(repo.url, repo.directory, branch=repo.branch)
         except Exception as e:
             return self._task_result(1, errors=[str(e)])
         

@@ -305,7 +305,6 @@ class TaskService(Service):
                 raise ServerError(message=str(e))
             
     def _recursive_pydantic_model_to_dict(self, obj):
-        print("OBJ:", obj, flush=True)
         if type(obj) in [list, tuple]:
             items = type(obj)()
             for item in obj:
@@ -318,7 +317,6 @@ class TaskService(Service):
             return modified_dict
         if isinstance(obj, BaseModel):
             dict_obj = obj.dict()
-            print("IS INSTANCE", dict_obj, flush=True)
             modified_dict = {}
             for key in dict_obj:
                 modified_dict[key] = self._recursive_pydantic_model_to_dict(dict_obj[key])

@@ -2,7 +2,7 @@ import os, json
 
 from urllib.parse import urlparse
 
-from .GitCacheService import GitCacheService
+from core.repositories import GitCacheRepository
 from owe_python_sdk.schema import Uses
 
 
@@ -10,11 +10,11 @@ class TemplateRepository:
     def __init__(self, cache_dir: str):
         # Clone git repository specified on the pipeline.uses if exists
         self.cache_dir = cache_dir
-        self.git_cache_service = GitCacheService(cache_dir=cache_dir)
+        self.git_cache_repo = GitCacheRepository(cache_dir=cache_dir)
     
     def get_by_uses(self, uses: Uses):
         git_repo_dir = self._url_to_directory(uses.source.url)
-        self.git_cache_service.add_or_update(
+        self.git_cache_repo.add_or_update(
             uses.source.url,
             git_repo_dir
         )

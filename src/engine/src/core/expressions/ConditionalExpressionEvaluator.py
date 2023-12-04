@@ -10,21 +10,27 @@ from owe_python_sdk.schema import (
     ConditionalExpressions
 )
 
+from core.expressions import OperandResolver
+
 
 class ConditionalExpressionEvaluator:
-    def __init__(self):
+    def __init__(
+            self,
+            operand_resolver: OperandResolver
+        ):
         self._comparison_operators = list(get_args(ComparisonOperator))
         self._logical_operators = list(get_args(LogicalOperator))
         self._membership_operators = list(get_args(MembershipOperator))
+        self._operand_resolver = operand_resolver
 
-    def evaluate_all(self, conditions: ConditionalExpressions, ctx=None):
+    def evaluate_all(self, conditions: ConditionalExpressions):
         evaluations = []
         for condition in conditions:
-            evaluations.append(self.evaluate(condition, ctx=ctx))
+            evaluations.append(self.evaluate(condition))
 
         return all(evaluations)
 
-    def evaluate(self, condition: ConditionalExpression, ctx=None):
+    def evaluate(self, condition: ConditionalExpression):
         operator = list(condition.keys())[0] # There will only ever be one key in a condition.
         operands = condition[operator]
         if operator in self._comparison_operators:
@@ -40,10 +46,19 @@ class ConditionalExpressionEvaluator:
             return self._logical(operator, operands)
 
     def _comparison(self, operator, operands):
-        return getattr(operatorlib, operator)(operands[0], operands[1])
+        resolved_operands = [
+            self._operand_resolver.resolve(operand)
+            for operand in operands 
+        ]
+        return getattr(operatorlib, operator)(resolved_operands[0], resolved_operands[1])
 
     def _membership(self, _, operands):
-        return operands[0] in operands[1]
+        resolved_needle = self._operand_resolver.resolve(operands[0])
+        resolved_haystack = [
+            self._operand_resolver.resolve(operand)
+            for operand in operands[1]
+        ]
+        return resolved_needle in resolved_haystack
     
     def _logical(self, operator, operands):
         evaluations = []
