@@ -97,7 +97,8 @@ class WorkflowExecutor(Worker, EventPublisher):
             )
         )
 
-        self.container = IOCContainerFactory()
+        container_factory = IOCContainerFactory()
+        self.container = container_factory.build()
 
         self.state = self.container.load("ReactiveState")
         self.state.set_initial_state({
