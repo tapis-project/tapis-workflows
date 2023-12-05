@@ -25,10 +25,10 @@ class ValueFromService:
         return output
     
     def get_env_value_by_key(self, key):
-        output = self._env_repo.get_by_key(key)
+        output = self._env_repo.get_value_by_key(key)
         return output
     
     def get_arg_value_by_key(self, key):
-        output = self._arg_repo.get_by_key(key)
+        output = self._arg_repo.get_value_by_key(key)
         return output
         
