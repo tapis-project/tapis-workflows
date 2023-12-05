@@ -15,7 +15,7 @@ class OperandResolver:
             return operand
         
         # NOTE all operands should have only 1 key
-        key = operand.keys[0]
+        key = operand.keys()[0]
         if key == "task_output":
             value = self._value_from_service.get_task_output_value_by_id(
                 task_id=operand[key]["task_id"],
