@@ -25,12 +25,12 @@ class OperandResolver:
         
         if key == "args":
             value = self._value_from_service.get_arg_value_by_key(
-                operand[key]["args"]
+                operand[key]
             )
             return value
         
         if key == "env":
             value = self._value_from_service.get_env_value_by_key(
-                operand[key]["args"]
+                operand[key]
             )
             return value
