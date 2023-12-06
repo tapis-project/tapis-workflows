@@ -59,8 +59,6 @@ BACKEND_URL = f"db+mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}
 try:
     KUBERNETES_NAMESPACE = open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read()
 except Exception:
-    pass
-finally:
     KUBERNETES_NAMESPACE = "default"
 
 WORKFLOW_NFS_SERVER = os.environ.get("WORKFLOW_NFS_SERVER")

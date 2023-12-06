@@ -1,4 +1,3 @@
-import sys
 import unittest
 
 from core.Server import Server
