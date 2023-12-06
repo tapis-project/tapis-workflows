@@ -11,4 +11,5 @@ class TaskOutputRepository:
         self._mapper = mapper
 
     def get_output_by_task_and_id(self, task: Task, output_id):
-        return self._mapper.get_output(task.output_dir, output_id)
+        output = self._mapper.get_output(task.output_dir, output_id)
+        return output
