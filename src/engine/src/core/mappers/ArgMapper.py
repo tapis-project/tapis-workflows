@@ -6,5 +6,6 @@ class ArgMapper:
         self._dao = dao
 
     def get_value_by_key(self, key):
-        value = self._dao.get_state().ctx.args.get(key).value
-        return value
+        arg = self._dao.get_state().ctx.args.get(key, None)
+        if arg == None: return None
+        return arg.value
