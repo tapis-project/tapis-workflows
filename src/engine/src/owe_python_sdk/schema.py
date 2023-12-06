@@ -531,7 +531,7 @@ OperandValueFrom = Union[
 
 Operand = Union[str, int, float, bool, bytes, OperandValueFrom, None]
 
-ComparisonOperator = Literal["eq", "neq", "gt", "lt", "gte", "lte"]
+ComparisonOperator = Literal["eq", "ne", "gt", "lt", "ge", "le"]
 
 ComparisonOperands = conlist(Operand, min_items=2, max_items=2) # NOTE only allowing 2 items in list. Gotta draw the line somewhere
 
