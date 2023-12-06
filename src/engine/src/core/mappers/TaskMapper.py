@@ -9,7 +9,7 @@ class TaskMapper:
         task = next(
             filter(
                 lambda task: task.id == _id,
-                self._dao.get_state().ctx.tasks
+                self._dao.get_state().tasks
             ),
             None
         )
