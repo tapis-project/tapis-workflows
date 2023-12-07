@@ -213,10 +213,40 @@ class ETLPipelines(RestrictedAPIView):
         # The first tapis job should be dependent on the gen-inbound-manifests task
         last_task_id = "gen-inbound-manifests"
 
+        # No-op condition
+        # Create a condition that should only be applied to the first Tapis Job
+        # in the series to ensure that when there is no data to process, the first
+        # job (and all subsequent jobs) do not run
+        no_op_condition = {
+            "ne": [
+                {
+                    "task_output": {
+                        "task_id": last_task_id,
+                        "output_id": "ACTIVE_MANIFEST"
+                    }
+                },
+                None
+            ]
+        }
+
         # Create a tapis job task for each job provided in the request.
         tasks = []
         try:
             for i, job in enumerate(body.jobs, start=1):
+                # Set up the conditions for the job to run
+                conditions = [
+                    {
+                        "eq": [
+                            {"args": "RESUBMIT_OUTBOUND"},
+                            None
+                        ]
+                    }
+                ]
+                
+                # Add no-op condition for only first task
+                if i == 1:
+                    conditions.append(no_op_condition)
+
                 task_id = f"etl-job-{i}"
                 tasks.append(
                     TapisJobTask(**{
@@ -224,14 +254,7 @@ class ETLPipelines(RestrictedAPIView):
                         "type": "tapis_job",
                         "tapis_job_def": job,
                         "depends_on": [{"id": last_task_id}],
-                        "conditions": [
-                            {
-                                "eq": [
-                                    {"args": "RESUBMIT_OUTBOUND"},
-                                    None
-                                ]
-                            }
-                        ]
+                        "conditions": conditions
                     })
                 )
                 last_task_id = task_id
