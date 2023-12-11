@@ -321,8 +321,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             except ConditionalExpressionEvalError as e:
                 error = e
                 self.state.ctx.logger.error(e)
-                task_result = TaskResult(0, errors=[e])
-
+                task_result = TaskResult(1, errors=[e])
 
         # Execute the task
         if not skip and error == None:
