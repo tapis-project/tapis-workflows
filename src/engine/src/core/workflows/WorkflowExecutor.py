@@ -26,6 +26,7 @@ from errors.tasks import (
     MissingInitialTasksError,
     InvalidDependenciesError,
     CycleDetectedError,
+    ConditionalExpressionEvalError
 )
 from core.middleware.archivers import S3Archiver, IRODSArchiver
 from conf.constants import BASE_WORK_DIR
@@ -298,8 +299,8 @@ class WorkflowExecutor(Worker, EventPublisher):
 
     @interceptable()
     def _start_task(self, task):
-        # Check if any of the previous task was skipped. If any were and the current
-        # task's dependency specifies a can_skip to False for any of the skipped tasks,
+        # Check if any of the previous tasks were skipped. If yes, and the current
+        # task's dependency specifies a can_skip == False for any of the skipped tasks,
         # this task will also be skipped
         skip = False
         for dep in task.depends_on:
@@ -307,17 +308,24 @@ class WorkflowExecutor(Worker, EventPublisher):
                 skip = True
                 break
         
-        # Determine if the task should be skipped
-        if not skip:
-            # Evaluate the task's conditions if the previous task was not skipped
-            evaluator = self.container.load("ConditionalExpressionEvaluator")
-            skip = not evaluator.evaluate_all(task.conditions)
-
         # Default TaskResult is a task skipped. Will be overwritten if task not skipped
         task_result = TaskResult(-1)
 
-        # Execute the task
+        # Determine if the task should be skipped
+        error = None
         if not skip:
+            try:
+                # Evaluate the task's conditions if the previous task was not skipped
+                evaluator = self.container.load("ConditionalExpressionEvaluator")
+                skip = not evaluator.evaluate_all(task.conditions)
+            except ConditionalExpressionEvalError as e:
+                error = e
+                self.state.ctx.logger.error(e)
+                task_result = TaskResult(0, errors=[e])
+
+
+        # Execute the task
+        if not skip and error == None:
             # Log the task status
             self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
 

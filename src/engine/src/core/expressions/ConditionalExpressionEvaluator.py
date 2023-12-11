@@ -9,8 +9,8 @@ from owe_python_sdk.schema import (
     ConditionalExpression,
     ConditionalExpressions
 )
-
 from core.expressions import OperandResolver
+from errors.tasks import ConditionalExpressionEvalError, OperandResolutionError
 
 
 class ConditionalExpressionEvaluator:
@@ -31,19 +31,22 @@ class ConditionalExpressionEvaluator:
         return all(evaluations)
 
     def evaluate(self, condition: ConditionalExpression):
-        operator = list(condition.keys())[0] # There will only ever be one key in a condition.
-        operands = condition[operator]
-        if operator in self._comparison_operators:
-            return self._comparison(operator, operands)
+        try:
+            operator = list(condition.keys())[0] # There will only ever be one key in a condition.
+            operands = condition[operator]
+            if operator in self._comparison_operators:
+                return self._comparison(operator, operands)
 
-        if operator in self._membership_operators:
-            return self._membership(operator, operands)
-        
-        if operator == "not":
-            return not self.evaluate(operands)
+            if operator in self._membership_operators:
+                return self._membership(operator, operands)
             
-        if operator in self._logical_operators:
-            return self._logical(operator, operands)
+            if operator == "not":
+                return not self.evaluate(operands)
+                
+            if operator in self._logical_operators:
+                return self._logical(operator, operands)
+        except OperandResolutionError as e:
+            raise ConditionalExpressionEvalError(e)
 
     def _comparison(self, operator, operands):
         resolved_operands = [
