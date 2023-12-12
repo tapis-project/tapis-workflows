@@ -312,19 +312,18 @@ class WorkflowExecutor(Worker, EventPublisher):
         task_result = TaskResult(-1)
 
         # Determine if the task should be skipped
-        error = None
+        expression_error = False
         if not skip:
             try:
                 # Evaluate the task's conditions if the previous task was not skipped
                 evaluator = self.container.load("ConditionalExpressionEvaluator")
                 skip = not evaluator.evaluate_all(task.conditions)
             except ConditionalExpressionEvalError as e:
-                error = e
-                self.state.ctx.logger.error(e)
-                task_result = TaskResult(1, errors=[e])
+                expression_error = True
+                task_result = TaskResult(1, errors=[str(e)])
 
         # Execute the task
-        if not skip and error == None:
+        if not skip and not expression_error:
             # Log the task status
             self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
 
