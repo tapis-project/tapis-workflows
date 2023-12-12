@@ -46,7 +46,7 @@ class ConditionalExpressionEvaluator:
             if operator in self._logical_operators:
                 return self._logical(operator, operands)
         except OperandResolutionError as e:
-            raise ConditionalExpressionEvalError(str(e))
+            raise ConditionalExpressionEvalError(f"Error evaluating conditional expression: {str(e)}")
 
     def _comparison(self, operator, operands):
         resolved_operands = [
