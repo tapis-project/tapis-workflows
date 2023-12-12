@@ -225,7 +225,7 @@ class ETLPipelines(RestrictedAPIView):
                         "output_id": "ACTIVE_MANIFEST"
                     }
                 },
-                None
+                "null"
             ]
         }
 
