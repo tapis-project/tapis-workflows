@@ -59,6 +59,7 @@ class TapisJob(TaskExecutor):
 
             # Return with success if not polling
             if not self.task.poll:
+                self._set_output("LAST_STATUS", job.status)
                 return self._task_result(0)
             
             # Keep polling until the job is complete
@@ -91,9 +92,12 @@ class TapisJob(TaskExecutor):
                         flag="w"
                     )
 
+                self._set_output("LAST_STATUS", job.status)
                 return self._task_result(0)
-                
+            
+            self._set_output("LAST_STATUS", job.status)
             return self._task_result(1, errors=[f"Job '{job.name}' ended with status {job.status}. Last Message: {job.lastMessage}"])
                 
         except Exception as e:
+            self._set_output("LAST_STATUS", json.dumps(None))
             return self._task_result(1, errors=[str(e)])
