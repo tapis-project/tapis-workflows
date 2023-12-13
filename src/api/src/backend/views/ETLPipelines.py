@@ -274,10 +274,12 @@ class ETLPipelines(RestrictedAPIView):
             # Update the input of the update inbound manifest task to include
             # the status output from the last tapis job task
             update_inbound_manifest_task.input["LAST_TASK_STATUS"] = TaskInputSpec(
-                value_from=TaskOutputRef(
-                    task_id=last_task_id,
-                    output_id="STATUS"
-                )
+                value_from={
+                    "task_output": TaskOutputRef(
+                        task_id=last_task_id,
+                        output_id="STATUS"
+                    )
+                }
             )
         except ValidationError as e:
             return BadRequest(str(e))
