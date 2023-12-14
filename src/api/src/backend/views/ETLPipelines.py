@@ -275,13 +275,15 @@ class ETLPipelines(RestrictedAPIView):
             # the status output from the last tapis job task
             update_inbound_manifest_task.input["LAST_TASK_STATUS"] = TaskInputSpec(
                 value_from={
-                    "task_output": TaskOutputRef(
-                        task_id=last_task_id,
-                        output_id="STATUS"
-                    )
+                    "task_output": {
+                        "task_id": last_task_id,
+                        "output_id": "STATUS"
+                    }
                 }
             )
         except ValidationError as e:
+            # Delete the pipeline
+            pipeline.delete()
             return BadRequest(str(e))
         
         # Add the tasks to the database

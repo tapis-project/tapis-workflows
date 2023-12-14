@@ -274,7 +274,7 @@ class SpecWithValue(Spec):
         )]) < 1
         if (not is_dict or (is_dict and is_valid)):
             raise TypeError(
-                "Task Input Value Error: 'value_from' property must be a single key-value pair where the key is oneOf ['env', 'args', 'task_input', 'host', 'secret'] and the value is a non-empty string if key is oneOf ['env', 'args'] or an object if key is oneOf ['task_input', 'host', 'secret']"
+                "Task Input Value Error: 'value_from' property must be a single key-value pair where the key is oneOf ['env', 'args', 'task_output', 'host', 'secret'] and the value is a non-empty string if key is oneOf ['env', 'args'] or an object if key is oneOf ['task_output', 'host', 'secret']"
             )
         return value
 
