@@ -20,8 +20,7 @@ from backend.views.http.requests import (
     TemplateTask,
     TapisJobTask,
     TaskDependency,
-    TaskInputSpec,
-    TaskOutputRef
+    TaskInputSpec
 )
 from backend.views.http.etl import TapisETLPipeline
 from backend.models import (
@@ -233,6 +232,7 @@ class ETLPipelines(RestrictedAPIView):
 
         # Create a tapis job task for each job provided in the request.
         tasks = []
+        job_tasks = []
         try:
             for i, job in enumerate(body.jobs, start=1):
                 # Set up the conditions for the job to run
@@ -250,37 +250,36 @@ class ETLPipelines(RestrictedAPIView):
                     conditions.append(no_op_condition)
 
                 task_id = f"etl-job-{i}"
-                tasks.append(
-                    TapisJobTask(**{
+                tapis_job_task = TapisJobTask(**{
                         "id": task_id,
                         "type": "tapis_job",
                         "tapis_job_def": job,
                         "depends_on": [{"id": last_task_id}],
                         "conditions": conditions
                     })
-                )
+                tasks.append(tapis_job_task)
+                job_tasks.append(tapis_job_task)
                 last_task_id = task_id
 
             # Add the tasks from the template to the tasks list
             tasks.extend([TemplateTask(**task) for task in pipeline_template.get("tasks")])
 
-            # Update the dependecies of the update-inbound-manifest task to
-            # include the last tapis job task
-            update_inbound_manifest_task = next(filter(lambda t: t.id == "update-inbound-manifest", tasks))
-            update_inbound_manifest_task.depends_on.append(
-                TaskDependency(id=last_task_id, can_fail=True)
-            )
+            # Update the dependecies of the status-reduce task to
+            # include all tapis-job tasks
+            status_reduce_task = next(filter(lambda t: t.id == "status-reduce", tasks))
+            for job_task in job_tasks:
+                status_reduce_task.depends_on.append(
+                    TaskDependency(id=job_task.id, can_fail=True)
+                )
 
-            # Update the input of the update inbound manifest task to include
-            # the status output from the last tapis job task
-            update_inbound_manifest_task.input["LAST_TASK_STATUS"] = TaskInputSpec(
-                value_from={
-                    "task_output": {
-                        "task_id": last_task_id,
-                        "output_id": "STATUS"
+                status_reduce_task.input[f"{job_task.id}_JOB_STATUS"] = TaskInputSpec(
+                    value_from={
+                        "task_output": {
+                            "task_id": job_task.id,
+                            "output_id": "STATUS"
+                        }
                     }
-                }
-            )
+                )
         except ValidationError as e:
             # Delete the pipeline
             pipeline.delete()

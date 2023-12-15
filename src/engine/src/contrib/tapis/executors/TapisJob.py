@@ -99,5 +99,5 @@ class TapisJob(TaskExecutor):
             return self._task_result(1, errors=[f"Job '{job.name}' ended with status {job.status}. Last Message: {job.lastMessage}"])
                 
         except Exception as e:
-            self._set_output("STATUS", json.dumps(None), flag="w")
+            self._set_output("STATUS", "FAILED", flag="w")
             return self._task_result(1, errors=[str(e)])
