@@ -284,6 +284,10 @@ class ETLPipelines(RestrictedAPIView):
             # Delete the pipeline
             pipeline.delete()
             return BadRequest(str(e))
+        except Exception as e:
+            # Delete the pipeline
+            pipeline.delete()
+            return ServerErrorResp(str(e))
         
         # Add the tasks to the database
         for task in tasks:
