@@ -15,6 +15,16 @@ class ExecutionContext:
         input_var = os.environ.get(INPUT_PREFIX + key, default=default)
 
         return input_var
+    
+    def find_inputs(self, contains=None):
+        keys = list(os.envrion.keys())
+        if contains == None: return keys
+        ids = []
+        for _id in keys:
+            if contains in _id:
+                ids.append(_id)
+
+        return ids
 
     def set_output(self, _id, value, encoding=None):
         flag = "wb"
@@ -25,6 +35,7 @@ class ExecutionContext:
 
         with open(os.path.join(self.output_dir, _id), flag, encoding=encoding) as file:
             file.write(value)
+
 
     def stderr(self, code: int, message):
         if code < 1:
