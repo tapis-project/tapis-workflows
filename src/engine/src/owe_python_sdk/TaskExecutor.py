@@ -1,6 +1,7 @@
 import os
 
 from kubernetes import config, client
+from kubernetes.client.exceptions import ApiException
 
 from owe_python_sdk.events.types import TASK_TERMINATED
 from owe_python_sdk.events import EventPublisher, EventExchange, Event
@@ -101,22 +102,27 @@ class TaskExecutor(EventPublisher):
         #self.logger.info(f"{TSTR} {self.ctx.idempotency_key} {self.task.id} [TASK EXECUTOR CLEANUP]")
 
         for resource in self._resources:
-            # Jobs and Job Pods
-            if resource.type == ResourceType.job:
-                self.batch_v1_api.delete_namespaced_job(
-                    name=resource.job.metadata.name,
-                    namespace=KUBERNETES_NAMESPACE,
-                    body=client.V1DeleteOptions(propagation_policy="Background"),
-                )
-                continue
+            try:
+                # Jobs and Job Pods
+                if resource.type == ResourceType.job:
+                    self.batch_v1_api.delete_namespaced_job(
+                        name=resource.job.metadata.name,
+                        namespace=KUBERNETES_NAMESPACE,
+                        body=client.V1DeleteOptions(propagation_policy="Background"),
+                    )
+                    continue
 
-            # ConfigMaps
-            if resource.type == ResourceType.configmap:
-                self.core_v1_api.delete_namespaced_config_map(
-                    name=resource.configmap.metadata.name,
-                    namespace=KUBERNETES_NAMESPACE,
-                )
-                continue
+                # ConfigMaps
+                if resource.type == ResourceType.configmap:
+                    self.core_v1_api.delete_namespaced_config_map(
+                        name=resource.configmap.metadata.name,
+                        namespace=KUBERNETES_NAMESPACE,
+                    )
+                    continue
+            except ApiException as e:
+                self.logger.error(f"{TSTR} {self.ctx.idempotency_key} {self.task.id} [ERROR] {self.__class__.__name__} | {e}")
+            except Exception as e:
+                self.logger.error(f"{TSTR} {self.ctx.idempotency_key} {self.task.id} [ERROR] {self.__class__.__name__} | Unexpected Error: {e}")
 
         if terminating:
             self.logger.info(f"{TSTR} {self.ctx.idempotency_key} {self.task.id} [TERMINATED] {self.__class__.__name__}")

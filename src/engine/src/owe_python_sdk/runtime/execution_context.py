@@ -17,7 +17,7 @@ class ExecutionContext:
         return input_var
     
     def find_inputs(self, contains=None):
-        keys = list(os.envrion.keys())
+        keys = list(os.environ.keys())
         if contains == None: return keys
         ids = []
         for _id in keys:
