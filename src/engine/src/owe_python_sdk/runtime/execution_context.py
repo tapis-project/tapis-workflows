@@ -19,7 +19,7 @@ class ExecutionContext:
     def find_inputs(self, contains=None):
         keys = list(os.environ.keys())
         if contains == None: return keys
-        ids = [key for key in keys if contains in key and print(key) == None]
+        ids = [key.replace(INPUT_PREFIX, "") for key in keys if contains in key and print(key) == None]
         return ids
 
     def set_output(self, _id, value, encoding=None):
