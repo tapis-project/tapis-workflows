@@ -249,7 +249,7 @@ class ETLPipelines(RestrictedAPIView):
                 if i == 1:
                     conditions.append(no_op_condition)
 
-                task_id = f"etl-job-{i}"
+                task_id = f"etl_job_{i}"
                 tapis_job_task = TapisJobTask(**{
                         "id": task_id,
                         "type": "tapis_job",
