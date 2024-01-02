@@ -215,6 +215,7 @@ class Function(TaskExecutor):
             name="_OWE_ENTRYPOINT_FILE_PATH",
             value=os.path.join(self.task.container_exec_dir, entrypoint_filename)
         )
+
         # If the task has an entrypoint defined, set the code to be executed in the entrypoint
         # to the bootstrap code 
         if self.task.entrypoint != None:
@@ -269,11 +270,6 @@ class Function(TaskExecutor):
 
         entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
         args = [f"{install_cmd} {entrypoint_cmd}"]
-
-        print(f"\n\nFUNCTION {self.task.id}")
-        print("COMMAND", command)
-        print("ARGS", args)
-        print("ENTRYPOINT ENV VAR", entrypoint_env_var)
 
         return ContainerDetails(
             image=self.task.runtime,

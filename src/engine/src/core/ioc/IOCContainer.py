@@ -3,15 +3,16 @@ class IOCContainer:
         self._configurations = {}
         self._cache = {}
 
+    # Adds the handler that will be return - and if specified, cache - an
+    # instance of a class 
     def register(self, key, handler: callable, as_singleton=False):
         self._configurations[key] = {
             "handler": handler,
             "as_singleton": as_singleton
         }
 
-    # NOTE *args and **kwargs not really implemented in handlers, but good
-    # to leave it for extensibility. Perhaps in the future, we may want the object
-    # loading to be configurable.
+    # Loads an instance from the cache if registered as a singleton, or 
+    # instantiates a new object by calling the registered handler
     def load(self, key):
         if key in self._cache:
             return self._cache[key]
