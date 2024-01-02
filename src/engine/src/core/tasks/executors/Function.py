@@ -34,7 +34,6 @@ class ContainerDetails:
         self.env = env
 
 
-# TODO Review the Kubernetes attack surface guide.
 # TODO Remove the kubernetes token from the container(s)?
 class Function(TaskExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
@@ -270,6 +269,11 @@ class Function(TaskExecutor):
 
         entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
         args = [f"{install_cmd} {entrypoint_cmd}"]
+
+        print(f"\n\nFUNCTION {self.task.id}")
+        print("COMMAND", command)
+        print("ARGS", args)
+        print("ENTRYPOINT ENV VAR", entrypoint_env_var)
 
         return ContainerDetails(
             image=self.task.runtime,
