@@ -549,7 +549,7 @@ class WorkflowExecutor(Worker, EventPublisher):
 
         # Persist each arg to files in the pipeline file system
         arg_value_file_repo = self.container.load("ArgValueFileRepository")
-        for key in self.state.ctx.pipeline.args:
+        for key in self.state.ctx.args:
             arg_value_file_repo.save(
                 self.state.ctx.pipeline.args_dir + key,
                 self.state.ctx.pipeline.args[key].value
