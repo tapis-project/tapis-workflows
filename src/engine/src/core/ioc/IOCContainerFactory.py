@@ -8,13 +8,17 @@ from core.daos import (
 )
 from core.mappers import (
     ArgMapper,
+    ArgValueFileMapper,
     EnvMapper,
+    EnvVarValueFileMapper,
     TaskMapper,
     TaskOutputMapper
 )
 from core.repositories import (
     ArgRepository,
+    ArgValueFileRepository,
     EnvRepository,
+    EnvVarValueFileRepository,
     GitCacheRepository,
     TaskOutputRepository,
     TaskRepository,
@@ -54,9 +58,21 @@ class IOCContainerFactory:
             )
         )
 
+        container.register("ArgValueFileMapper",
+            lambda: ArgValueFileMapper(
+                container.load("FileSystemDAO")
+            )
+        )
+
         container.register("EnvMapper",
             lambda: EnvMapper(
                 container.load("WorkflowExecutorStateDAO")
+            )
+        )
+
+        container.register("EnvVarValueFileMapper",
+            lambda: EnvVarValueFileMapper(
+                container.load("FileSystemDAO")
             )
         )
 
@@ -78,9 +94,21 @@ class IOCContainerFactory:
             )
         )
 
+        container.register("ArgValueFileRepository",
+            lambda: ArgValueFileRepository(
+                container.load("ArgValueFileMapper")
+            )
+        )
+
         container.register("EnvRepository",
             lambda: EnvRepository(
                 container.load("EnvMapper")
+            )
+        )
+
+        container.register("EnvVarValueFileRepository",
+            lambda: EnvVarValueFileRepository(
+                container.load("EnvVarValueFileMapper")
             )
         )
 

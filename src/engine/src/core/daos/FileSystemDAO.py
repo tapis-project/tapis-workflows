@@ -13,3 +13,11 @@ class FileSystemDAO:
             result = file.read()
 
         return result
+    
+    def write(self, path: str, contents):
+        with open(path, "w") as file:
+            file.write(contents)
+
+    def writebin(self, path: str, contents):
+        with open(path, "wb") as file:
+            file.write(contents)

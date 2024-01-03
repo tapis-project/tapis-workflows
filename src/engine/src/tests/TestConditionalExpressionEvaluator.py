@@ -6,7 +6,7 @@ from core.expressions import (
     ConditionalExpressionEvaluator,
     
 )
-from tests.fixtures.conditional_expressions import (
+from tests.fixtures.expressions import (
     and_true,
     and_false,
     not_op_true,

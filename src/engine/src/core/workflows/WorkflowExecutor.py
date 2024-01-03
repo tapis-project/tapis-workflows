@@ -547,6 +547,23 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Create all of the directories needed for the pipeline to run and persist results and cache
         self._prepare_pipeline_fs()
 
+        # Persist each arg to files in the pipeline file system
+        arg_value_file_repo = self.container.load("ArgValueFileRepository")
+        for key in self.state.ctx.pipeline.args:
+            arg_value_file_repo.save(
+                self.state.ctx.pipeline.args_dir + key,
+                self.state.ctx.pipeline.args[key].value
+            )
+
+        # Persist each arg to files in the pipeline file system
+        env_var_value_file_repo = self.container.load("EnvVarValueFileRepository")
+        for key in self.state.ctx.pipeline.env:
+            env_var_value_file_repo.save(
+                self.state.ctx.pipeline.env_dir + key,
+                self.state.ctx.pipeline.env[key].value
+            )
+            
+
         # template_mapper = TemplateMapper(cache_dir=self.state.ctx.pipeline.git_cache_dir)
         # if self.state.ctx.pipeline.uses != None:
         #     self.state.ctx.pipeline = template_mapper.map(
@@ -593,9 +610,17 @@ class WorkflowExecutor(Worker, EventPublisher):
         # The directory for this particular run of the workflow
         self.state.ctx.pipeline.work_dir = f"{self.state.ctx.pipeline.root_dir}runs/{self.state.ctx.pipeline_run.uuid}/"
         os.makedirs(self.state.ctx.pipeline.work_dir, exist_ok=True)
+        
+        # Create a directory for the pipeline arguments
+        self.state.ctx.pipeline.args_dir = f"{self.state.ctx.pipeline.work_dir}.args/"
+        os.makedirs(self.state.ctx.pipeline.args_dir, exist_ok=True)
+
+        # Create a directory for the environment variables
+        self.state.ctx.pipeline.env_dir = f"{self.state.ctx.pipeline.work_dir}.env/"
+        os.makedirs(self.state.ctx.pipeline.env_dir, exist_ok=True)
 
         # The log file for this pipeline run
-        self.state.ctx.pipeline.log_file = f"{self.state.ctx.pipeline.work_dir}logs.txt"
+        self.state.ctx.pipeline.log_file = f"{self.state.ctx.pipeline.work_dir}.logs.txt"
         
         # Set the work_dir on the WorkflowExecutor as well.
         # NOTE Will be used for cleaning up all the temporary files/dirs after
