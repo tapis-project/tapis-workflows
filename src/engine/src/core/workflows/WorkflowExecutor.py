@@ -552,7 +552,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         for key in self.state.ctx.args:
             arg_value_file_repo.save(
                 self.state.ctx.pipeline.args_dir + key,
-                self.state.ctx.pipeline.args[key].value
+                self.state.ctx.args[key].value
             )
 
         # Persist each arg to files in the pipeline file system
@@ -560,7 +560,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         for key in self.state.ctx.pipeline.env:
             env_var_value_file_repo.save(
                 self.state.ctx.pipeline.env_dir + key,
-                self.state.ctx.pipeline.env[key].value
+                self.state.ctx.env[key].value
             )
             
 
