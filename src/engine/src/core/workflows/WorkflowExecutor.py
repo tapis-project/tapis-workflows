@@ -626,7 +626,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Persist each arg to files in the pipeline file system
         env_var_value_file_repo = self.container.load("EnvVarValueFileRepository")
         env_repo = self.container.load("EnvRepository")
-        for key in self.state.ctx.pipeline.env:
+        for key in self.state.ctx.env:
+            print("KEY", key)
             env_var_value_file_repo.save(
                 self.state.ctx.pipeline.env_dir + key,
                 env_repo.get_value_by_key(key)

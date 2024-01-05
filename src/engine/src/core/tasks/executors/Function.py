@@ -147,7 +147,7 @@ class Function(TaskExecutor):
         else:
             raise Exception(f"Invalid runtime: {self.task.runtime}")
 
-         # Set up env vars for the container
+        # Set up env vars for the container
         env = [
             client.V1EnvVar(
                 name="_OWE_TASK_ID",

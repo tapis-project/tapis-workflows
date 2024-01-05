@@ -374,7 +374,7 @@ class Server:
             return idempotency_key
 
         except (AttributeError, TypeError) as e:
-            logger.info(f"{lbuf('[SERVER]')} ERROR: Failed to resolve idempotency key from provided constraints. {str(e)}. Defaulted to pipeline id '{default_idempotency_key}'")
+            logger.info(f"{lbuf('[SERVER]')} WARNING: Failed to resolve idempotency key from provided constraints. {str(e)}. Defaulted to pipeline id '{default_idempotency_key}'")
             return default_idempotency_key
 
     
