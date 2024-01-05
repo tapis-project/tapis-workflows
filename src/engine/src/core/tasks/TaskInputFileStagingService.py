@@ -64,7 +64,7 @@ class TaskInputFileStagingService:
     def _create_input_(self, task, input_id, value):
         try:
             with open(os.path.join(task.input_dir, input_id), mode="w") as file:
-                if value == None: value == ""
+                if value == None: value = ""
                 file.write(str(value))
         except Exception as e:
             raise TaskInputStagingError(f"Error while staging input: {e}") 
