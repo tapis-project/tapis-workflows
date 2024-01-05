@@ -18,7 +18,7 @@ class TaskInputFileStagingService:
         self,
         value_from_service: ValueFromService
     ):
-        self.value_from_service = value_from_service
+        self._value_from_service = value_from_service
         
     def stage(self, task: Task):
         """Iterates over all of the items in the task input dictionary, fetches
