@@ -25,3 +25,6 @@ class OperandResolutionError(WorkflowsBaseException):
 
 class ConditionalExpressionEvalError(WorkflowsBaseException):
     pass
+
+class TaskInputStagingError(WorkflowsBaseException):
+    pass

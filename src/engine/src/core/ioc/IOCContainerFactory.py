@@ -1,5 +1,3 @@
-from functools import partial
-
 from core.ioc import IOCContainer
 from core.state import ReactiveState
 from core.daos import (
@@ -24,6 +22,7 @@ from core.repositories import (
     TaskRepository,
     TemplateRepository
 )
+from core.tasks.TaskInputFileStagingService import TaskInputFileStagingService
 from core.workflows import (
     GraphValidator,
     ValueFromService
@@ -118,6 +117,12 @@ class IOCContainerFactory:
         #         container.load("GitCacheMapper")
         #     )
         # )
+
+        container.register("TaskInputFileStagingService",
+            lambda: TaskInputFileStagingService(
+                container.load("ValueFromService")
+            )
+        )
 
         container.register("TaskOutputRepository",
             lambda: TaskOutputRepository(

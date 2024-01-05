@@ -15,7 +15,6 @@ from utils import get_flavor
 from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars, gen_resource_name
 from core.tasks import function_bootstrap
 from core.repositories import GitCacheRepository
-from errors import WorkflowTerminated
 
 
 class ContainerDetails:
