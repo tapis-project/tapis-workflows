@@ -19,7 +19,8 @@ class TaskInputFileStagingService:
         value_from_service: ValueFromService
     ):
         self._value_from_service = value_from_service
-        
+    
+    # TODO Improve error handling below. Catch specific errors from the value from service
     def stage(self, task: Task):
         """Iterates over all of the items in the task input dictionary, fetches
         the values from their sources, then creates the files in the task's 
@@ -28,7 +29,8 @@ class TaskInputFileStagingService:
             if input_.value != None:
                 self._create_input_(task, input_id, input_.value)
                 continue
-
+            
+            value = None
             value_from = input_.value_from
             key = list(value_from.keys())[0] # NOTE Should only have 1 key
             if key == "task_output":
@@ -38,21 +40,24 @@ class TaskInputFileStagingService:
                         _id=value_from[key].output_id
                     )
                 except Exception as e:
-                    raise TaskInputStagingError(f"No output found for task '{value_from[key].task_id}' with output id of '{value_from[key].output_id}' | {e}")
+                    if input_.required:
+                        raise TaskInputStagingError(f"No output found for task '{value_from[key].task_id}' with output id of '{value_from[key].output_id}' | {e}")
             if key == "args":
                 try:
                     value = self._value_from_service.get_arg_value_by_key(
                         value_from[key]
                     )
                 except Exception as e:
-                    raise TaskInputStagingError(f"Error attempting to fetch value from args at key '{value_from[key]}' | {e}")
+                    if input_.required:
+                        raise TaskInputStagingError(f"Error attempting to fetch value from args at key '{value_from[key]}' | {e}")
             if key == "env":
                 try:
                     value = self._value_from_service.get_env_value_by_key(
                         value_from[key]
                     )
                 except Exception as e:
-                    raise TaskInputStagingError(f"Error attempting to fetch value from env at key '{value_from[key]}' | {e}")
+                    if input_.required:
+                        raise TaskInputStagingError(f"Error attempting to fetch value from env at key '{value_from[key]}' | {e}")
                 
             self._create_input_(task, input_id, value)
 
