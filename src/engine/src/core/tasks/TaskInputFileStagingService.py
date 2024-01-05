@@ -27,6 +27,7 @@ class TaskInputFileStagingService:
         for input_id, input_ in task.input.items():
             if input_.value != None:
                 self._create_input_(task, input_id, input_.value)
+                continue
 
             value_from = input_.value_from
             key = list(value_from.keys())[0] # NOTE Should only have 1 key
