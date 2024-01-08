@@ -54,7 +54,7 @@ class Server:
         workers, establishes a connection with RabbitMQ, creates the channel, 
         exchanges, and queues, and begins consuming from the inbound queue"""
 
-        logger.info(f"{lbuf('[SERVER]')} STARTING")
+        logger.info(f"{lbuf('[SERVER]')} Starting server")
 
         # Initialize plugins
         self.plugins = load_plugins(PLUGINS)
@@ -70,7 +70,7 @@ class Server:
                 "plugins": self.plugins
             }
         )
-        logger.debug(f"{lbuf('[SERVER]')} WORKERS INITIALIZED ({self.worker_pool.count()})")
+        logger.debug(f"{lbuf('[SERVER]')} Workers initialized ({self.worker_pool.count()})")
 
         # Connect to the message broker
         connection = self._connect()
@@ -255,7 +255,7 @@ class Server:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        logger.info(f"{lbuf('[SERVER]')} CONNECTING TO BROKER")
+        logger.info(f"{lbuf('[SERVER]')} Connecting to message broker")
 
         connected = False
         connection_attempts = 0
@@ -265,17 +265,15 @@ class Server:
                 connection = pika.BlockingConnection(connection_parameters)
                 connected = True
             except Exception:
-                logger.info(f"{lbuf('[SERVER]')} [CONNECTION FAILED] ({connection_attempts})")
+                logger.info(f"{lbuf('[SERVER]')} Connection failed ({connection_attempts})")
                 time.sleep(CONNECTION_RETRY_DELAY)
 
         # Kill the build service if unable to connect
         if connected == False:
-            logger.critical(
-                f"\nError: Maximum connection attempts reached({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker."
-            )
+            logger.critical(f"{lbuf('[SERVER]')} Error: Maximum connection attempts reached ({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker.")
             sys.exit(1)
 
-        logger.info(f"{lbuf('[SERVER]')} CONNECTED")
+        logger.info(f"{lbuf('[SERVER]')} Connected; Ready to recieve workflow submissions")
 
         return connection
 
@@ -326,12 +324,12 @@ class Server:
     def _declare_queue_retry(self, channel, queue, exclusive=True, retry_count=0, max_retries=25):
         max_retries = 25
         try:
+            logger.info(f"{lbuf('[SERVER]')} Declaring Queue '{queue}' | Attempts ({retry_count})")
             channel.queue_declare(queue=queue, exclusive=exclusive)
         except ChannelClosedByBroker as e:
-            logger.info(f"{lbuf('[SERVER]')} Warning: Duplicate Submission Policy of 'DEFER' not implemented. Handling as 'ALLOW'")
             time.sleep(CONNECTION_RETRY_DELAY)
             if retry_count >= max_retries:
-                logger.critical(f"\nExclusive Queue Declaration Error: Maximum retry attempts reached({MAX_CONNECTION_ATTEMPTS}) | {e}")
+                logger.critical(f"{lbuf('[SERVER]')} Exclusive Queue Declaration Error: Maximum retry attempts reached ({MAX_CONNECTION_ATTEMPTS}) for queue {queue} | {e}")
                 sys.exit(1)
             retry_count+=1
             self._declare_queue_retry(channel, queue, exclusive=exclusive, retry_count=retry_count)
@@ -377,7 +375,7 @@ class Server:
             return idempotency_key
 
         except (AttributeError, TypeError) as e:
-            logger.info(f"{lbuf('[SERVER]')} WARNING: Failed to resolve idempotency key from provided constraints. {str(e)}. Defaulted to pipeline id '{default_idempotency_key}'")
+            logger.info(f"{lbuf('[SERVER]')} Warning: Failed to resolve idempotency key from provided constraints. {str(e)}. Defaulted to pipeline id '{default_idempotency_key}'")
             return default_idempotency_key
 
     
