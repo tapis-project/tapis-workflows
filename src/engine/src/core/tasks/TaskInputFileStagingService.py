@@ -65,6 +65,7 @@ class TaskInputFileStagingService:
         try:
             with open(os.path.join(task.input_dir, input_id), mode="w") as file:
                 if value == None: value = ""
+                print(f"WRITING {input_id} |", type(value), "|", value)
                 file.write(str(value))
         except Exception as e:
             raise TaskInputStagingError(f"Error while staging input: {e}") 
