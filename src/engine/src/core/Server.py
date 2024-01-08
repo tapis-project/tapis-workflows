@@ -321,18 +321,18 @@ class Server:
     def _get_active_workers(self, key):
         return [worker for worker in self.active_workers if worker.key == key]
     
-    def _declare_queue_retry(self, channel, queue, exclusive=True, retry_count=0, max_retries=25):
+    def _declare_queue(self, channel, queue, exclusive=True, retry_count=0, max_retries=25):
         max_retries = 25
         try:
             logger.info(f"{lbuf('[SERVER]')} Declaring Queue '{queue}' | Attempts ({retry_count})")
-            channel.queue_declare(queue=queue, exclusive=exclusive)
+            return channel.queue_declare(queue=queue, exclusive=exclusive)
         except ChannelClosedByBroker as e:
             time.sleep(CONNECTION_RETRY_DELAY)
             if retry_count >= max_retries:
                 logger.critical(f"{lbuf('[SERVER]')} Exclusive Queue Declaration Error: Maximum retry attempts reached ({MAX_CONNECTION_ATTEMPTS}) for queue {queue} | {e}")
                 sys.exit(1)
             retry_count+=1
-            self._declare_queue_retry(channel, queue, exclusive=exclusive, retry_count=retry_count)
+            self._declare_queue(channel, queue, exclusive=exclusive, retry_count=retry_count)
 
     def _resolve_idempotency_key(self, request):
         # Check the context's meta for an idempotency key. This will be used
