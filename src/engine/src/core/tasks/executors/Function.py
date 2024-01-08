@@ -1,4 +1,4 @@
-import os, base64, time, shutil, inspect
+import os, base64, time, shutil, inspect, json
 
 from kubernetes import client
 
@@ -177,17 +177,21 @@ class Function(TaskExecutor):
                 name="_OWE_EXEC_DIR",
                 value=os.path.join(self.task.container_exec_dir)
             ),
+            client.V1EnvVar(
+                name="_OWE_INPUT_SCHEMA",
+                value=json.dumps(self.task.input.dict())
+            )
         ]
 
-        # Convert defined workflow inputs into the function containers env vars with
-        # the open workflow engine input prefix
-        container_details.env = container_details.env + env + input_to_k8s_env_vars(
-            self.task.input,
-            self.ctx.pipeline.work_dir,
-            env=self.ctx.env,
-            args=self.ctx.args,
-            prefix="_OWE_WORKFLOW_INPUT_"
-        )
+        # # Convert defined workflow inputs into the function containers env vars with
+        # # the open workflow engine input prefix
+        # container_details.env = container_details.env + env + input_to_k8s_env_vars(
+        #     self.task.input,
+        #     self.ctx.pipeline.work_dir,
+        #     env=self.ctx.env,
+        #     args=self.ctx.args,
+        #     prefix="_OWE_WORKFLOW_INPUT_"
+        # )
         
         return container_details
 
@@ -196,13 +200,13 @@ class Function(TaskExecutor):
             file.write(base64.b64decode(code))
     
     # FIXME
-    def _setup_linux_container(self):
-        # Create entrypoint file that will be mounted into the container via NFS mount.
-        # The code provided in the request is expected to be base64 encoded. Decode, then
-        # encode in UTF-8
-        entrypoint_filename = "entrypoint.sh"
-        local_entrypoint_file_path = os.path.join(self.task.exec_dir, entrypoint_filename)
-        self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
+    # def _setup_linux_container(self):
+    #     # Create entrypoint file that will be mounted into the container via NFS mount.
+    #     # The code provided in the request is expected to be base64 encoded. Decode, then
+    #     # encode in UTF-8
+    #     entrypoint_filename = "entrypoint.sh"
+    #     local_entrypoint_file_path = os.path.join(self.task.exec_dir, entrypoint_filename)
+    #     self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
 
     def _setup_python_container(self):
         # Create entrypoint file that will be mounted into the container via NFS mount.

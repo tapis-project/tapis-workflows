@@ -10,16 +10,24 @@ class ExecutionContext:
         self.output_dir = runtime.OUTPUT_DIR
         self.input_dir = runtime.INPUT_DIR
         self.exec_dir = runtime.EXEC_DIR
+        self.input_schema = runtime.INPUT_SCHEMA
+        self.input_ids = list(self.input_schema.keys())
 
-    def get_input(self, key, default=None):
-        input_var = os.environ.get(INPUT_PREFIX + key, default=default)
+    def get_input(self, input_id, default=None):
+        contents = None
+        try:
+            with open(os.path.join(self.input_id, input_id), mode="r") as file:
+                contents = file.read()
+        except FileNotFoundError:
+            return default
 
-        return input_var
+        if contents == "": return None
+
+        return contents
     
     def find_inputs(self, contains=None):
-        keys = list(os.environ.keys())
-        if contains == None: return keys
-        ids = [key.replace(INPUT_PREFIX, "") for key in keys if contains in key and print(key) == None]
+        if contains == None: return self.input_ids
+        ids = [input_id for input_id in self.input_ids if contains in input_id]
         return ids
 
     def set_output(self, _id, value, encoding=None):
@@ -42,7 +50,7 @@ class ExecutionContext:
 
         sys.exit(code)
 
-    def stdout(self, value, code=0):
+    def stdout(self, value):
         with open(self._runtime.STDOUT, "w") as file:
             if type(value) == dict:
                 value = json.dumps(value)

@@ -1,4 +1,4 @@
-import os
+import os, json
 
 from owe_python_sdk.constants import STDOUT, STDERR
 
@@ -13,3 +13,4 @@ class Runtime:
         self.TASK_ID = os.environ.get("_OWE_TASK_ID")
         self.STDOUT = os.path.join(self.OUTPUT_DIR, STDOUT)
         self.STDERR = os.path.join(self.OUTPUT_DIR, STDERR)
+        self.INPUT_SCHEMA = json.loads(os.environ.get("_OWE_INPUT_SCHEMA"))
