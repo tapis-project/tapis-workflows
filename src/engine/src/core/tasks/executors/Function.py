@@ -179,7 +179,9 @@ class Function(TaskExecutor):
             ),
             client.V1EnvVar(
                 name="_OWE_INPUT_SCHEMA",
-                value=json.dumps(self.task.input.dict())
+                value=json.dumps({
+                    key: val.dict() for key, val in self.task.input.items()
+                })
             )
         ]
 
