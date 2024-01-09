@@ -12,7 +12,7 @@ from conf.constants import (
 )
 from core.resources import JobResource
 from utils import get_flavor
-from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars, gen_resource_name
+from utils.k8s import flavor_to_k8s_resource_reqs, gen_resource_name
 from core.tasks import function_bootstrap
 from core.repositories import GitCacheRepository
 
@@ -188,13 +188,6 @@ class Function(TaskExecutor):
         # Convert defined workflow inputs into the function containers env vars with
         # the open workflow engine input prefix
         container_details.env = container_details.env + env
-        # + input_to_k8s_env_vars(
-        #     self.task.input,
-        #     self.ctx.pipeline.work_dir,
-        #     env=self.ctx.env,
-        #     args=self.ctx.args,
-        #     prefix="_OWE_WORKFLOW_INPUT_"
-        # )
         
         return container_details
 
