@@ -16,7 +16,7 @@ class ExecutionContext:
     def get_input(self, input_id, default=None):
         contents = None
         try:
-            with open(os.path.join(self.input_id, input_id), mode="r") as file:
+            with open(os.path.join(self.input_dir, input_id), mode="r") as file:
                 contents = file.read()
         except FileNotFoundError:
             return default
