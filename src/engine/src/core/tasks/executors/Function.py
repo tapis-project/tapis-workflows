@@ -185,9 +185,10 @@ class Function(TaskExecutor):
             )
         ]
 
-        # # Convert defined workflow inputs into the function containers env vars with
-        # # the open workflow engine input prefix
-        # container_details.env = container_details.env + env + input_to_k8s_env_vars(
+        # Convert defined workflow inputs into the function containers env vars with
+        # the open workflow engine input prefix
+        container_details.env = container_details.env + env
+        # + input_to_k8s_env_vars(
         #     self.task.input,
         #     self.ctx.pipeline.work_dir,
         #     env=self.ctx.env,
