@@ -264,9 +264,9 @@ class ETLPipelines(RestrictedAPIView):
             # Add the tasks from the template to the tasks list
             tasks.extend([TemplateTask(**task) for task in pipeline_template.get("tasks")])
 
-            # Update the dependecies of the status-reduce task to
+            # Update the dependecies of the inbound-status-reduce task to
             # include all tapis-job tasks
-            status_reduce_task = next(filter(lambda t: t.id == "status-reduce", tasks))
+            status_reduce_task = next(filter(lambda t: t.id == "inbound-status-reduce", tasks))
             for job_task in job_tasks:
                 status_reduce_task.depends_on.append(
                     TaskDependency(id=job_task.id, can_fail=True)
