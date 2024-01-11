@@ -15,7 +15,7 @@ from backend.views.http.responses.models import ModelListResponse
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
 from backend.views.http.requests import Pipeline, CIPipeline, ImageBuildTask
 from backend.models import (
-    Pipeline,
+    Pipeline as PipelineModel,
     Archive,
     PipelineArchive,
     TASK_TYPE_IMAGE_BUILD
@@ -52,7 +52,7 @@ class Pipelines(RestrictedAPIView):
             return self.list(group)
 
         # Get the pipeline by the id provided in the path params
-        pipeline = Pipeline.objects.filter(
+        pipeline = PipelineModel.objects.filter(
             id=pipeline_id,
             group=group
         ).prefetch_related("tasks").first()
@@ -71,7 +71,7 @@ class Pipelines(RestrictedAPIView):
         return BaseResponse(result=result)
 
     def list(self, group):
-        pipelines = Pipeline.objects.filter(group=group)
+        pipelines = PipelineModel.objects.filter(group=group)
         return ModelListResponse(pipelines)
 
     def post(self, request, group_id, *_, **__):
@@ -112,12 +112,12 @@ class Pipelines(RestrictedAPIView):
         body = prepared_request.body
         
         # Check that the id of the pipeline is unique
-        if Pipeline.objects.filter(id=body.id, group=group).exists():
+        if PipelineModel.objects.filter(id=body.id, group=group).exists():
             return Conflict(f"A Pipeline already exists with the id '{body.id}'")
 
         # Create the pipeline
         try:
-            pipeline = Pipeline.objects.create(
+            pipeline = PipelineModel.objects.create(
                 id=body.id,
                 group=group,
                 owner=request.username,
@@ -178,7 +178,7 @@ class Pipelines(RestrictedAPIView):
             return Forbidden(message="You do not have access to this group")
 
         # Get the pipeline by the id provided in the path params
-        pipeline = Pipeline.objects.filter(
+        pipeline = PipelineModel.objects.filter(
             id=pipeline_id,
             group=group
         ).prefetch_related("tasks").first()
