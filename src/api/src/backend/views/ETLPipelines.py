@@ -167,9 +167,9 @@ class ETLPipelines(RestrictedAPIView):
                         "type": "string",
                         "value": body.local_outbox.manifest_priority
                     },
-                    "GLOBUS_DESTINATION_PATH": {
+                    "REMOTE_INBOX_PATH": {
                         "type": "string",
-                        "value": body.remote_inbox.globus_destination_path
+                        "value": body.remote_inbox.path
                     },
                     "REMOTE_INBOX_SYSTEM_ID": {
                         "type": "string",
