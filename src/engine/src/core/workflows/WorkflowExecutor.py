@@ -316,6 +316,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         if not skip:
             try:
                 # Evaluate the task's conditions if the previous task was not skipped
+                print(f"Evaluating expressions for task {task.id}")
                 evaluator = self.container.load("ConditionalExpressionEvaluator")
                 skip = not evaluator.evaluate_all(task.conditions)
             except ConditionalExpressionEvalError as e:
