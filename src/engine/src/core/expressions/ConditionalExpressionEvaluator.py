@@ -53,7 +53,6 @@ class ConditionalExpressionEvaluator:
             self._operand_resolver.resolve(operand)
             for operand in operands 
         ]
-        print("FIRST OPERAND", resolved_operands[0], "SECOND OPERAND", resolved_operands[1])
         return getattr(operatorlib, operator)(resolved_operands[0], resolved_operands[1])
 
     def _membership(self, _, operands):

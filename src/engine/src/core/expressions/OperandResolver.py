@@ -30,7 +30,6 @@ class OperandResolver:
         
         if key == "args":
             try:
-                print(f"GETTING VALUE FROM ARG '{operand[key]}'")
                 value = self._value_from_service.get_arg_value_by_key(
                     operand[key]
                 )
