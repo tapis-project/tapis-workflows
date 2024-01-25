@@ -51,7 +51,7 @@ class ExecutionContext:
         sys.exit(code)
 
     def stdout(self, value):
-        with open(self._runtime.STDOUT, "w") as file:
+        with open(self._runtime.STDOUT, "a") as file:
             if type(value) == dict:
                 value = json.dumps(value)
 

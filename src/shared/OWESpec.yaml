@@ -41,6 +41,8 @@ tags:
     description: Manage tasks to be executed as part of a workflow. Create, retrieve and delete.
   - name: CI/CD
     description: Create CI/CD-specific workflows (Image builds and http requests).
+  - name: ETL
+    description: Create ETL pipelines within the Tapis ecosystem.
 
 # ------------------------------------------------------------------------------
 # --- Paths -------------------------------------------------------------------
@@ -1801,10 +1803,6 @@ components:
     ExecutionProfile:
       type: object
       properties:
-        duplicate_submission_policy:
-          $ref: '#/components/schemas/EnumDuplicateSubmissionPolicy'
-        flavor:
-          $ref: '#/components/schemas/EnumTaskFlavor'
         invocation_mode:
           $ref: '#/components/schemas/EnumInvocationMode'
         max_retries:
@@ -1815,6 +1813,22 @@ components:
           default: 3600
         retry_policy:
           $ref: '#/components/schemas/EnumRetryPolicy'
+
+    TaskExecutionProfile:
+      allOf:
+        - $ref: '#/components/schemas/ExecutionProfile'
+        - type: object
+          properties:
+            flavor:
+              $ref: '#/components/schemas/EnumTaskFlavor'
+
+    PipelineExecutionProfile:
+      allOf:
+        - $ref: '#/components/schemas/ExecutionProfile'
+        - type: object
+          properties:
+            duplicate_submission_policy:
+              $ref: '#/components/schemas/EnumDuplicateSubmissionPolicy'
 
     BaseArchive:
       type: object
@@ -1884,6 +1898,10 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/ID'
+        description:
+          $ref: '#/components/schemas/DescriptionString'
+        uses:
+          $ref: '#/components/schemas/Uses'
         env:
           $ref: "#/components/schemas/Env"
         params:
@@ -1897,7 +1915,7 @@ components:
           type: string
           format: uuid
         execution_profile:
-          $ref: '#/components/schemas/ExecutionProfile'
+          $ref: '#/components/schemas/PipelineExecutionProfile'
         current_run:
           type: string
           format: uuid
@@ -1970,7 +1988,6 @@ components:
           tapis_actor: "#/components/schemas/TapisActorTask"
           function: "#/components/schemas/FunctionTask"
         
-    
     BaseTask:
       type: object
       required:
@@ -1988,7 +2005,7 @@ components:
         description:
           type: string
         execution_profile:
-          $ref: '#/components/schemas/ExecutionProfile'
+          $ref: '#/components/schemas/TaskExecutionProfile'
         input:
           type: object
           additionalProperties: true
@@ -2071,7 +2088,7 @@ components:
             git_repositories:
               type: array
               items:
-                $ref: "#/components/schemas/GitRepository"
+                $ref: "#/components/schemas/GitCloneDetails"
             runtime:
               $ref: "#/components/schemas/EnumRuntimeEnvironment"
             installer:
@@ -2093,6 +2110,8 @@ components:
         id:
           $ref: "#/components/schemas/ID"
         can_fail:
+          type: boolean
+        can_skip:
           type: boolean
         
     # --- Context ---
@@ -2199,9 +2218,26 @@ components:
           type: string
         branch:
           type: string
-        directory:
-          type: string
+      
 
+    GitCloneDetails:
+      allOf:
+        - $ref: '#/components/schemas/GitRepository'
+        - type: object
+          properties:
+            directory:
+              type: string
+
+    Uses:
+      type: object
+      required:
+        - name
+        - source
+      properties:
+        name:
+          $ref: '#/components/schemas/ID'
+        source:
+          $ref: '#/components/schemas/GitRepository'
 
     # --- String types with constraints ------------------------------------
     ID:
@@ -2362,6 +2398,8 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/ID'
+        GitCloneDetails:
+          $ref: '#/components/schemas/ReqGitCloneDetails'
         archive_ids:
           type: array
           items:
@@ -2398,7 +2436,7 @@ components:
         description:
           type: string
         execution_profile:
-          $ref: "#/components/schemas/ExecutionProfile"
+          $ref: "#/components/schemas/TaskExecutionProfile"
         input:
           type: object
           additionalProperties: true
@@ -2447,7 +2485,7 @@ components:
             url:
               type: string
 
-    ReqContainerRunTask:
+    ReqApplicationTask:
       allOf:
         - $ref: '#/components/schemas/ReqBaseTask'
         - type: object
@@ -2456,6 +2494,16 @@ components:
           properties:
             image:
               type: string
+
+    ReqTemplateTask:
+      allOf:
+        - $ref: '#/components/schemas/ReqBaseTask'
+        - type: object
+          required:
+            - GitCloneDetails
+          properties:
+            GitCloneDetails:
+              $ref: '#/components/schemas/ReqGitCloneDetails'
 
     ReqTapisJobTask:
       allOf:
@@ -2499,7 +2547,7 @@ components:
             git_repositories:
               type: array
               items:
-                $ref: "#/components/schemas/ReqGitRepository"
+                $ref: "#/components/schemas/ReqGitCloneDetails"
             runtime:
               $ref: "#/components/schemas/EnumRuntimeEnvironment"
             installer:
@@ -2514,35 +2562,129 @@ components:
               items:
                 type: string
 
-    ReqGitRepository:
-      type: object
-      properties:
-        url:
-          type: string
-        branch:
-          type: string
-          default: null
-        directory:
-          type: string
-          default: "/"
+    ReqGitCloneDetails:
+      $ref: '#/components/schemas/GitCloneDetails'
 
     ReqTask:
       oneOf:
         - $ref: '#/components/schemas/ReqImageBuildTask'
         - $ref: '#/components/schemas/ReqRequestTask'
-        - $ref: '#/components/schemas/ReqContainerRunTask'
+        - $ref: '#/components/schemas/ReqApplicationTask'
         - $ref: '#/components/schemas/ReqTapisJobTask'
         - $ref: '#/components/schemas/ReqTapisActorTask'
         - $ref: '#/components/schemas/ReqFunctionTask'
+        - $ref: '#/components/schemas/ReqTemplateTask'
       discriminator:
         propertyName: type
         mapping:
           image_build: "#/components/schemas/ReqImageBuildTask"
           request: "#/components/schemas/ReqRequestTask"
-          container_run: "#/components/schemas/ReqContainerRunTask"
+          container_run: "#/components/schemas/ReqApplicationTask"
+          application: "#/components/schemas/ReqApplicationTask"
           tapis_job: "#/components/schemas/ReqTapisJobTask"
           tapis_actor: "#/components/schemas/ReqTapisActorTask"
           function: "#/components/schemas/ReqFunctionTask"
+          template: "#/components/schemas/ReqTemplateTask"
+
+    
+    ########################### ETL
+
+    ReqCreateETLPipeline:
+      type: object
+      required:
+        - id
+        - local_inbox
+        - local_outbox
+        - remote_inbox
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        description:
+          type: string
+        execution_profile:
+          $ref: '#/components/schemas/PipelineExecutionProfile'
+        remote_outbox:
+          $ref: '#/components/schemas/ETLRemoteOutbox'
+        local_inbox:
+          $ref: '#/components/schemas/ETLLocalInbox'
+        local_outbox:
+          $ref: '#/components/schemas/ETLLocalOutbox'
+        remote_inbox:
+          $ref: '#/components/schemas/ETLRemoteInbox'
+
+    ETLLocalIOBox:
+      type: object
+      required:
+        - system_id
+        - data_path
+      properties:
+        system_id:
+          type: string
+        data_path:
+          type: string
+        manifests_path:
+          type: string
+        manifest_generation_policy:
+          $ref: "#/components/schemas/ETLEnumManifestGenerationPolicy"
+        manifest_priority:
+          $ref: "#/components/schemas/ETLEnumManifestPriority"
+          default: 'oldest'
+        exclude_pattern:
+          type: array
+          items:
+            type: string
+
+    ETLRemoteOutbox:
+      type: object
+      additionalProperties: true
+
+    ETLLocalInbox:
+      allOf:
+        - $ref: "#/components/schemas/ETLLocalIOBox"
+        - type: object
+          properties:
+            manifest_generation_policy:
+              $ref: "#/components/schemas/ETLEnumManifestGenerationPolicy"
+              default: 'one_per_file'
+
+    ETLLocalOutbox:
+      allOf:
+        - $ref: "#/components/schemas/ETLLocalIOBox"
+        - type: object
+          properties:
+            manifest_generation_policy:
+              $ref: "#/components/schemas/ETLEnumManifestGenerationPolicy"
+              default: 'one_for_all'
+
+    ETLTapisSystemRemoteInbox:
+      type: object
+      required:
+        - system_id
+        - path
+      properties:
+        system_id:
+          type: string
+        path:
+          type: string
+
+    ETLRemoteInbox:
+      allOf:
+        - $ref: "#/components/schemas/ETLTapisSystemRemoteInbox"
+
+    ETLEnumManifestGenerationPolicy:
+      type: string
+      enum:
+        - one_per_file
+        - one_for_all
+
+    ETLEnumManifestPriority:
+      type: string
+      enum:
+        - oldest
+        - newest
+        - any
+
+    ################################# End ETL
         
     ReqCIPipeline:
       type: object
@@ -2809,6 +2951,10 @@ components:
         logs:
           type: string
 
+    ReqUses:
+      $ref: '#/components/schemas/Uses'
+
+
     # -------------------------------------------------------------------------
     # --- Response objects ----------------------------------------------------
     # -------------------------------------------------------------------------
@@ -3043,6 +3189,7 @@ components:
       enum:
         - workflow
         - ci
+        - etl
 
     EnumRunStatus:
       type: string
@@ -3077,20 +3224,23 @@ components:
         - allow
         - deny
         - terminate
+        - defer
 
     EnumTaskType:
       type: string
       enum:
         - image_build
-        - container_run
+        - application
         - request
         - tapis_job
         - tapis_actor
         - function
+        - template
 
     EnumTaskFlavor:
       type: string
       enum:
+        - c1tiny
         - c1sml
         - c1med
         - c1lrg

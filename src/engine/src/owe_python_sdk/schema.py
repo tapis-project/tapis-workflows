@@ -508,7 +508,7 @@ class GitRepository(BaseModel):
     branch: str = None
     auth: GithubAuth = None
 
-class ClonedGitRepository(GitRepository):
+class GitCloneDetails(GitRepository):
     directory: str
 
 class Uses(BaseModel):
@@ -703,7 +703,7 @@ class RequestTask(BaseTask):
 
 class FunctionTask(BaseTask):
     type: Literal["function"]
-    git_repositories: List[ClonedGitRepository] = []
+    git_repositories: List[GitCloneDetails] = []
     runtime: EnumRuntimeEnvironment
     packages: List[str] = []
     installer: EnumInstaller
