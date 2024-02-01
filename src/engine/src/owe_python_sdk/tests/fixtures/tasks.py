@@ -31,7 +31,7 @@ image_build = {
                 "host": {
                     "type": "kubernetes_secret",
                     "name": "some-secret-name",
-                    "field_selector": "{this.is.a.field.selector}"
+                    "field_selector": ["this", "is", "a", "field", "selector"]
                 }
             }
         },
@@ -41,7 +41,7 @@ image_build = {
                 "secret": {
                     "engine": "tapis-security-kernel",
                     "pk": "some-sk-secret-name",
-                    "field_selector": "{this.is.a.field.selector}"
+                    "field_selector":  ["this", "is", "a", "field", "selector"]
                 }
             }
         }
