@@ -191,12 +191,12 @@ LiteralHostRefTypes = Literal["kubernetes_secret", "kubernetes_config_map"]
 class HostRef(BaseModel):
     type: LiteralHostRefTypes
     name: str
-    field_selector: str = None
+    field_selector: List[Union[str, int]] = []
 
 class SecretRef(BaseModel):
     engine: str
     pk: str
-    field_selector: List[str, int] = []
+    field_selector: List[Union[str, int]] = []
 
 ValueFromEnv = Dict[Literal["env"], str]
 ValueFromArgs = Dict[Literal["args"], str]
