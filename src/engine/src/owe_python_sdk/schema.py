@@ -187,18 +187,16 @@ class TaskOutputRef(BaseModel):
     task_id: str
     output_id: str
 
-FieldSelector = List[Union[str, int]]
-
 LiteralHostRefTypes = Literal["kubernetes_secret", "kubernetes_config_map"]
 class HostRef(BaseModel):
     type: LiteralHostRefTypes
     name: str
-    field_selector: FieldSelector = []
+    field_selector: List[Union[str, int]] = []
 
 class SecretRef(BaseModel):
     engine: str
     pk: str
-    field_selector: FieldSelector = []
+    field_selector: List[Union[str, int]] = []
 
 ValueFromEnv = Dict[Literal["env"], str]
 ValueFromArgs = Dict[Literal["args"], str]
