@@ -12,7 +12,8 @@ from backend.views.http.responses.errors import (
     ServerError as ServerErrorResp
 )
 from backend.views.http.responses import ResourceURLResponse
-from backend.views.http.requests import CIPipeline, ImageBuildTask
+from backend.views.http.requests import ImageBuildTask
+from backend.views.http.cicd import CIPipeline
 from backend.models import (
     Pipeline as PipelineModel,
     Archive,

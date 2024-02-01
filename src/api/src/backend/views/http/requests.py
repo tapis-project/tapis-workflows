@@ -196,7 +196,7 @@ class HostRef(BaseModel):
 class SecretRef(BaseModel):
     engine: str
     pk: str
-    field_selector: str = None
+    field_selector: List[str, int] = []
 
 ValueFromEnv = Dict[Literal["env"], str]
 ValueFromArgs = Dict[Literal["args"], str]
@@ -778,24 +778,6 @@ class Pipeline(BaseModel):
     
     class Config:
         extra = Extra.allow
-
-class CIPipeline(Pipeline):
-    cache: bool = False
-    builder: str
-    context: Annotated[
-        Union[
-            DockerhubContext,
-            GithubContext
-        ],
-        Field(discriminator="type")
-    ]
-    destination: Annotated[
-        Union[
-            DockerhubDestination,
-            LocalDestination
-        ],
-        Field(discriminator="type")
-    ] = None
 
 # Pipeline runs and task executions
 # TODO rename ReqCreateTaskExecution

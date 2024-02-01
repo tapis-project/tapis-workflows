@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Tapis Workflows API
   description: Create and manage pipelines
-  version: '1.2.0'
+  version: '1.6.0'
   termsOfService: "https://tapis-project.org"
   contact:
     name: "Workflows API - CICSupport"
@@ -672,6 +672,84 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ReqCIPipeline'
+      responses:
+        '201':
+          description: Pipeline created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespResourceURL'
+        '400':
+          description: Bad request. Invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot create a pipeline for specified group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '405':
+          description: Method not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '409':
+          description: Conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '415':
+          description: Unsupported media type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '422':
+          description: Unprocessable entity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
+  # --- Paths for ETL pipelines -----------------------------------------------------
+  '/v3/workflows/groups/{group_id}/etl':
+    post:
+      tags:
+        - ETL
+      summary: Create an ETL pipeline
+      description: |
+        Convenience endpoint for create ETL pipelines in the Tapis ecosystem.
+      operationId: createETLPipeline
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        description: A JSON object specifying information for the pipeline to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReqCreateETLPipeline'
       responses:
         '201':
           description: Pipeline created.
@@ -1788,18 +1866,6 @@ components:
     # ------------------------------------------------------------------------------
     
     # --- Pipelines ---
-    Env:
-      type: object
-      additionalProperties: true
-    
-    Params:
-      type: object
-      additionalProperties: true
-
-    Args:
-      type: object
-      additionalProperties: true
-
     ExecutionProfile:
       type: object
       properties:
@@ -1974,19 +2040,21 @@ components:
       oneOf:
         - $ref: '#/components/schemas/ImageBuildTask'
         - $ref: '#/components/schemas/RequestTask'
-        - $ref: '#/components/schemas/ContainerRunTask'
+        - $ref: '#/components/schemas/ApplicationTask'
         - $ref: '#/components/schemas/TapisJobTask'
         - $ref: '#/components/schemas/TapisActorTask'
         - $ref: '#/components/schemas/FunctionTask'
+        - $ref: '#/components/schemas/TemplateTask'
       discriminator:
         propertyName: type
         mapping:
           image_build: "#/components/schemas/ImageBuildTask"
           request: "#/components/schemas/RequestTask"
-          container_run: "#/components/schemas/ContainerRunTask"
+          application: "#/components/schemas/ApplicationTask"
           tapis_job: "#/components/schemas/TapisJobTask"
           tapis_actor: "#/components/schemas/TapisActorTask"
           function: "#/components/schemas/FunctionTask"
+          template: "#/components/schemas/TemplateTask"
         
     BaseTask:
       type: object
@@ -2007,11 +2075,9 @@ components:
         execution_profile:
           $ref: '#/components/schemas/TaskExecutionProfile'
         input:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/Input"
         output:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/Output"
 
     ImageBuildTask:
       allOf:
@@ -2047,13 +2113,21 @@ components:
             url:
               type: string
 
-    ContainerRunTask:
+    ApplicationTask:
       allOf:
         - $ref: '#/components/schemas/BaseTask'
         - type: object
           properties:
             image:
               type: string
+
+    TemplateTask:
+      allOf:
+        - $ref: '#/components/schemas/BaseTask'
+        - type: object
+          properties:
+            uses:
+              $ref: '#/components/schemas/Uses'
 
     TapisJobTask:
       allOf:
@@ -2211,6 +2285,144 @@ components:
         credentials:
           type: string
 
+    Spec:
+      type: object
+      properties:
+        description:
+          type: string
+        required:
+          type: boolean
+        type:
+          $ref: "#/components/schemas/EnumTaskIOType"
+
+    Params:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/Spec"
+
+    Value:
+      anyOf:
+        - type: string
+        - type: number
+        - type: boolean
+
+    ValueFromEnv:
+      type: object
+      properties:
+        env:
+          type: string
+
+    ValueFromArgs:
+      type: object
+      properties:
+        arg:
+          type: string
+
+    ValueFromTaskOutput:
+      type: object
+      properties:
+        task_output:
+          $ref: "#/components/schemas/TaskOutputRef"
+
+    ValueFromHost:
+      type: object
+      properties:
+        host:
+          type: string
+    
+    ValueFromSecret:
+      type: object
+      properties:
+        engine:
+          type: string
+        pk:
+          type: string
+        field_selector:
+          type: array
+          items:
+            type: string
+
+    ValueFrom:
+      anyOf: # Should be `oneOf` but type generating libraries can't handle discrimination without a property with which to do it
+        - $ref: "#/components/schemas/ValueFromArgs"
+        - $ref: "#/components/schemas/ValueFromEnv"
+        - $ref: "#/components/schemas/ValueFromTaskOutput"
+        - $ref: "#/components/schemas/ValueFromHost"
+        - $ref: "#/components/schemas/ValueFromSecret"
+
+    ValueFromSecretOrHost:
+      anyOf: # Should be `oneOf` but type generating libraries can't handle discrimination without a property with which to do it
+        - $ref: "#/components/schemas/ValueFromSecret"
+        - $ref: "#/components/schemas/ValueFromHost"
+
+    EnvSpecValueFrom:
+      $ref: "#/components/schemas/ValueFromSecretOrHost"
+
+    ArgSpecValueFrom:
+      $ref: "#/components/schemas/ValueFromSecretOrHost"
+
+    SpecWithValue:
+      allOf:
+        - $ref: "#/components/schemas/Spec"
+        - type: object
+          properties:
+            value:
+              nullable: true
+              $ref: "#/components/schemas/Value"
+            value_from:
+              nullable: true
+              $ref: "#/components/schemas/ValueFrom"
+
+    Input:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/SpecWithValue"
+
+    Output:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          type:
+            $ref: "#/components/schemas/EnumTaskIOType"
+
+    EnvSpec:
+      allOf: 
+        - $ref: "#/components/schemas/SpecWithValue"
+        - type: object
+          properties:
+            value_from:
+              $ref: "#/components/schemas/EnvSpecValueFrom"
+
+    Env:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/EnvSpec"
+
+    ArgSpec:
+      allOf: 
+        - $ref: "#/components/schemas/SpecWithValue"
+        - type: object
+          properties:
+            value_from:
+              $ref: "#/components/schemas/ArgSpecValueFrom"
+
+    Args:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/ArgSpec"
+    
+    TaskOutputRef:
+      type: object
+      required:
+        - task_id
+        - output_id
+      properties:
+        task_id:
+          type: string
+        output_id:
+          type: string
+
     GitRepository:
       type: object
       properties:
@@ -2218,12 +2430,13 @@ components:
           type: string
         branch:
           type: string
-      
 
     GitCloneDetails:
       allOf:
         - $ref: '#/components/schemas/GitRepository'
         - type: object
+          required:
+            - directory
           properties:
             directory:
               type: string
@@ -2398,8 +2611,8 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/ID'
-        GitCloneDetails:
-          $ref: '#/components/schemas/ReqGitCloneDetails'
+        uses:
+          $ref: '#/components/schemas/Uses'
         archive_ids:
           type: array
           items:
@@ -2438,11 +2651,9 @@ components:
         execution_profile:
           $ref: "#/components/schemas/TaskExecutionProfile"
         input:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/Input"
         output:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/Output"
 
     ReqImageBuildTask:
       allOf:
@@ -2500,10 +2711,10 @@ components:
         - $ref: '#/components/schemas/ReqBaseTask'
         - type: object
           required:
-            - GitCloneDetails
+            - uses
           properties:
-            GitCloneDetails:
-              $ref: '#/components/schemas/ReqGitCloneDetails'
+            uses:
+              $ref: '#/components/schemas/Uses'
 
     ReqTapisJobTask:
       allOf:
@@ -2579,7 +2790,6 @@ components:
         mapping:
           image_build: "#/components/schemas/ReqImageBuildTask"
           request: "#/components/schemas/ReqRequestTask"
-          container_run: "#/components/schemas/ReqApplicationTask"
           application: "#/components/schemas/ReqApplicationTask"
           tapis_job: "#/components/schemas/ReqTapisJobTask"
           tapis_actor: "#/components/schemas/ReqTapisActorTask"
@@ -2594,6 +2804,7 @@ components:
       required:
         - id
         - local_inbox
+        - jobs
         - local_outbox
         - remote_inbox
       properties:
@@ -2607,6 +2818,10 @@ components:
           $ref: '#/components/schemas/ETLRemoteOutbox'
         local_inbox:
           $ref: '#/components/schemas/ETLLocalInbox'
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReqTapisJobDef'
         local_outbox:
           $ref: '#/components/schemas/ETLLocalOutbox'
         remote_inbox:
@@ -2950,10 +3165,6 @@ components:
       properties:
         logs:
           type: string
-
-    ReqUses:
-      $ref: '#/components/schemas/Uses'
-
 
     # -------------------------------------------------------------------------
     # --- Response objects ----------------------------------------------------
@@ -3306,5 +3517,32 @@ components:
     EnumRuntimeEnvironment:
       type: string
       enum:
-        - python:3.9
         - tapis/workflows-python-singularity:0.1.0
+        - "python:latest"
+        - "python:slim"
+        - "python:3.12"
+        - "python:3.12-slim"
+        - "python:3.11"
+        - "python:3.11-slim"
+        - "python:3.10"
+        - "python:3.10-slim"
+        - "python:3.9"
+        - "python:3.9-slim"
+        - "python:3.8"
+        - "python:3.8-slim"
+        - "python:2.7.18"
+        - "python:2.7.18-slim"
+        - "tensorflow/tensorflow:latest"
+        - "tensorflow/tensorflow:latest-gpu"
+        - "tensorflow/tensorflow:2.12.0"
+        - "tensorflow/tensorflow:2.12.0-gpu"
+        - "pytorch/pytorch:latest"
+        - "huggingface/transformers-pytorch-gpu:latest"
+        - "huggingface/transformers-pytorch-gpu:4.29.2"
+
+    EnumTaskIOType:
+      type: string
+      enum:
+        - string
+        - number
+        - boolean
