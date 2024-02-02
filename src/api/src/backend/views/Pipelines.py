@@ -13,7 +13,8 @@ from backend.views.http.responses.errors import (
 )
 from backend.views.http.responses.models import ModelListResponse
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
-from backend.views.http.requests import Pipeline, CIPipeline, ImageBuildTask
+from backend.views.http.requests import Pipeline, ImageBuildTask
+from backend.views.http.cicd import CIPipeline
 from backend.models import (
     Pipeline as PipelineModel,
     Archive,

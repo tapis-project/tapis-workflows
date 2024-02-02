@@ -8,7 +8,6 @@ from backend.views.Groups import Groups
 from backend.views.HealthCheck import HealthCheck
 from backend.views.Identities import Identities
 from backend.views.Pipelines import Pipelines
-from backend.views.CIPipelines import CIPipelines
 from backend.views.Users import Users
 from backend.views.Nuke import Nuke
 from backend.views.ChangePipelineOwner import ChangePipelineOwner
