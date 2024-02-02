@@ -3,7 +3,6 @@ from owe_python_sdk.middleware import RequestMiddleware
 
 class ArgsValidator(RequestMiddleware):
     def __call__(self, request):
-
         required_args = [
             "workflow_executor_access_token",
             "tapis_pipeline_owner",

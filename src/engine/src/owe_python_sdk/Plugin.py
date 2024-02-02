@@ -13,6 +13,7 @@ class Plugin:
         self.notification_middlewares = []
         self.task_executors = {}
         self.schema_extensions = []
+        self.operations = []
 
     def register(self, _type, middleware):
         if _type not in MIDDLEWARE_TYPES:
@@ -40,6 +41,8 @@ class Plugin:
             if type(middleware) != SchemaExtension:
                 raise Exception(f"Schema Extension Registration Error: Expected type 'SchemaExtension' | Recieved {type(middleware)}")
             self.schema_extensions.append(middleware)
+        elif _type == "operation":
+            self.operations.append(middleware)
 
     def dispatch(self, _type, ctx):
         if _type not in MIDDLEWARE_TYPES:

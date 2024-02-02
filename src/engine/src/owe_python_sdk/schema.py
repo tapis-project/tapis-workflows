@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from enum import Enum, EnumMeta
-from typing import List, Literal, Union, Dict, TypedDict, get_args, Tuple
+from typing import List, Literal, Union, Dict, TypedDict, get_args, Tuple, Any
 from typing_extensions import Annotated
 from pydantic import BaseModel, validator, root_validator, Field, Extra, conlist
 
@@ -193,35 +193,48 @@ class HostRef(BaseModel):
     name: str
     field_selector: List[Union[str, int]] = []
 
-class SecretRef(BaseModel):
-    engine: str
-    pk: str
-    field_selector: List[Union[str, int]] = []
+class PluginOperation(BaseModel):
+    name: str
+    operation: str
+    payload: Any = None
 
 ValueFromEnv = Dict[Literal["env"], str]
 ValueFromArgs = Dict[Literal["args"], str]
 ValueFromTaskOutput = Dict[Literal["task_output"], TaskOutputRef]
 ValueFromHost = Dict[Literal["host"], HostRef]
-ValueFromSecret = Dict[Literal["secret"], SecretRef]
+ValueFromPlugin = Dict[Literal["plugin"], PluginOperation]
 ValueFrom = Union[
     ValueFromEnv,
     ValueFromArgs,
     ValueFromTaskOutput,
     ValueFromHost,
-    ValueFromSecret
+    ValueFromPlugin
 ]
 
 EnvSpecValueFrom = Union[
-    ValueFromSecret,
-    ValueFromHost
+    ValueFromHost,
+    ValueFromPlugin
 ]
 
 # NOTE Same as EnvSpecValueFrom for now, but may diverge. Delete this NOTE once it does
 # Also, no good name for the combination of the 2. EnvArgSpecValueFrom?? No thanks.
 ArgSpecValueFrom = Union[
-    ValueFromSecret,
-    ValueFromHost
+    ValueFromHost,
+    ValueFromPlugin
 ]
+
+pluginref = {
+    "plugin": {
+        "name": "tapis",
+        "operation": "get_secret_from_sk",
+        "payload": {
+            "secret_name": "",
+            "secret_type": "",
+            "version": 0,
+            "field_selector": ["secretMap", "some", "deep", "property"]
+        }
+    }
+}
 
 Value = Union[str, int, float, bool, bytes]
 
@@ -449,6 +462,8 @@ class LocalDestination(BaseDestination):
 
 class ReqRunPipeline(BaseModel):
     args: Args = {}
+    name: str = None
+    description: str = None
     directives: List[str] = None
 
 # Groups and Users

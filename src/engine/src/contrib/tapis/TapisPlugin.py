@@ -10,12 +10,10 @@ from owe_python_sdk.events.types import (
 )
 
 
-from contrib.tapis.middleware.request import (
-    ValueFromTapisSecurityKernal,
-    ArgsValidator
-)
+from contrib.tapis.middleware.request import ArgsValidator
 from contrib.tapis.middleware.event_handlers.archivers import TapisSystemArchiver
 from contrib.tapis.middleware.event_handlers.notifications import TapisWorkflowsAPIBackend
+from contrib.tapis.middleware.operations import GetSecretFromSecurityKernel
 from contrib.tapis.executors import TapisActor, TapisJob
 from contrib.tapis.constants import TASK_TYPE_TAPIS_ACTOR, TASK_TYPE_TAPIS_JOB, ARCHIVER_TYPE_TAPIS_SYSTEM
 
@@ -24,8 +22,8 @@ class TapisPlugin(Plugin):
     def __init__(self, name):
         Plugin.__init__(self, name)
         
-        self.register("request", ValueFromTapisSecurityKernal())
         self.register("request", ArgsValidator())
+
         self.register(
             "notification_handler",
             NotificationMiddleware(
@@ -38,6 +36,7 @@ class TapisPlugin(Plugin):
                 ]
             )
         )
+
         self.register(
             "archive",
             ArchiveMiddleware(
@@ -46,17 +45,30 @@ class TapisPlugin(Plugin):
                 subsciptions=[PIPELINE_COMPLETED, PIPELINE_FAILED, PIPELINE_TERMINATED]
             )
         )
+
         self.register("task_executor", {TASK_TYPE_TAPIS_ACTOR: TapisActor})
         self.register("task_executor", {TASK_TYPE_TAPIS_JOB: TapisJob})
-        self.register("schema_extension", SchemaExtension(
-            _type="task_executor",
-            sub_type="function",
-            schema={
-                "runtimes": {
-                    "python": [
-                        "tapis/workflows-python-singularity:0.1.0",
-                        "tapis/flaskbase:1.2.2"
-                    ]
+
+        self.register(
+            "schema_extension", 
+            SchemaExtension(
+                _type="task_executor",
+                sub_type="function",
+                schema={
+                    "runtimes": {
+                        "python": [
+                            "tapis/workflows-python-singularity:0.1.0",
+                            "tapis/flaskbase:1.2.2"
+                        ]
+                    }
                 }
+            )
+        )
+
+        self.register(
+            "operation",
+            {
+                "name": "get_secret_from_sk",
+                "handler": GetSecretFromSecurityKernel()
             }
-        ))
+        )
