@@ -1996,6 +1996,10 @@ components:
     PipelineRun:
       type: object
       properties:
+        name:
+          type: string
+        description:
+          type: string
         uuid:
           type: string
           format: uuid
@@ -3127,6 +3131,10 @@ components:
     ReqRunPipeline:
       type: object
       properties:
+        name:
+          type: string
+        description:
+          type: string
         args:
           $ref: "#/components/schemas/Args"
         directives:

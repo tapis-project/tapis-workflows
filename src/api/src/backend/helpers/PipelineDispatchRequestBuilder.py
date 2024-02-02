@@ -14,6 +14,8 @@ class PipelineDispatchRequestBuilder:
         base_url,
         group,
         pipeline,
+        name=None,
+        description=None,
         commit=None,
         directives=None,
         args={}
@@ -101,6 +103,8 @@ class PipelineDispatchRequestBuilder:
         # Generate the uuid for this pipeline run
         uuid = uuid4()
         request["pipeline_run"]["uuid"] = uuid
+        request["pipeline_run"]["name"] = name or uuid
+        request["pipeline_run"]["description"] = description
 
         # Parse the directives from the commit message
         directives_request = {}

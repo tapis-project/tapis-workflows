@@ -397,6 +397,8 @@ class PipelineArchive(models.Model):
         ]
 
 class PipelineRun(models.Model):
+    name = models.CharField(max_length=128, null=True)
+    description = models.TextField(null=True)
     last_modified = models.DateTimeField(null=True)
     logs = models.TextField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="runs", on_delete=models.CASCADE)

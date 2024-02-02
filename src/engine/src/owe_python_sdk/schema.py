@@ -448,6 +448,8 @@ class LocalDestination(BaseDestination):
     filename: str = None
 
 class ReqRunPipeline(BaseModel):
+    name: str = None
+    description: str = None
     args: Args = {}
     directives: List[str] = None
 

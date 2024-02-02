@@ -20,6 +20,8 @@ class PipelineDispatcher:
         try: 
             # Create the pipeline run object
             pipeline_run = PipelineRun.objects.create(
+                name=service_request["pipeline_run"]["name"],
+                description=service_request["pipeline_run"]["description"],
                 pipeline=pipeline,
                 status=RUN_STATUS_SUBMITTED,
                 uuid=service_request["pipeline_run"]["uuid"],
