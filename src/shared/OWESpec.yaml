@@ -2822,6 +2822,14 @@ components:
           $ref: '#/components/schemas/ETLRemoteOutbox'
         local_inbox:
           $ref: '#/components/schemas/ETLLocalInbox'
+        job_io_mapping:
+          type: object
+          properties:
+            data_in_path:
+              type: string
+            data_out_path:
+              type: string
+
         jobs:
           type: array
           items:

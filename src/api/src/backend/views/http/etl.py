@@ -56,9 +56,18 @@ class S3RemoteInbox(BaseModel):
     url: str
     bucket: str
 
+class JobIOMapping(BaseModel):
+    data_in_path: str
+    data_out_path: str
+
+
 class TapisETLPipeline(Pipeline):
     remote_outbox: Dict = None
     local_inbox: LocalInbox
+    job_io_mapping: JobIOMapping = JobIOMapping(
+        data_in_path="/tmp/TapisInput",
+        data_out_path="/tmp/TapisOutput"
+    )
     jobs: List[Dict]
     local_outbox: GlobusLocalOutbox
     remote_inbox: Union[
