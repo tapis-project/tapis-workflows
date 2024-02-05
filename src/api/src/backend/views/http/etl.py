@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Literal, Annotated
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, root_validator, Field
 
 from .requests import _EnumMeta, Pipeline
 
@@ -15,12 +15,43 @@ class EnumManifestPriority(str, Enum, metaclass=_EnumMeta):
     Newest = "newest"
     Any = "any"
 
+class EnumChecksumAlgorithm(str, Enum, metaclass=_EnumMeta):
+    MD5 = "md5"
+    SHA256 = "sha256"
+    SHA3 = "sha3"
+
+class BaseDataIntegrityProfile(BaseModel):
+    type: Literal["checksum", "byte_check", "done_file"]
+
+class ChecksumDataIntegrityProfile(BaseDataIntegrityProfile):
+    type: Literal["checksum"]
+    checksum_algo: EnumChecksumAlgorithm
+    checksums_path: str
+
+class ByteCheckDataIntegrityProfile(BaseDataIntegrityProfile):
+    type: Literal["byte_check"]
+
+class DoneFileDataIntegrityProfile(BaseDataIntegrityProfile):
+    type: Literal["done_file"]
+    done_files_path: str
+    pattern: str
+
+DataIntegrityProfile = Annotated[
+    Union[
+        ChecksumDataIntegrityProfile,
+        ByteCheckDataIntegrityProfile,
+        DoneFileDataIntegrityProfile
+    ],
+    Field(discriminator="type")
+]
+
 class LocalIOBox(BaseModel):
     system_id: str
     data_path: str
+    data_integrity_profile: DataIntegrityProfile = None
+    manifests_path: str = None
     manifest_generation_policy: EnumManifestGenerationPolicy
     manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
-    manifests_path: str = None
     exclude_pattern: List[str] = []
 
 class LocalInbox(LocalIOBox):
@@ -28,7 +59,6 @@ class LocalInbox(LocalIOBox):
 
 class LocalOutbox(LocalIOBox):
     manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.OneForAll
-    zip: bool = False
 
 class GlobusLocalOutbox(LocalOutbox):
     globus_endpoint_id: str
@@ -57,18 +87,24 @@ class S3RemoteInbox(BaseModel):
     bucket: str
 
 class JobIOMapping(BaseModel):
-    data_in_path: str
-    data_out_path: str
+    input: str
+    output: str
 
+class TapisJobDef(BaseModel):
+    pass # Essentially this is a placeholder for dict
+
+class WorkflowsExetendedTapisJobDef(TapisJobDef):
+    workflows: Dict[Literal["etl"], JobIOMapping] = {
+        "etl": JobIOMapping(
+            input="/tmp/DATA-IN",
+            output="/tmp/DATA-OUT"
+        )
+    }
 
 class TapisETLPipeline(Pipeline):
     remote_outbox: Dict = None
     local_inbox: LocalInbox
-    job_io_mapping: JobIOMapping = JobIOMapping(
-        data_in_path="/tmp/TapisInput",
-        data_out_path="/tmp/TapisOutput"
-    )
-    jobs: List[Dict]
+    jobs: List[WorkflowsExetendedTapisJobDef]
     local_outbox: GlobusLocalOutbox
     remote_inbox: Union[
         TapisSystemRemoteInbox,

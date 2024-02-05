@@ -47,7 +47,6 @@ urlpatterns = [
 
     # Pipelines
     path("groups/<str:group_id>/ci", Pipelines.as_view(), name="ci"),
-    path("groups/<str:group_id>/etl", ETLPipelines.as_view(), name="etl"),
     path("groups/<str:group_id>/pipelines", Pipelines.as_view(), name="pipelines"),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>", Pipelines.as_view(), name="pipeline"),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/owner/<str:username>", ChangePipelineOwner.as_view(), name="changePipelineOwner"),
@@ -80,6 +79,9 @@ urlpatterns = [
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>/executions", TaskExecutions.as_view(), name="taskExecutions"),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>/executions/<str:task_execution_uuid>", TaskExecutions.as_view(), name="taskExecution"),
     path("executor/executions/<str:task_execution_uuid>/<str:status>", UpdateTaskExecutionStatus.as_view(), name="updateTaskExecutionStatus"),
+
+    # Beta features
+    path("beta/groups/<str:group_id>/etl", ETLPipelines.as_view(), name="etl"),
 ]
 
 # NOTE This is handy, but there is the distinct posibility that someone malicious

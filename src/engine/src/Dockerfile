@@ -24,6 +24,5 @@ COPY src/shared/conf/configschema.json /src/configschema.json
 
 # Shared utils and helpers
 COPY src/shared/TapisServiceAPIGateway.py /src/contrib/tapis/helpers
-COPY src/shared/OWESpec.yaml /src/conf
 
 RUN chmod +x /src/scripts/start.sh
