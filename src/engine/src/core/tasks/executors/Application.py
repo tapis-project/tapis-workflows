@@ -2,7 +2,7 @@ import logging
 
 from kubernetes import client
 
-from core.tasks.TaskExecutor import TaskExecutor
+from owe_python_sdk.TaskExecutor import TaskExecutor
 from conf.constants import KUBERNETES_NAMESPACE
 from core.resources import PodResource
 from utils import get_flavor
@@ -21,7 +21,7 @@ class Application(TaskExecutor):
             client.V1VolumeMount(
                 name="artifacts",
                 mount_path="/mnt/",
-                sub_path=self.task.output_dir.replace("/mnt/pipelines/", "") 
+                sub_path=self.task.nfs_output_dir
             ),
         ]
 

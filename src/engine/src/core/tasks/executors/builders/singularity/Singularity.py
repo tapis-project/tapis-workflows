@@ -14,7 +14,6 @@ from kubernetes.client import (
 
 from conf.constants import KUBERNETES_NAMESPACE, WORKFLOW_NFS_SERVER
 from core.resources import JobResource
-from owe_python_sdk.TaskResult import TaskResult
 from core.tasks.BaseBuildExecutor import BaseBuildExecutor
 from core.tasks.executors.builders.singularity.helpers.ContainerBuilder import container_builder
 from errors import WorkflowTerminated
@@ -23,8 +22,10 @@ from utils.k8s import gen_resource_name
 class Singularity(BaseBuildExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
         BaseBuildExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
+
+        self._container_singularity_cache_dir = "/tmp/cache"
         
-    def execute(self) -> TaskResult:
+    def execute(self):
         # Create the kaniko job return a failed task result on exception
         # with the error message as the str value of the exception
         try: 
@@ -41,9 +42,9 @@ class Singularity(BaseBuildExecutor):
                 time.sleep(self.polling_interval)
         except WorkflowTerminated as e:
             self.cleanup(terminating=True)
-            return TaskResult(status=2, errors=[e])
+            return self._task_result(2, errors=[e])
         except ApiException as e:
-            return TaskResult(status=1, errors=[str(e)])
+            return self._task_result(1, errors=[str(e)])
 
 
         # Get the job's pods name
@@ -71,7 +72,7 @@ class Singularity(BaseBuildExecutor):
 
         # TODO implement on_finish_callback
 
-        return TaskResult(status=0 if self._job_succeeded(job) else 1)
+        return self._task_result(0 if self._job_succeeded(job) else 1)
 
     def _create_job(self):
         """Create a job in the Kubernetes cluster"""
@@ -82,8 +83,13 @@ class Singularity(BaseBuildExecutor):
         volume_mounts = [
             # Volume mount for the workdir
             V1VolumeMount(
-                name="workdir",
+                name="task-workdir",
                 mount_path=self.task.container_work_dir
+            ),
+            # Volume mount the task-workdir
+            V1VolumeMount(
+                name="singularity-cache",
+                mount_path=self._container_singularity_cache_dir,
             )
         ]
 
@@ -92,24 +98,34 @@ class Singularity(BaseBuildExecutor):
             self.task,
             volume_mounts=volume_mounts,
             directives=self.directives,
+            cache_dir=self._container_singularity_cache_dir
         )
 
         # List of volume objects
         volumes = [
             # Volume for mounting the output
             V1Volume(
-                name="workdir",
+                name="task-workdir",
                 nfs=V1NFSVolumeSource(
                     server=WORKFLOW_NFS_SERVER,
-                    path=self.task.work_dir.replace("/mnt/pipelines/", "/")
+                    path=self.task.nfs_work_dir
                 ),
             ),
+            V1Volume(
+                name="singularity-cache",
+                nfs=V1NFSVolumeSource(
+                    server=WORKFLOW_NFS_SERVER,
+                    path=self.pipeline.nfs_singularity_cache_dir
+                ),
+            )
         ]
 
         # Pod template and pod template spec
         template = V1PodTemplateSpec(
             spec=V1PodSpec(
-                containers=[container], restart_policy="Never", volumes=volumes
+                containers=[container],
+                restart_policy="Never",
+                volumes=volumes
             )
         )
 
@@ -137,7 +153,8 @@ class Singularity(BaseBuildExecutor):
         
         try:
             job = self.batch_v1_api.create_namespaced_job(
-                namespace=KUBERNETES_NAMESPACE, body=body
+                namespace=KUBERNETES_NAMESPACE,
+                body=body
             )
         except ApiException as e:
             raise e

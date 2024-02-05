@@ -11,15 +11,14 @@ from utils import get_flavor
 from utils.k8s import flavor_to_k8s_resource_reqs
 
 
-
 class ContainerBuilder:
-    def build(self, task, volume_mounts=[], directives=None):
+    def build(self, task, volume_mounts=[], directives=None, cache_dir="/tmp/cache"):
 
         command = self.resolve_command(task, directives=directives)
 
         container = V1Container(
             name="singularity",
-            env=self.resolve_env(task),
+            env=self.resolve_env(task, cache_dir),
             image=f"{SINGULARITY_IMAGE_URL}:{SINGULARITY_IMAGE_TAG}",
             command=command,
             volume_mounts=volume_mounts,
@@ -29,7 +28,6 @@ class ContainerBuilder:
         return container
 
     def resolve_command(self, task, directives=None):
-
         # Pull the image from Dockerhub and generate the SIF file
         if task.context.type == "dockerhub":
             cmd = [
@@ -42,7 +40,7 @@ class ContainerBuilder:
             if task.destination.filename != None:
                 cmd.append(task.destination.filename)
 
-            # Use latest tag if not specified
+            # Add the tag to the image url if specified
             tag = ""
             if task.context.tag != None:
                 tag = f":{task.context.tag}"
@@ -57,22 +55,22 @@ class ContainerBuilder:
             # Add the token to the repository url
             token = ""
             if task.context.visibility == "private":
-                token = f"{task.context.credentials.data.personal_access_token}@"
+                token = f"{task.context.credentials.personal_access_token}@"
 
-            # Pull the git repository with the recipe file
+            # Pull the git repository with the build file
             repo = os.path.join(f"https://{token}github.com", task.context.url) + ".git"
             
             git.Repo.clone_from(
                 repo,
-                task.scratch_dir,
+                task.exec_dir,
                 branch=task.context.branch
             )
-
-            # Recipe file path is the scratch dir + recipe file path specified
+    
+            # Build file path is the exec dir + build file path specified
             # in the context
-            recipe_file_path = os.path.join(
-                f"{task.container_work_dir}/scratch/",
-                task.context.recipe_file_path
+            build_file_path = os.path.join(
+                f"{task.container_work_dir}/src/",
+                task.context.build_file_path
             )
 
             # Build the command
@@ -80,26 +78,36 @@ class ContainerBuilder:
                 "singularity",
                 "build",
                 f"{task.container_work_dir}/output/{task.destination.filename or ''}",
-                recipe_file_path
+                build_file_path
             ]
 
             return command
 
-    def resolve_env(self, task):
+    def resolve_env(self, task, cache_dir):
+        k8s_envvars = []
+
+        # Set the cache dir for Singularity
+        k8s_envvars.append(
+            V1EnvVar(
+                name="SINGULARITY_CACHEDIR",
+                value=cache_dir
+            ),
+        )
+
         # Add the dockerhub username and access token
         if task.destination.type == "dockerhub":
-            return [
+            k8s_envvars = k8s_envvars + [
                 V1EnvVar(
                     name="SINGULARITY_DOCKERHUB_USERNAME",
-                    value=task.destination.credentials.data.username
+                    value=task.destination.credentials.username
                 ),
                 V1EnvVar(
                     name="SINGULARITY_DOCKERHUB_PASSOWORD",
-                    value=task.destination.credentials.data.token
+                    value=task.destination.credentials.token
                 )
             ]
 
         # return an empty array by default
-        return []
+        return k8s_envvars
         
 container_builder = ContainerBuilder()

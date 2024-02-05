@@ -1,0 +1,2 @@
+class RunnerAdaptationError(Exception):
+    pass

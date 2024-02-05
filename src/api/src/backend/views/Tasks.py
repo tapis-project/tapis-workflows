@@ -1,4 +1,5 @@
 import json
+from pprint import pprint
 
 from django.db import IntegrityError, OperationalError
 
@@ -59,10 +60,10 @@ class Tasks(RestrictedAPIView):
 
         if not task_service.is_valid_task_type(self.request_body["type"]):
             return BadRequest(message=f"Invalid task type: Expected one of: {task_service.get_task_request_types()} - Recieved: {self.request_body['type']}. ")
-
+        
         # Resolve the the proper request for the type of task provided in the request body
         TaskRequest = task_service.resolve_request_type(self.request_body["type"])
-
+        
         # Validate and prepare the create reqeust
         prepared_request = self.prepare(TaskRequest)
 

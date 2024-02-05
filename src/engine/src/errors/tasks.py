@@ -19,3 +19,12 @@ class CycleDetectedError(WorkflowsBaseException):
 
 class FailedTaskError(WorkflowsBaseException):
     pass
+
+class OperandResolutionError(WorkflowsBaseException):
+    pass
+
+class ConditionalExpressionEvalError(WorkflowsBaseException):
+    pass
+
+class TaskInputStagingError(WorkflowsBaseException):
+    pass

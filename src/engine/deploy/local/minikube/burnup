@@ -5,11 +5,21 @@ here=$(dirname $0)
 kubectl apply -f "$here/clusterroles.yml"
 kubectl apply -f "$here/crb.yml"
 
-# Replace the template variable in the deployment yaml with the nfs server service ip
+# Template variable to be replace by nfs service service ip
+NFS_SERVER_SERVICE_IP_TEMPLATE_VAR="\'{{ NFS_SERVER_SERVICE_IP }}\'"
+
+# Get the nfs server service IP
 NFS_SERVER_SERVICE_IP=$(kubectl get service workflows-nfs-server-service -o jsonpath='{.spec.clusterIP}')
+
+# Replace the template var with the nfs service service ip
 # NOTE -i.bak used for MAC compatibility
-sed -i.bak "s/\'{{ NFS_SERVER_SERVICE_IP }}\'/$NFS_SERVER_SERVICE_IP/g" "$here/deployment.yml"
+sed -i.bak "s/$NFS_SERVER_SERVICE_IP_TEMPLATE_VAR/$NFS_SERVER_SERVICE_IP/g" "$here/deployment.yml"
 rm "$here/deployment.yml.bak"
 
+# Create the service and deployment
 kubectl apply -f "$here/service.yml"
 kubectl apply -f "$here/deployment.yml"
+
+# Change the nfs server service ip back to the template variable '{{ NFS_SERVER_SERVICE_IP }}'
+sed -i.bak "s/$NFS_SERVER_SERVICE_IP/$NFS_SERVER_SERVICE_IP_TEMPLATE_VAR/g" "$here/deployment.yml"
+rm "$here/deployment.yml.bak"

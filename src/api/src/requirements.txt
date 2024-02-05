@@ -20,6 +20,7 @@ django-debug-toolbar==3.2.2
 djangorestframework==3.13.1
 djantic==0.7.0
 gevent==21.12.0
+GitPython==3.1.27
 greenlet==1.1.2
 gunicorn==20.1.0
 idna==3.3
@@ -34,7 +35,7 @@ pika==1.2.0
 prompt-toolkit==3.0.24
 pycparser==2.21
 pycryptodome==3.14.1
-pydantic==1.10.6
+pydantic==1.10.9
 pydantic-django==0.1.1
 PyJWT==1.7.1
 PyMySQL==1.0.2

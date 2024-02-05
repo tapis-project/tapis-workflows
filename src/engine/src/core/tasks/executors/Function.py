@@ -1,12 +1,10 @@
-import logging, os, base64, time, shutil
-
-from uuid import uuid4
+import os, base64, time, shutil, inspect, json
 
 from kubernetes import client
 
-from core.tasks.TaskExecutor import TaskExecutor
-from owe_python_sdk.TaskResult import TaskResult
+from owe_python_sdk.TaskExecutor import TaskExecutor
 from owe_python_sdk.utils import get_schema_extensions
+from owe_python_sdk.constants import FUNCTION_TASK_RUNTIMES, STDERR, STDOUT
 from conf.constants import (
     WORKFLOW_NFS_SERVER,
     KUBERNETES_NAMESPACE,
@@ -14,8 +12,10 @@ from conf.constants import (
 )
 from core.resources import JobResource
 from utils import get_flavor
-from utils.k8s import flavor_to_k8s_resource_reqs, input_to_k8s_env_vars, gen_resource_name
-from errors import WorkflowTerminated
+from utils.k8s import flavor_to_k8s_resource_reqs, gen_resource_name
+from core.tasks import function_bootstrap
+from core.repositories import GitCacheRepository
+
 
 class ContainerDetails:
     def __init__(
@@ -23,23 +23,22 @@ class ContainerDetails:
         image,
         command,
         args,
-        env=None
+        working_dir=None,
+        env=[]
     ):
         self.image = image
         self.command = command
         self.args = args
+        self.working_dir = working_dir
         self.env = env
 
 
-# TODO Review the Kubernetes attack surface guide.
 # TODO Remove the kubernetes token from the container(s)?
 class Function(TaskExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
         TaskExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
 
-        self.runtimes = {
-            "python": ["python:3.9"]
-        }
+        self.runtimes = FUNCTION_TASK_RUNTIMES
         
         # Add additional Function task runtimes from plugins
         schemas = get_schema_extensions(self.plugins, "task_executor", sub_type="function")
@@ -52,95 +51,93 @@ class Function(TaskExecutor):
                 self.runtimes[language] = runtimes_for_language
 
     def execute(self):
-        """Create and run the container"""
         job_name = gen_resource_name(prefix="fn")
-
-        # List of volume mount objects for the container
-        volume_mounts = [
-            # Volume mount for the output
-            client.V1VolumeMount(
-                name="workdir",
-                mount_path=self.task.container_work_dir, 
-            )
-        ]
-
-        # Set up the container details for the task"s specified runtime
+        # Prepares the file system for the Function task by clone 
+        # git repsoitories specified in the request
+        git_cache_repo = GitCacheRepository(cache_dir=self.task.exec_dir)
+        try:
+            for repo in self.task.git_repositories:
+                git_cache_repo.add(repo.url, repo.directory, branch=repo.branch)
+        except Exception as e:
+            return self._task_result(1, errors=[str(e)])
+        
+        # Set up the container details for the task's specified runtime
         container_details = self._setup_container()
         
-        # Container object
-        container = client.V1Container(
-            name=job_name,
-            command=container_details.command,
-            args=container_details.args,
-            image=container_details.image,
-            volume_mounts=volume_mounts,
-            env=container_details.env,
-            resources=(flavor_to_k8s_resource_reqs(get_flavor("c1sml")))
-        )
-
-        # Volume for output
-        volumes = [
-            client.V1Volume(
-                name="workdir",
-                nfs=client.V1NFSVolumeSource(
-                    server=WORKFLOW_NFS_SERVER,
-                    path=self.task.work_dir.replace("/mnt/pipelines/", "/")
-                ),
-            )
-        ]
-
-        # Pod template and pod template spec
-        template = client.V1PodTemplateSpec(
-            spec=client.V1PodSpec(
-                containers=[container],
-                restart_policy="Never",
-                volumes=volumes
-            )
-        )
-
-        # Job spec
-        self.task.max_retries = 0 if self.task.max_retries < 0 else self.task.max_retries
-        job_spec = client.V1JobSpec(
-            backoff_limit=(self.task.max_retries), template=template)
-
-        # Job metadata
-        metadata = client.V1ObjectMeta(
-            labels=dict(job=job_name),
-            name=job_name,
-            namespace=KUBERNETES_NAMESPACE,
-        )
-
         # Job body
-        body = client.V1Job(metadata=metadata, spec=job_spec)
+        body = client.V1Job(
+            metadata=client.V1ObjectMeta(
+                labels=dict(job=job_name),
+                name=job_name,
+                namespace=KUBERNETES_NAMESPACE,
+            ),
+            spec=client.V1JobSpec(
+                backoff_limit=0 if self.task.max_retries < 0 else self.task.max_retries,
+                template=client.V1PodTemplateSpec(
+                    spec=client.V1PodSpec(
+                        containers=[
+                            client.V1Container(
+                                name=job_name,
+                                command=container_details.command,
+                                args=container_details.args,
+                                image=container_details.image,
+                                volume_mounts=[
+                                    # Volume mount for the output
+                                    client.V1VolumeMount(
+                                        name="task-workdir",
+                                        mount_path=self.task.container_work_dir, 
+                                    )
+                                ],
+                                env=container_details.env,
+                                resources=flavor_to_k8s_resource_reqs(get_flavor("c1sml"))
+                            )
+                        ],
+                        restart_policy="Never",
+                        volumes=[
+                            client.V1Volume(
+                                name="task-workdir",
+                                nfs=client.V1NFSVolumeSource(
+                                    server=WORKFLOW_NFS_SERVER,
+                                    path=self.task.nfs_work_dir
+                                ),
+                            )
+                        ]
+                    )
+                )
+            )
+        )
         
         try:
             job = self.batch_v1_api.create_namespaced_job(
-                namespace=KUBERNETES_NAMESPACE, body=body
+                namespace=KUBERNETES_NAMESPACE,
+                body=body
             )
 
             # Register the job to be deleted after execution
             self._register_resource(JobResource(job=job))
         except Exception as e:
-            logging.critical(e)
-            raise e
+            self.ctx.logger.error(e)
+            return self._task_result(1, errors=[e])
+
         try:
             while not self._job_in_terminal_state(job):
                 if self.terminating:
-                    raise WorkflowTerminated()
+                    self.ctx.logger.error("Workflow Terminated")
+                    self.cleanup(terminating=True)
+                    self._stderr("Workflow Terminated", "w")
+                    return self._task_result(2, errors=["Workflow Terminated"])
+
                 job = self.batch_v1_api.read_namespaced_job(
                     job.metadata.name, KUBERNETES_NAMESPACE
                 )
 
                 time.sleep(self.polling_interval)
-        except WorkflowTerminated as e:
-            self.ctx.logger.error(str(e))
-            self.cleanup(terminating=True)
-            return TaskResult(status=2, errors=[e])
         except Exception as e:
             self.ctx.logger.error(str(e))
-            return TaskResult(status=1, errors=[e])
+            self._stderr(str(e), "w")
+            return self._task_result(1, errors=[e])
 
-        return TaskResult(status=0 if self._job_succeeded(job) else 1)
+        return self._task_result(0 if self._job_succeeded(job) else 1)
 
     def _setup_container(self) -> ContainerDetails:
         if self.task.runtime in self.runtimes["python"]:
@@ -150,46 +147,92 @@ class Function(TaskExecutor):
         else:
             raise Exception(f"Invalid runtime: {self.task.runtime}")
 
-         # Set up env vars for the container
+        # Set up env vars for the container
         env = [
             client.V1EnvVar(
-                name="OWE_OUTPUT_DIR",
-                value=os.path.join(self.task.container_work_dir, "output")
+                name="_OWE_TASK_ID",
+                value=self.task.id
             ),
             client.V1EnvVar(
-                name="OWE_SCRATCH_DIR",
-                value=os.path.join(self.task.container_work_dir, "scratch")
+                name="_OWE_PIPELINE_ID",
+                value=self.ctx.pipeline.id
             ),
+            client.V1EnvVar(
+                name="_OWE_PIPELINE_RUN_UUID",
+                value=self.ctx.pipeline_run.uuid
+            ),
+            client.V1EnvVar(
+                name="_OWE_WORK_DIR",
+                value=self.task.container_work_dir
+            ), 
+            client.V1EnvVar(
+                name="_OWE_INPUT_DIR",
+                value=self.task.container_input_dir
+            ),
+            client.V1EnvVar(
+                name="_OWE_OUTPUT_DIR",
+                value=self.task.container_output_dir
+            ),
+            client.V1EnvVar(
+                name="_OWE_EXEC_DIR",
+                value=os.path.join(self.task.container_exec_dir)
+            ),
+            client.V1EnvVar(
+                name="_OWE_INPUT_SCHEMA",
+                value=json.dumps({
+                    key: val.dict() for key, val in self.task.input.items()
+                })
+            )
         ]
 
         # Convert defined workflow inputs into the function containers env vars with
         # the open workflow engine input prefix
-        container_details.env = env + input_to_k8s_env_vars(
-            self.task.input,
-            self.ctx,
-            prefix="_OWE_WORKFLOW_INPUT_"
-        )
+        container_details.env = container_details.env + env
         
         return container_details
-        
 
     def _write_entrypoint_file(self, file_path, code):
         with open(file_path, "wb") as file:
             file.write(base64.b64decode(code))
+    
+    # FIXME
+    # def _setup_linux_container(self):
+    #     # Create entrypoint file that will be mounted into the container via NFS mount.
+    #     # The code provided in the request is expected to be base64 encoded. Decode, then
+    #     # encode in UTF-8
+    #     entrypoint_filename = "entrypoint.sh"
+    #     local_entrypoint_file_path = os.path.join(self.task.exec_dir, entrypoint_filename)
+    #     self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
 
     def _setup_python_container(self):
         # Create entrypoint file that will be mounted into the container via NFS mount.
         # The code provided in the request is expected to be base64 encoded. Decode, then
         # encode in UTF-8
         entrypoint_filename = "entrypoint.py"
-        local_entrypoint_file_path = f"{self.task.scratch_dir}{entrypoint_filename}"
+        local_entrypoint_file_path = os.path.join(self.task.exec_dir, entrypoint_filename)
+        entrypoint_env_var = client.V1EnvVar(
+            name="_OWE_ENTRYPOINT_FILE_PATH",
+            value=os.path.join(self.task.container_exec_dir, entrypoint_filename)
+        )
+
+        # If the task has an entrypoint defined, set the code to be executed in the entrypoint
+        # to the bootstrap code 
+        if self.task.entrypoint != None:
+            self.task.code = base64.b64encode(
+                bytes(inspect.getsource(function_bootstrap), encoding="utf8")
+            )
+            entrypoint_env_var = client.V1EnvVar(
+                name="_OWE_ENTRYPOINT_FILE_PATH",
+                value=os.path.join(self.task.container_exec_dir, self.task.entrypoint.lstrip("/"))
+            )
+                
         self._write_entrypoint_file(local_entrypoint_file_path, self.task.code)
-        
+
         # Create requirements file that will be mounted into the functions container
         # via NFS mount. This file will be used with the specified installer to install
         # the necessary python packages
         requirements_filename = "requirements.txt"
-        local_requirements_file_path = f"{self.task.scratch_dir}requirements.txt"
+        local_requirements_file_path = f"{self.task.exec_dir}requirements.txt"
         has_packages = len(self.task.packages) > 0
         if has_packages:
             with open(local_requirements_file_path, "w") as file:
@@ -200,19 +243,19 @@ class Function(TaskExecutor):
 
         # NOTE Only supporting pip for now
         # Requirements file path inside the container
-        requirements_txt = os.path.join(self.task.container_work_dir, "scratch", requirements_filename)
+        requirements_txt = os.path.join(self.task.container_exec_dir, requirements_filename)
         
         # Entrypoint path inside the container
-        entrypoint_py = os.path.join(self.task.container_work_dir, "scratch", entrypoint_filename)
+        entrypoint_py = os.path.join(self.task.container_exec_dir, entrypoint_filename)
         
         # The output file for the install logs inside the container
-        dot_install = os.path.join(self.task.container_work_dir, "output", ".install")
+        dot_install = os.path.join(self.task.container_output_dir, ".install")
 
-        # .stderr path inside the container
-        stderr = os.path.join(self.task.container_work_dir, "output", ".stderr")
+        # stderr path inside the container
+        stderr = os.path.join(self.task.container_output_dir, STDERR)
 
         # .stdout path inside the container
-        stdout = os.path.join(self.task.container_work_dir, "output", ".stdout")
+        stdout = os.path.join(self.task.container_output_dir, STDOUT)
 
         install_cmd = ""
         if has_packages:
@@ -220,8 +263,8 @@ class Function(TaskExecutor):
 
         # TODO handle for "command" property
 
-        # Copy the owe-python-sdk files to the scratch directory
-        owe_python_sdk_local_path = os.path.join(self.task.work_dir, "scratch/owe_python_sdk")
+        # Copy the owe-python-sdk files to the exec directory
+        owe_python_sdk_local_path = os.path.join(self.task.work_dir, "src/owe_python_sdk")
         shutil.copytree(OWE_PYTHON_SDK_DIR, owe_python_sdk_local_path, dirs_exist_ok=True)
 
         entrypoint_cmd = f"python3 {entrypoint_py} 2> {stderr} 1> {stdout}"
@@ -230,5 +273,6 @@ class Function(TaskExecutor):
         return ContainerDetails(
             image=self.task.runtime,
             command=command,
-            args=args
+            args=args,
+            env=[entrypoint_env_var]
         )
