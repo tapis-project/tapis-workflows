@@ -2866,7 +2866,6 @@ components:
           properties:
             type:
               type: string
-              default: "checksum"
             checksum_algo:
               $ref: "#/components/schemas/ETLEnumChecksumAlgorithm"
             checksums_path:
@@ -2881,7 +2880,6 @@ components:
           properties:
             type:
               type: string
-              default: "donefile"
             done_files_path:
               type: string
             pattern:
@@ -2894,7 +2892,6 @@ components:
           properties:
             type:
               type: string
-              default: "byte_check"
 
     DataIntegrityProfile:
       oneOf:
