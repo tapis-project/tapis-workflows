@@ -1,0 +1,27 @@
+{
+  "id": "e2e-ib-kghpubdhpriv",
+  "type": "image_build",
+  "description": "build mpm image",
+  "builder": "kaniko",
+  "context": {
+    "type": "github",
+    "branch": "main",
+    "url": "tapis-project/application-repository",
+    "build_file_path": "Dockerfile",
+    "sub_path": "/material-point-method/mpm-dummy-src/docker_build",
+    "visibility": "public"
+  },
+  "destination": {
+      "type": "dockerhub",
+      "url": "nathandf/e2e-test",
+      "tag": "e2e",
+      "visibility": "private",
+      "credentials": {
+        "username": "nathandf",
+        "token": ""
+      }
+  },
+  "depends_on": [
+      
+  ]
+}

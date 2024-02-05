@@ -7,12 +7,44 @@ on:
     branches: [ dev, staging, test, release-** ]
 
 jobs:
-  api-tests:
-    name: Run API Tests
+  Run_Engine_Tests:
+    name: Run_Engine_Tests
     runs-on: ubuntu-latest
     steps:
-      - run: "echo 'running API tests'"
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup_Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: PIP_Install
+        run: "pip install -r ./src/engine/src/requirements.txt"
+      - name: OWE_Python_SDK_Tests
+        run: ./src/engine/src/owe_python_sdk/tests/run.sh
+      - name: OWE_Engine_Tests
+        run: ./src/engine/src/tests/run.sh
 
+  Run_API_Tests:
+    name: Run_API_Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup_Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: PIP_Install
+        run: "pip install -r ./src/api/src/requirements.txt"
+      - name: Run_API_Tests
+        run: echo "FIXME - Need to figure out why tests not running -- ./src/api/src/tests/run.sh"
+
+  Run_Engine_Streams_Tests:
+    name: Run_Engine_Streams_Tests
+    runs-on: ubuntu-latest
+    steps:
+      - run: "echo 'Running Engine Streams Tests'"
+      
   Resolve_Image_Tag:
     runs-on: ubuntu-latest
     outputs:
@@ -50,6 +82,7 @@ jobs:
   Build_Push_Image_Api:
     needs:
       - Resolve_Image_Tag
+      - Run_API_Tests
     runs-on: ubuntu-latest
     name: Build_Push_Api_Image
     steps:
@@ -73,6 +106,7 @@ jobs:
   Build_Push_Image_Engine:
     needs:
       - Resolve_Image_Tag
+      - Run_Engine_Tests
     runs-on: ubuntu-latest
     name: Build_Push_Engine_Image
     steps:
@@ -96,6 +130,7 @@ jobs:
   Build_Push_Image_Engine_Streams:
     needs:
       - Resolve_Image_Tag
+      - Run_Engine_Streams_Tests
     runs-on: ubuntu-latest
     name: Build_Push_Engine_Streams_Image
     steps:

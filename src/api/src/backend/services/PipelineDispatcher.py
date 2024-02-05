@@ -6,7 +6,7 @@ from django.db import IntegrityError, DatabaseError, OperationalError
 from django.utils import timezone
 
 from backend.services.MessageBroker import service as broker
-from backend.models import Pipeline, PipelineRun, RUN_STATUS_PENDING
+from backend.models import Pipeline, PipelineRun, RUN_STATUS_SUBMITTED
 from backend.errors.api import ServerError
 
 
@@ -20,8 +20,10 @@ class PipelineDispatcher:
         try: 
             # Create the pipeline run object
             pipeline_run = PipelineRun.objects.create(
+                name=service_request["pipeline_run"]["name"],
+                description=service_request["pipeline_run"]["description"],
                 pipeline=pipeline,
-                status=RUN_STATUS_PENDING,
+                status=RUN_STATUS_SUBMITTED,
                 uuid=service_request["pipeline_run"]["uuid"],
                 started_at=now,
                 last_modified=now
@@ -37,9 +39,8 @@ class PipelineDispatcher:
                 service_request_update = {"last_run": pipeline.current_run.uuid}
 
             Pipeline.objects.filter(pk=pipeline.uuid).update(**model_update)
-
+            
             service_request["pipeline"].update(service_request_update)
-
 
         except (IntegrityError, DatabaseError, OperationalError) as e:
             message = f"Failed to create PipelineRun: {e.__cause__}"
@@ -58,6 +59,8 @@ class PipelineDispatcher:
             message = f"Failed publish the service request to the message broker: {e.__cause__}"
             logging.error(message)
             raise ServerError(message=message)
+        
+        return pipeline_run
 
     def _uuid_convert(self, obj):
         if isinstance(obj, UUID):

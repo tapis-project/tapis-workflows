@@ -1,15 +1,14 @@
 import json, time
 
 from contrib.tapis.helpers import TapisServiceAPIGateway
-from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY
-
-from owe_python_sdk.TaskResult import TaskResult
-from core.tasks.TaskExecutor import TaskExecutor
+from contrib.tapis.constants import TAPIS_JOB_POLLING_FREQUENCY, TAPIS_SYSTEM_FILE_REF_EXTENSION
+from contrib.tapis.schema import ReqSubmitJob, TapisSystemFileOutput
+from owe_python_sdk.TaskExecutor import TaskExecutor
 
 
 class TapisJob(TaskExecutor):
-    def __init__(self, task, ctx, exchange):
-        TaskExecutor.__init__(self, task, ctx, exchange)
+    def __init__(self, task, ctx, exchange, plugins=[]):
+        TaskExecutor.__init__(self, task, ctx, exchange, plugins)
 
     def execute(self):
         try:
@@ -17,42 +16,88 @@ class TapisJob(TaskExecutor):
             service_client = tapis_service_api_gateway.get_client()
 
             # Recursively convert nested simple namespace objects to dict
-            job_def = json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: s.__dict__))
+            job_def = ReqSubmitJob(**json.loads(json.dumps(self.task.tapis_job_def, default=lambda s: dict(s))))
 
-            # Add timestamp on job name to ensure unique name on submit
-            job_def["name"] += str(time.time())
+            # Add TapisSystemFiles from previous task output as fileInput/Arrays to the job definition
+            file_input_arrays = []
+            for parent_task in self.task.depends_on:
+                parent_task_output = self.ctx.output[parent_task.id]
+                source_urls = []
+                for parent_task_output_file in parent_task_output:
+                    # Skip all output files that do not contain the Tapis
+                    # system file reference extension
+                    # NOTE TODO FIXME Also skip files that contain tapisjob.out
+                    if (
+                        TAPIS_SYSTEM_FILE_REF_EXTENSION not in parent_task_output_file.name
+                        or "tapisjob.out" in parent_task_output_file.name
+                    ):
+                        continue
+                    
+                    # Pull the Tapis System File details from the file
+                    with open(parent_task_output_file.path, mode="r") as file:
+                        tapis_system_file_output = TapisSystemFileOutput(**json.loads(file.read()))
+                        source_urls.append(tapis_system_file_output.file.url)
+                
+                if len(source_urls) > 0:
+                    file_input_arrays.append({
+                        "name": f"owe-implicit-input-{parent_task.id}",
+                        "description": f"These files were generated as a result of an Open Workflow Engine task execution for the pipeline '{self.ctx.pipeline.id}' and task '{parent_task.id}'.",
+                        "sourceUrls": source_urls,
+                        "targetDir": "*",
+                        "notes": {}
+                    })
+
+            # Add the file input arrays to the Tapis Job definition
+            job_def.fileInputArrays.extend(file_input_arrays)
 
             # Submit the job
             job = service_client.jobs.submitJob(
-                **job_def,
-                _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
-                _x_tapis_user=self.ctx.params.tapis_pipeline_owner
+                **job_def.dict(),
+                _x_tapis_tenant=self.ctx.args.get("tapis_tenant_id").value,
+                _x_tapis_user=self.ctx.args.get("tapis_pipeline_owner").value
             )
 
-            # Get the initial job status
-            job_status = job.status
+            # Return with success if not polling
+            if not self.task.poll:
+                self._set_output("STATUS", job.status, flag="w")
+                return self._task_result(0)
+            
+            # Keep polling until the job is complete
+            while job.status not in ["FINISHED", "CANCELLED", "FAILED"]:
+                # Wait the polling frequency time then try poll again
+                time.sleep(TAPIS_JOB_POLLING_FREQUENCY)
+                job = service_client.jobs.getJob(
+                    jobUuid=job.uuid,
+                    _x_tapis_tenant=self.ctx.args.get("tapis_tenant_id").value,
+                    _x_tapis_user=self.ctx.args.get("tapis_pipeline_owner").value
+                )
 
-            if self.task.poll:
-                # Keep polling until the job is complete
-                while job_status not in ["FINISHED", "CANCELLED", "FAILED"]:
-                    # Wait the polling frequency time then try poll again
-                    time.sleep(TAPIS_JOB_POLLING_FREQUENCY)
-                    job_status = service_client.jobs.getJobStatus(
-                        jobUuid=job.uuid,
-                        _x_tapis_tenant=self.ctx.params.tapis_tenant_id,
-                        _x_tapis_user=self.ctx.params.tapis_pipeline_owner
-                    ).status
+            # Job has completed successfully. Get the execSystemOutputDir from the job object
+            # and generate a task output for each file in the directory 
+            if job.status == "FINISHED":
+                files = service_client.files.listFiles(
+                    systemId=job.execSystemId,
+                    path=job.execSystemOutputDir,
+                    _x_tapis_tenant=self.ctx.args.get("tapis_tenant_id").value,
+                    _x_tapis_user=self.ctx.args.get("tapis_pipeline_owner").value
+                )
+                for file in files:
+                    self._set_output(
+                        file.name + "." + TAPIS_SYSTEM_FILE_REF_EXTENSION,
+                        json.dumps(
+                            TapisSystemFileOutput(
+                                file=file.__dict__
+                            ).dict()
+                        ),
+                        flag="w"
+                    )
 
-                output = {"jobUuid": job.uuid, "status": job_status}
-
-                # Return a task result based on the final status of the tapis job
-                if job_status == "FINISHED":
-                    return TaskResult(0, output=output)
-
-                return TaskResult(1, output=output)
+                self._set_output("STATUS", job.status, flag="w")
+                return self._task_result(0)
+            
+            self._set_output("STATUS", job.status, flag="w")
+            return self._task_result(1, errors=[f"Job '{job.name}' ended with status {job.status}. Last Message: {job.lastMessage}"])
                 
-            return TaskResult(0, output={"jobUuid": job.uuid, "status": job_status})
-
         except Exception as e:
-            self.ctx.logger.error(f"ERROR IN TAPIS JOB: {str(e)}")
-            return TaskResult(1, errors=[str(e)])
+            self._set_output("STATUS", "FAILED", flag="w")
+            return self._task_result(1, errors=[str(e)])

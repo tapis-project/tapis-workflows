@@ -6,12 +6,12 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.exceptions import ValidationError
 
 from backend.views.http.requests import (
+    EnumContextType,
+    EnumDestinationType,
     EnumRuntimeEnvironment,
     EnumTaskFlavor,
     EnumTaskType,
     EnumImageBuilder,
-    EnumContextType,
-    EnumDestinationType,
     EnumVisibility,
     EnumInstaller,
     EnumInvocationMode,
@@ -32,15 +32,18 @@ TASK_INVOCATION_MODES = [
     (TASK_INVOCATION_MODE_ASYNC, "async")
 ]
 
+TASK_TYPE_TEMPLATE = EnumTaskType.Template
 TASK_TYPE_IMAGE_BUILD = EnumTaskType.ImageBuild
-TASK_TYPE_CONTAINER_RUN = EnumTaskType.ContainerRun
+TASK_TYPE_APPLICATION = EnumTaskType.Application
+TASK_TYPE_CONTAINER_RUN = EnumTaskType.ContainerRun  # Keep for backwards compatibility. container_run renamed to application
 TASK_TYPE_REQUEST = EnumTaskType.Request
 TASK_TYPE_FUNCTION = EnumTaskType.Function
 TASK_TYPE_TAPIS_JOB = EnumTaskType.TapisJob
 TASK_TYPE_TAPIS_ACTOR = EnumTaskType.TapisActor
 TASK_TYPES = [
+    (TASK_TYPE_TEMPLATE, EnumTaskType.Template),
     (TASK_TYPE_IMAGE_BUILD, EnumTaskType.ImageBuild),
-    (TASK_TYPE_CONTAINER_RUN, EnumTaskType.ContainerRun),
+    (TASK_TYPE_APPLICATION, EnumTaskType.Application),
     (TASK_TYPE_REQUEST, EnumTaskType.Request),
     (TASK_TYPE_FUNCTION, EnumTaskType.Function),
     (TASK_TYPE_TAPIS_JOB, EnumTaskType.TapisJob),
@@ -167,7 +170,8 @@ ACCESS_CONTROLS = [
 ]
 
 RUN_STATUS_SUBMITTED = "submitted"
-RUN_STATUS_PENDING = "pending"
+RUN_STATUS_STAGING = "staging"
+RUN_STATUS_PENDING = "pending"  # NOTE deprecated. Remove pending backwards compatibility check
 RUN_STATUS_ACTIVE = "active"
 RUN_STATUS_BACKOFF = "backoff"
 RUN_STATUS_COMPLETED = "completed"
@@ -178,7 +182,8 @@ RUN_STATUS_TERMINATED = "terminated"
 RUN_STATUS_DEFERRED = "deferred"
 
 RUN_STATUSES = [
-    (RUN_STATUS_PENDING, "pending"),
+    (RUN_STATUS_PENDING, "pending"),  # NOTE deprecated. Remove pending backwards compatibility check
+    (RUN_STATUS_STAGING, "staging"),
     (RUN_STATUS_ACTIVE, "active"),
     (RUN_STATUS_BACKOFF, "backoff"),
     (RUN_STATUS_COMPLETED, "completed"),
@@ -192,6 +197,7 @@ RUN_STATUSES = [
 
 EXEC_STATUS_PENDING = "pending"
 EXEC_STATUS_ACTIVE = "active"
+EXEC_STATUS_STAGING = "staging"
 EXEC_STATUS_BACKOFF = "backoff"
 EXEC_STATUS_COMPLETED = "completed"
 EXEC_STATUS_FAILED = "failed"
@@ -202,6 +208,7 @@ EXEC_STATUS_SKIPPED = "skipped"
 
 TASK_EXECUTION_STATUSES = EXEC_STATUSES = [
     (EXEC_STATUS_PENDING, "pending"),
+    (EXEC_STATUS_STAGING, "staging"),
     (EXEC_STATUS_ACTIVE, "active"),
     (EXEC_STATUS_BACKOFF, "backoff"),
     (EXEC_STATUS_COMPLETED, "completed"),
@@ -306,26 +313,6 @@ class Destination(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
     identity = models.ForeignKey("backend.Identity", null=True, on_delete=models.CASCADE)
 
-class Event(models.Model):
-    branch = models.CharField(max_length=255, null=True)
-    commit = models.TextField(max_length=255, null=True)
-    commit_sha = models.CharField(max_length=128, null=True)
-    context_url = models.CharField(max_length=128, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    cron = models.CharField(null=True, max_length=128)
-    directives = models.JSONField(null=True)
-    group = models.ForeignKey("backend.Group", related_name="events", null=True, on_delete=models.CASCADE)
-    message = models.TextField()
-    pipeline = models.ForeignKey("backend.Pipeline", related_name="events", null=True, on_delete=models.CASCADE)
-    source = models.CharField(max_length=255)
-    username = models.CharField(max_length=64, null=True)
-    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    class Meta:
-        indexes = [
-            models.Index(fields=["pipeline_id"]),
-            models.Index(fields=["username"])
-        ]
-
 class Group(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -368,9 +355,11 @@ class Identity(models.Model):
 
 class Pipeline(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128)
+    description = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     env = models.JSONField(null=True)
     params = models.JSONField(null=True)
+    uses = models.JSONField(null=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
     invocation_mode = models.CharField(max_length=16, default=EnumInvocationMode.Async)
     max_exec_time = models.BigIntegerField(
@@ -408,31 +397,34 @@ class PipelineArchive(models.Model):
         ]
 
 class PipelineRun(models.Model):
+    name = models.CharField(max_length=128, null=True)
+    description = models.TextField(null=True)
     last_modified = models.DateTimeField(null=True)
+    logs = models.TextField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="runs", on_delete=models.CASCADE)
-    status = models.CharField(max_length=16, choices=RUN_STATUSES, default=RUN_STATUS_PENDING)
+    status = models.CharField(max_length=16, choices=RUN_STATUSES, default=RUN_STATUS_SUBMITTED)
     started_at = models.DateTimeField(null=True)
     uuid = models.UUIDField(primary_key=True)
 
 class Task(models.Model):
     class Meta:
-            constraints = [
-                models.UniqueConstraint(
-                    fields=["id", "pipeline_id"],
-                    name="task_id_pipeline_id"
-                )
-            ]
-            indexes = [
-                models.Index(fields=["id", "pipeline_id"])
-            ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id", "pipeline_id"],
+                name="task_id_pipeline_id"
+            )
+        ]
+        indexes = [
+            models.Index(fields=["id", "pipeline_id"])
+        ]
 
     # Props
     id = models.CharField(validators=[validate_id], max_length=128)
-    _if = models.TextField(null=True)
     cache = models.BooleanField(null=True)
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
     flavor = models.CharField(max_length=32, choices=TASK_FLAVORS, default=TASK_FLAVOR_C1_MED)
+    conditions = models.JSONField(null=True, default=list)
     input = models.JSONField(null=True)
     invocation_mode = models.CharField(max_length=16, default=EnumInvocationMode.Async)
     max_exec_time = models.BigIntegerField(
@@ -445,6 +437,7 @@ class Task(models.Model):
     poll = models.BooleanField(null=True)
     retry_policy = models.CharField(max_length=32, default=EnumRetryPolicy.ExponentialBackoff)
     type = models.CharField(max_length=32, choices=TASK_TYPES)
+    uses = models.JSONField(null=True)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
 
     # Image build specific properties
@@ -462,11 +455,13 @@ class Task(models.Model):
     url = models.CharField(max_length=255, null=True)
 
     # Function specific properties
-    runtime = models.CharField(max_length=64, choices=FUNCTION_TASK_RUNTIMES, null=True)
+    git_repositories = models.JSONField(null=True, default=list)
+    runtime = models.CharField(max_length=64, null=True)
     code = models.TextField(null=True)
     command = models.TextField(null=True)
-    installer = models.CharField(max_length=64, choices=FUNCTION_TASK_INSTALLERS, null=True)
+    installer = models.CharField(max_length=64, null=True)
     packages = models.JSONField(null=True, default=list)
+    entrypoint = models.TextField(null=True)
 
     # Container run specific properties
     # Full image name for container run. includes scheme.
@@ -487,7 +482,7 @@ class Task(models.Model):
         if not success: errors = {**errors, "invalid-runtime-installer": error}
 
         # Validate packages schema
-        (success, error) = self.validate_function_task_installers()
+        (success, error) = self.validate_packages_schema()
         if not success: errors = {**errors, "packages-schema-error": error}
 
         if errors:
@@ -520,8 +515,11 @@ class Task(models.Model):
 
 class TaskExecution(models.Model):
     last_modified = models.DateTimeField(null=True)
+    last_message = models.TextField(null=True)
     pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="task_executions", on_delete=models.CASCADE)
     started_at = models.DateTimeField(null=True)
+    stdout = models.TextField(null=True)
+    stderr = models.TextField(null=True)
     status = models.CharField(max_length=16, choices=TASK_EXECUTION_STATUSES, default=RUN_STATUS_PENDING)
     task = models.ForeignKey("backend.Task", related_name="task_executions", on_delete=models.CASCADE)
     uuid = models.UUIDField(primary_key=True)

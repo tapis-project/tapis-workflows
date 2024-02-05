@@ -3,8 +3,7 @@ from django.conf import settings
 
 from backend.views.Tasks import Tasks
 from backend.views.Auth import Auth
-from backend.views.RunPipelineWebhook import RunPipelineWebhook
-from backend.views.Events import Events
+from backend.views.RunPipeline import RunPipeline
 from backend.views.Groups import Groups
 from backend.views.HealthCheck import HealthCheck
 from backend.views.Identities import Identities
@@ -21,6 +20,7 @@ from backend.views.TaskExecutions import TaskExecutions
 from backend.views.UpdatePipelineRunStatus import UpdatePipelineRunStatus
 from backend.views.UpdateTaskExecutionStatus import UpdateTaskExecutionStatus
 from backend.views.CreateTaskExecution import CreateTaskExecution
+from backend.views.ETLPipelines import ETLPipelines
 
 
 urlpatterns = [
@@ -61,11 +61,7 @@ urlpatterns = [
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/archives/remove", RemovePipelineArchive.as_view(), name="removePipelineArchive"),
     
     # Trigger pipelines
-    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/webhook", RunPipelineWebhook.as_view(), name="runPipelineWebhook"),
-    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/events", Events.as_view(), name="events"),
-
-    # Events
-    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/events/<str:event_uuid>", Events.as_view(), name="event"),
+    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/run", RunPipeline.as_view(), name="runPipeline"),
 
     # Pipeline Runs
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs", PipelineRuns.as_view(), name="pipelineRuns"),
@@ -83,6 +79,9 @@ urlpatterns = [
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>/executions", TaskExecutions.as_view(), name="taskExecutions"),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>/executions/<str:task_execution_uuid>", TaskExecutions.as_view(), name="taskExecution"),
     path("executor/executions/<str:task_execution_uuid>/<str:status>", UpdateTaskExecutionStatus.as_view(), name="updateTaskExecutionStatus"),
+
+    # Beta features
+    path("beta/groups/<str:group_id>/etl", ETLPipelines.as_view(), name="etl"),
 ]
 
 # NOTE This is handy, but there is the distinct posibility that someone malicious

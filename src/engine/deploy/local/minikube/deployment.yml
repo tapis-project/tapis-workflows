@@ -59,7 +59,7 @@ spec:
             - name: TAPIS_SERVICE_TENANT_ID
               value: admin
             - name: WORKFLOW_NFS_SERVER
-              value: 10.104.129.91
+              value: '{{ NFS_SERVER_SERVICE_IP }}' 
             - name: IS_LOCAL
               value: 'true'
             - name: WORKFLOWS_SERVICE_URL
@@ -79,14 +79,11 @@ spec:
           resources: {}
           tty: true
           volumeMounts:
-            - name: pipelines-mount
-              mountPath: /mnt/pipelines/
+            - name: open-workflow-engine-mount
+              mountPath: /var/lib/open-workflow-engine/
       volumes:
-        - name: pipelines-mount
+        - name: open-workflow-engine-mount
           nfs: 
-            server: 10.104.129.91
-            path: /
-        # - name: pipelines-mount
-        #   persistentVolumeClaim:
-        #     claimName: workflows-engine-pvc      
+            server: '{{ NFS_SERVER_SERVICE_IP }}'
+            path: /   
       restartPolicy: Always

@@ -1,8 +1,8 @@
-import json, re
+import json
 
-from typing import AnyStr, List
+from typing import List
 
-from pydantic import ValidationError
+from pydantic import ValidationError, BaseModel
 from django.db import DatabaseError, IntegrityError, OperationalError
 from django.core.exceptions import ValidationError as ModelValidationError
 
@@ -10,24 +10,25 @@ from backend.models import Task, Context, Destination, Identity
 from backend.models import (
     TASK_TYPE_REQUEST,
     TASK_TYPE_IMAGE_BUILD,
-    TASK_TYPE_CONTAINER_RUN,
+    TASK_TYPE_APPLICATION,
+    TASK_TYPE_CONTAINER_RUN,  # Keep for backwards compatibility. container_run renamed to application
     TASK_TYPE_TAPIS_JOB,
     TASK_TYPE_TAPIS_ACTOR,
     TASK_TYPE_FUNCTION,
+    TASK_TYPE_TEMPLATE,
     DESTINATION_TYPE_LOCAL,
     DESTINATION_TYPE_DOCKERHUB,
 )
 from backend.views.http.requests import (
     RequestTask,
     ImageBuildTask,
-    ContainerRunTask,
+    ApplicationTask,
     TapisJobTask,
     TapisActorTask,
     FunctionTask,
-    RegistryDestination,
-    LocalDestination,
-    EnumTaskIOTypes,
-    EnumTaskInputValueFromKey
+    TemplateTask,
+    DockerhubDestination,
+    LocalDestination
 )
 from backend.services.SecretService import service as secret_service
 from backend.services.Service import Service
@@ -37,14 +38,16 @@ from backend.errors.api import BadRequestError, ServerError
 TASK_TYPE_REQUEST_MAPPING = {
     TASK_TYPE_IMAGE_BUILD: ImageBuildTask,
     TASK_TYPE_REQUEST: RequestTask,
-    TASK_TYPE_CONTAINER_RUN: ContainerRunTask,
+    TASK_TYPE_APPLICATION: ApplicationTask,
+    TASK_TYPE_CONTAINER_RUN: ApplicationTask, # Keep for backwards compatibility. container_run renamed to application
     TASK_TYPE_TAPIS_JOB: TapisJobTask,
     TASK_TYPE_TAPIS_ACTOR: TapisActorTask,
-    TASK_TYPE_FUNCTION: FunctionTask
+    TASK_TYPE_FUNCTION: FunctionTask,
+    TASK_TYPE_TEMPLATE: TemplateTask
 }
 
 DESTINATION_TYPE_REQUEST_MAPPING = {
-    DESTINATION_TYPE_DOCKERHUB: RegistryDestination,
+    DESTINATION_TYPE_DOCKERHUB: DockerhubDestination,
     DESTINATION_TYPE_LOCAL: LocalDestination
 }
 
@@ -55,58 +58,74 @@ class TaskService(Service):
         Service.__init__(self)
 
     def create(self, pipeline, request):
+        context = None
+        destination = None
         try:
-            # Create the context
-            context = None
-            if request.context != None:
-                context = self._create_context(request, pipeline)
-            # Create the destination
-            destination = None
-            if request.destination != None:
-                destination = self._create_destination(request, pipeline)
-
-            # Validate input TODO move validation logic to pydantic if possible
-            err = self._validate_input(request.input)
-            if err != None:
-                raise Exception(f"Failed to validate input: {err}")
+            if request.type == "image_build":
+                # Create the context
+                if request.context != None:
+                    context = self._create_context(request, pipeline)
+                # Create the destination
+                if request.destination != None:
+                    destination = self._create_destination(request, pipeline)
 
         except Exception as e:
             self.rollback()
             raise e
 
+        # Convert the input to jsonserializable
+        _input = {}
+        for key in request.input:
+            _input[key] = request.input[key].dict()
+
+        # Prepare the uses property
+        uses = getattr(request, "uses", None)
+        if uses != None:
+            uses = uses.dict()
 
         # Create task
         try:
             task = Task.objects.create(
-                auth=request.auth,
-                builder=request.builder,
-                cache=request.cache,
-                code=request.code,
-                command=request.command,
+                auth=getattr(request, "auth", None),
+                builder=getattr(request, "builder", None),
+                cache=getattr(request, "cache", None),
+                code=getattr(request, "code", None),
+                command=getattr(request, "command", None),
                 context=context,
-                data=request.data,
+                conditions=[
+                    self._recursive_pydantic_model_to_dict(c) 
+                    for c in getattr(request, "conditions", [])
+                ],
+                data=getattr(request, "data", None),
                 description=request.description,
                 destination=destination,
-                headers=request.headers,
-                http_method=request.http_method,
-                image=request.image,
-                input=request.input,
-                installer=request.installer,
+                headers=getattr(request, "headers", None),
+                http_method=getattr(request, "http_method", None),
+                # Set to None if the request contains no git repositories, else, set as an array of dicts of git repos
+                git_repositories=(
+                    [ dict(item) for item in getattr(request, "git_repositories", []) ]
+                    if getattr(request, "git_repositories") != None
+                    else None
+                ),
+                image=getattr(request, "image", None),
+                input=_input,
+                installer=getattr(request, "installer", None),
                 id=request.id,
                 output=request.output,
-                packages=request.packages,
+                packages=getattr(request, "packages", None),
                 pipeline=pipeline,
-                poll=request.poll,
-                query_params=request.query_params,
-                runtime=request.runtime,
+                poll=getattr(request, "poll", None),
+                query_params=getattr(request, "query_params", None),
+                runtime=getattr(request, "runtime", None),
                 type=request.type,
                 depends_on=[ dict(item) for item in request.depends_on ],
-                tapis_job_def=request.tapis_job_def,
-                tapis_actor_id=request.tapis_actor_id,
+                tapis_job_def=getattr(request, "tapis_job_def", None),
+                tapis_actor_id=getattr(request, "tapis_actor_id", None),
                 tapis_actor_message=self._tapis_actor_message_to_str(
-                    request.tapis_actor_message
+                    getattr(request, "tapis_actor_message", None)
                 ),
-                url=request.url,
+                url=getattr(request, "url", None),
+                uses=uses,
                 # Exection profile
                 flavor=request.execution_profile.flavor,
                 max_exec_time=request.execution_profile.max_exec_time,
@@ -120,17 +139,18 @@ class TaskService(Service):
         except (IntegrityError, OperationalError, DatabaseError) as e:
             self.rollback()
             raise e
-
         except BadRequestError as e:
             self.rollback()
             raise e
-
         except ModelValidationError as e:
             self.rollback()
             raise e
-
+        except ServerError as e:
+            self.rollback()
+            raise e
         except Exception as e:
-            print("Generic Exception", request.id, flush=True)
+            print(f"Unexpected Error: {e}", flush=True)
+            self.rollback()
             raise e
 
         return task
@@ -163,7 +183,7 @@ class TaskService(Service):
             cred_data = {}
             for key, value in dict(credentials).items():
                 if value != None:
-                    cred_data[key] = credentials.get(key)
+                    cred_data[key] = getattr(credentials, key)
             
             try:
                 cred = secret_service.save(f"pipeline:{pipeline.id}", cred_data)
@@ -269,57 +289,11 @@ class TaskService(Service):
 
     def _tapis_actor_message_to_str(self, message):
         # Simply pass the message back if already a string
-        if type(message) == str:
+        if type(message) in [str, None]:
             return message
 
         # Message is a dictionary. Convert to string and return
         return json.dumps(message)
-
-    def _validate_input(self, _input):
-        input_key_pattern = r"^[_]?[a-zA-Z]+[a-zA-Z0-9_]*"
-        for key in _input:
-            # Validate input key
-            if not re.match(input_key_pattern, key):
-                return "Disallowed input key: must conform to the following pattern: ^[_]*[a-zA-Z]+[a-zA-Z0-9]*"
-
-            # Validate input value
-            if type(_input[key]) != dict:
-                return f"Input value must be a dict: type {type(_input[key])} found for key {key}"
-
-            # Validate input value type property
-            if _input[key].get("type", None) not in EnumTaskIOTypes:
-                return f"'type' property input value of key {key} must be oneOf: {[item.value for item in EnumTaskIOTypes]}"
-
-            # Return if the value property exists and is not None
-            if _input[key].get("value", None) != None:
-                return
-            
-            # Validate the value_from property of the input value
-            value_from = _input[key].get("value_from", None)
-            if type(value_from) != dict:
-                return f"Input validation error at key {key}: 'value_from' must be a dictionary"
-
-            # Validate the key of the value_from property
-            value_from_key = list(value_from.keys())[0]
-            if len(value_from) > 1 or value_from_key not in EnumTaskInputValueFromKey:
-                return f"Input validation error at key {key}: The key in 'value_from' must be oneOf: {[item.value for item in EnumTaskInputValueFromKey]}" 
-            
-            # Validate value_from value for 'env' and 'params'
-            value_from_value = value_from[value_from_key]
-            if value_from_key != "task_output" and type(value_from_value) not in [str, int, float, AnyStr]:
-                return f"Input validation error at key {key}: 'value_from' value type for keys [env|params] must be oneOf types [string, number, binary]"
-
-            # Validate value_from value for "task_output"
-            if (
-                value_from_key == "task_output"
-                and (
-                    type(value_from_value) != dict
-                    or value_from_value.get("task_id", None) == None
-                    or value_from_value.get("output_id", None) == None
-                )
-                
-            ):
-                return f"Input validation error at key {key}: When referencing task outputs, 'value_from' value must be a dictionary with the following properties ['task_id', 'output_id']"
 
     def delete(self, tasks: List[Task]):
         for task in tasks:
@@ -329,5 +303,25 @@ class TaskService(Service):
                 raise ServerError(message=e.__cause__)
             except Exception as e:
                 raise ServerError(message=str(e))
+            
+    def _recursive_pydantic_model_to_dict(self, obj):
+        if type(obj) in [list, tuple]:
+            items = type(obj)()
+            for item in obj:
+                items.append(self._recursive_pydantic_model_to_dict(item))
+            return items
+        if type(obj) == dict:
+            modified_dict = {}
+            for key in obj:
+                modified_dict[key] = self._recursive_pydantic_model_to_dict(obj[key])
+            return modified_dict
+        if isinstance(obj, BaseModel):
+            dict_obj = obj.dict()
+            modified_dict = {}
+            for key in dict_obj:
+                modified_dict[key] = self._recursive_pydantic_model_to_dict(dict_obj[key])
+            return modified_dict
+
+        return obj
 
 service = TaskService()

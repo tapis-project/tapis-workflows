@@ -1,0 +1,16 @@
+{
+  "id": "e2e-ib-sdhl-a",
+  "type": "image_build",
+  "builder": "singularity",
+  "context": {
+      "type": "dockerhub",
+      "url": "vdjserver/tcrmatch",
+      "tag": "1.0.2",
+      "visibility": "public"
+  },
+  "destination": {
+      "type": "local",
+      "filename": "tcrmatch-1.0.2.sif"
+  },
+  "depends_on": []
+}

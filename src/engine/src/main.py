@@ -3,14 +3,14 @@ import sys, logging
 from core.Server import Server
 
 
-# Set all lib loggers to critical
+# Set all third-party library loggers to critical
 for name in logging.root.manager.loggerDict:
     logging.getLogger(name).setLevel(logging.CRITICAL)
 
 
 server_logger = logging.getLogger("server")
 handler = logging.StreamHandler(stream=sys.stdout)
-handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
+handler.setFormatter(logging.Formatter("%(message)s"))
 server_logger.setLevel(logging.DEBUG)
 server_logger.addHandler(handler)
 # logging.basicConfig(
@@ -21,6 +21,7 @@ server_logger.addHandler(handler)
 #     format="[%(asctime)s] %(message)s",
 # )
 
-server = Server()
-server()
+if __name__ == "__main__":
+    server = Server()
+    server()
 

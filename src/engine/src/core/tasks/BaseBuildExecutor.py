@@ -2,9 +2,10 @@ import json, base64, os
 
 from core.tasks.executors.builders.helpers.ContextResolver import context_resolver
 from errors.credentials import CredentialsError
-from core.tasks.TaskExecutor import TaskExecutor
+from owe_python_sdk.TaskExecutor import TaskExecutor
 
-
+# TODO Move methods of this class to helpers, use the helpers in decendent classes,
+# and delete once complete
 class BaseBuildExecutor(TaskExecutor):
     def __init__(self, task, ctx, exchange, plugins=[]):
         TaskExecutor.__init__(self, task, ctx, exchange, plugins=plugins)
@@ -19,23 +20,11 @@ class BaseBuildExecutor(TaskExecutor):
             return None
 
         # Default to latest tag
-        tag = self.task.destination.tag
-        if tag is None:
-            tag = "latest"
+        tag = ""
+        if self.task.destination.tag != None:
+            tag = f":{self.task.destination.tag}"
 
-        # The image tag can be overwritten by specifying directives in the
-        # commit message. Image tagging directives take precedence over the
-        # the image_property of the pipeline.
-        if self.directives is not None:
-            for key, value in self.directives.__dict__.items():
-                if key == "CUSTOM_TAG" and key is not None:
-                    tag = value
-                elif key == "CUSTOM_TAG" and key is None:
-                    tag = self.task.destination.tag
-                elif key == "TAG_COMMIT_SHA" and self.event.commit_sha is not None:
-                    tag = self.event.commit_sha
-
-        destination = self.task.destination.url + f":{tag}"
+        destination = f"{self.task.destination.url}{tag}"
 
         return destination
 
@@ -46,12 +35,12 @@ class BaseBuildExecutor(TaskExecutor):
             raise CredentialsError("No credentials for the destination")
 
         # Create the config dir to store the credentials
-        self.dockerhub_config_dir = f"{self.task.scratch_dir}dockerhub/"
+        self.dockerhub_config_dir = f"{self.task.exec_dir}dockerhub/"
         os.mkdir(self.dockerhub_config_dir)
 
         # Base64 encode credentials
         encoded_creds = base64.b64encode(
-            f"{credentials.data.username}:{credentials.data.token}".encode("utf-8")
+            f"{credentials.username}:{credentials.token}".encode("utf-8")
         )
 
         # Add the credentials to the config file

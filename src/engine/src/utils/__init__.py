@@ -1,7 +1,6 @@
 import json
 
 from importlib import import_module
-from types import SimpleNamespace
 
 from conf.constants import FLAVORS
 # from errors import InvalidFlavorError
@@ -9,8 +8,8 @@ from core.tasks.Flavor import Flavor
 from utils.CompositeLogger import CompositeLogger # NOTE imported to re-export
 
 
-def json_to_object(json_string):
-    return json.loads(json_string, object_hook=lambda d: SimpleNamespace(**d))
+# def json_to_object(json_string):
+#     return json.loads(json_string, object_hook=lambda d: SimpleNamespace(**d))
 
 def trunc_uuid(uuid):
     parts = str(uuid).split("-")
@@ -22,7 +21,7 @@ def lbuffer_str(string, length=10):
     if diff <= 0: return string
     
     buffer = " " * diff
-    return buffer + string
+    return string + buffer
 
 def bytes_to_json(bytestring):
     # Decode UTF-8 bytes to Unicode, and convert single quotes

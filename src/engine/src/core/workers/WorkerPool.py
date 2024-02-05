@@ -10,7 +10,7 @@ class WorkerPool:
         self,
         worker_cls: Worker,
         starting_worker_count,
-        max_workers=10,
+        max_workers=1000,
         worker_args=[],
         worker_kwargs={},
     ):

@@ -1,0 +1,13 @@
+{
+  "id": "e2e-pipeline",
+  "archives": [],
+  "type": "workflow",
+  "env": {
+    "ENV1": {
+      "type": "number", 
+      "value": 5
+    }
+  },
+  "tasks": [
+  ]
+}

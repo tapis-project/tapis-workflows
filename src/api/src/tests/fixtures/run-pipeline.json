@@ -1,0 +1,8 @@
+{
+    "params": {
+        "PARAM1": {
+            "type": "number",
+            "value": 5
+        }
+    }
+}

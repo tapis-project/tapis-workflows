@@ -2,7 +2,7 @@ from django.test import SimpleTestCase
 from django.urls import reverse, resolve
 from backend.views import (
     AddPipelineArchive, Auth, Archives, ChangePipelineOwner, CreateTaskExecution,
-    Credentials, Destinations, Events, Groups, HealthCheck, Identities,
+    Credentials, Destinations, Groups, HealthCheck, Identities,
     ListPipelineArchives, PipelineRuns, Pipelines, RemovePipelineArchive,
     TaskExecutions, Tasks, UpdatePipelineRunStatus, UpdateTaskExecutionStatus,
     Users, RunPipelineWebhook
@@ -33,7 +33,6 @@ VIEW_MAPPING = {
     "addPipelineArchive": AddPipelineArchive,
     "removePipelineArchive": RemovePipelineArchive,
     "runPipelineWebhook": RunPipelineWebhook,
-    "event": Events,
     "pipelineRuns": PipelineRuns,
     "pipelineRun": PipelineRuns,
     "updatePipelineRunStatus": UpdatePipelineRunStatus,

@@ -14,19 +14,25 @@ class PipelineDispatchRequestBuilder:
         base_url,
         group,
         pipeline,
-        event,
+        name=None,
+        description=None,
         commit=None,
         directives=None,
-        params={}
+        args={}
     ):
         # Get the pipeline tasks, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
         tasks = pipeline.tasks.all()
         
+        # Convert tasks' schema to the schema expected by the workflow engine
         tasks_request = []
         for task in tasks:
-            # Build task result
-            task_request = getattr(self, f"_{task.type}")(task)
+            # Convert the task to a dict and add the execution profile property
+            # for all tasks.
+            preprocessed_task = self._preprocess_task(task)
+
+            # Handle the task-specific schema conversions
+            task_request = getattr(self, f"_{task.type}")(preprocessed_task, task)
             tasks_request.append(task_request)
 
         # Get the archives for this pipeline
@@ -43,23 +49,39 @@ class PipelineDispatchRequestBuilder:
 
         request["group"] = model_to_dict(group)
         request["pipeline"] = model_to_dict(pipeline)
-        # TODO Implement model and request object.
+        request["archives"] = archives
+
+        # Move the execution profile props from the pipeline object to the
+        # execution profile property
+        request["pipeline"]["execution_profile"] = {
+            "max_exec_time": request["pipeline"]["max_exec_time"],
+            "duplicate_submission_policy": request["pipeline"]["duplicate_submission_policy"],
+            "max_retries": request["pipeline"]["max_retries"],
+            "invocation_mode": request["pipeline"]["invocation_mode"],
+            "retry_policy": request["pipeline"]["retry_policy"]
+        }
+
         request["pipeline"]["tasks"] = tasks_request
-        request["pipeline"]["archives"] = archives
 
         # Populate the env for this request. Populate values from SK
         request["env"] = request["pipeline"]["env"]
-
-        req_params = {}
-        for key in params:
-            req_params[key] = params[key].value
-
-        # Populate the params for this request
-        request["params"] = {
-            "workflow_executor_access_token": WORKFLOW_EXECUTOR_ACCESS_TOKEN,
-            "tapis_tenant_id": request["group"]["tenant_id"],
-            "tapis_pipeline_owner": request["pipeline"]["owner"],
-            **req_params
+        
+        req_args = {}
+        for key in args:
+            req_args[key] = args[key].dict()
+            
+        # Populate the args for this request
+        request["args"] = {
+            "workflow_executor_access_token": {
+                "value": WORKFLOW_EXECUTOR_ACCESS_TOKEN
+            },
+            "tapis_tenant_id": {
+                "value": request["group"]["tenant_id"]
+            },
+            "tapis_pipeline_owner": {
+                "value": request["pipeline"]["owner"]
+            },
+            **req_args
         }
 
         request["meta"] = {}
@@ -70,18 +92,19 @@ class PipelineDispatchRequestBuilder:
         # pipeline.duplicate_submission_policy (allow, allow_terminate, deny)
         request["meta"]["idempotency_key"] = [
             "group.id",
-            "params.tapis_tenant_id",
+            "args.tapis_tenant_id",
             "pipeline.id"
         ]
 
-        request["meta"]["origin"] = base_url, # Origin of the request
-        request["meta"]["event"] = model_to_dict(event)
+        request["meta"]["origin"] = base_url # Origin of the request
 
         request["pipeline_run"] = {}
         
         # Generate the uuid for this pipeline run
         uuid = uuid4()
         request["pipeline_run"]["uuid"] = uuid
+        request["pipeline_run"]["name"] = name or uuid
+        request["pipeline_run"]["description"] = description
 
         # Parse the directives from the commit message
         directives_request = {}
@@ -96,9 +119,7 @@ class PipelineDispatchRequestBuilder:
 
         return request
 
-    def _image_build(self, task):
-        task_request = model_to_dict(task)
-
+    def _image_build(self, task_request, task):
         task_request["context"] = model_to_dict(task.context)
 
         # Resolve which context credentials to use if any provided
@@ -117,7 +138,12 @@ class PipelineDispatchRequestBuilder:
 
             # Get the context credentials data
             context_cred_data = self.secret_service.get_secret(context_creds.sk_id)
-            task_request["context"]["credentials"]["data"] = context_cred_data
+            task_request["context"]["credentials"] = context_cred_data
+
+        # NOTE Workflow engine expect build_file_path and not recipe_file_path
+        # TODO REMOVE FIXME Migrate "recipe_file_path" to "build_file_path"
+        task_request["context"]["build_file_path"] = task_request["context"]["recipe_file_path"]
+        del task_request["context"]["recipe_file_path"]
 
         # Destination credentials
         task_request["destination"] = model_to_dict(task.destination)
@@ -134,30 +160,43 @@ class PipelineDispatchRequestBuilder:
 
             # Get the context credentials data
             destination_cred_data = self.secret_service.get_secret(destination_creds.sk_id)
-            task_request["destination"]["credentials"]["data"] = destination_cred_data
+            task_request["destination"]["credentials"] = destination_cred_data
 
         return task_request
 
-    def _request(self, task):
-        task_request = model_to_dict(task)
+    def _request(self, task_request, _):
         return task_request
 
-    def _container_run(self, task):
-        task_request = model_to_dict(task)
+    def _application(self, task_request, _):
+        return task_request
+    
+    def _template(self, task_request, _):
         return task_request
 
-    def _tapis_job(self, task):
-        task_request = model_to_dict(task)
+    def _tapis_job(self, task_request, _):
         return task_request
 
-    def _tapis_actor(self, task):
-        task_request = model_to_dict(task)
+    def _tapis_actor(self, task_request, _):
         return task_request
 
-    def _function(self, task):
-        task_request = model_to_dict(task)
+    def _function(self, task_request, _):
         return task_request
 
-    def _container_run(self, task):
+    def _container_run(self, task_request, _):
+        return task_request
+
+    def _preprocess_task(self, task):
+        # Convert to dict
         task_request = model_to_dict(task)
+
+        # Map task data model properties to the workflow engine expected schema for
+        # the execution profile
+        task_request["execution_profile"] = {
+            "flavor": task_request["flavor"],
+            "max_exec_time": task_request["max_exec_time"],
+            "max_retries": task_request["max_retries"],
+            "invocation_mode": task_request["invocation_mode"],
+            "retry_policy": task_request["retry_policy"]
+        }
+
         return task_request
