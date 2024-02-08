@@ -52,10 +52,10 @@ class LocalIOBox(BaseModel):
     include_pattern: str = None
 
 class LocalInbox(LocalIOBox):
-    manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.OnePerFile
+    manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOnePerFile
 
 class LocalOutbox(LocalIOBox):
-    manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.OneForAll
+    manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOneForAll
 
 class GlobusLocalOutbox(LocalOutbox):
     globus_endpoint_id: str
