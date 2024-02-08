@@ -111,6 +111,16 @@ class ETLPipelines(RestrictedAPIView):
 
         # Create the pipeline
         try:
+            # Convert the data integrity policies to dicts. Easier
+            # to handle for null values via .get
+            inbox_data_integrity_profile = {}
+            if getattr(body.local_inbox, "data_integrity_profile", None) != None:
+                inbox_data_integrity_profile = body.local_inbox.data_integrity_profile.dict()
+
+            outbox_data_integrity_profile = {}
+            if getattr(body.local_outbox, "data_integrity_profile", None) != None:
+                outbox_data_integrity_profile = body.local_outbox.data_integrity_profile.dict()
+                
             pipeline = PipelineModel.objects.create(
                 id=body.id,
                 description=getattr(body, "description", None) or pipeline_template.get("description"),
@@ -135,7 +145,15 @@ class ETLPipelines(RestrictedAPIView):
                         "type": "string",
                         "value": body.local_inbox.data_path
                     },
-                    "LOCAL_INBOX_MANIFEST_PATH": {
+                    "LOCAL_INBOX_INCLUDE_PATTERN": {
+                        "type": "string",
+                        "value": body.local_inbox.include_pattern
+                    },
+                    "LOCAL_INBOX_EXCLUDE_PATTERN": {
+                        "type": "string",
+                        "value": body.local_inbox.exclude_pattern
+                    },
+                    "LOCAL_INBOX_MANIFESTS_PATH": {
                         "type": "string",
                         "value": body.local_inbox.manifests_path
                     },
@@ -147,6 +165,34 @@ class ETLPipelines(RestrictedAPIView):
                         "type": "string",
                         "value": body.local_inbox.manifest_priority
                     },
+                    "LOCAL_INBOX_DATA_INTEGRITY_TYPE": {
+                        "type": "string",
+                        "value": inbox_data_integrity_profile.get(
+                            "type",
+                            None
+                        )
+                    },
+                    "LOCAL_INBOX_DATA_INTEGRITY_DONE_FILES_PATH": {
+                        "type": "string",
+                        "value": inbox_data_integrity_profile.get(
+                            "done_files_path",
+                            None
+                        )
+                    },
+                    "LOCAL_INBOX_DATA_INTEGRITY_DONE_FILE_INCLUDE_PATTERN": {
+                        "type": "string",
+                        "value": inbox_data_integrity_profile.get(
+                            "include_pattern",
+                            None
+                        )
+                    },
+                    "LOCAL_INBOX_DATA_INTEGRITY_DONE_FILE_EXCLUDE_PATTERN": {
+                        "type": "string",
+                        "value": inbox_data_integrity_profile.get(
+                            "exclude_pattern",
+                            None
+                        )
+                    },
                     "LOCAL_OUTBOX_SYSTEM_ID": {
                         "type": "string",
                         "value": body.local_outbox.system_id
@@ -155,7 +201,15 @@ class ETLPipelines(RestrictedAPIView):
                         "type": "string",
                         "value": body.local_outbox.data_path
                     },
-                    "LOCAL_OUTBOX_MANIFEST_PATH": {
+                    "LOCAL_OUTBOX_INCLUDE_PATTERN": {
+                        "type": "string",
+                        "value": body.local_outbox.include_pattern
+                    },
+                    "LOCAL_OUTBOX_EXCLUDE_PATTERN": {
+                        "type": "string",
+                        "value": body.local_outbox.exclude_pattern
+                    },
+                    "LOCAL_OUTBOX_MANIFESTS_PATH": {
                         "type": "string",
                         "value": body.local_outbox.manifests_path
                     },
@@ -166,6 +220,34 @@ class ETLPipelines(RestrictedAPIView):
                     "LOCAL_OUTBOX_MANIFEST_PRIORITY": {
                         "type": "string",
                         "value": body.local_outbox.manifest_priority
+                    },
+                    "LOCAL_OUTBOX_DATA_INTEGRITY_TYPE": {
+                        "type": "string",
+                        "value": outbox_data_integrity_profile.get(
+                            "type",
+                            None
+                        )
+                    },
+                    "LOCAL_OUTBOX_DATA_INTEGRITY_DONE_FILES_PATH": {
+                        "type": "string",
+                        "value": outbox_data_integrity_profile.get(
+                            "done_files_path",
+                            None
+                        )
+                    },
+                    "LOCAL_OUTBOX_DATA_INTEGRITY_DONE_FILE_INCLUDE_PATTERN": {
+                        "type": "string",
+                        "value": outbox_data_integrity_profile.get(
+                            "include_pattern",
+                            None
+                        )
+                    },
+                    "LOCAL_OUTBOX_DATA_INTEGRITY_DONE_FILE_EXCLUDE_PATTERN": {
+                        "type": "string",
+                        "value": outbox_data_integrity_profile.get(
+                            "exclude_pattern",
+                            None
+                        )
                     },
                     "REMOTE_INBOX_PATH": {
                         "type": "string",
