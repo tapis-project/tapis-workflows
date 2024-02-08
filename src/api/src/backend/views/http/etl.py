@@ -7,26 +7,20 @@ from .requests import _EnumMeta, Pipeline
 
 
 class EnumManifestGenerationPolicy(str, Enum, metaclass=_EnumMeta):
-    OnePerFile = "one_per_file"
-    OneForAll = "one_for_all"
+    Manual = "manual"
+    AutoOnePerFile = "auto_one_per_file"
+    AutoOneForAll = "auto_one_for_all"
 
 class EnumManifestPriority(str, Enum, metaclass=_EnumMeta):
     Oldest = "oldest"
     Newest = "newest"
     Any = "any"
 
-class EnumChecksumAlgorithm(str, Enum, metaclass=_EnumMeta):
-    MD5 = "md5"
-    SHA256 = "sha256"
-    SHA3 = "sha3"
-
 class BaseDataIntegrityProfile(BaseModel):
     type: Literal["checksum", "byte_check", "done_file"]
 
 class ChecksumDataIntegrityProfile(BaseDataIntegrityProfile):
     type: Literal["checksum"]
-    checksum_algo: EnumChecksumAlgorithm
-    checksums_path: str
 
 class ByteCheckDataIntegrityProfile(BaseDataIntegrityProfile):
     type: Literal["byte_check"]
@@ -34,7 +28,9 @@ class ByteCheckDataIntegrityProfile(BaseDataIntegrityProfile):
 class DoneFileDataIntegrityProfile(BaseDataIntegrityProfile):
     type: Literal["done_file"]
     done_files_path: str
-    pattern: str
+    include_pattern: str = None
+    exclude_pattern: str = None
+
 
 DataIntegrityProfile = Annotated[
     Union[
@@ -52,7 +48,8 @@ class LocalIOBox(BaseModel):
     manifests_path: str = None
     manifest_generation_policy: EnumManifestGenerationPolicy
     manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
-    exclude_pattern: List[str] = []
+    exclude_pattern: str = None
+    include_pattern: str = None
 
 class LocalInbox(LocalIOBox):
     manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.OnePerFile

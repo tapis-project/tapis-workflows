@@ -2860,15 +2860,8 @@ components:
       allOf:
         - $ref: "#/components/schemas/BaseDataIntegrityProfile"
         - type: object
-          required:
-            - checksum_algo
-            - checksums_path
           properties:
             type:
-              type: string
-            checksum_algo:
-              $ref: "#/components/schemas/ETLEnumChecksumAlgorithm"
-            checksums_path:
               type: string
 
     DoneFileDataIntegrityProfile:
@@ -2882,7 +2875,9 @@ components:
               type: string
             done_files_path:
               type: string
-            pattern:
+            include_pattern:
+              type: string
+            exclude_pattern:
               type: string
 
     ByteCheckDataIntegrityProfile:
@@ -2924,10 +2919,10 @@ components:
           default: 'oldest'
         data_integrity_profile:
           $ref: "#/components/schemas/DataIntegrityProfile"
+        include_pattern:
+          type: string
         exclude_pattern:
-          type: array
-          items:
-            type: string
+          type: string
 
     ETLRemoteOutbox:
       type: object
@@ -2940,7 +2935,7 @@ components:
           properties:
             manifest_generation_policy:
               $ref: "#/components/schemas/ETLEnumManifestGenerationPolicy"
-              default: 'one_per_file'
+              default: 'auto_one_per_file'
 
     ETLLocalOutbox:
       allOf:
@@ -2949,7 +2944,7 @@ components:
           properties:
             manifest_generation_policy:
               $ref: "#/components/schemas/ETLEnumManifestGenerationPolicy"
-              default: 'one_for_all'
+              default: 'auto_one_for_all'
 
     ETLTapisSystemRemoteInbox:
       type: object
@@ -2969,8 +2964,9 @@ components:
     ETLEnumManifestGenerationPolicy:
       type: string
       enum:
-        - one_per_file
-        - one_for_all
+        - manual
+        - auto_one_per_file
+        - auto_one_for_all
 
     ETLEnumManifestPriority:
       type: string
@@ -2985,13 +2981,6 @@ components:
         - checksum
         - byte_check
         - done_file
-
-    ETLEnumChecksumAlgorithm:
-      type: string
-      enum:
-        - md5
-        - sha256
-        - sha3
 
     ################################# End ETL
         
