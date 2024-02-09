@@ -83,25 +83,23 @@ class S3RemoteInbox(BaseModel):
     url: str
     bucket: str
 
-class JobIOMapping(BaseModel):
+class TapisJobDef(BaseModel):
+    pass
+
+class TapisJobWorkflowsETL(BaseModel):
     input: str
     output: str
 
-class TapisJobDef(BaseModel):
-    pass # Essentially this is a placeholder for dict
+class TapisJobWorkflowsExtension(BaseModel):
+    etl: TapisJobWorkflowsETL
 
-class WorkflowsExetendedTapisJobDef(TapisJobDef):
-    workflows: Dict[Literal["etl"], JobIOMapping] = {
-        "etl": JobIOMapping(
-            input="/tmp/DATA-IN",
-            output="/tmp/DATA-OUT"
-        )
-    }
+class ExetendedTapisJob(TapisJobDef):
+    workflows: TapisJobWorkflowsExtension = None
 
 class TapisETLPipeline(Pipeline):
     remote_outbox: Dict = None
     local_inbox: LocalInbox
-    jobs: List[WorkflowsExetendedTapisJobDef]
+    jobs: List[ExetendedTapisJob]
     local_outbox: GlobusLocalOutbox
     remote_inbox: Union[
         TapisSystemRemoteInbox,
