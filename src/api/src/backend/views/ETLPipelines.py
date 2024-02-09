@@ -114,17 +114,13 @@ class ETLPipelines(RestrictedAPIView):
             # Convert the data integrity policies to dicts. Easier
             # to handle for null values via .get
             inbox_data_integrity_profile = {}
-            print("LOCAL_INBOX", body.local_inbox)
             if getattr(body.local_inbox, "data_integrity_profile", None) != None:
                 inbox_data_integrity_profile = body.local_inbox.data_integrity_profile.dict()
-                print("INBOX INTEGRITY", inbox_data_integrity_profile)
             
 
             outbox_data_integrity_profile = {}
-            print("LOCAL OUTBOX", body.local_outbox)
             if getattr(body.local_outbox, "data_integrity_profile", None) != None:
                 outbox_data_integrity_profile = body.local_outbox.data_integrity_profile.dict()
-                print("OUTBOX INTEGRITY", outbox_data_integrity_profile)
 
             pipeline = PipelineModel.objects.create(
                 id=body.id,
