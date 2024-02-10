@@ -24,9 +24,7 @@ class ExecutionContext:
         if not callable(hook):
             raise TypeError("Error registering hook. Argument 'hook' must be callable")
         
-        self._exit_hooks(exit_code, partial(hook, *args, **kwargs))
-
-        return self
+        self._exit_hooks[exit_code].append(partial(hook, *args, **kwargs))
         
 
     def get_input(self, input_id, default=None):
