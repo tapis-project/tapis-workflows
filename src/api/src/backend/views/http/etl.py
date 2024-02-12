@@ -100,7 +100,7 @@ class TapisETLPipeline(Pipeline):
     remote_outbox: Dict = None
     local_inbox: LocalInbox
     jobs: List[ExetendedTapisJob]
-    local_outbox: GlobusLocalOutbox
+    local_outbox: LocalOutbox
     remote_inbox: Union[
         TapisSystemRemoteInbox,
         GlobusRemoteInbox,
