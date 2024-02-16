@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Dict, Union, Literal, Annotated
 
-from pydantic import BaseModel, validator, root_validator, Field
+from pydantic import BaseModel, validator, root_validator, Field, Extra
 
 from .requests import _EnumMeta, Pipeline
 
@@ -95,6 +95,9 @@ class TapisJobWorkflowsExtension(BaseModel):
 
 class ExetendedTapisJob(TapisJobDef):
     workflows: TapisJobWorkflowsExtension = None
+
+    class Config:
+        extra = Extra.allow
 
 class TapisETLPipeline(Pipeline):
     remote_outbox: Dict = None
