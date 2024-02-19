@@ -26,7 +26,8 @@ from errors.tasks import (
     MissingInitialTasksError,
     InvalidDependenciesError,
     CycleDetectedError,
-    ConditionalExpressionEvalError
+    ConditionalExpressionEvalError,
+    TaskInputStagingError
 )
 from core.middleware.archivers import S3Archiver, IRODSArchiver
 from conf.constants import BASE_WORK_DIR
@@ -328,7 +329,17 @@ class WorkflowExecutor(Worker, EventPublisher):
             task_input_file_staging_service = self.container.load(
                 "TaskInputFileStagingService"
             )
-            task_input_file_staging_service.stage(task)
+            try:
+                task_input_file_staging_service.stage(task)
+            except TaskInputStagingError as e:
+                self.state.ctx.logger.info(self.t_str(task, "FAILED"))
+                self.publish(Event(TASK_FAILED, self.state.ctx, task=task))
+                # Get the next queued tasks if any
+                unstarted_threads = self._on_task_terminal_state(task, task_result)
+
+                # NOTE Triggers hook _on_change_ready_task
+                self.state.ready_tasks += unstarted_threads
+                return
 
             # Log the task status
             self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
