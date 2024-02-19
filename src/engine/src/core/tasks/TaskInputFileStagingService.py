@@ -41,7 +41,7 @@ class TaskInputFileStagingService:
                     )
                 except Exception as e:
                     if input_.required:
-                        raise TaskInputStagingError(f"No output found for task '{value_from[key].task_id}' with output id of '{value_from[key].output_id}' | {e}")
+                        raise TaskInputStagingError(f"No output found for task '{value_from[key].task_id}' with output id of '{value_from[key].output_id}'")
             if key == "args":
                 try:
                     value = self._value_from_service.get_arg_value_by_key(
@@ -49,7 +49,7 @@ class TaskInputFileStagingService:
                     )
                 except Exception as e:
                     if input_.required:
-                        raise TaskInputStagingError(f"Error attempting to fetch value from args at key '{value_from[key]}' | {e}")
+                        raise TaskInputStagingError(f"Error attempting to fetch value from args at key '{value_from[key]}'")
             if key == "env":
                 try:
                     value = self._value_from_service.get_env_value_by_key(
@@ -57,7 +57,7 @@ class TaskInputFileStagingService:
                     )
                 except Exception as e:
                     if input_.required:
-                        raise TaskInputStagingError(f"Error attempting to fetch value from env at key '{value_from[key]}' | {e}")
+                        raise TaskInputStagingError(f"Error attempting to fetch value from env at key '{value_from[key]}'")
                 
             self._create_input_(task, input_id, value)
 
