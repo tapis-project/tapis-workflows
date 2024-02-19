@@ -335,7 +335,10 @@ class WorkflowExecutor(Worker, EventPublisher):
                 self.state.ctx.logger.info(self.t_str(task, "FAILED"))
                 self.publish(Event(TASK_FAILED, self.state.ctx, task=task))
                 # Get the next queued tasks if any
-                unstarted_threads = self._on_task_terminal_state(task, task_result)
+                unstarted_threads = self._on_task_terminal_state(
+                    task,
+                    TaskResult(1, errors=[str(e)])
+                )
 
                 # NOTE Triggers hook _on_change_ready_task
                 self.state.ready_tasks += unstarted_threads
