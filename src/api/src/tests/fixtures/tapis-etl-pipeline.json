@@ -1,0 +1,96 @@
+{
+    "id": "test-etl-ls6",
+    "remote_outbox": {
+        "system_id": "test.etl.ls6.remote.inbox",
+        "data_path": "/ETL/REMOTE-INBOX/DATA",
+        "data_integrity_profile": {
+            "type": "done_file",
+            "done_files_path": "/ETL/REMOTE-INBOX/DATA",
+            "include_pattern": "*.md5"
+        },
+        "manifests_path": "/ETL/REMOTE-INBOX/MANIFESTS",
+        "exclude_pattern": "*.md5"
+    },
+    "local_inbox": {
+        "system_id": "test.etl.ls6.local.inbox",
+        "data_path": "/ETL/LOCAL-INBOX/DATA",
+        "data_integrity_profile": null,
+        "manifests_path": "/ETL/LOCAL-INBOX/MANIFESTS",
+        "exclude_pattern": "*.md5"
+    },
+    "local_outbox": {
+        "system_id": "test.etl.ls6.local.outbox",
+        "data_path": "/ETL/LOCAL-OUTBOX/DATA",
+        "manifests_path": "/ETL/LOCAL-OUTBOX/MANIFESTS"
+    },
+    "remote_inbox": {
+        "system_id": "test.etl.ls6.remote.inbox",
+        "data_path": "/ETL/REMOTE-INBOX/DATA",
+        "manifests_path": "/ETL/REMOTE-INBOX/MANIFESTS"
+    },
+    "jobs": [
+        {
+            "name": "string-transform",
+            "appId": "etl-string-replace-test",
+            "appVersion": "dev",
+            "execSystemId": "test.etl.ls6.local.inbox",
+            "execSystemInputDir": "${JobWorkingDir}/jobs/${JobUUID}/input",
+            "nodeCount": 1,
+            "coresPerNode": 1,
+            "maxMinutes": 10,
+            "parameterSet": {
+                "schedulerOptions": [
+                    {
+                        "name": "allocation",
+                        "arg": "-A TACC-ACI"
+                    },
+                    {
+                        "name": "profile",
+                        "arg": "--tapis-profile tacc-apptainer"
+                    }
+                ],
+                "containerArgs": [
+                    {
+                        "name": "input-mount",
+                        "arg": "--bind $(pwd)/input:/src/input:ro,$(pwd)/output:/src/output:rw"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "sentiment-analysis",
+            "appId": "etl-sentiment-analysis-test", 
+            "appVersion": "dev",
+            "nodeCount": 1,
+            "coresPerNode": 1,
+            "maxMinutes": 10,
+            "execSystemId": "test.etl.ls6.local.inbox",
+            "execSystemInputDir": "${JobWorkingDir}/jobs/${JobUUID}/input",
+            "archiveSystemId": "test.etl.ls6.local.inbox",
+            "archiveSystemDir": "ETL/LOCAL-OUTBOX/DATA",
+            "parameterSet": {
+                "schedulerOptions": [
+                    {
+                        "name": "allocation",
+                        "arg": "-A TACC-ACI"
+                    },
+                    {
+                        "name": "profile",
+                        "arg": "--tapis-profile tacc-apptainer"
+                    }
+                ],
+                "containerArgs": [
+                    {
+                        "name": "input-mount",
+                        "arg": "--bind $(pwd)/input:/src/input:ro,$(pwd)/output:/src/output:rw"
+                    }
+                ],
+                "archiveFilter": {
+                    "includes": [],
+                    "excludes": ["tapisjob.out"],
+                    "includeLaunchFiles": false
+                }
+            }
+        }
+    ]
+}
