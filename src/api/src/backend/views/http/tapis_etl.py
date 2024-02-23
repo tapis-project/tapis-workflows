@@ -5,27 +5,44 @@ from pydantic import BaseModel, validator, Extra
 from .requests import Pipeline
 
 from backend.views.http.etl import (
-    LocalInbox,
-    LocalOutbox,
-    RemoteInbox,
-    RemoteOutbox
+    EnumManifestGenerationPolicy,
+    EnumManifestPriority,
+    IOSystem
 )
+    
 
-
-class TapisIOBox(BaseModel):
+class TapisIOBox(IOSystem):
     system_id: str
 
-class TapisRemoteInbox(TapisIOBox, RemoteInbox):
-    pass
+class TapisLocalIOBox(IOSystem):
+    writable_system_id: str
+    data_transfer_system_id: str
 
-class TapisLocalInbox(TapisIOBox, LocalInbox):
-    pass
+class TapisRemoteOutbox(TapisIOBox):
+    manifest_generation_policy: EnumManifestGenerationPolicy = None
+    manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
+    data_path: str = "/ETL/REMOTE-OUTBOX/DATA"
+    manifests_path: str = "/ETL/REMOTE-OUTBOX/MANFIFESTS"
 
-class TapisLocalOutbox(TapisIOBox, LocalOutbox):
-    pass
+class TapisLocalInbox(TapisLocalIOBox):
+    manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOnePerFile
+    manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
+    data_path: str = "/ETL/LOCAL-INBOX/DATA"
+    manifests_path: str = "/ETL/LOCAL-INBOX/MANFIFESTS"
+    inbound_transfer_manifests_path: str = "/ETL/LOCAL-INBOX/"
 
-class TapisRemoteOutbox(TapisIOBox, RemoteOutbox):
-    pass
+class TapisLocalOutbox(TapisLocalIOBox):
+    manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOneForAll
+    manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
+    data_path: str = "/ETL/LOCAL-INBOX/DATA"
+    manifests_path: str = "/ETL/LOCAL-INBOX/MANFIFESTS"
+
+class TapisRemoteInbox(TapisIOBox):
+    manifest_generation_policy: EnumManifestGenerationPolicy = None
+    manifest_priority: EnumManifestPriority = None
+    data_path: str = "/ETL/REMOTE-INBOX/DATA"
+    manifests_path: str = "/ETL/REMOTE-INBOX/MANFIFESTS"
+
 
 class TapisJobDef(BaseModel):
     pass
@@ -44,11 +61,13 @@ class ExetendedTapisJob(TapisJobDef):
         extra = Extra.allow
 
 class TapisETLPipeline(Pipeline):
+    run_before: List[str] = []
     remote_outbox: TapisRemoteOutbox
     local_inbox: TapisLocalInbox
     jobs: List[ExetendedTapisJob]
     local_outbox: TapisLocalOutbox
     remote_inbox: TapisRemoteInbox
+    run_after: List[str] = []
 
     @validator("jobs")
     def one_or_more_jobs(cls, value):

@@ -3,15 +3,10 @@ import unittest
 
 class TestImports(unittest.TestCase):
     def testETLImports(self):
-        from backend.views.http.tapis_etl import (
-            RemoteInbox,
-            RemoteOutbox,
-            LocalInbox,
-            LocalOutbox
-        )
+        import backend.views.http.etl
 
     def testTapisETLImports(self):
-        from backend.views.http.tapis_etl import TapisETLPipeline
+        import backend.views.http.tapis_etl
 
 if __name__ == "__main__":
     unittest.main()

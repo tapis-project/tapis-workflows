@@ -1,32 +1,38 @@
 {
     "id": "test-etl-ls6",
     "remote_outbox": {
-        "system_id": "test.etl.ls6.remote.inbox",
-        "data_path": "/ETL/REMOTE-INBOX/DATA",
+        "system_id": "test.etl.ls6.remote.outbox",
+        "data_path": "/ETL/REMOTE-BOX/DATA",
         "data_integrity_profile": {
             "type": "done_file",
-            "done_files_path": "/ETL/REMOTE-INBOX/DATA",
+            "done_files_path": "/ETL/LOCAL-INBOX/DATA",
             "include_pattern": "*.md5"
         },
-        "manifests_path": "/ETL/REMOTE-INBOX/MANIFESTS",
+        "manifests_path": "/ETL/REMOTE-OUTBOX/MANIFESTS",
         "exclude_pattern": "*.md5"
     },
     "local_inbox": {
-        "system_id": "test.etl.ls6.local.inbox",
+        "writable_system_id": "test.etl.ls6.local.inbox",
+        "data_transfer_system_id": "test.etl.ls6.local.inbox",
         "data_path": "/ETL/LOCAL-INBOX/DATA",
-        "data_integrity_profile": null,
+        "data_integrity_profile": {
+            "type": "done_file",
+            "done_files_path": "/ETL/LOCAL-INBOX/DATA",
+            "include_pattern": "*.md5"
+        },
         "manifests_path": "/ETL/LOCAL-INBOX/MANIFESTS",
         "exclude_pattern": "*.md5"
     },
     "local_outbox": {
-        "system_id": "test.etl.ls6.local.outbox",
+        "writable_system_id": "test.etl.ls6.local.outbox",
+        "data_transfer_system_id": "test.etl.ls6.local.outbox",
         "data_path": "/ETL/LOCAL-OUTBOX/DATA",
         "manifests_path": "/ETL/LOCAL-OUTBOX/MANIFESTS"
     },
     "remote_inbox": {
-        "system_id": "test.etl.ls6.remote.inbox",
         "data_path": "/ETL/REMOTE-INBOX/DATA",
-        "manifests_path": "/ETL/REMOTE-INBOX/MANIFESTS"
+        "manifests_path": "/ETL/REMOTE-INBOX/MANIFESTS",
+        "system_id": "test.etl.ls6.remote.inbox"
     },
     "jobs": [
         {

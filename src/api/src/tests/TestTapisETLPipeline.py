@@ -13,21 +13,19 @@ class TestTapisETLPipeline(unittest.TestCase):
         assert type(self.pipeline) == TapisETLPipeline
     
     def testIOBoxToDictSerialization(self):
-        serialized = {
-            "REMOTE_OUTBOX": json.dumps(self.pipeline.remote_outbox.dict()),
-            "LOCAL_INBOX": json.dumps(self.pipeline.local_inbox.dict()),
-            "LOCAL_OUTBOX": json.dumps(self.pipeline.local_outbox.dict()),
-            "REMOTE_INBOX": json.dumps(self.pipeline.remote_inbox.dict()),
-        }
+        json.dumps(self.pipeline.remote_outbox.dict())
+        json.dumps(self.pipeline.local_inbox.dict())
+        json.dumps(self.pipeline.local_outbox.dict())
+        json.dumps(self.pipeline.remote_inbox.dict())
 
     def testETLEnvBuilderUtil(self):
         env = build_etl_pipeline_env(self.pipeline)
         
         assert type(env) == dict
-        assert env.get("REMOTE_OUTBOX_MANIFEST_GENERATION_POLICY").get("value") == "auto_one_per_file"
-        assert env.get("LOCAL_INBOX_MANIFEST_GENERATION_POLICY") == None
-        assert env.get("LOCAL_OUTBOX_MANIFEST_GENERATION_POLICY").get("value") == "auto_one_for_all"
-        assert env.get("REMOTE_INBOX_MANIFEST_GENERATION_POLICY") == None
+        assert json.loads(env.get("REMOTE_OUTBOX").get("value")).get("manifest_generation_policy") == None
+        assert json.loads(env.get("LOCAL_INBOX").get("value")).get("manifest_generation_policy") == "auto_one_per_file"
+        assert json.loads(env.get("LOCAL_OUTBOX").get("value")).get("manifest_generation_policy") == "auto_one_for_all"
+        assert json.loads(env.get("REMOTE_INBOX").get("value")).get("manifest_generation_policy") == None
 
 if __name__ == "__main__":
     unittest.main()

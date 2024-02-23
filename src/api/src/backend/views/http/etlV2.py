@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Union, Literal, Annotated
+from typing import Union, Literal, Annotated, List
 
 from pydantic import BaseModel, Field
 
@@ -40,11 +40,27 @@ DataIntegrityProfile = Annotated[
     Field(discriminator="type")
 ]
 
-class IOSystem(BaseModel):
-    writable: bool = True
+class IOProfile(BaseModel):
     data_path: str
     data_integrity_profile: DataIntegrityProfile = None
     manifests_path: str = None
     exclude_pattern: str = None
     include_pattern: str = None
 
+class ETLSystem(BaseModel):
+    writable: bool = True
+    ingress_profile: IOProfile
+    egress_profile: IOProfile
+
+class EnumXferAction(str, Enum, metaclass=_EnumMeta):
+    PUSH = "push"
+    PULL = "pull"
+    NOOP = "noop"
+    
+class ETLCycle(BaseModel):
+    ingress: ETLSystem
+    egress: ETLSystem
+    xfer_action: EnumXferAction
+    transforms: List[object]
+    
+    
