@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel, validator, Extra
+from pydantic import BaseModel, validator, Extra, root_validator
 
 from .requests import Pipeline
 
@@ -9,14 +9,18 @@ from backend.views.http.etl import (
     EnumManifestPriority,
     IOSystem
 )
-    
 
 class TapisIOBox(IOSystem):
-    system_id: str
+    writable_system_id: str = None
+    data_transfer_system_id: str = None
 
-class TapisLocalIOBox(IOSystem):
-    writable_system_id: str
-    data_transfer_system_id: str
+    @root_validator
+    def validate_system_ids(cls, values):
+        if (
+            values.get("writable_system_id") == None
+            and values.get("data_transfer_system_id") == None
+        ):
+            raise ValueError("Must define one or both of the following properties: ['writable_system_id', 'data_transfer_system_id']")
 
 class TapisRemoteOutbox(TapisIOBox):
     manifest_generation_policy: EnumManifestGenerationPolicy = None
@@ -24,14 +28,14 @@ class TapisRemoteOutbox(TapisIOBox):
     data_path: str = "/ETL/REMOTE-OUTBOX/DATA"
     manifests_path: str = "/ETL/REMOTE-OUTBOX/MANFIFESTS"
 
-class TapisLocalInbox(TapisLocalIOBox):
+class TapisLocalInbox(TapisIOBox):
     manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOnePerFile
     manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
     data_path: str = "/ETL/LOCAL-INBOX/DATA"
     manifests_path: str = "/ETL/LOCAL-INBOX/MANFIFESTS"
     inbound_transfer_manifests_path: str = "/ETL/LOCAL-INBOX/"
 
-class TapisLocalOutbox(TapisLocalIOBox):
+class TapisLocalOutbox(TapisIOBox):
     manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOneForAll
     manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
     data_path: str = "/ETL/LOCAL-INBOX/DATA"
