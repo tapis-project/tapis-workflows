@@ -22,6 +22,8 @@ class TapisIOBox(IOSystem):
         ):
             raise ValueError("Must define one or both of the following properties: ['writable_system_id', 'data_transfer_system_id']")
 
+        return values
+    
 class TapisRemoteOutbox(TapisIOBox):
     manifest_generation_policy: EnumManifestGenerationPolicy = None
     manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
