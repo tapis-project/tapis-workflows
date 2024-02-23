@@ -41,7 +41,6 @@ DataIntegrityProfile = Annotated[
 ]
 
 class IOSystem(BaseModel):
-    writable: bool = True
     data_path: str
     data_integrity_profile: DataIntegrityProfile = None
     manifests_path: str = None

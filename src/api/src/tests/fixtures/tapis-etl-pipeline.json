@@ -1,7 +1,8 @@
 {
     "id": "test-etl-ls6",
     "remote_outbox": {
-        "data_transfer_system_id": "test.etl.ls6.remote.inbox",
+        "writable_system_id": "test.etl.ls6.remote.outbox",
+        "data_transfer_system_id": "test.etl.ls6.remote.outbox.egress",
         "data_path": "/ETL/REMOTE-OUTBOX/DATA",
         "data_integrity_profile": {
             "type": "done_file",
@@ -28,7 +29,8 @@
         "manifests_path": "/ETL/LOCAL-OUTBOX/MANIFESTS"
     },
     "remote_inbox": {
-        "data_transfer_system_id": "test.etl.ls6.remote.inbox",
+        "writable_system_id": "test.etl.ls6.remote.inbox",
+        "data_transfer_system_id": "test.etl.ls6.remote.inbox.egress",
         "data_path": "/ETL/REMOTE-INBOX/DATA",
         "manifests_path": "/ETL/REMOTE-INBOX/MANIFESTS"
     },
