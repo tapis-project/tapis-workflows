@@ -24,6 +24,10 @@
         }
     },
     "local_inbox": {
+        "ingress": {
+            "system_id": "test.etl.ls6.writable",
+            "path": "/ETL/LOCAL-INBOX/INGRESS"
+        },
         "data": {
             "system_id": "test.etl.ls6.xfer",
             "path": "/ETL/LOCAL-INBOX/DATA",

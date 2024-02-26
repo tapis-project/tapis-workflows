@@ -52,7 +52,11 @@ class ManifestsProfile(IOSystemProfile):
     generation_policy: EnumManifestGenerationPolicy = None
     priority: EnumManifestPriority = None
 
+class IngressProfile(IOSystemProfile):
+    pass
+
 class IOSystem(BaseModel):
+    ingress: IngressProfile = None
     data: DataProfile
     manifests: ManifestsProfile
 

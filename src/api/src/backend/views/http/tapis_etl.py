@@ -9,6 +9,7 @@ from backend.views.http.etl import (
     EnumManifestPriority,
     DataProfile,
     ManifestsProfile,
+    IngressProfile,
     IOSystem
 )
 
@@ -35,9 +36,13 @@ class LIManifestsProfile(TapisIOSystemProfile, ManifestsProfile):
     generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOnePerFile
     priority: EnumManifestPriority = EnumManifestPriority.Oldest
 
+class LIIngressProfile(TapisIOSystemProfile, IngressProfile):
+    path: str
+
 class LocalInbox(IOSystem):
     data: LIDataProfile
     manifests: LIManifestsProfile
+    ingress: LIIngressProfile
 
 class LODataProfile(TapisIOSystemProfile, DataProfile):
     path: str = "/ETL/LOCAL-OUTBOX/DATA"
