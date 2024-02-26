@@ -1,54 +1,67 @@
 from typing import List
 
-from pydantic import BaseModel, validator, Extra, root_validator
+from pydantic import BaseModel, validator, Extra, root_validator, conlist
 
 from .requests import Pipeline
 
 from backend.views.http.etl import (
     EnumManifestGenerationPolicy,
     EnumManifestPriority,
+    DataProfile,
+    ManifestsProfile,
     IOSystem
 )
 
-class TapisIOBox(IOSystem):
-    writable_system_id: str = None
-    data_transfer_system_id: str = None
+class TapisIOSystemProfile(BaseModel):
+    system_id: str
 
-    @root_validator
-    def validate_system_ids(cls, values):
-        if (
-            values.get("writable_system_id") == None
-            and values.get("data_transfer_system_id") == None
-        ):
-            raise ValueError("Must define one or both of the following properties: ['writable_system_id', 'data_transfer_system_id']")
+class RODataProfile(TapisIOSystemProfile, DataProfile):
+    path: str = "/ETL/REMOTE-OUTBOX/DATA"
 
-        return values
+class ROManifestsProfile(TapisIOSystemProfile, ManifestsProfile):
+    path: str = "/ETL/REMOTE-OUTBOX/MANFIFESTS"
+    generation_policy: EnumManifestGenerationPolicy = None
+    priority: EnumManifestPriority = EnumManifestPriority.Oldest
     
-class TapisRemoteOutbox(TapisIOBox):
-    manifest_generation_policy: EnumManifestGenerationPolicy = None
-    manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
-    data_path: str = "/ETL/REMOTE-OUTBOX/DATA"
-    manifests_path: str = "/ETL/REMOTE-OUTBOX/MANFIFESTS"
+class RemoteOutbox(IOSystem):
+    data: RODataProfile
+    manifests: ROManifestsProfile
 
-class TapisLocalInbox(TapisIOBox):
-    manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOnePerFile
-    manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
-    data_path: str = "/ETL/LOCAL-INBOX/DATA"
-    manifests_path: str = "/ETL/LOCAL-INBOX/MANFIFESTS"
-    inbound_transfer_manifests_path: str = "/ETL/LOCAL-INBOX/"
+class LIDataProfile(TapisIOSystemProfile, DataProfile):
+    path: str = "/ETL/LOCAL-INBOX/DATA"
 
-class TapisLocalOutbox(TapisIOBox):
-    manifest_generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOneForAll
-    manifest_priority: EnumManifestPriority = EnumManifestPriority.Oldest
-    data_path: str = "/ETL/LOCAL-INBOX/DATA"
-    manifests_path: str = "/ETL/LOCAL-INBOX/MANFIFESTS"
+class LIManifestsProfile(TapisIOSystemProfile, ManifestsProfile):
+    path: str = "/ETL/LOCAL-INBOX/MANFIFESTS"
+    generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOnePerFile
+    priority: EnumManifestPriority = EnumManifestPriority.Oldest
 
-class TapisRemoteInbox(TapisIOBox):
-    manifest_generation_policy: EnumManifestGenerationPolicy = None
-    manifest_priority: EnumManifestPriority = None
-    data_path: str = "/ETL/REMOTE-INBOX/DATA"
-    manifests_path: str = "/ETL/REMOTE-INBOX/MANFIFESTS"
+class LocalInbox(IOSystem):
+    data: LIDataProfile
+    manifests: LIManifestsProfile
 
+class LODataProfile(TapisIOSystemProfile, DataProfile):
+    path: str = "/ETL/LOCAL-OUTBOX/DATA"
+
+class LOManifestsProfile(TapisIOSystemProfile, ManifestsProfile):
+    path: str = "/ETL/LOCAL-OUTBOX/MANIFESTS"
+    generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOneForAll
+    priority: EnumManifestPriority = EnumManifestPriority.Oldest
+
+class LocalOutbox(IOSystem):
+    data: LODataProfile
+    manifests: LOManifestsProfile
+
+class RIDataProfile(TapisIOSystemProfile, DataProfile):
+    path: str = "/ETL/REMOTE-INBOX/DATA"
+
+class RIManifestsProfile(TapisIOSystemProfile, ManifestsProfile):
+    path: str = "/ETL/REMOTE-INBOX/MANIFESTS"
+    generation_policy: EnumManifestGenerationPolicy = None
+    priority: EnumManifestPriority = None
+
+class RemoteInbox(IOSystem):
+    data: RIDataProfile
+    manifests: RIManifestsProfile
 
 class TapisJobDef(BaseModel):
     pass
@@ -66,14 +79,20 @@ class ExetendedTapisJob(TapisJobDef):
     class Config:
         extra = Extra.allow
 
+ListOfStrMinOneItem = conlist(str, min_items=1)
+
+class ActionFilter(BaseModel):
+    pipeline_ids: ListOfStrMinOneItem = None
+    run_async: bool = True
+
 class TapisETLPipeline(Pipeline):
-    run_before: List[str] = []
-    remote_outbox: TapisRemoteOutbox
-    local_inbox: TapisLocalInbox
+    before: ActionFilter = None
+    remote_outbox: RemoteOutbox
+    local_inbox: LocalInbox
     jobs: List[ExetendedTapisJob]
-    local_outbox: TapisLocalOutbox
-    remote_inbox: TapisRemoteInbox
-    run_after: List[str] = []
+    local_outbox: LocalOutbox
+    remote_inbox: RemoteInbox
+    after: ActionFilter = None
 
     @validator("jobs")
     def one_or_more_jobs(cls, value):

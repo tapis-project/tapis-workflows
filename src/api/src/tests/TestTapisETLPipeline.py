@@ -22,10 +22,10 @@ class TestTapisETLPipeline(unittest.TestCase):
         env = build_etl_pipeline_env(self.pipeline)
         
         assert type(env) == dict
-        assert json.loads(env.get("REMOTE_OUTBOX").get("value")).get("manifest_generation_policy") == None
-        assert json.loads(env.get("LOCAL_INBOX").get("value")).get("manifest_generation_policy") == "auto_one_per_file"
-        assert json.loads(env.get("LOCAL_OUTBOX").get("value")).get("manifest_generation_policy") == "auto_one_for_all"
-        assert json.loads(env.get("REMOTE_INBOX").get("value")).get("manifest_generation_policy") == None
+        assert json.loads(env.get("REMOTE_OUTBOX").get("value")).get("manifests").get("generation_policy") == "manual"
+        assert json.loads(env.get("LOCAL_INBOX").get("value")).get("manifests").get("generation_policy") == "auto_one_per_file"
+        assert json.loads(env.get("LOCAL_OUTBOX").get("value")).get("manifests").get("generation_policy") == "auto_one_for_all"
+        assert json.loads(env.get("REMOTE_INBOX").get("value")).get("manifests").get("generation_policy") == None
 
 if __name__ == "__main__":
     unittest.main()

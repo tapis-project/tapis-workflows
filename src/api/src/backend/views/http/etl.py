@@ -40,10 +40,19 @@ DataIntegrityProfile = Annotated[
     Field(discriminator="type")
 ]
 
-class IOSystem(BaseModel):
-    data_path: str
-    data_integrity_profile: DataIntegrityProfile = None
-    manifests_path: str = None
-    exclude_pattern: str = None
+class IOSystemProfile(BaseModel):
+    path: str
     include_pattern: str = None
+    exclude_pattern: str = None
+
+class DataProfile(IOSystemProfile):
+    integrity_profile: DataIntegrityProfile = None
+
+class ManifestsProfile(IOSystemProfile):
+    generation_policy: EnumManifestGenerationPolicy = None
+    priority: EnumManifestPriority = None
+
+class IOSystem(BaseModel):
+    data: DataProfile
+    manifests: ManifestsProfile
 
