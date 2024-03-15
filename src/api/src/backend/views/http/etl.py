@@ -28,8 +28,8 @@ class ByteCheckDataIntegrityProfile(BaseDataIntegrityProfile):
 class DoneFileDataIntegrityProfile(BaseDataIntegrityProfile):
     type: Literal["done_file"]
     done_files_path: str
-    include_pattern: str = None
-    exclude_pattern: str = None
+    include_patterns: str = []
+    exclude_patterns: str = []
 
 DataIntegrityProfile = Annotated[
     Union[
@@ -42,8 +42,8 @@ DataIntegrityProfile = Annotated[
 
 class IOSystemProfile(BaseModel):
     path: str
-    include_pattern: str = None
-    exclude_pattern: str = None
+    include_patterns: str = []
+    exclude_patterns: str = []
 
 class DataProfile(IOSystemProfile):
     integrity_profile: DataIntegrityProfile = None
@@ -52,11 +52,7 @@ class ManifestsProfile(IOSystemProfile):
     generation_policy: EnumManifestGenerationPolicy = None
     priority: EnumManifestPriority = None
 
-class IngressProfile(IOSystemProfile):
-    pass
-
 class IOSystem(BaseModel):
-    ingress: IngressProfile = None
     data: DataProfile
     manifests: ManifestsProfile
 

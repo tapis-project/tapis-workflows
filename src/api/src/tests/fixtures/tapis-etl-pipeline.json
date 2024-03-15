@@ -16,7 +16,7 @@
         },
         "manifests": {
             "system_id": "test.etl.ls6.writable",
-            "generation_policy": "manual",
+            "generation_policy": "auto_one_per_file",
             "priority": "oldest",
             "path": "/ETL/REMOTE-OUTBOX/MANIFESTS",
             "include_pattern": null,
@@ -24,9 +24,9 @@
         }
     },
     "local_inbox": {
-        "ingress": {
+        "control": {
             "system_id": "test.etl.ls6.writable",
-            "path": "/ETL/LOCAL-INBOX/INGRESS"
+            "path": "/ETL/LOCAL-INBOX/CONTROL"
         },
         "data": {
             "system_id": "test.etl.ls6.xfer",
@@ -41,27 +41,6 @@
             "exclude_pattern": null
         }
     },
-    "local_outbox": {
-        "data": {
-            "system_id": "test.etl.ls6.xfer",
-            "path": "/ETL/LOCAL-OUTBOX/DATA"
-        },
-        "manifests": {
-            "system_id": "test.etl.ls6.writable",
-            "path": "/ETL/LOCAL-OUTBOX/MANIFESTS"
-        }
-    },
-    "remote_inbox": {
-        "data": {
-            "system_id": "test.etl.ls6.xfer",
-            "path": "/ETL/REMOTE-INBOX/DATA"
-        },
-        "manifests": {
-            "system_id": "test.etl.ls6.writable",
-            "path": "/ETL/REMOTE-INBOX/MANIFESTS"
-        }
-    },
-    "after": null,
     "jobs": [
         {
             "name": "string-transform",
@@ -126,5 +105,26 @@
                 }
             }
         }
-    ]
+    ],
+    "local_outbox": {
+        "data": {
+            "system_id": "test.etl.ls6.xfer",
+            "path": "/ETL/LOCAL-OUTBOX/DATA"
+        },
+        "manifests": {
+            "system_id": "test.etl.ls6.writable",
+            "path": "/ETL/LOCAL-OUTBOX/MANIFESTS"
+        }
+    },
+    "remote_inbox": {
+        "data": {
+            "system_id": "test.etl.ls6.xfer",
+            "path": "/ETL/REMOTE-INBOX/DATA"
+        },
+        "manifests": {
+            "system_id": "test.etl.ls6.writable",
+            "path": "/ETL/REMOTE-INBOX/MANIFESTS"
+        }
+    },
+    "after": null
 }

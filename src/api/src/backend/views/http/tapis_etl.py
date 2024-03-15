@@ -1,6 +1,7 @@
 from typing import List
+from os.path import join
 
-from pydantic import BaseModel, validator, Extra, root_validator, conlist
+from pydantic import BaseModel, validator, Extra, conlist
 
 from .requests import Pipeline
 
@@ -9,7 +10,6 @@ from backend.views.http.etl import (
     EnumManifestPriority,
     DataProfile,
     ManifestsProfile,
-    IngressProfile,
     IOSystem
 )
 
@@ -21,7 +21,7 @@ class RODataProfile(TapisIOSystemProfile, DataProfile):
 
 class ROManifestsProfile(TapisIOSystemProfile, ManifestsProfile):
     path: str = "/ETL/REMOTE-OUTBOX/MANFIFESTS"
-    generation_policy: EnumManifestGenerationPolicy = None
+    generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOnePerFile
     priority: EnumManifestPriority = EnumManifestPriority.Oldest
     
 class RemoteOutbox(IOSystem):
@@ -33,16 +33,16 @@ class LIDataProfile(TapisIOSystemProfile, DataProfile):
 
 class LIManifestsProfile(TapisIOSystemProfile, ManifestsProfile):
     path: str = "/ETL/LOCAL-INBOX/MANFIFESTS"
-    generation_policy: EnumManifestGenerationPolicy = EnumManifestGenerationPolicy.AutoOnePerFile
+    generation_policy: EnumManifestGenerationPolicy = None
     priority: EnumManifestPriority = EnumManifestPriority.Oldest
 
-class LIIngressProfile(TapisIOSystemProfile, IngressProfile):
-    path: str
+class LIControlProfile(TapisIOSystemProfile):
+    path: str = "/ETL/LOCAL-INBOX/CONTROL"
 
 class LocalInbox(IOSystem):
     data: LIDataProfile
     manifests: LIManifestsProfile
-    ingress: LIIngressProfile
+    control: LIControlProfile
 
 class LODataProfile(TapisIOSystemProfile, DataProfile):
     path: str = "/ETL/LOCAL-OUTBOX/DATA"
