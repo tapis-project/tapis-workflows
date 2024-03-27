@@ -64,6 +64,10 @@ def build_etl_pipeline_env(body):
             "type": "string",
             "value": json.dumps(body.remote_inbox.dict())
         },
+        "DEFAULT_ETL_JOBS": {
+            "type": "string",
+            "value": json.dumps(body.jobs)
+        }
     }
 
     
