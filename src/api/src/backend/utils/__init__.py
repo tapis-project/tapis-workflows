@@ -66,7 +66,7 @@ def build_etl_pipeline_env(body):
         },
         "DEFAULT_ETL_JOBS": {
             "type": "string",
-            "value": json.dumps(body.jobs)
+            "value": json.dumps(body.jobs.dict())
         }
     }
 
