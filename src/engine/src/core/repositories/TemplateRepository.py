@@ -38,7 +38,7 @@ class TemplateRepository:
             with open(os.path.join(template_root_dir, path_to_template)) as file:
                 template = json.loads(file.read())
         except Exception as e:
-            raise Exception(f"Templating configuration Error (owe-config.json): {str(e)}")
+            raise Exception(f"Templating configuration Error: {str(e)}")
             
         return template
     

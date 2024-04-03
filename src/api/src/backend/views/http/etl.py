@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Union, Literal, Annotated
+from typing import Union, Literal, Annotated, List
 
 from pydantic import BaseModel, Field
 
@@ -28,8 +28,8 @@ class ByteCheckDataIntegrityProfile(BaseDataIntegrityProfile):
 class DoneFileDataIntegrityProfile(BaseDataIntegrityProfile):
     type: Literal["done_file"]
     done_files_path: str
-    include_patterns: str = []
-    exclude_patterns: str = []
+    include_patterns: List[str] = []
+    exclude_patterns: List[str] = []
 
 DataIntegrityProfile = Annotated[
     Union[
@@ -42,8 +42,8 @@ DataIntegrityProfile = Annotated[
 
 class IOSystemProfile(BaseModel):
     path: str
-    include_patterns: str = []
-    exclude_patterns: str = []
+    include_patterns: List[str] = []
+    exclude_patterns: List[str] = []
 
 class DataProfile(IOSystemProfile):
     integrity_profile: DataIntegrityProfile = None
