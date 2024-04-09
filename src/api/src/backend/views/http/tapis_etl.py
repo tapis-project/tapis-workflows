@@ -1,7 +1,6 @@
-from typing import List
-from os.path import join
+from typing import List, Dict
 
-from pydantic import BaseModel, validator, Extra, conlist
+from pydantic import BaseModel, Extra, conlist
 
 from .requests import Pipeline
 
@@ -71,15 +70,14 @@ class RemoteInbox(IOSystem):
 class TapisJobDef(BaseModel):
     pass
 
-class TapisJobWorkflowsETL(BaseModel):
-    input: str
-    output: str
+class TapisETLExtension(BaseModel):
+    env_mappings: Dict[str, str] = {}
 
-class TapisJobWorkflowsExtension(BaseModel):
-    etl: TapisJobWorkflowsETL
+class TapisJobExtensions(BaseModel):
+    tapis_etl: TapisETLExtension = TapisETLExtension()
 
 class ExetendedTapisJob(TapisJobDef):
-    workflows: TapisJobWorkflowsExtension = None
+    extensions: TapisJobExtensions = TapisJobExtensions()
 
     class Config:
         extra = Extra.allow
