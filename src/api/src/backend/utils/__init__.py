@@ -24,22 +24,22 @@ def executor_request_is_valid(request):
     return True
 
 def build_etl_pipeline_env(body):
-    # Convert the data integrity policies to dicts. Easier
-    # to handle for null values via .get
-    local_inbox_data_integrity_profile = {}
-    if getattr(body.local_inbox.data, "integrity_profile", None) != None:
+    # Convert the data integrity policies to dicts. Easier to handle for null
+    # Svalues via .get
+    local_inbox_data_integrity_profile = body.local_inbox.data.integrity_profile
+    if body.local_inbox.data.integrity_profile != None:
         local_inbox_data_integrity_profile = body.local_inbox.data.integrity_profile.dict()
     
-    local_outbox_data_integrity_profile = {}
-    if getattr(body.local_outbox.data, "integrity_profile", None) != None:
+    local_outbox_data_integrity_profile = body.local_outbox.data.integrity_profile
+    if body.local_outbox.data.integrity_profile != None:
         local_outbox_data_integrity_profile = body.local_outbox.data.integrity_profile.dict()
 
-    remote_inbox_data_integrity_profile = {}
-    if getattr(body.remote_inbox.data, "integrity_profile", None) != None:
+    remote_inbox_data_integrity_profile = body.remote_inbox.data.integrity_profile
+    if body.remote_inbox.data.integrity_profile != None:
         remote_inbox_data_integrity_profile = body.remote_inbox.data.integrity_profile.dict()
 
-    remote_outbox_data_integrity_profile = {}
-    if getattr(body.remote_outbox.data, "integrity_profile", None) != None:
+    remote_outbox_data_integrity_profile = body.remote_outbox.data.integrity_profile
+    if body.remote_outbox.data.integrity_profile != None:
         remote_outbox_data_integrity_profile = body.remote_outbox.data.integrity_profile.dict()
 
     body.local_inbox.data.integrity_profile = local_inbox_data_integrity_profile

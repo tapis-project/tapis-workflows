@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Literal
 
 from pydantic import BaseModel, Extra, conlist
 
@@ -72,6 +72,7 @@ class TapisJobDef(BaseModel):
 
 class TapisETLExtension(BaseModel):
     env_mappings: Dict[str, str] = {}
+    last_status: str = "PENDING"
 
 class TapisJobExtensions(BaseModel):
     tapis_etl: TapisETLExtension = TapisETLExtension()
@@ -96,11 +97,3 @@ class TapisETLPipeline(Pipeline):
     local_outbox: LocalOutbox
     remote_inbox: RemoteInbox
     after: ActionFilter = None
-
-    # @validator("jobs")
-    # def one_or_more_jobs(cls, value):
-    #     # Check that the pipeline contains at least 1 tapis job definition
-    #     if len(value) < 1:
-    #         raise ValueError("A Tapis ETL pipeline must contain at least 1 Tapis Job definition")
-        
-    #     return value
