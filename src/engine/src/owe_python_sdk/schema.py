@@ -83,6 +83,7 @@ class EnumInvocationMode(str, Enum, metaclass=_EnumMeta):
     Async = "async"
     Sync = "sync"
 
+# NOTE FIXME typo -> "mixed_arrray" in the line below
 LiteralTaskIOTypes = Literal["string", "number", "boolean", "string_array", "number_array", "boolean_array", "mixed_arrray", "tapis_file_input", "tapis_file_input_array"]
 TaskIOTypes = list(get_args(LiteralTaskIOTypes))
 class EnumTaskIOTypes(str, Enum, metaclass=_EnumMeta):

@@ -2,7 +2,7 @@ import unittest
 
 
 class TestUrls(unittest.TestCase):
-    def testurls(self):
+    def testUrls(self):
         pass
 
 if __name__ == "__main__":

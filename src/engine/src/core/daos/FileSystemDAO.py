@@ -15,9 +15,11 @@ class FileSystemDAO:
         return result
     
     def write(self, path: str, contents):
+        contents = contents if contents != None else ""
         with open(path, "w") as file:
             file.write(contents)
 
     def writebin(self, path: str, contents):
+        contents = contents if contents != None else ""
         with open(path, "wb") as file:
             file.write(contents)
