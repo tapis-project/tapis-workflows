@@ -1,5 +1,6 @@
 STDOUT = ".stdout"
 STDERR = ".stderr"
+LOGFILE = ".logs"
 INPUT_PREFIX = "_OWE_WORKFLOW_INPUT_"
 
 FUNCTION_TASK_RUNTIMES = {
