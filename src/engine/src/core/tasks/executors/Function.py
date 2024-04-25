@@ -24,13 +24,14 @@ class ContainerDetails:
         command,
         args,
         working_dir=None,
-        env=[]
+        env=None
     ):
         self.image = image
         self.command = command
         self.args = args
         self.working_dir = working_dir
         self.env = env
+        self.env = env if env != None else []
 
 
 # TODO Remove the kubernetes token from the container(s)?
@@ -152,6 +153,10 @@ class Function(TaskExecutor):
             client.V1EnvVar(
                 name="_OWE_TASK_ID",
                 value=self.task.id
+            ),
+            client.V1EnvVar(
+                name="_OWE_TASK_EXECUTION_UUID",
+                value=self.task.execution_uuid
             ),
             client.V1EnvVar(
                 name="_OWE_PIPELINE_ID",

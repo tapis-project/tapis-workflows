@@ -1,4 +1,4 @@
-import os, sys, json
+import os, sys, json, logging
 
 from functools import partial
 from typing import Dict
@@ -16,6 +16,17 @@ class ExecutionContext:
         self.input_ids = list(self.input_schema.keys())
         self._hook_active = False
         self._exit_hooks: Dict[int, partial] = {0: [],1: []}
+        self._set_logger()
+
+    def _set_logger(self):
+        logger = logging.getLogger(f"task-exec-log-{self._runtime.TASK_EXECUTION_UUID}")
+        handler = logging.FileHandler(self._runtime.LOGFILE_PATH)
+        logger.setLevel(logging.DEBUG)
+        logger.addHandler(handler)
+        self._logger = logger
+
+    def get_logger(self):
+        return self._logger
 
     def add_hook(self, exit_code: int, hook: callable, *args, **kwargs):
         if type(exit_code) != int:
