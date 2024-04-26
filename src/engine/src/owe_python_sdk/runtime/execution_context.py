@@ -65,8 +65,13 @@ class ExecutionContext:
         with open(os.path.join(self.output_dir, _id), flag, encoding=encoding) as file:
             file.write(value)
 
-    def stderr(self, code: int, message, call_hooks=True):
-        """Exits with error"""
+    def stderr(
+        self,
+        code: int,
+        message,
+        call_hooks=True
+    ):
+        """Write a message to standard out exit with a non zero exit code"""
         if code < 1:
             raise Exception("Exit code provided must be an int with a value >= 1")
 
