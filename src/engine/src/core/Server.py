@@ -127,8 +127,8 @@ class Server:
         acked = False # Indicates that the message as been acked
         try:
             # Decode the message body, then convert to an object.
-            deserialized_request = json.loads(bytes_to_json(body))
-            request = WorkflowSubmissionRequest(**deserialized_request)
+            serialized_request = json.loads(bytes_to_json(body))
+            request = WorkflowSubmissionRequest(**serialized_request)
             
             # Get a workflow executor worker. If there are none available,
             # this will raise a "NoWorkersAvailabe" error which is handled

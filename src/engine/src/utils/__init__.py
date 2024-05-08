@@ -26,6 +26,8 @@ def lbuffer_str(string, length=10):
 def bytes_to_json(bytestring):
     # Decode UTF-8 bytes to Unicode, and convert single quotes
     # to double quotes to make it valid JSON
+    print("\n\nTYPE OF BYTESTRING", type(bytestring))
+    print("\n\n", "VALUE OF BS", bytestring)
     value = bytestring.decode("utf8").replace("'", '"')
 
     data = json.loads(value)
