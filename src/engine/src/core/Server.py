@@ -36,7 +36,7 @@ from owe_python_sdk.schema import WorkflowSubmissionRequest, EmptyObject
 
 from core.workers import WorkerPool
 from core.workflows import WorkflowExecutor
-from utils import bytes_to_json, load_plugins, lbuffer_str as lbuf
+from utils import serialize_request, load_plugins, lbuffer_str as lbuf
 from errors import NoAvailableWorkers, WorkflowTerminated
 
 
@@ -127,8 +127,8 @@ class Server:
         acked = False # Indicates that the message as been acked
         try:
             # Decode the message body, then convert to an object.
-            deserialized_request = json.loads(bytes_to_json(body))
-            request = WorkflowSubmissionRequest(**deserialized_request)
+            serialized_request = serialize_request(body)
+            request = WorkflowSubmissionRequest(**serialized_request)
             
             # Get a workflow executor worker. If there are none available,
             # this will raise a "NoWorkersAvailabe" error which is handled

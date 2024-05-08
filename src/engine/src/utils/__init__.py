@@ -23,14 +23,18 @@ def lbuffer_str(string, length=10):
     buffer = " " * diff
     return string + buffer
 
-def bytes_to_json(bytestring):
+def serialize_request(bytestring):
+    # DELETE THE BELOW BY: 2024/10/31
+    # OLD Caused a serialization bug. But may have had use? 
+    # value = bytestring.decode("utf8").replace("'", '"') 
+
     # Decode UTF-8 bytes to Unicode, and convert single quotes
     # to double quotes to make it valid JSON
-    value = bytestring.decode("utf8").replace("'", '"')
+    value = bytestring.decode("utf8")
 
     data = json.loads(value)
 
-    return json.dumps(data)
+    return data
 
 def get_flavor(flavor: str):
     if flavor not in FLAVORS:

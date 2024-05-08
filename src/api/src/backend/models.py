@@ -358,6 +358,7 @@ class Pipeline(models.Model):
     description = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     env = models.JSONField(null=True)
+    # enabled = models.BooleanField(default=True)
     params = models.JSONField(null=True)
     uses = models.JSONField(null=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
@@ -382,6 +383,26 @@ class Pipeline(models.Model):
                 name="pipeline_id_group"
             )
         ]
+
+# class PipelineLock(models.Model):
+#     id = models.CharField(max_length=64)
+#     pipeline = models.ForeignKey("backend.Pipeline", related_name="locks", on_delete=models.CASCADE)
+#     # pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="locks", null=True, on_delete=models.CASCADE)
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     acquired = models.BooleanField(default=False)
+
+#     class Meta:
+#         constraints = [
+#             models.UniqueConstraint(
+#                 fields=["pipeline", "pipeline_run"],
+#                 name="pipeline_pipeline_run"
+#             ),
+#             models.UniqueConstraint(
+#                 fields=["id"],
+#                 name="pipeline_lock_id"
+#             )
+#         ]
+
 
 class PipelineArchive(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="archives", on_delete=models.CASCADE)

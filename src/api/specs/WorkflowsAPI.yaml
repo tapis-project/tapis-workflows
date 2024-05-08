@@ -1970,6 +1970,8 @@ components:
           $ref: '#/components/schemas/Uses'
         env:
           $ref: "#/components/schemas/Env"
+        enabled:
+          type: boolean
         params:
           $ref: "#/components/schemas/Params"
         group:
@@ -2625,6 +2627,8 @@ components:
           $ref: '#/components/schemas/DescriptionString'
         env:
           $ref: "#/components/schemas/Env"
+        enabled:
+          type: boolean
         params:
           $ref: "#/components/schemas/Params"
         type:
