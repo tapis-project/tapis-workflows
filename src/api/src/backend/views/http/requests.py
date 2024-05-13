@@ -77,6 +77,13 @@ RetryPolicies = list(get_args(LiteralRetryPolicies))
 class EnumRetryPolicy(str, Enum, metaclass=_EnumMeta):
     ExponentialBackoff = "exponential_backoff"
 
+LiteralLockExpirationPolicies = Literal["no_op", "disable_pipeline", "delete_lock"]
+LockExpirationPolicies = list(get_args(LiteralLockExpirationPolicies))
+class EnumLockExpirationPolicy(str, Enum, metaclass=_EnumMeta):
+    NoOp = "no_op"
+    DisablePipeline = "disable_pipeline"
+    DeleteLock = "delete_lock"
+
 LiteralInvocationModes = Literal["async", "sync"]
 InvocationModes = list(get_args(LiteralInvocationModes))
 class EnumInvocationMode(str, Enum, metaclass=_EnumMeta):
@@ -502,6 +509,7 @@ class BaseExecutionProfile(BaseModel):
 
 class PipelineExecutionProfile(BaseExecutionProfile):
     duplicate_submission_policy: str = EnumDuplicateSubmissionPolicy.Terminate
+    lock_expiration_policy: str = EnumLockExpirationPolicy.NoOp
 
 class TaskExecutionProfile(BaseExecutionProfile):
     flavor: EnumTaskFlavor = EnumTaskFlavor.C1_MED
@@ -781,6 +789,10 @@ class Pipeline(BaseModel):
     
     class Config:
         extra = Extra.allow
+
+class PipelineLockRequest(BaseModel):
+    pipeline_run_uuid: str
+    expires_in: int = 0
 
 # Pipeline runs and task executions
 # TODO rename ReqCreateTaskExecution

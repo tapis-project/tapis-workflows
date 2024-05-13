@@ -1,10 +1,12 @@
-import json
+import json, logging
 
 from backend.conf.constants import (
     DJANGO_WORKFLOW_EXECUTOR_TOKEN_HEADER,
-    WORKFLOW_EXECUTOR_ACCESS_TOKEN
+    WORKFLOW_EXECUTOR_ACCESS_TOKEN,
+    DEFAULT_LOGGER_NAME
 )
 
+logger = logging.getLogger(DEFAULT_LOGGER_NAME)
 
 def one_in(strings, target):
     for string in strings:
