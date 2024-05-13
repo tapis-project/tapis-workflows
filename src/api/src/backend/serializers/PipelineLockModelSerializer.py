@@ -7,9 +7,11 @@ from backend.conf.constants import DATETIME_FORMAT
 class PipelineLockModelSerializer:
     @staticmethod
     def serialize(model):
+        print(model)
+        print(dir(model))
+        print(vars(model))
         lock = model_to_dict(model)
-        from pprint import pprint
-        pprint(lock)
+    
         lock["uuid"] = UUIDSerializer.serialize(lock["uuid"])
         lock["created_at"] = lock["created_at"].strftime(DATETIME_FORMAT)
 

@@ -1,5 +1,4 @@
 from backend.serializers import UUIDSerializer
-from backend.conf.constants import DATETIME_FORMAT
 
 
 class PipelineLockAcquisitionResponseSerializer:
