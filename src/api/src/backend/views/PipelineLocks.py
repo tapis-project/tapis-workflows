@@ -231,6 +231,11 @@ class PipelineLocks(RestrictedAPIView):
         try:
             locks = pipeline.pipelinelocks.all()
 
+            from pprint import pprint
+            print("DEBUG \n\n")
+            for lock in locks:
+                pprint(lock)
+
             for lock in locks:
                 serialized_lock = PipelineLockModelSerializer.serialize(lock)
                 serialized_locks.append(serialized_lock)
