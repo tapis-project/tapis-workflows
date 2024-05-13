@@ -8,12 +8,12 @@ class PipelineLockModelSerializer:
     @staticmethod
     def serialize(model, pipeline):
         lock = {}
-        lock["uuid"] = UUIDSerializer.serialize(lock.uuid)
-        lock["created_at"] = lock.created_at.strftime(DATETIME_FORMAT)
-        lock["expires_in"] = lock.expires_in
+        lock["uuid"] = UUIDSerializer.serialize(model.uuid)
+        lock["created_at"] = model.created_at.strftime(DATETIME_FORMAT)
+        lock["expires_in"] = model.expires_in
 
-        if lock.acquired_at != None:
-            lock["acquired_at"] = lock.acquired_at.strftime(DATETIME_FORMAT)
+        if model.acquired_at != None:
+            lock["acquired_at"] = model.acquired_at.strftime(DATETIME_FORMAT)
 
         lock["pipeline_id"] = pipeline.id
         lock["pipeline_run_uuid"] = UUIDSerializer.serialize(model.pipeline_run_id)
