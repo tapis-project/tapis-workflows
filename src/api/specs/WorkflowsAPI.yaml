@@ -2123,8 +2123,6 @@ components:
         pipeline_run_uuid:
           type: string
           format: uuid
-        acquired:
-          type: boolean
         created_at:
           type: string
         acquired_at:
