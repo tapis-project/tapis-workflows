@@ -377,7 +377,7 @@ class Pipeline(models.Model):
         default=DEFAULT_MAX_WORKFLOW_EXEC_TIME,
         validators=[MaxValueValidator(DEFAULT_MAX_WORKFLOW_EXEC_TIME), MinValueValidator(1)]
     )
-    lock_expiration_policy = models.CharField(max_length=16, choices=PIPELINE_LOCK_EXPIRATION_POLICIES)
+    lock_expiration_policy = models.CharField(max_length=16, choices=PIPELINE_LOCK_EXPIRATION_POLICIES, default=PIPELINE_LOCK_EXPIRATION_POLICY_DISABLE_PIPELINE)
     max_retries = models.IntegerField(default=DEFAULT_MAX_RETRIES)
     duplicate_submission_policy = models.CharField(max_length=32, choices=DUPLICATE_SUBMISSION_POLICIES, default=EnumDuplicateSubmissionPolicy.Terminate)
     owner = models.CharField(max_length=64)
