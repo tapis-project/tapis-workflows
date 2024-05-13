@@ -55,7 +55,7 @@ class PipelineLocks(RestrictedAPIView):
 
             # Get the pipeline run
             pipeline_run = PipelineRun.objects.filter(
-                body.pipeline_run_uuid
+                uuid=body.pipeline_run_uuid
             ).first()
 
             # Return BadRequest if no pipeline found
