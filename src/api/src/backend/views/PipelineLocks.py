@@ -104,7 +104,7 @@ class PipelineLocks(RestrictedAPIView):
 
             # Check to see if the pipeline run associated with the current 
             # pipeline lock attempt is the next in the queue. If so, update the
-            # pipeline lock's 'acquired' property to 'true'
+            # pipeline lock's 'acquired_at' property
             if pipeline_lock.pipeline_run.uuid == competing_runs[0]:
                 acquired_at = timezone.now()
                 pipeline_lock.object.update(acquired_at=acquired_at)
