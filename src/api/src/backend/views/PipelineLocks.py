@@ -186,8 +186,6 @@ class PipelineLocks(RestrictedAPIView):
                 id=pipeline_id
             ).prefetch_related(
                 "pipelinelocks"
-                "pipelinelocks__pipeline"
-                "pipelinelocks__pipeline_run"
             ).first()
 
             # Return if BadRequest if no pipeline found
@@ -211,7 +209,7 @@ class PipelineLocks(RestrictedAPIView):
                 return BadRequest(f"PipelineLock with uuid '{pipeline_lock_uuid}' does not exist")
 
             # Serialize the PipelineLock model instance
-            lock = PipelineLockModelSerializer.serialize(lock_model)
+            lock = PipelineLockModelSerializer.serialize(lock_model, pipeline)
 
             return BaseResponse(
                 status=200,
@@ -234,7 +232,10 @@ class PipelineLocks(RestrictedAPIView):
             locks = pipeline.pipelinelocks.all()
 
             for lock in locks:
-                serialized_lock = PipelineLockModelSerializer.serialize(lock)
+                serialized_lock = PipelineLockModelSerializer.serialize(
+                    lock,
+                    pipeline
+                )
                 serialized_locks.append(serialized_lock)
 
             return BaseResponse(
