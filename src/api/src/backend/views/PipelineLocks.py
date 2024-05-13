@@ -186,7 +186,7 @@ class PipelineLocks(RestrictedAPIView):
                 id=pipeline_id
             ).prefetch_related(
                 "pipelinelocks"
-                "pipeline__pipeline"
+                "pipelinelocks__pipeline"
                 "pipelinelocks__pipeline_run"
             ).first()
 
