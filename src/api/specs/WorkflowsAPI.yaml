@@ -37,6 +37,8 @@ tags:
     description: Manage external identities . Create, retrieve, delete.
   - name: Pipelines
     description: Manage collections of tasks. Create, retrieve and delete.
+  - name: PipelineLocks
+    description: Create locks help to manage concurrent state mutations between pipeline runs.
   - name: Tasks
     description: Manage tasks to be executed as part of a workflow. Create, retrieve and delete.
   - name: CI/CD
@@ -1591,6 +1593,121 @@ paths:
               schema:
                 $ref: '#/components/schemas/RespPipelineRunList'
 
+  '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/locks':
+    get:
+      tags:
+        - PipelineLocks
+      summary: PipelineLocks
+      description: List all locks for a given pipeline 
+      operationId: listPipelineLocks
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '200':
+          description: Pipeline Locks listed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespPipelineLockList'
+    post:
+      tags:
+        - PipelineLocks
+      summary: PipelineLocks
+      description: Attempt to acquire a lock on a Pipeline 
+      operationId: acquirePipelineLock
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        description: Data about the pipeline run attempting to acquire a lock.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqPipelineLock"
+      responses:
+        '200':
+          description: Pipeline lock acquisition attempted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespPipelineLockAcquisition'
+
+  '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/locks/{pipeline_lock_uuid}':
+    get:
+      tags:
+        - PipelineLocks
+      summary: PipelineLocks
+      description: Get a pipeline lock by its UUID 
+      operationId: getPipelineLock
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_lock_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Pipeline Lock fetched.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespPipelineLock'
+    delete:
+      tags:
+        - PipelineLocks
+      summary: PipelineLocks
+      description: Release a lock on the Pipeline 
+      operationId: releasePipelineLock
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_lock_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Pipeline lock released.
+
   '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/runs/{pipeline_run_uuid}':
     get:
       tags:
@@ -1994,6 +2111,26 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
+
+    PipelineLock:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        pipeline_id:
+          $ref: "#/components/schemas/ID"
+        pipeline_run_uuid:
+          type: string
+          format: uuid
+        acquired:
+          type: boolean
+        created_at:
+          type: string
+        acquired_at:
+          type: string
+        expires_in:
+          type: integer
 
     PipelineRun:
       type: object
@@ -2467,6 +2604,9 @@ components:
       type: string
       minLength: 1
       maxLength: 64
+    UUID:
+      type: string
+      format: uuid
     DescriptionString:
       type: string
       maxLength: 2048
@@ -2608,6 +2748,18 @@ components:
           properties:
             credentials:
               $ref: "#/components/schemas/ReqGithubCred"
+
+    ReqPipelineLock:
+      type: object
+      required:
+        - pipeline_run_uuid
+      properties:
+        pipeline_run_uuid:
+          type: string
+          format: uuid
+        expires_in:
+          type: integer
+          default: 0
 
     ReqPipeline:
       type: object
@@ -3307,6 +3459,7 @@ components:
           properties:
             result:
               type: string
+              
 
     RespObject:
       $ref: "#/components/schemas/RespBase"
@@ -3404,6 +3557,40 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Archive'
+
+    RespPipelineLock:
+      allOf:
+        - $ref: '#/components/schemas/RespObject'
+        - type: object
+          properties:
+            result:
+              $ref: "#/components/schemas/PipelineLock"
+
+    RespPipelineLockList:
+      allOf:
+        - $ref: '#/components/schemas/RespObject'
+        - type: object
+          properties:
+            result:
+              type: array
+              items:
+                $ref: "#/components/schemas/PipelineLock"
+
+    RespPipelineLockAcquisition:
+      allOf:
+        - $ref: '#/components/schemas/RespObject'
+        - type: object
+          properties:
+            result:
+              type: object
+              properties:
+                pipeline_lock_uuid:
+                  type: string
+                  format: uuid
+                acquired:
+                  type: boolean
+                message:
+                  type: string
 
     RespPipeline:
       allOf:

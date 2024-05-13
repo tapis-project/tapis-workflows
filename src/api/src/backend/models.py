@@ -17,6 +17,7 @@ from backend.views.http.requests import (
     EnumInvocationMode,
     EnumRetryPolicy,
     EnumDuplicateSubmissionPolicy,
+    EnumLockExpirationPolicy,
     DEFAULT_MAX_RETRIES,
     DEFAULT_MAX_TASK_EXEC_TIME,
     DEFAULT_MAX_WORKFLOW_EXEC_TIME
@@ -230,6 +231,15 @@ DUPLICATE_SUBMISSION_POLICIES = [
     (DUPLICATE_SUBMISSION_POLICY_DEFER, EnumDuplicateSubmissionPolicy.Defer)
 ]
 
+PIPELINE_LOCK_EXPIRATION_POLICY_NOOP = EnumLockExpirationPolicy.NoOp
+PIPELINE_LOCK_EXPIRATION_POLICY_DELETE_LOCK = EnumLockExpirationPolicy.DeleteLock
+PIPELINE_LOCK_EXPIRATION_POLICY_DISABLE_PIPELINE = EnumLockExpirationPolicy.DisablePipeline
+PIPELINE_LOCK_EXPIRATION_POLICIES = [
+    (PIPELINE_LOCK_EXPIRATION_POLICY_NOOP, EnumLockExpirationPolicy.NoOp),
+    (PIPELINE_LOCK_EXPIRATION_POLICY_DELETE_LOCK, EnumLockExpirationPolicy.DeleteLock),
+    (PIPELINE_LOCK_EXPIRATION_POLICY_DISABLE_PIPELINE, EnumLockExpirationPolicy.DisablePipeline)
+]
+
 VISIBILITY_PUBLIC = EnumVisibility.Public
 VISIBILITY_PRIVATE = EnumVisibility.Private
 VISIBILITY_TYPES = [
@@ -358,7 +368,7 @@ class Pipeline(models.Model):
     description = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     env = models.JSONField(null=True)
-    # enabled = models.BooleanField(default=True)
+    enabled = models.BooleanField(default=True)
     params = models.JSONField(null=True)
     uses = models.JSONField(null=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
@@ -367,6 +377,7 @@ class Pipeline(models.Model):
         default=DEFAULT_MAX_WORKFLOW_EXEC_TIME,
         validators=[MaxValueValidator(DEFAULT_MAX_WORKFLOW_EXEC_TIME), MinValueValidator(1)]
     )
+    lock_expiration_policy = models.CharField(max_length=16, choices=PIPELINE_LOCK_EXPIRATION_POLICIES)
     max_retries = models.IntegerField(default=DEFAULT_MAX_RETRIES)
     duplicate_submission_policy = models.CharField(max_length=32, choices=DUPLICATE_SUBMISSION_POLICIES, default=EnumDuplicateSubmissionPolicy.Terminate)
     owner = models.CharField(max_length=64)
@@ -384,24 +395,21 @@ class Pipeline(models.Model):
             )
         ]
 
-# class PipelineLock(models.Model):
-#     id = models.CharField(max_length=64)
-#     pipeline = models.ForeignKey("backend.Pipeline", related_name="locks", on_delete=models.CASCADE)
-#     # pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="locks", null=True, on_delete=models.CASCADE)
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     acquired = models.BooleanField(default=False)
+class PipelineLock(models.Model):
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="pipelinelocks", on_delete=models.CASCADE)
+    pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="pipelinelocks", null=True, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    acquired_at = models.DateTimeField(null=True, default=None)
+    expires_in = models.BigIntegerField(default=0)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
 
-#     class Meta:
-#         constraints = [
-#             models.UniqueConstraint(
-#                 fields=["pipeline", "pipeline_run"],
-#                 name="pipeline_pipeline_run"
-#             ),
-#             models.UniqueConstraint(
-#                 fields=["id"],
-#                 name="pipeline_lock_id"
-#             )
-#         ]
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["pipeline", "pipeline_run"],
+                name="pipelinelock_pipeline_pipeline_run"
+            )
+        ]
 
 
 class PipelineArchive(models.Model):
@@ -484,7 +492,7 @@ class Task(models.Model):
     packages = models.JSONField(null=True, default=list)
     entrypoint = models.TextField(null=True)
 
-    # Container run specific properties
+    # Application run specific properties
     # Full image name for container run. includes scheme.
     image = models.CharField(max_length=128, null=True)
 

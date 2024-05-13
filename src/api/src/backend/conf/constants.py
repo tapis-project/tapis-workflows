@@ -28,6 +28,8 @@ TAPIS_SERVICE_LOG_FILE = "/src/logs/workflows.logs"
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL")
 
+DEFAULT_LOGGER_NAME = "main"
+
 TAPIS_TOKEN_HEADER = "X-TAPIS-TOKEN"
 
 DJANGO_TAPIS_TOKEN_HEADER = f"HTTP_{TAPIS_TOKEN_HEADER.replace('-', '_')}"
@@ -70,3 +72,5 @@ PERMITTED_SERVICES = [
 LATEST_TAPIS_ETL_PIPELINE_TEMPLATE_NAME = "tapis/etl-pipeline@v1beta"
 TAPIS_ETL_TEMPLATE_REPO_URL = "https://github.com/tapis-project/tapis-workflows-task-templates.git"
 TAPIS_ETL_TEMPLATE_REPO_BRANCH = "master"
+
+DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"

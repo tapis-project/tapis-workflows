@@ -125,6 +125,7 @@ class Pipelines(RestrictedAPIView):
                 max_exec_time=body.execution_profile.max_exec_time,
                 invocation_mode=body.execution_profile.invocation_mode,
                 max_retries=body.execution_profile.max_retries,
+                lock_expiration_policy=body.execution_profile.lock_expiration_policy,
                 retry_policy=body.execution_profile.retry_policy,
                 duplicate_submission_policy=body.execution_profile.duplicate_submission_policy,
                 env=body.dict()["env"],

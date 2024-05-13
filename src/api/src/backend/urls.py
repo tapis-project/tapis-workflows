@@ -21,6 +21,7 @@ from backend.views.UpdatePipelineRunStatus import UpdatePipelineRunStatus
 from backend.views.UpdateTaskExecutionStatus import UpdateTaskExecutionStatus
 from backend.views.CreateTaskExecution import CreateTaskExecution
 from backend.views.ETLPipelines import ETLPipelines
+from backend.views.PipelineLocks import PipelineLocks
 
 
 urlpatterns = [
@@ -67,6 +68,10 @@ urlpatterns = [
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs", PipelineRuns.as_view(), name="pipelineRuns"),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>", PipelineRuns.as_view(), name="pipelineRun"),
     
+    # Pipeline Locks
+    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/locks", PipelineLocks.as_view(), name="pipelineLocks"),
+    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/locks/<str:pipeline_lock_uuid>", PipelineLocks.as_view(), name="pipelineLock"),
+
     # NOTE The route below must come before the route below it as it matches
     # the more general pattern layed out in the latter route
     # Task Executions
