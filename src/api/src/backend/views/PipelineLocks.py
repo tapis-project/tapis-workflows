@@ -124,7 +124,6 @@ class PipelineLocks(RestrictedAPIView):
                 )
             )
             
-        # TODO catch the specific error thrown by the group service
         except (DatabaseError, IntegrityError, OperationalError) as e:
             logger.exception(e.__cause__)
             return ServerError(message=e.__cause__)
@@ -196,6 +195,8 @@ class PipelineLocks(RestrictedAPIView):
             # locks for this pipeline
             if pipeline_lock_uuid == None:
                 return self.list(pipeline)
+            
+            print(pipeline.pipelinelocks)
 
             lock_model = next(
                 filter(
