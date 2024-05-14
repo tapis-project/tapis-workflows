@@ -97,16 +97,12 @@ class PipelineLocks(RestrictedAPIView):
                 raise Exception(f"PipelineLock with UUID {str(pipeline_lock.uuid)} not found.")
 
             # This list of pipeline runs competing for a lock on the pipeline
-            competing_runs = [
-                str(lock.pipeline_run)
-                for lock in pipeline_locks
-            ]
+            competing_runs = [lock.pipeline_run for lock in pipeline_locks]
 
             # Check to see if the pipeline run associated with the current 
             # pipeline lock attempt is the next in the queue. If so, update the
             # pipeline lock's 'acquired_at' property
-            print(str(pipeline_lock.pipeline_run.uuid), competing_runs[0])
-            if str(pipeline_lock.pipeline_run.uuid) == competing_runs[0]:
+            if str(pipeline_lock.pipeline_run.uuid) == str(competing_runs[0].uuid):
                 acquired_at = timezone.now()
                 pipeline_lock.object.update(acquired_at=acquired_at)
 
