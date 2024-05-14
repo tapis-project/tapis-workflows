@@ -104,7 +104,7 @@ class PipelineLocks(RestrictedAPIView):
             # pipeline lock's 'acquired_at' property
             if str(pipeline_lock.pipeline_run.uuid) == str(competing_runs[0].uuid):
                 acquired_at = timezone.now()
-                pipeline_lock = PipelineLocks.objects.filter(
+                pipeline_lock = PipelineLock.objects.filter(
                     uuid=pipeline_lock.uuid
                 ).update(acquired_at=acquired_at)
 
