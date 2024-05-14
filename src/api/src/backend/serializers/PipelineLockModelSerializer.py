@@ -12,6 +12,7 @@ class PipelineLockModelSerializer:
         lock["created_at"] = model.created_at.strftime(DATETIME_FORMAT)
         lock["expires_in"] = model.expires_in
 
+        lock["acquired_at"] = None
         if model.acquired_at != None:
             lock["acquired_at"] = model.acquired_at.strftime(DATETIME_FORMAT)
 
