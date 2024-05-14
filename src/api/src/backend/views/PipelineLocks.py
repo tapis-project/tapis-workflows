@@ -93,19 +93,19 @@ class PipelineLocks(RestrictedAPIView):
             # or created a pipeline lock in the previous steps above, but for
             # some reason (pipeline, pipeline_run, or pipeline_lock were deleted
             # with exceptional timing) the pipeline lock doesn't exist anymore
-            if pipeline_lock.uuid not in [lock.uuid for lock in pipeline_locks]:
+            if str(pipeline_lock.uuid) not in [str(lock.uuid) for lock in pipeline_locks]:
                 raise Exception(f"PipelineLock with UUID {str(pipeline_lock.uuid)} not found.")
 
             # This list of pipeline runs competing for a lock on the pipeline
             competing_runs = [
-                lock.pipeline_run
+                str(lock.pipeline_run)
                 for lock in pipeline_locks
             ]
 
             # Check to see if the pipeline run associated with the current 
             # pipeline lock attempt is the next in the queue. If so, update the
             # pipeline lock's 'acquired_at' property
-            if pipeline_lock.pipeline_run.uuid == competing_runs[0]:
+            if str(pipeline_lock.pipeline_run.uuid) == competing_runs[0]:
                 acquired_at = timezone.now()
                 pipeline_lock.object.update(acquired_at=acquired_at)
 
@@ -195,12 +195,10 @@ class PipelineLocks(RestrictedAPIView):
             # locks for this pipeline
             if pipeline_lock_uuid == None:
                 return self.list(pipeline)
-            
-            print(pipeline.pipelinelocks.all())
 
             lock_model = next(
                 filter(
-                    lambda lock: lock.uuid == pipeline_lock_uuid,
+                    lambda lock: str(lock.uuid) == pipeline_lock_uuid,
                     pipeline.pipelinelocks.all()
                 ),
                 None
