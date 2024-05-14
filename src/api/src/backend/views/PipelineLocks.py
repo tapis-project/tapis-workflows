@@ -103,10 +103,8 @@ class PipelineLocks(RestrictedAPIView):
             # pipeline lock attempt is the next in the queue. If so, update the
             # pipeline lock's 'acquired_at' property
             if str(pipeline_lock.pipeline_run.uuid) == str(competing_runs[0].uuid):
-                acquired_at = timezone.now()
-                pipeline_lock = PipelineLock.objects.filter(
-                    uuid=pipeline_lock.uuid
-                ).update(acquired_at=acquired_at)
+                pipeline_lock.acquired_at = timezone.now()
+                pipeline_lock.save()
 
             # Set the message for the pipeline lock acquisition attempt
             message = f"Lock not acquired. Locks ahead of '{str(pipeline_lock.uuid)}'"
