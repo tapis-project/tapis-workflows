@@ -196,7 +196,7 @@ class PipelineLocks(RestrictedAPIView):
             if pipeline_lock_uuid == None:
                 return self.list(pipeline)
             
-            print(pipeline.pipelinelocks)
+            print(pipeline.pipelinelocks.all())
 
             lock_model = next(
                 filter(
