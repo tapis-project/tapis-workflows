@@ -1618,37 +1618,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RespPipelineLockList'
-    post:
-      tags:
-        - PipelineLocks
-      summary: PipelineLocks
-      description: Attempt to acquire a lock on a Pipeline 
-      operationId: acquirePipelineLock
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-        - name: pipeline_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-      requestBody:
-        required: true
-        description: Data about the pipeline run attempting to acquire a lock.
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ReqPipelineLock"
-      responses:
-        '200':
-          description: Pipeline lock acquisition attempted.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RespPipelineLockAcquisition'
 
   '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/locks/{pipeline_lock_uuid}':
     get:
@@ -1681,32 +1650,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RespPipelineLock'
-    delete:
-      tags:
-        - PipelineLocks
-      summary: PipelineLocks
-      description: Release a lock on the Pipeline 
-      operationId: releasePipelineLock
-      parameters:
-        - name: group_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-        - name: pipeline_id
-          in: path
-          required: true
-          schema:
-            $ref: '#/components/schemas/ID'
-        - name: pipeline_lock_uuid
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Pipeline lock released.
 
   '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/runs/{pipeline_run_uuid}':
     get:
@@ -1740,6 +1683,71 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RespPipelineRun'
+
+  '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/runs/{pipeline_run_uuid}/locks':
+    post:
+      tags:
+        - PipelineRuns
+      summary: PipelineRuns
+      description: Attempt to acquire a lock on a Pipeline 
+      operationId: acquirePipelineLock
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_run_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        description: Data about the pipeline run attempting to acquire a lock.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReqPipelineLock"
+      responses:
+        '200':
+          description: Pipeline lock acquisition attempted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespPipelineLockAcquisition'
+    delete:
+      tags:
+        - PipelineLocks
+      summary: PipelineLocks
+      description: Release a lock on the Pipeline 
+      operationId: releasePipelineLock
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_run_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Pipeline lock released.
   
   '/v3/workflows/executor/runs/{pipeline_run_uuid}/{status}':
     patch:
@@ -2749,12 +2757,7 @@ components:
 
     ReqPipelineLock:
       type: object
-      required:
-        - pipeline_run_uuid
       properties:
-        pipeline_run_uuid:
-          type: string
-          format: uuid
         expires_in:
           type: integer
           default: 0
