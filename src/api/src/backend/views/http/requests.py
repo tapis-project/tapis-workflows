@@ -791,7 +791,6 @@ class Pipeline(BaseModel):
         extra = Extra.allow
 
 class PipelineLockRequest(BaseModel):
-    pipeline_run_uuid: str
     expires_in: int = 0
 
 # Pipeline runs and task executions
