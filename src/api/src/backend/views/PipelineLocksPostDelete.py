@@ -19,7 +19,7 @@ from backend.services.GroupService import service as group_service
 from backend.models import Pipeline, PipelineLock, PipelineRun
 
 
-class PipelineLocks(RestrictedAPIView):
+class PipelineLocksPostDelete(RestrictedAPIView):
     def post(self, request, group_id, pipeline_id, pipeline_run_uuid):
         """Create a lock if not created and attempt to acquire it"""
         try:
