@@ -790,6 +790,9 @@ class Pipeline(BaseModel):
     class Config:
         extra = Extra.allow
 
+class PipelineLockRequest(BaseModel):
+    expires_in: int = 0
+
 # Pipeline runs and task executions
 # TODO rename ReqCreateTaskExecution
 class TaskExecution(BaseModel):
