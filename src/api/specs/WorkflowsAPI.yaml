@@ -2318,6 +2318,8 @@ components:
               $ref: "#/components/schemas/EnumInstaller"
             command:
               type: string
+            entrypoint:
+              type: string
             code:
               type: string
               format: byte
@@ -2913,7 +2915,6 @@ components:
           required:
             - runtime
             - installer
-            - code
           properties:
             git_repositories:
               type: array
@@ -2924,6 +2925,8 @@ components:
             installer:
               $ref: "#/components/schemas/EnumInstaller"
             command:
+              type: string
+            entrypoint:
               type: string
             code:
               type: string
@@ -2959,51 +2962,76 @@ components:
     ########################### ETL
 
     ReqCreateETLPipeline:
+      allOf:
+        - $ref: "#/components/schemas/ReqPipeline"
+        - type: object
+          required:
+            - id
+            - remote_outbox
+            - local_inbox
+            - jobs
+            - local_outbox
+            - remote_inbox
+          properties:
+            id:
+              $ref: '#/components/schemas/ID'
+            description:
+              type: string
+            before:
+              $ref: "#/components/schemas/ETLActionFilter"
+            remote_outbox:
+              $ref: '#/components/schemas/ETLRemoteOutbox'
+            local_inbox:
+              $ref: '#/components/schemas/ETLLocalInbox'
+            jobs:
+              type: array
+              items:
+                $ref: '#/components/schemas/TapisETLExtendedTapisJobDef'
+            local_outbox:
+              $ref: '#/components/schemas/ETLLocalOutbox'
+            remote_inbox:
+              $ref: '#/components/schemas/ETLRemoteInbox'
+            after:
+              $ref: "#/components/schemas/ETLActionFilter"
+
+    ETLActionFilter:
       type: object
-      required:
-        - id
-        - local_inbox
-        - jobs
-        - local_outbox
-        - remote_inbox
       properties:
-        id:
-          $ref: '#/components/schemas/ID'
-        description:
-          type: string
-        execution_profile:
-          $ref: '#/components/schemas/PipelineExecutionProfile'
-        remote_outbox:
-          $ref: '#/components/schemas/ETLRemoteOutbox'
-        local_inbox:
-          $ref: '#/components/schemas/ETLLocalInbox'
-        jobs:
+        pipeline_ids:
           type: array
           items:
-            $ref: '#/components/schemas/WorkflowsExtendedTapisJobDef'
-        local_outbox:
-          $ref: '#/components/schemas/ETLLocalOutbox'
-        remote_inbox:
-          $ref: '#/components/schemas/ETLRemoteInbox'
+            type: string
+          default: []
+        run_async:
+          type: boolean
+          default: true
 
-    WorkflowsTapisJobDefExtension:
+    TapisETLExtension:
       type: object
       properties:
-        workflows:
+        env_mappings:
           type: object
-          properties:
-            etl:
-              type: object
-              properties:
-                input:
-                  type: string
-                output:
-                  type: string
+          additionalProperties: true
+        last_status:
+          type: string
+          default: PENDING
+    
+    TapisJobExtensions:
+      type: object
+      properties:
+        tapis_etl:
+          $ref: "#/components/schemas/TapisETLExtension"
 
-    WorkflowsExtendedTapisJobDef:
+    ExtendedTapisJob:
+      type: object
+      properties:
+        extensions:
+          $ref: "#/components/schemas/TapisJobExtensions"
+
+    TapisETLExtendedTapisJobDef:
       allOf:
         - $ref: "#/components/schemas/TapisJobDef"
-        - $ref: "#/components/schemas/WorkflowsTapisJobDefExtension"
+        - $ref: "#/components/schemas/ExtendedTapisJob"
 
     BaseDataIntegrityProfile:
       type: object
@@ -3032,10 +3060,14 @@ components:
               type: string
             done_files_path:
               type: string
-            include_pattern:
-              type: string
-            exclude_pattern:
-              type: string
+            include_patterns:
+              type: array
+              items:
+                type: string
+            exclude_patterns:
+              type: array
+              items:
+                type: string
 
     ByteCheckDataIntegrityProfile:
       allOf:
@@ -3057,66 +3089,74 @@ components:
           done_file: "#/components/schemas/DoneFileDataIntegrityProfile"
           byte_check: "#/components/schemas/ByteCheckDataIntegrityProfile"
 
-    ETLLocalIOBox:
+    ETLSystem:
       type: object
-      required:
-        - system_id
-        - data_path
-      properties:
-        system_id:
-          type: string
-        data_path:
-          type: string
-        manifests_path:
-          type: string
-        manifest_generation_policy:
-          $ref: "#/components/schemas/ETLEnumManifestGenerationPolicy"
-        manifest_priority:
-          $ref: "#/components/schemas/ETLEnumManifestPriority"
-          default: 'oldest'
-        data_integrity_profile:
-          $ref: "#/components/schemas/DataIntegrityProfile"
-        include_pattern:
-          type: string
-        exclude_pattern:
-          type: string
-
-    ETLRemoteOutbox:
-      type: object
-      additionalProperties: true
-
-    ETLLocalInbox:
-      allOf:
-        - $ref: "#/components/schemas/ETLLocalIOBox"
-        - type: object
-          properties:
-            manifest_generation_policy:
-              $ref: "#/components/schemas/ETLEnumManifestGenerationPolicy"
-              default: 'auto_one_per_file'
-
-    ETLLocalOutbox:
-      allOf:
-        - $ref: "#/components/schemas/ETLLocalIOBox"
-        - type: object
-          properties:
-            manifest_generation_policy:
-              $ref: "#/components/schemas/ETLEnumManifestGenerationPolicy"
-              default: 'auto_one_for_all'
-
-    ETLTapisSystemRemoteInbox:
-      type: object
-      required:
-        - system_id
-        - path
       properties:
         system_id:
           type: string
         path:
           type: string
+        include_patterns:
+          type: array
+          items: 
+            type: string
+        exclude_patterns:
+          type: array
+          items: 
+            type: string
+
+    ETLManifestsSystem:
+      allOf:
+        - $ref: "#/components/schemas/ETLSystem"
+        - type: object
+          properties:
+            generation_policy:
+              $ref: "#/components/schemas/ETLEnumManifestGenerationPolicy"
+            priority:
+              $ref: "#/components/schemas/ETLEnumManifestPriority"
+
+    ETLDataSystem:
+      allOf:
+        - $ref: "#/components/schemas/ETLSystem"
+        - type: object
+          properties:
+            integrity_profile:
+              $ref: "#/components/schemas/DataIntegrityProfile"
+
+    ETLControlSystem:
+      allOf:
+        - $ref: "#/components/schemas/ETLSystem"
+
+    ETLSystemsConfiguration:
+      type: object
+      required:
+        - manifests
+        - data
+      properties:
+        manifests:
+          $ref: "#/components/schemas/ETLManifestsSystem"
+        data:
+          $ref: "#/components/schemas/ETLDataSystem"
+    
+    ETLRemoteOutbox:
+      allOf:
+        - $ref: "#/components/schemas/ETLSystemsConfiguration"
+
+    ETLLocalInbox:
+      allOf:
+        - $ref: "#/components/schemas/ETLSystemsConfiguration"
+        - type: object
+          properties:
+            control:
+              $ref: "#/components/schemas/ETLControlSystem"
+
+    ETLLocalOutbox:
+      allOf:
+        - $ref: "#/components/schemas/ETLSystemsConfiguration"
 
     ETLRemoteInbox:
-      allOf:
-        - $ref: "#/components/schemas/ETLTapisSystemRemoteInbox"
+      allOf: 
+        - $ref: "#/components/schemas/ETLSystemsConfiguration"
 
     ETLEnumManifestGenerationPolicy:
       type: string
