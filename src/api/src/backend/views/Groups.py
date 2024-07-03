@@ -1,6 +1,5 @@
-import os
-
 from django.forms import model_to_dict
+from django.db import DatabaseError, IntegrityError, OperationalError
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.requests import GroupCreateRequest
@@ -10,6 +9,7 @@ from backend.views.http.responses import BaseResponse, ResourceURLResponse
 from backend.models import Group, GroupUser
 from backend.helpers import resource_url_builder
 from backend.services.GroupService import service as group_service
+from backend.utils import logger
 
 # TODO Rollbacks on failture
 class Groups(RestrictedAPIView):
@@ -50,22 +50,44 @@ class Groups(RestrictedAPIView):
                 groups.append(user.group)
         
         return ModelListResponse(groups)
+    
+    def delete(self, request, group_id):
+        try:
+            # Get the group
+            group = group_service.get(group_id, request.tenant_id)
+            if group == None:
+                return NotFound(f"No group found with id '{group_id}'")
+            
+            if request.username != group.owner:
+                return Forbidden(message="Groups can only be delete by the group owner")
+            
+            group.delete()
+        
+            return BaseResponse(result=f"Group {group_id} successfully delete")
+        
+        except (DatabaseError, IntegrityError, OperationalError) as e:
+            logger.exception(e.__cause__)
+            return ServerError(message=e.__cause__)
+        except Exception as e:
+            logger.exception(str(e))
+            return ServerError(str(e))
+        
 
     def post(self, request, **_):
-        prepared_request = self.prepare(GroupCreateRequest)
-
-        if not prepared_request.is_valid:
-            return prepared_request.failure_view
-
-        body = prepared_request.body
-
-        # Check that id of the group is unique
-        exists = Group.objects.filter(
-            id=body.id, tenant_id=request.tenant_id).exists()
-        if exists:
-            return Conflict(f"A Group already exists with the id '{body.id}'")
-
         try:
+            prepared_request = self.prepare(GroupCreateRequest)
+
+            if not prepared_request.is_valid:
+                return prepared_request.failure_view
+
+            body = prepared_request.body
+
+            # Check that id of the group is unique
+            exists = Group.objects.filter(
+                id=body.id, tenant_id=request.tenant_id).exists()
+            if exists:
+                return Conflict(f"A Group already exists with the id '{body.id}'")
+
             # Save the Group object to the database
             group = Group.objects.create(
                 id=body.id, owner=request.username, tenant_id=request.tenant_id)
@@ -76,12 +98,10 @@ class Groups(RestrictedAPIView):
                 username=request.username,
                 is_admin=True
             )
-        except Exception as e:
-            return ServerError(message=str(e))
 
-        # Create group users for each username passed in the request
-        for user in body.users:
-            try:
+
+            # Create group users for each username passed in the request
+            for user in body.users:
                 # Do not create a group user for the requesting user
                 if user.username != request.username:
                     GroupUser.objects.create(
@@ -89,9 +109,14 @@ class Groups(RestrictedAPIView):
                         username=user.username,
                         is_admin=user.is_admin
                     )
-            except Exception as e:
-                return BadRequest(message=str(e))
 
-        return ResourceURLResponse(
-            url=resource_url_builder(request.url, group.id))
+            return ResourceURLResponse(
+                url=resource_url_builder(request.url, group.id))
+        
+        except (DatabaseError, IntegrityError, OperationalError) as e:
+            logger.exception(e.__cause__)
+            return ServerError(message=e.__cause__)
+        except Exception as e:
+            logger.exception(str(e))
+            return ServerError(str(e))
         

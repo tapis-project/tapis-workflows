@@ -199,6 +199,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RespError'
+    delete:
+      tags:
+        - Groups
+      summary: Delete a group
+      description: Delete a group and all of the objects that belong to them
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: deleteGroup
+      responses:
+        '200':
+          description: Delete group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespString'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot remove a user to this group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '404':
+          description: Group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
 
   '/v3/workflows/groups/{group_id}/users':
     get:

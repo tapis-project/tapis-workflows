@@ -10,7 +10,7 @@ class BaseResponse(JsonResponse):
         status: int = 200,
         success: bool = True,
         message: str = "Success",
-        result: Union[dict, List[dict]] = None,
+        result: Union[dict, List[dict], str] = None,
         metadata: dict = {}
     ):
         # Conform to the tapis response object schema
