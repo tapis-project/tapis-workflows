@@ -1553,7 +1553,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RespTask'
-    
+    patch:
+      tags:
+        - Tasks
+      summary: Update task details
+      description: Update details for a task
+      operationId: patchTask
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        description: Request body for the pathTask operation.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+      responses:
+        '200':
+          description: Task found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespTask'
+
     delete:
       tags:
         - Tasks
@@ -2222,6 +2258,26 @@ components:
           type: string
 
     # --- Task ---
+    ReqPatchTask:
+      anyOf:
+        - $ref: '#/components/schemas/ImageBuildTask'
+        - $ref: '#/components/schemas/RequestTask'
+        - $ref: '#/components/schemas/ApplicationTask'
+        - $ref: '#/components/schemas/TapisJobTask'
+        - $ref: '#/components/schemas/TapisActorTask'
+        - $ref: '#/components/schemas/FunctionTask'
+        - $ref: '#/components/schemas/TemplateTask'
+      discriminator:
+        propertyName: type
+        mapping:
+          image_build: "#/components/schemas/ImageBuildTask"
+          request: "#/components/schemas/RequestTask"
+          application: "#/components/schemas/ApplicationTask"
+          tapis_job: "#/components/schemas/TapisJobTask"
+          tapis_actor: "#/components/schemas/TapisActorTask"
+          function: "#/components/schemas/FunctionTask"
+          template: "#/components/schemas/TemplateTask"
+
     Task:
       oneOf:
         - $ref: '#/components/schemas/ImageBuildTask'
@@ -2244,9 +2300,6 @@ components:
         
     BaseTask:
       type: object
-      required:
-        - id
-        - type
       properties:
         id:
           type: string
