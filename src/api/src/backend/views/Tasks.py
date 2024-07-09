@@ -131,10 +131,10 @@ class Tasks(RestrictedAPIView):
             # Resolve the the proper pydantic object for this task type
             TaskSchema = task_service.resolve_request_type(task_model.type)
 
-            task = TaskSchema(
+            task = TaskSchema(**{
                 **model_to_dict(task_model),
                 **self.request_body
-            )
+            })
             
             # Disallow updating the type property
             if (task_model.type != task.type):
