@@ -1,4 +1,4 @@
-import json
+import json, pprint
 
 from django.db import IntegrityError, OperationalError, DatabaseError
 from django.forms import model_to_dict
@@ -131,8 +131,13 @@ class Tasks(RestrictedAPIView):
             # Resolve the the proper pydantic object for this task type
             TaskSchema = task_service.resolve_request_type(task_model.type)
 
+            serialized_task = model_to_dict(task_model)
+
+            print(serialized_task)
+            pprint(serialized_task)
+
             task = TaskSchema(**{
-                **model_to_dict(task_model),
+                **serialized_task,
                 **self.request_body
             })
             
