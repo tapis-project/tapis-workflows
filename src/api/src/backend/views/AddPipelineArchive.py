@@ -46,10 +46,6 @@ class AddPipelineArchive(RestrictedAPIView):
         if archive == None:
             return NotFound(message=f"Archive '{body.archive_id}' does not exist for group '{group_id}'")
 
-        # Repsond with archive not found
-        if archive == None:
-            return NotFound(message=f"Archive '{body.archive_id}' not found in group '{group_id}'")
-
         try:
             # Create the pipeline_archive
             PipelineArchive.objects.create(

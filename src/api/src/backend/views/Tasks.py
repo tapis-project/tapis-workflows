@@ -140,10 +140,17 @@ class Tasks(RestrictedAPIView):
             if (task_model.type != task.type):
                 return BadRequest(f"Updating the type of a task is not allowed. Expected task.type: {task_model.type} - Recieved: {task.type}")
 
+            entity_dict = json.loads(task.json())
+            entity_dict = {
+                **entity_dict,
+                **entity_dict.execution_profile
+            }
+            del entity_dict["execution_profile"]
+
             Task.objects.filter(
                 pipeline=pipeline,
                 id=task_id
-            ).update(**json.loads(task.json()))
+            ).update(**entity_dict)
 
             return ModelResponse(Task.objects.filter(id=task.id, pipeline=pipeline).first())
         except (DatabaseError, OperationalError, IntegrityError) as e:
