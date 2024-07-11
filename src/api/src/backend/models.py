@@ -450,10 +450,10 @@ class Task(models.Model):
     # Props
     id = models.CharField(validators=[validate_id], max_length=128)
     cache = models.BooleanField(null=True)
+    conditions = models.JSONField(null=True, default=list)
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
     flavor = models.CharField(max_length=32, choices=TASK_FLAVORS, default=TASK_FLAVOR_C1_MED)
-    conditions = models.JSONField(null=True, default=list)
     input = models.JSONField(null=True)
     invocation_mode = models.CharField(max_length=16, default=EnumInvocationMode.Async)
     max_exec_time = models.BigIntegerField(
@@ -463,7 +463,6 @@ class Task(models.Model):
     max_retries = models.IntegerField(default=DEFAULT_MAX_RETRIES)
     output = models.JSONField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="tasks", on_delete=models.CASCADE)
-    poll = models.BooleanField(null=True)
     retry_policy = models.CharField(max_length=32, default=EnumRetryPolicy.ExponentialBackoff)
     type = models.CharField(max_length=32, choices=TASK_TYPES)
     uses = models.JSONField(null=True)
@@ -502,6 +501,9 @@ class Task(models.Model):
     # Tapis actor specific properties
     tapis_actor_id = models.CharField(max_length=128, null=True)
     tapis_actor_message = models.TextField(null=True)
+
+    # Shared properties (Tapis job and Tapis actor)
+    poll = models.BooleanField(null=True)
 
     def clean(self):
         errors = {}

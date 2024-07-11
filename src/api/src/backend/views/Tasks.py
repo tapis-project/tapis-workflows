@@ -1,7 +1,6 @@
 import json, pprint
 
 from django.db import IntegrityError, OperationalError, DatabaseError
-from django.forms import model_to_dict
 
 from backend.models import Task, Pipeline
 from backend.views.RestrictedAPIView import RestrictedAPIView
@@ -10,6 +9,7 @@ from backend.views.http.responses.errors import BadRequest, Forbidden, NotFound,
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.services.TaskService import service as task_service
 from backend.services.GroupService import service as group_service
+from backend.serializers import TaskSerializer
 from backend.errors.api import ServerError as APIServerError
 from backend.helpers import resource_url_builder
 from backend.utils import logger
@@ -131,13 +131,8 @@ class Tasks(RestrictedAPIView):
             # Resolve the the proper pydantic object for this task type
             TaskSchema = task_service.resolve_request_type(task_model.type)
 
-            serialized_task = model_to_dict(task_model)
-
-            print(serialized_task)
-            pprint(serialized_task)
-
             task = TaskSchema(**{
-                **serialized_task,
+                **TaskSerializer.serialize(task_model),
                 **self.request_body
             })
             
