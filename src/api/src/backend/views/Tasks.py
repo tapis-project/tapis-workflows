@@ -143,7 +143,7 @@ class Tasks(RestrictedAPIView):
             Task.objects.filter(
                 pipeline=pipeline,
                 id=task_id
-            ).update(**json.loads(task.json))
+            ).update(**json.loads(task.json()))
 
             return ModelResponse(Task.objects.filter(id=task.id, pipeline=pipeline).first())
         except (DatabaseError, OperationalError, IntegrityError) as e:
