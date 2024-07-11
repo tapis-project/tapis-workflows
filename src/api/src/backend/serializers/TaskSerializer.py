@@ -7,7 +7,7 @@ from backend.models import TASK_TYPE_FUNCTION
 class TaskSerializer:
     @staticmethod
     def serialize(model):
-        base = BaseTaskSerializer(model)
+        base = BaseTaskSerializer.serialize(model)
 
         if model.type == TASK_TYPE_FUNCTION:
             return FunctionTaskSerializer.serialize(model, base=base)
