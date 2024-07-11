@@ -138,7 +138,7 @@ class Tasks(RestrictedAPIView):
 
             print("\n", task, "\n")
 
-            print("\n", dict(task.json()), "\n")
+            print("\n", json.loads(task.json()), "\n")
 
             # Disallow updating the type property
             if (task_model.type != task.type):
@@ -149,7 +149,7 @@ class Tasks(RestrictedAPIView):
             Task.objects.filter(
                 pipeline_id=pipeline_id,
                 id=task_id
-            ).update(**task.model_dump(exclude=["uuid", "pipeline"]))
+            ).update(**json.loads(task.json))
 
             return ModelResponse(Task.objects.filter(id=task.id, pipeline_id=pipeline_id).first())
         except (DatabaseError, OperationalError, IntegrityError) as e:
