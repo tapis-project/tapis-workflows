@@ -138,12 +138,8 @@ class Tasks(RestrictedAPIView):
 
             print("\n", task, "\n")
 
-            print("\n", task.dict(), "\n")
+            print("\n", dict(task.json()), "\n")
 
-            print("\n", task.model_dump(exclude=["uuid", "pipeline"]), "\n")
-
-            
-            
             # Disallow updating the type property
             if (task_model.type != task.type):
                 return BadRequest(f"Updating the type of a task is not allowed. Expected task.type: {task_model.type} - Recieved: {task.type}")
