@@ -136,22 +136,16 @@ class Tasks(RestrictedAPIView):
                 **self.request_body
             })
 
-            print("\n", task, "\n")
-
-            print("\n", json.loads(task.json()), "\n")
-
             # Disallow updating the type property
             if (task_model.type != task.type):
                 return BadRequest(f"Updating the type of a task is not allowed. Expected task.type: {task_model.type} - Recieved: {task.type}")
 
-            # The pipeline_id property will be set to the previous value as we do not
-            # allow that property to be updated
             Task.objects.filter(
-                pipeline_id=pipeline_id,
+                pipeline=pipeline,
                 id=task_id
             ).update(**json.loads(task.json))
 
-            return ModelResponse(Task.objects.filter(id=task.id, pipeline_id=pipeline_id).first())
+            return ModelResponse(Task.objects.filter(id=task.id, pipeline=pipeline).first())
         except (DatabaseError, OperationalError, IntegrityError) as e:
             logger.exception(e.__cause__)
             return ServerError(message=e.__cause__)
