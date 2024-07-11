@@ -143,7 +143,7 @@ class Tasks(RestrictedAPIView):
             entity_dict = json.loads(task.json())
             entity_dict = {
                 **entity_dict,
-                **entity_dict.execution_profile
+                **entity_dict["execution_profile"]
             }
             del entity_dict["execution_profile"]
 
