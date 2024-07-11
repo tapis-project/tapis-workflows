@@ -9,7 +9,7 @@ from backend.views.http.responses.errors import BadRequest, Forbidden, NotFound,
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.services.TaskService import service as task_service
 from backend.services.GroupService import service as group_service
-from backend.serializers import TaskSerializer
+from backend.serializers import TaskSerializer, TaskDTOSerializer
 from backend.errors.api import ServerError as APIServerError
 from backend.helpers import resource_url_builder
 from backend.utils import logger
@@ -140,17 +140,10 @@ class Tasks(RestrictedAPIView):
             if (task_model.type != task.type):
                 return BadRequest(f"Updating the type of a task is not allowed. Expected task.type: {task_model.type} - Recieved: {task.type}")
 
-            entity_dict = json.loads(task.json())
-            entity_dict = {
-                **entity_dict,
-                **entity_dict["execution_profile"]
-            }
-            del entity_dict["execution_profile"]
-
             Task.objects.filter(
                 pipeline=pipeline,
                 id=task_id
-            ).update(**entity_dict)
+            ).update(**TaskDTOSerializer.serialize(task))
 
             return ModelResponse(Task.objects.filter(id=task.id, pipeline=pipeline).first())
         except (DatabaseError, OperationalError, IntegrityError) as e:
