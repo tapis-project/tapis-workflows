@@ -1,7 +1,5 @@
-from backend.serializers import (
-    FunctionTaskSerializer,
-    BaseTaskSerializer,
-)
+from backend.serializers.BaseTaskSerializer import BaseTaskSerializer
+from backend.serializers.FunctionTaskSerializer import FunctionTaskSerializer
 from backend.models import TASK_TYPE_FUNCTION
 
 class TaskSerializer:

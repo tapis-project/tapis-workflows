@@ -1,5 +1,6 @@
 from backend.serializers import BaseTaskSerializer
 
+
 class FunctionTaskSerializer:
     @staticmethod
     def serialize(model, base=None):
