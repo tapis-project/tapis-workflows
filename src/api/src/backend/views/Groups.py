@@ -84,7 +84,6 @@ class Groups(RestrictedAPIView):
 
             # Check that id of the group is unique
             existing_group = Group.objects.filter(id=body.id, tenant_id=request.tenant_id).first()
-            print(model_to_dict(existing_group))
             if existing_group != None:
                 return Conflict(f"A Group already exists with the id '{body.id}'")
 
