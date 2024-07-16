@@ -2267,16 +2267,6 @@ components:
         - $ref: '#/components/schemas/TapisActorTask'
         - $ref: '#/components/schemas/FunctionTask'
         - $ref: '#/components/schemas/TemplateTask'
-      discriminator:
-        propertyName: type
-        mapping:
-          image_build: "#/components/schemas/ImageBuildTask"
-          request: "#/components/schemas/RequestTask"
-          application: "#/components/schemas/ApplicationTask"
-          tapis_job: "#/components/schemas/TapisJobTask"
-          tapis_actor: "#/components/schemas/TapisActorTask"
-          function: "#/components/schemas/FunctionTask"
-          template: "#/components/schemas/TemplateTask"
 
     Task:
       oneOf:

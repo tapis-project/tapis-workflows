@@ -83,9 +83,9 @@ class Groups(RestrictedAPIView):
             body = prepared_request.body
 
             # Check that id of the group is unique
-            exists = Group.objects.filter(
-                id=body.id, tenant_id=request.tenant_id).exists()
-            if exists:
+            existing_group = Group.objects.filter(id=body.id, tenant_id=request.tenant_id).first()
+            print(model_to_dict(existing_group))
+            if existing_group != None:
                 return Conflict(f"A Group already exists with the id '{body.id}'")
 
             # Save the Group object to the database
