@@ -98,7 +98,6 @@ class Groups(RestrictedAPIView):
                 is_admin=True
             )
 
-
             # Create group users for each username passed in the request
             for user in body.users:
                 # Do not create a group user for the requesting user
