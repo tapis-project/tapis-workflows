@@ -199,6 +199,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RespError'
+    delete:
+      tags:
+        - Groups
+      summary: Delete a group
+      description: Delete a group and all of the objects that belong to them
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: deleteGroup
+      responses:
+        '200':
+          description: Delete group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespString'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot remove a user to this group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '404':
+          description: Group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
 
   '/v3/workflows/groups/{group_id}/users':
     get:
@@ -1516,7 +1553,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RespTask'
-    
+    patch:
+      tags:
+        - Tasks
+      summary: Update task details
+      description: Update details for a task
+      operationId: patchTask
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        description: Request body for the pathTask operation.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+      responses:
+        '200':
+          description: Task found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespTask'
+
     delete:
       tags:
         - Tasks
@@ -2185,6 +2258,16 @@ components:
           type: string
 
     # --- Task ---
+    ReqPatchTask:
+      anyOf:
+        - $ref: '#/components/schemas/ImageBuildTask'
+        - $ref: '#/components/schemas/RequestTask'
+        - $ref: '#/components/schemas/ApplicationTask'
+        - $ref: '#/components/schemas/TapisJobTask'
+        - $ref: '#/components/schemas/TapisActorTask'
+        - $ref: '#/components/schemas/FunctionTask'
+        - $ref: '#/components/schemas/TemplateTask'
+
     Task:
       oneOf:
         - $ref: '#/components/schemas/ImageBuildTask'
@@ -2207,9 +2290,6 @@ components:
         
     BaseTask:
       type: object
-      required:
-        - id
-        - type
       properties:
         id:
           type: string
@@ -2227,6 +2307,199 @@ components:
           $ref: "#/components/schemas/Input"
         output:
           $ref: "#/components/schemas/Output"
+        conditions:
+          $ref: "#/components/schemas/ConditionalExpressions"
+
+    ####### Conditions ##########
+    ConditionalExpressions:
+      type: array
+      items:
+        $ref: "#/components/schemas/ConditionalExpression"
+
+    ConditionalExpression:
+      additionalProperties: true
+
+    # ConditionalExpression:
+    #   anyOf:
+    #     -  $ref: "#/components/schemas/LogicalOperation"
+    #     -  $ref: "#/components/schemas/ComparisonOperation"
+    #     -  $ref: "#/components/schemas/MembershipOperation"
+
+    # Operand:
+    #   anyOf: 
+    #     - type: string
+    #     - type: integer
+    #     - type: number
+    #       format: float
+    #     - type: boolean
+    #     - type: string
+    #       format: bytes
+    #     - $ref: '#/components/schemas/OperandValueFrom'
+
+    # OperandValueFrom:
+    #   oneOf:
+    #     - $ref: "#/components/schemas/ValueFromEnv"
+    #     - $ref: "#/components/schemas/ValueFromArgs"
+    #     - $ref: "#/components/schemas/ValueFromTaskOutput"
+
+    # ComparisonOperand:
+    #   type: array
+    #   items:
+    #     $ref: "#/components/schemas/Operand"
+    #   minItems: 2
+    #   maxItems: 2
+
+    # NEComparisonOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       ne:
+    #         $ref: "#/components/schemas/ComparisonOperand" 
+
+    # EQComparisonOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       eq:
+    #         $ref: "#/components/schemas/ComparisonOperand"
+
+    # LTComparisonOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       lt:
+    #         $ref: "#/components/schemas/ComparisonOperand"
+
+    # GTComparisonOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       gt:
+    #         $ref: "#/components/schemas/ComparisonOperand"
+
+    # LEComparisonOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       le:
+    #         $ref: "#/components/schemas/ComparisonOperand"
+
+    # GEComparisonOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       ge:
+    #         $ref: "#/components/schemas/ComparisonOperand"
+
+    # ComparisonOperation:
+    #   anyOf:
+    #     - $ref: "#/components/schemas/EQComparisonOperation"
+    #     - $ref: "#/components/schemas/NEComparisonOperation"
+    #     - $ref: "#/components/schemas/LTComparisonOperation"
+    #     - $ref: "#/components/schemas/GTComparisonOperation"
+    #     - $ref: "#/components/schemas/GEComparisonOperation"
+    #     - $ref: "#/components/schemas/LEComparisonOperation"
+
+    # MembershipNeedle:
+    #   $ref: "#/components/schemas/Operand"
+
+    # MembershipHaystack:
+    #   type: array
+    #   items:
+    #     $ref: "#/components/schemas/Operand"
+
+    # MembershipOperands:
+    #   type: array
+    #   minItems: 2
+    #   maxItems: 2
+    #   items:
+    #     - type:
+    #       $ref: "#/components/schemas/MembershipNeedle"
+    #     - type:
+    #       $ref: "#/components/schemas/MembershipHaystack"
+
+    # MembershipOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       in:
+    #         $ref: "#/components/schemas/MembershipOperands"
+
+    # LogicalOperand:
+    #   anyOf:
+    #     - $ref: "#/components/schemas/ComparisonOperation"
+    #     - $ref: "#/components/schemas/MembershipOperation"
+
+    # LogicalOperands:
+    #   type: array
+    #   minItems: 2
+    #   items:
+    #     $ref: "#/components/schemas/LogicalOperand"
+
+    # AndLogicalOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       and:
+    #         $ref: "#/components/schemas/LogicalOperand" 
+
+    # OrLogicalOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       or:
+    #         $ref: "#/components/schemas/LogicalOperand"
+
+    # XorLogicalOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       xor:
+    #         $ref: "#/components/schemas/LogicalOperand"
+
+    # NandLogicalOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       nand:
+    #         $ref: "#/components/schemas/LogicalOperand"
+
+    # NorLogicalOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       nor:
+    #         $ref: "#/components/schemas/LogicalOperand"
+
+    # XnorLogicalOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       xnor:
+    #         $ref: "#/components/schemas/LogicalOperand"
+
+    # LogicalOperation:
+    #   anyOf:
+    #     - $ref: "#/components/schemas/AndLogicalOperation"
+    #     - $ref: "#/components/schemas/OrLogicalOperation"
+    #     - $ref: "#/components/schemas/XorLogicalOperation"
+    #     - $ref: "#/components/schemas/NandLogicalOperation"
+    #     - $ref: "#/components/schemas/NorLogicalOperation"
+    #     - $ref: "#/components/schemas/XnorLogicalOperation"
+
+    # NegationOperand:
+    #   anyOf:
+    #     - $ref: "#/components/schemas/ComparisonOperation"
+    #     - $ref: "#/components/schemas/LogicalOperation"
+    #     - $ref: "#/components/schemas/MembershipOperation"
+
+    # NegationOperation:
+    #   additionalProperties:
+    #     type: object
+    #     properties:
+    #       not:
+    #         $ref: "#/components/schemas/NegationOperand"
+    # ##############################
 
     ImageBuildTask:
       allOf:
@@ -2466,7 +2739,7 @@ components:
     ValueFromArgs:
       type: object
       properties:
-        arg:
+        args:
           type: string
 
     ValueFromTaskOutput:
@@ -2817,6 +3090,8 @@ components:
           $ref: "#/components/schemas/Input"
         output:
           $ref: "#/components/schemas/Output"
+        conditions:
+          $ref: "#/components/schemas/ConditionalExpressions"
 
     ReqImageBuildTask:
       allOf:
@@ -3865,3 +4140,27 @@ components:
         - string
         - number
         - boolean
+
+    EnumLogicalOperator:
+      type: string
+      enum:
+        - and
+        - or
+        - xor
+        - nand
+        - nor
+        - xnor
+
+    EnumMembershipOperator:
+      type: string
+      enum:
+        - in
+
+    EnumComparisonOperator:
+      type: string
+      enum: [ "eq", "ne", "gt", "lt", "ge", "le" ]
+
+    EnumNegationOperator:
+      type: string
+      enum: [ "not" ]
+        

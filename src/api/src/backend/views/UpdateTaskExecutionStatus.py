@@ -35,9 +35,11 @@ class UpdateTaskExecutionStatus(RestrictedAPIView):
                     stdout=body.stdout,
                     stderr=body.stderr
                 )
+            
+            return BaseResponse(result="TaskExecution status updated")
+    
         except (DatabaseError, IntegrityError, OperationalError) as e:
             return ServerError(f"Server Error: {e.__cause__}")
         except Exception as e:
             return ServerError(f"Server Error: {e}")
         
-        return BaseResponse(result="TaskExecution status updated")
