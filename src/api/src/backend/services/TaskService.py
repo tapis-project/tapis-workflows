@@ -73,10 +73,14 @@ class TaskService(Service):
             self.rollback()
             raise e
 
-        # Convert the input to jsonserializable
+        # Convert the input and output to jsonserializable
         _input = {}
         for key in request.input:
             _input[key] = request.input[key].dict()
+
+        output = {}
+        for key in request.output:
+            output[key] = request.output[key].dict()
 
         # Prepare the uses property
         uses = getattr(request, "uses", None)
@@ -111,7 +115,7 @@ class TaskService(Service):
                 input=_input,
                 installer=getattr(request, "installer", None),
                 id=request.id,
-                output=request.output,
+                output=output,
                 packages=getattr(request, "packages", None),
                 pipeline=pipeline,
                 poll=getattr(request, "poll", None),
