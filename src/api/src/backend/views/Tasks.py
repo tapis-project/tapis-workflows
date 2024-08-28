@@ -60,6 +60,7 @@ class Tasks(RestrictedAPIView):
             for task_model in task_models:
                 tasks.append(TaskSerializer.serialize(task_model))
         except Exception as e:
+            logger.exception(e.__cause__)
             return ServerError(f"{e}")
 
         return BaseResponse(result=tasks)
