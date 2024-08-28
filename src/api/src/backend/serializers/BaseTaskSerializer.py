@@ -18,7 +18,7 @@ class BaseTaskSerializer:
 
         # Build execution profile
         task["execution_profile"] = {
-            "flavor": model.falvor,
+            "flavor": model.flavor,
             "invocation_mode": model.invocation_mode,
             "max_exec_time": model.max_exec_time,
             "max_retries": model.max_retries,
