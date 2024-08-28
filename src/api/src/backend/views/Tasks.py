@@ -18,37 +18,41 @@ from backend.utils import logger
 
 class Tasks(RestrictedAPIView):
     def get(self, request, group_id, pipeline_id, task_id=None):
-        # Get the group
-        group = group_service.get(group_id, request.tenant_id)
-        if group == None:
-            return NotFound(f"No group found with id '{group_id}'")
+        try:
+            # Get the group
+            group = group_service.get(group_id, request.tenant_id)
+            if group == None:
+                return NotFound(f"No group found with id '{group_id}'")
 
-        # Check that the user belongs to the group
-        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
-            return Forbidden(message="You do not have access to this group")
+            # Check that the user belongs to the group
+            if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+                return Forbidden(message="You do not have access to this group")
 
-        # Get the pipline
-        pipeline = Pipeline.objects.filter(
-            group=group,
-            id=pipeline_id
-        ).first()
+            # Get the pipline
+            pipeline = Pipeline.objects.filter(
+                group=group,
+                id=pipeline_id
+            ).first()
 
-        # Return if BadRequest if no pipeline found
-        if pipeline == None:
-            return BadRequest(f"Pipline with id '{pipeline_id}' does not exist")
-        
-        if task_id == None:
-            return self.list(pipeline)
+            # Return if BadRequest if no pipeline found
+            if pipeline == None:
+                return BadRequest(f"Pipline with id '{pipeline_id}' does not exist")
+            
+            if task_id == None:
+                return self.list(pipeline)
 
-        # Check that the user belongs to the group that is attached
-        # to this pipline
-        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
-            return Forbidden(message="You cannot view tasks for this pipeline")
+            # Check that the user belongs to the group that is attached
+            # to this pipline
+            if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+                return Forbidden(message="You cannot view tasks for this pipeline")
 
-        task = Task.objects.filter(pipeline=pipeline, id=task_id).first()
+            task = Task.objects.filter(pipeline=pipeline, id=task_id).first()
 
-        if task == None:
-            return NotFound(f"Task with id '{task_id}' does not exists for pipeline '{pipeline_id}'")
+            if task == None:
+                return NotFound(f"Task with id '{task_id}' does not exists for pipeline '{pipeline_id}'")
+        except Exception as e:
+            logger.exception(e.__cuase__)
+            return ServerError(str(e))
 
         return ModelResponse(task)
 
