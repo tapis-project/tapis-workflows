@@ -54,9 +54,9 @@ class Tasks(RestrictedAPIView):
 
 
     def list(self, pipeline, *_, **__):
-        task_models = Task.objects.filter(pipeline=pipeline)
         tasks = []
         try:
+            task_models = Task.objects.filter(pipeline=pipeline)
             for task_model in task_models:
                 tasks.append(TaskSerializer.serialize(task_model))
         except Exception as e:
