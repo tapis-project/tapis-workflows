@@ -50,12 +50,11 @@ class Tasks(RestrictedAPIView):
 
             if task == None:
                 return NotFound(f"Task with id '{task_id}' does not exists for pipeline '{pipeline_id}'")
+            
+            return ModelResponse(task)
         except Exception as e:
             logger.exception(e.__cuase__)
             return ServerError(str(e))
-
-        return ModelResponse(task)
-
 
     def list(self, pipeline, *_, **__):
         tasks = []
@@ -63,12 +62,12 @@ class Tasks(RestrictedAPIView):
             task_models = Task.objects.filter(pipeline=pipeline)
             for task_model in task_models:
                 tasks.append(TaskSerializer.serialize(task_model))
+            
+            return BaseResponse(result=tasks)
         except Exception as e:
             logger.exception(e.__cause__)
             return ServerError(f"{e}")
 
-        return BaseResponse(result=tasks)
-    
     def post(self, request, group_id, pipeline_id, *_, **__):
         # Validate the request body
         if "type" not in self.request_body:
