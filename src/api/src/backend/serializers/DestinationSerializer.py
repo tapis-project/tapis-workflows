@@ -5,6 +5,8 @@ from backend.serializers.UUIDSerializer import UUIDSerializer
 class DestinationSerializer:
     @staticmethod
     def serialize(model):
+        if model == None:
+            return None
         destination = {}
         destination["tag"] = model.tag,
         destination["type"] = model.type,
