@@ -7,6 +7,7 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
 from backend.views.http.responses.errors import BadRequest, Forbidden, NotFound, MethodNotAllowed, ServerError
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
+from backend.views.http.responses import BaseResponse
 from backend.services.TaskService import service as task_service
 from backend.services.GroupService import service as group_service
 from backend.serializers import TaskSerializer, TaskDTOSerializer
@@ -52,8 +53,16 @@ class Tasks(RestrictedAPIView):
         return ModelResponse(task)
 
 
-    def list(self, pipeline, *_, **__):    
-        return ModelListResponse(Task.objects.filter(pipeline=pipeline))
+    def list(self, pipeline, *_, **__):
+        task_models = Task.objects.filter(pipeline=pipeline)
+        tasks = []
+        try:
+            for task_model in task_models:
+                tasks.append(TaskSerializer.serialize(task_model))
+        except Exception as e:
+            return ServerError(f"{e}")
+
+        return BaseResponse(result=tasks)
     
     def post(self, request, group_id, pipeline_id, *_, **__):
         # Validate the request body
