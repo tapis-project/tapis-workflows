@@ -110,6 +110,7 @@ class Tasks(RestrictedAPIView):
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
         except Exception as e:
+            logger.exception(e.__cause__)
             return ServerError(f"{e}")
 
         return ResourceURLResponse(
@@ -192,6 +193,7 @@ class Tasks(RestrictedAPIView):
         try:
             task.delete()
         except Exception as e:
+            logger.exception(e.__cause__)
             return ServerError(str(e))
 
         return BaseResponse(message=f"Deleted task '{task_id}' on pipeline '{pipeline_id}")

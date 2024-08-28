@@ -10,6 +10,6 @@ class ImageBuildTaskSerializer:
 
         task["builder"] = model.builder
         task["context"] = ContextSerializer.serialize(model.context)
-        task["destination"] = DestinationSerializer(model.destination)
+        task["destination"] = DestinationSerializer.serialize(model.destination)
         
         return task
