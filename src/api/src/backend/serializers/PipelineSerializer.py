@@ -4,7 +4,7 @@ from backend.serializers.TaskSerializer import TaskSerializer
 
 class PipelineSerializer:
     @staticmethod
-    def serialize(pipeline_model, task_models):
+    def serialize(pipeline_model, task_models=None):
         
         pipeline = {}
         pipeline["id"] = pipeline_model.id
@@ -25,7 +25,10 @@ class PipelineSerializer:
             "retry_policy": pipeline_model.retry_policy
         }
         pipeline["uuid"] = UUIDSerializer.serialize(pipeline_model.uuid)
-        pipeline["tasks"] = [ TaskSerializer.serialize(t) for t in task_models ]
+
+        # Serialize the task models
+        if task_models != None:
+            pipeline["tasks"] = [ TaskSerializer.serialize(t) for t in task_models ]
 
         # TODO Remove when certain these properties are not needed
         pipeline["group"] = UUIDSerializer.serialize(pipeline_model.group)

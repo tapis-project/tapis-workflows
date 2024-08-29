@@ -77,8 +77,10 @@ class Pipelines(RestrictedAPIView):
 
     def list(self, group):
         try:
-            pipelines = PipelineModel.objects.filter(group=group)
-            return ModelListResponse(pipelines)
+            pipeline_models = PipelineModel.objects.filter(group=group)
+            result = [PipelineSerializer.serialize(p) for p in pipeline_models]
+
+            return BaseResponse(result=result)
         except Exception as e:
             logger.exception(e.__cause__)
             return ServerErrorResp(str(e))
