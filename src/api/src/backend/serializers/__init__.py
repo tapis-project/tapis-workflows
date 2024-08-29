@@ -14,3 +14,4 @@ from backend.serializers.RequestTaskSerializer import RequestTaskSerializer
 from backend.serializers.ContextSerializer import ContextSerializer
 from backend.serializers.DestinationSerializer import DestinationSerializer
 from backend.serializers.CredentialsSerializer import CredentialsSerializer
+from backend.serializers.PipelineSerializer import PipelineSerializer

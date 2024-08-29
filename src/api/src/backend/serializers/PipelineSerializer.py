@@ -5,7 +5,6 @@ from backend.serializers.TaskSerializer import TaskSerializer
 class PipelineSerializer:
     @staticmethod
     def serialize(pipeline_model, task_models=None):
-        
         pipeline = {}
         pipeline["id"] = pipeline_model.id
         pipeline["description"] = pipeline_model.description
