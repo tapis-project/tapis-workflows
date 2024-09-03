@@ -12,10 +12,5 @@ class ImageBuildTaskSerializer:
         task["builder"] = model.builder
         task["context"] = ContextSerializer.serialize(model.context)
         task["destination"] = DestinationSerializer.serialize(model.destination)
-
-        print("after dest serializer: ")
-        pprint(task.destination)
-        print("task")
-        pprint(task)
         
         return task
