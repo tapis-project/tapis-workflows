@@ -14,5 +14,10 @@ class DestinationSerializer:
         destination["filename"] = model.filename,
         destination["credentials"] = CredentialsSerializer.serialize(model.credentials)
         destination["uuid"] = UUIDSerializer.serialize(model.uuid)
+
+        print("tag", model.tag, type(model.tag))
+        print("type", model.type, type(model.type))
+        print("url", model.url, type(model.url))
+        print("filename", model.filename, type(model.filename))
         
         return destination
