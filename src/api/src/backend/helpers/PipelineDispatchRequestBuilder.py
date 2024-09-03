@@ -3,7 +3,7 @@ from django.forms import model_to_dict
 
 from backend.utils.parse_directives import parse_directives as parse
 from backend.conf.constants import WORKFLOW_EXECUTOR_ACCESS_TOKEN
-from backend.serializers import TaskSerializer
+from backend.serializers import TaskSerializer, PipelineSerializer
 
 
 class PipelineDispatchRequestBuilder:
@@ -35,35 +35,23 @@ class PipelineDispatchRequestBuilder:
             task_request = getattr(self, f"_{task.type}")(serialized_task, task)
             tasks_request.append(task_request)
 
-        # Get the archives for this pipeline
-        archives = []
+
+        # Serialize the pipeline and it's tasks
+        request = {}
+        request["pipeline"] = PipelineSerializer.serialize(pipeline)
+        request["pipeline"]["tasks"] = tasks_request
+
+        # Populate the env for this request.
+        request["env"] = request["pipeline"]["env"]
+        
+        # Serialize the archives
+        request["archives"] = []
         pipeline_archives = pipeline.archives.all()
         for pipeline_archive in pipeline_archives:
             # Fetch any credentials or identities for required to
             # access this archive
             # TODO Handle creds/identity for archives
-            archives.append(model_to_dict(pipeline_archive.archive))
-
-        # Convert pipleline to a dict and build the request
-        request = {}
-
-        request["pipeline"] = model_to_dict(pipeline)
-        request["archives"] = archives
-
-        # Move the execution profile props from the pipeline object to the
-        # execution profile property
-        request["pipeline"]["execution_profile"] = {
-            "max_exec_time": request["pipeline"]["max_exec_time"],
-            "duplicate_submission_policy": request["pipeline"]["duplicate_submission_policy"],
-            "max_retries": request["pipeline"]["max_retries"],
-            "invocation_mode": request["pipeline"]["invocation_mode"],
-            "retry_policy": request["pipeline"]["retry_policy"]
-        }
-
-        request["pipeline"]["tasks"] = tasks_request
-
-        # Populate the env for this request. Populate values from SK
-        request["env"] = request["pipeline"]["env"]
+            request["archives"].append(model_to_dict(pipeline_archive.archive))
         
         req_args = {}
         for key in args:
