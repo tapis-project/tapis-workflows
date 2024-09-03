@@ -19,5 +19,6 @@ class DestinationSerializer:
         print("type", model.type, type(model.type))
         print("url", model.url, type(model.url))
         print("filename", model.filename, type(model.filename))
+        print("destination", destination)
         
         return destination
