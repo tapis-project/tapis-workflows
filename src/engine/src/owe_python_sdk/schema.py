@@ -835,7 +835,6 @@ class WorkflowSubmissionRequest(BaseModel):
     archives: List[Archive] = []
     env: Env = {}
     args: Args = {}
-    group: Group
     pipeline: Pipeline
     pipeline_run: PipelineRun
     meta: WorkflowSubmissionRequestMeta
