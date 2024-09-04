@@ -44,7 +44,7 @@ class TaskExecutor(EventPublisher):
 
     def _set_polling_interval(self, task):
         # Default is already the DEFAULT_POLLING_INTERVAL
-        if task.max_exec_time <= 0: return
+        if task.execution_profile.max_exec_time <= 0: return
         
         # TODO Replace line below.
         # Calculate the interval based on the max_exec_time of the task
