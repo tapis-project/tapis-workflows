@@ -27,7 +27,6 @@ class TaskExecutor(EventPublisher):
         self.ctx = ctx
         self.task = task
         self.pipeline = self.ctx.pipeline
-        self.group = self.ctx.group
         self.directives = self.ctx.directives
         self.polling_interval = DEFAULT_POLLING_INTERVAL
         self._resources: list[Resource] = []
