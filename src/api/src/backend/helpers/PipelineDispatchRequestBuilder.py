@@ -68,13 +68,13 @@ class PipelineDispatchRequestBuilder:
             "tapis_pipeline_owner": {
                 "value": request["pipeline"]["owner"]
             },
+            "tapis_workflows_group_id": {
+                "value": group.id
+            },
             **req_args
         }
 
         request["meta"] = {}
-
-        # Add the group to the meta so it can be used to determine the idemp key
-        request["meta"]["group"] = model_to_dict(group)
 
         # Properties to help uniquely identity a pipeline submission. If the workflow
         # executor is currently running a pipeline with the same values as the
@@ -82,7 +82,7 @@ class PipelineDispatchRequestBuilder:
         # will then take the appropriate action dictated by the
         # pipeline.duplicate_submission_policy (allow, allow_terminate, deny)
         request["meta"]["idempotency_key"] = [
-            "meta.group.id",
+            "args.tapis_workflows_group_id",
             "args.tapis_tenant_id",
             "pipeline.id"
         ]
