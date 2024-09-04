@@ -29,9 +29,14 @@ class PipelineSerializer:
         if task_models != None:
             pipeline["tasks"] = [ TaskSerializer.serialize(t) for t in task_models ]
 
-        # TODO Remove when certain these properties are not needed
         pipeline["group"] = UUIDSerializer.serialize(pipeline_model.group.uuid)
-        pipeline["current_run"] = UUIDSerializer.serialize(pipeline_model.current_run.uuid)
-        pipeline["last_run"] = UUIDSerializer.serialize(pipeline_model.last_run.uuid)
+        
+        pipeline["current_run"] = None
+        if pipeline_model.current_run != None:
+            pipeline["current_run"] = UUIDSerializer.serialize(pipeline_model.current_run.uuid)
+        
+        pipeline["last_run"] = None
+        if pipeline_model.last_run != None:
+            pipeline["last_run"] = UUIDSerializer.serialize(pipeline_model.last_run.uuid)
         
         return pipeline
