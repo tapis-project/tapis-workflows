@@ -29,7 +29,7 @@ class PipelineDispatchRequestBuilder:
         tasks_request = []
         for task in tasks:
             # Convert the task to a dict
-            serialized_task = TaskSerializer.serialze(task)
+            serialized_task = TaskSerializer.serialize(task)
 
             # Handle the task-specific schema conversions
             task_request = getattr(self, f"_{task.type}")(serialized_task, task)
