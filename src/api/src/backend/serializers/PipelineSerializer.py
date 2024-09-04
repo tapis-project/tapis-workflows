@@ -31,7 +31,7 @@ class PipelineSerializer:
 
         # TODO Remove when certain these properties are not needed
         pipeline["group"] = UUIDSerializer.serialize(pipeline_model.group.uuid)
-        # pipeline["current_run"] = UUIDSerializer.serialize(pipeline_model.current_run)
-        # pipeline["last_run"] = UUIDSerializer.serialize(pipeline_model.last_run)
+        pipeline["current_run"] = UUIDSerializer.serialize(pipeline_model.current_run.uuid)
+        pipeline["last_run"] = UUIDSerializer.serialize(pipeline_model.last_run.uuid)
         
         return pipeline
