@@ -63,7 +63,7 @@ class PipelineDispatchRequestBuilder:
                 "value": WORKFLOW_EXECUTOR_ACCESS_TOKEN
             },
             "tapis_tenant_id": {
-                "value": request["group"]["tenant_id"]
+                "value": group.tenant_id
             },
             "tapis_pipeline_owner": {
                 "value": request["pipeline"]["owner"]
