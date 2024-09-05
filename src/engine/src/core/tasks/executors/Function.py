@@ -76,6 +76,7 @@ class Function(TaskExecutor):
                 backoff_limit=0 if self.task.execution_profile.max_retries < 0 else self.task.execution_profile.max_retries,
                 template=client.V1PodTemplateSpec(
                     spec=client.V1PodSpec(
+                        automount_service_account_token=False,
                         containers=[
                             client.V1Container(
                                 name=job_name,

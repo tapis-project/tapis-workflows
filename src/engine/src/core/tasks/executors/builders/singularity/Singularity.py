@@ -123,6 +123,7 @@ class Singularity(BaseBuildExecutor):
         # Pod template and pod template spec
         template = V1PodTemplateSpec(
             spec=V1PodSpec(
+                automount_service_account_token=False,
                 containers=[container],
                 restart_policy="Never",
                 volumes=volumes

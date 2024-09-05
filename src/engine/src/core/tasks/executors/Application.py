@@ -43,6 +43,7 @@ class Application(TaskExecutor):
         # Pod template and pod template spec
         template = client.V1PodTemplateSpec(
             spec=client.V1PodSpec(
+                automount_service_account_token=False,
                 containers=[container],
                 restart_policy="Never",
                 volumes=volumes
