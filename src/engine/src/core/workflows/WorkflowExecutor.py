@@ -139,8 +139,8 @@ class WorkflowExecutor(Worker, EventPublisher):
         self._set_initial_state()
         
     # Logging formatters. Makes logs more useful and pretty
-    def p_str(self, status): return f"{lbuf('[PIPELINE]')} {self.state.ctx.idempotency_key} {status} {self.state.ctx.pipeline.id}"
-    def t_str(self, task, status): return f"{lbuf('[TASK]')} {self.state.ctx.idempotency_key} {status} {self.state.ctx.pipeline.id}.{task.id}"
+    def p_log(self, status): return f"{lbuf('[PIPELINE]')} {self.state.ctx.idempotency_key} {status} {self.state.ctx.pipeline.id}"
+    def t_log(self, task, status): return f"{lbuf('[TASK]')} {self.state.ctx.idempotency_key} {status} {self.state.ctx.pipeline.id}.{task.id}"
 
     @interruptable()
     def start(self, ctx, threads):
@@ -168,7 +168,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             unstarted_threads = self._fetch_ready_tasks()
 
             # Log the pipeline status change
-            self.state.ctx.logger.info(self.p_str("ACTIVE"))
+            self.state.ctx.logger.info(self.p_log("ACTIVE"))
 
             # Publish the active event
             self.publish(Event(PIPELINE_ACTIVE, self.state.ctx))
@@ -202,7 +202,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         # Prepare task objects and create the directory structure for task output and execution
         self._prepare_tasks()
 
-        self.state.ctx.logger.info(f'{self.p_str("STAGING")} {self.state.ctx.pipeline_run.uuid}')
+        self.state.ctx.logger.info(f'{self.p_log("STAGING")} {self.state.ctx.pipeline_run.uuid}')
 
         # Notification handlers are used to relay/persist updates about a pipeline run
         # and its tasks to some external resource
@@ -228,7 +228,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         work detailed in the task definition."""
         self.state.ctx.output = {}
         for task in self.state.ctx.pipeline.tasks:
-            self.state.ctx.logger.info(self.t_str(task, "STAGING"))
+            self.state.ctx.logger.info(self.t_log(task, "STAGING"))
 
             # Publish the task active event
             self.publish(Event(TASK_STAGING, self.state.ctx, task=task))
@@ -323,9 +323,8 @@ class WorkflowExecutor(Worker, EventPublisher):
                 expression_error = True
                 task_result = TaskResult(1, errors=[str(e)])
 
-        # Execute the task
+        # Stage task inputs
         if not skip and not expression_error:
-            # Stage task inputs
             task_input_file_staging_service = self.container.load(
                 "TaskInputFileStagingService"
             )
@@ -337,7 +336,7 @@ class WorkflowExecutor(Worker, EventPublisher):
                     task,
                     TaskResult(1, errors=[str(e)])
                 )
-                self.state.ctx.logger.info(self.t_str(task, "FAILED"))
+                self.state.ctx.logger.info(self.t_log(task, "FAILED"))
                 self.publish(Event(TASK_FAILED, self.state.ctx, task=task))
 
                 # NOTE Triggers hook _on_change_ready_task
@@ -345,7 +344,7 @@ class WorkflowExecutor(Worker, EventPublisher):
                 return
 
             # Log the task status
-            self.state.ctx.logger.info(self.t_str(task, "ACTIVE"))
+            self.state.ctx.logger.info(self.t_log(task, "ACTIVE"))
 
             # Publish the task active event
             self.publish(Event(TASK_ACTIVE, self.state.ctx, task=task))
@@ -356,8 +355,8 @@ class WorkflowExecutor(Worker, EventPublisher):
                     self.state.ctx.pipeline_run.uuid,
                     task
                 )
-                
-                # Run the task executor and get the task result
+
+                # Execute the task
                 task_result = executor.execute()
 
                 # Set the output of the task
@@ -402,6 +401,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         
         # Run the on_pipeline_terminal_state callback if all tasks are complete.
         if len(self.state.tasks) == len(self.state.finished):
+            print("PIPELINE SHOWING AS COMPLETED")
             self._on_pipeline_terminal_state(event=PIPELINE_COMPLETED)
             return []
         
@@ -433,7 +433,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         # - pipeline.execution_profile.success_condidition = ALL_TASKS_MUST_COMPLETE
         # - pipeline.execution_profile.success_condidition = ALL_TASKS_MUST_FAIL
 
-        self.state.ctx.logger.info(self.p_str(msg))
+        self.state.ctx.logger.info(self.p_log(msg))
 
         # Publish the event. Triggers the archivers if there are any on ...COMPLETE
         self.publish(Event(event, self.state.ctx))
@@ -445,7 +445,7 @@ class WorkflowExecutor(Worker, EventPublisher):
     @interruptable()
     def _on_task_completed(self, task, task_result):
         # Log the completion
-        self.state.ctx.logger.info(self.t_str(task, "COMPLETED"))
+        self.state.ctx.logger.info(self.t_log(task, "COMPLETED"))
 
         # Notify the subscribers that the task was completed
         self.publish(Event(TASK_COMPLETED, self.state.ctx, task=task, result=task_result))
@@ -458,7 +458,7 @@ class WorkflowExecutor(Worker, EventPublisher):
     @interruptable()
     def _on_task_skipped(self, task, _):
         # Log the task active
-        self.state.ctx.logger.info(self.t_str(task, "SKIPPED"))
+        self.state.ctx.logger.info(self.t_log(task, "SKIPPED"))
 
         # Publish the task active event
         self.publish(Event(TASK_SKIPPED, self.state.ctx, task=task))
@@ -470,7 +470,7 @@ class WorkflowExecutor(Worker, EventPublisher):
     @interruptable()
     def _on_task_failed(self, task, task_result):
         # Log the failure
-        self.state.ctx.logger.info(self.t_str(task, f"FAILED: {task_result.errors}"))
+        self.state.ctx.logger.info(self.t_log(task, f"FAILED: {task_result.errors}"))
 
         # Notify the subscribers that the task was completed
         self.publish(Event(TASK_FAILED, self.state.ctx, task=task, result=task_result))
@@ -576,7 +576,7 @@ class WorkflowExecutor(Worker, EventPublisher):
     def _prepare_pipeline_fs(self):
         """Creates all of the directories necessary to run the pipeline, store
         temp files, and cache data"""
-        server_logger.debug(self.p_str("PREPARING FILESYSTEM"))
+        server_logger.debug(self.p_log("PREPARING FILESYSTEM"))
         # Set the directories
 
         # References to paths on the nfs server
@@ -705,7 +705,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         executor.cleanup()
         del self.state.executors[f"{run_uuid}.{task.id}"]
         # TODO use server logger below
-        # self.state.ctx.logger.debug(self.t_str(task, "EXECUTOR DEREGISTERED"))
+        # self.state.ctx.logger.debug(self.t_log(task, "EXECUTOR DEREGISTERED"))
 
     @interruptable()
     def _get_executor(self, run_uuid, task):
@@ -745,7 +745,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         
     @interruptable(rollback="_reset_event_exchange")
     def _initialize_notification_handlers(self):
-        self.state.ctx.logger.debug(self.p_str("INITIALIZING NOTIFICATION HANDLERS"))
+        self.state.ctx.logger.debug(self.p_log("INITIALIZING NOTIFICATION HANDLERS"))
         # Initialize the notification event handlers from plugins. Notification event handlers are used to persist updates about the
         # pipeline and its tasks
         for plugin in self._plugins:
@@ -768,7 +768,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         # No archivers specified. Return
         if len(self.state.ctx.archives) < 1: return
 
-        self.state.ctx.logger.debug(self.p_str("INITIALIZING ARCHIVERS"))
+        self.state.ctx.logger.debug(self.p_log("INITIALIZING ARCHIVERS"))
 
         # TODO Handle for multiple archives
         self.state.ctx.archive = self.state.ctx.archives[0]
@@ -797,7 +797,7 @@ class WorkflowExecutor(Worker, EventPublisher):
         ), None)
 
         if middleware == None:
-            self.state.ctx.logger.error(self.p_str(f"FAILED TO INITIALIZE ARCHIVER: No Archive Middleware found with type {self.state.ctx.archive.type}")) 
+            self.state.ctx.logger.error(self.p_log(f"FAILED TO INITIALIZE ARCHIVER: No Archive Middleware found with type {self.state.ctx.archive.type}")) 
             return
         
         try:
@@ -847,7 +847,7 @@ class WorkflowExecutor(Worker, EventPublisher):
             return
         
         # Log the terminating status
-        self.state.ctx.logger.info(self.p_str("TERMINATING"))
+        self.state.ctx.logger.info(self.p_log("TERMINATING"))
 
         # Publish the termination event
         self.publish(Event(PIPELINE_TERMINATED, self.state.ctx))
