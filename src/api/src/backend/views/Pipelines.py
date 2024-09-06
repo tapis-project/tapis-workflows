@@ -2,6 +2,7 @@ from typing import List
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
 from django.forms import model_to_dict
+from backend.utils import logger
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import (
@@ -25,6 +26,7 @@ from backend.services.TaskService import service as task_service
 from backend.services.GroupService import service as group_service
 from backend.errors.api import BadRequestError, ServerError
 from backend.helpers import resource_url_builder
+from backend.serializers import PipelineSerializer
 
 
 PIPELINE_TYPE_CI = "ci"
@@ -38,42 +40,50 @@ PIPELINE_TYPE_MAPPING = {
 
 class Pipelines(RestrictedAPIView):
     def get(self, request, group_id, pipeline_id=None):
-        # Get the group
-        group = group_service.get(group_id, request.tenant_id)
-        if group == None:
-            return NotFound(f"No group found with id '{group_id}'")
+        try:
+            # Get the group
+            group = group_service.get(group_id, request.tenant_id)
+            if group == None:
+                return NotFound(f"No group found with id '{group_id}'")
 
-        # Check that the user belongs to the group
-        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
-            return Forbidden(message="You do not have access to this group")
+            # Check that the user belongs to the group
+            if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+                return Forbidden(message="You do not have access to this group")
 
-        # Get a list of all pipelines that belong to the user's groups
-        # if no id is provided
-        if pipeline_id == None:
-            return self.list(group)
+            # Get a list of all pipelines that belong to the user's groups
+            # if no id is provided
+            if pipeline_id == None:
+                return self.list(group)
 
-        # Get the pipeline by the id provided in the path params
-        pipeline = PipelineModel.objects.filter(
-            id=pipeline_id,
-            group=group
-        ).prefetch_related("tasks").first()
+            # Get the pipeline by the id provided in the path params
+            pipeline = PipelineModel.objects.filter(
+                id=pipeline_id,
+                group=group
+            ).prefetch_related("tasks").first()
 
-        if pipeline == None:
-            return NotFound(f"Pipeline not found with id '{pipeline_id}'")
+            if pipeline == None:
+                return NotFound(f"Pipeline not found with id '{pipeline_id}'")
 
-        # Get the pipeline tasks.
-        tasks = pipeline.tasks.all()
-        tasks_result = [ model_to_dict(task) for task in tasks ]
+            # Get the pipeline tasks.
+            tasks = pipeline.tasks.all()
 
-        # Convert model into a dict an
-        result = model_to_dict(pipeline)
-        result["tasks"] = tasks_result
-        
-        return BaseResponse(result=result)
+            # Convert pipeline and task models into a dict
+            result = PipelineSerializer.serialize(pipeline, tasks)
+            
+            return BaseResponse(result=result)
+        except Exception as e:
+            logger.exception(e.__cause__)
+            return ServerErrorResp(str(e))
 
     def list(self, group):
-        pipelines = PipelineModel.objects.filter(group=group)
-        return ModelListResponse(pipelines)
+        try:
+            pipeline_models = PipelineModel.objects.filter(group=group)
+            result = [PipelineSerializer.serialize(p) for p in pipeline_models]
+
+            return BaseResponse(result=result)
+        except Exception as e:
+            logger.exception(e.__cause__)
+            return ServerErrorResp(str(e))
 
     def post(self, request, group_id, *_, **__):
         """Pipeline requests with type 'ci' are supported in order to make the 

@@ -2517,6 +2517,78 @@ components:
             destination: 
               $ref: '#/components/schemas/Destination'
 
+    Context:
+      type: object
+      required:
+        - type
+      properties:
+        branch:
+          type: string
+        credentials:
+          default: null
+        build_file_path:
+          type: string
+        sub_path:
+          type: string
+        type:
+          $ref: "#/components/schemas/EnumContextType"
+        url:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/EnumContextVisibility"
+
+
+    Destination:
+      anyOf:
+        - $ref: '#/components/schemas/DockerhubDestination'
+        - $ref: '#/components/schemas/LocalDestination'
+      discriminator:
+        propertyName: type
+        mapping:
+          dockerhub: "#/components/schemas/DockerhubDestination"
+          local: "#/components/schemas/LocalDestination"
+
+    BaseDestination:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/EnumDestinationType'
+
+    LocalDestination:
+      allOf:
+        - $ref: "#/components/schemas/BaseDestination"
+        - type: object
+          properties:
+            filename:
+              type: string
+
+    RegistryDestination:
+      allOf:
+        - $ref: "#/components/schemas/BaseDestination"
+        - type: object
+          properties:
+            credentials:
+              $ref: '#/components/schemas/DockerhubCred'
+            tag: 
+              type: string
+            url:
+              type: string
+
+    DockerhubDestination:
+      allOf:
+        - $ref: '#/components/schemas/BaseDestination'
+        - $ref: '#/components/schemas/RegistryDestination'
+
+    DockerhubCred:
+      type: object
+      properties:
+        token:
+          type: string
+        username:
+          type: string
+
     RequestTask:
       allOf:
         - $ref: '#/components/schemas/BaseTask'
@@ -2611,40 +2683,6 @@ components:
           type: boolean
         can_skip:
           type: boolean
-        
-    # --- Context ---
-    Context:
-      type: object
-      required:
-        - type
-      properties:
-        branch:
-          type: string
-        credentials:
-          default: null
-        build_file_path:
-          type: string
-        sub_path:
-          type: string
-        type:
-          $ref: "#/components/schemas/EnumContextType"
-        url:
-          type: string
-        visibility:
-          $ref: "#/components/schemas/EnumContextVisibility"
-    
-    # --- Destination ---
-    Destination:
-      type: object
-      properties:
-        credentials:
-          default: null
-        tag: 
-          type: string
-        type:
-          $ref: '#/components/schemas/EnumDestinationType'
-        url:
-          type: string
 
     # --- Group and GroupUser ---
     GroupDetail:

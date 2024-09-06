@@ -73,9 +73,10 @@ class Function(TaskExecutor):
                 namespace=KUBERNETES_NAMESPACE,
             ),
             spec=client.V1JobSpec(
-                backoff_limit=0 if self.task.max_retries < 0 else self.task.max_retries,
+                backoff_limit=0 if self.task.execution_profile.max_retries < 0 else self.task.execution_profile.max_retries,
                 template=client.V1PodTemplateSpec(
                     spec=client.V1PodSpec(
+                        automount_service_account_token=False,
                         containers=[
                             client.V1Container(
                                 name=job_name,

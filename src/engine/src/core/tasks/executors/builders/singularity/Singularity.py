@@ -123,6 +123,7 @@ class Singularity(BaseBuildExecutor):
         # Pod template and pod template spec
         template = V1PodTemplateSpec(
             spec=V1PodSpec(
+                automount_service_account_token=False,
                 containers=[container],
                 restart_policy="Never",
                 volumes=volumes
@@ -131,13 +132,13 @@ class Singularity(BaseBuildExecutor):
 
         # Job spec
         v1jobspec_props = {}
-        if self.task.max_exec_time > 0:
-            v1jobspec_props["active_deadline_seconds"] = self.task.max_exec_time
+        if self.task.execution_profile.max_exec_time > 0:
+            v1jobspec_props["active_deadline_seconds"] = self.task.execution_profile.max_exec_time
 
-        self.task.max_retries = 0 if self.task.max_retries < 0 else self.task.max_retries
+        self.task.execution_profile.max_retries = 0 if self.task.execution_profile.max_retries < 0 else self.task.execution_profile.max_retries
         job_spec = V1JobSpec(
             **v1jobspec_props,
-            backoff_limit=self.task.max_retries,
+            backoff_limit=self.task.execution_profile.max_retries,
             template=template
         )
 

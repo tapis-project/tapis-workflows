@@ -5,3 +5,13 @@ from backend.serializers.BaseTaskSerializer import BaseTaskSerializer
 from backend.serializers.TaskSerializer import TaskSerializer
 from backend.serializers.TaskDTOSerializer import TaskDTOSerializer
 from backend.serializers.FunctionTaskSerializer import FunctionTaskSerializer
+from backend.serializers.ImageBuildTaskSerializer import ImageBuildTaskSerializer
+from backend.serializers.TapisActorTaskSerializer import TapisActorTaskSerializer
+from backend.serializers.TapisJobTaskSerializer import TapisJobTaskSerializer
+from backend.serializers.ApplicationTaskSerializer import ApplicationTaskSerializer
+from backend.serializers.TemplateTaskSerializer import TemplateTaskSerializer
+from backend.serializers.RequestTaskSerializer import RequestTaskSerializer
+from backend.serializers.ContextSerializer import ContextSerializer
+from backend.serializers.DestinationSerializer import DestinationSerializer
+from backend.serializers.CredentialsSerializer import CredentialsSerializer
+from backend.serializers.PipelineSerializer import PipelineSerializer

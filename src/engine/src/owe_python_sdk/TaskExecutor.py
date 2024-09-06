@@ -27,7 +27,6 @@ class TaskExecutor(EventPublisher):
         self.ctx = ctx
         self.task = task
         self.pipeline = self.ctx.pipeline
-        self.group = self.ctx.group
         self.directives = self.ctx.directives
         self.polling_interval = DEFAULT_POLLING_INTERVAL
         self._resources: list[Resource] = []
@@ -45,7 +44,7 @@ class TaskExecutor(EventPublisher):
 
     def _set_polling_interval(self, task):
         # Default is already the DEFAULT_POLLING_INTERVAL
-        if task.max_exec_time <= 0: return
+        if task.execution_profile.max_exec_time <= 0: return
         
         # TODO Replace line below.
         # Calculate the interval based on the max_exec_time of the task
@@ -69,10 +68,10 @@ class TaskExecutor(EventPublisher):
         with open(f"{self.task.output_dir}{filename.lstrip('/')}", flag) as file:
             file.write(value)
 
-    def _stdout(self, value, flag="wb"):
+    def _stdout(self, value, flag="w"):
         self._set_output(STDOUT, value, flag=flag)
 
-    def _stderr(self, value, flag="wb"):
+    def _stderr(self, value, flag="w"):
         self._set_output(STDERR, value, flag=flag)
 
     def _get_task_output_files(self):

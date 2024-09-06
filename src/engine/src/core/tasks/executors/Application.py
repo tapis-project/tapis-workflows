@@ -43,6 +43,7 @@ class Application(TaskExecutor):
         # Pod template and pod template spec
         template = client.V1PodTemplateSpec(
             spec=client.V1PodSpec(
+                automount_service_account_token=False,
                 containers=[container],
                 restart_policy="Never",
                 volumes=volumes
@@ -50,9 +51,9 @@ class Application(TaskExecutor):
         )
 
         # Job spec
-        self.task.max_retries = 0 if self.task.max_retries < 0 else self.task.max_retries
+        self.task.execution_profile.max_retries = 0 if self.task.execution_profile.max_retries < 0 else self.task.execution_profile.max_retries
         job_spec = client.V1PodSpec(
-            backoff_limit=(self.task.max_retries), template=template)
+            backoff_limit=(self.task.execution_profile.max_retries), template=template)
 
         # Job metadata
         metadata = client.V1ObjectMeta(
