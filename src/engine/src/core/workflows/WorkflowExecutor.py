@@ -401,12 +401,10 @@ class WorkflowExecutor(Worker, EventPublisher):
         
         # Run the handle_pipeline_terminal_state callback if all tasks are complete.
         if len(self.state.tasks) == len(self.state.finished):
-            print("*********** PIPELINE COMPLETED")
             self._handle_pipeline_terminal_state(event=PIPELINE_COMPLETED)
             return []
         
         if task_result.status > 0 and task.can_fail == False:
-            print("*********** PIPELINE FAILED")
             self._handle_pipeline_terminal_state(event=PIPELINE_FAILED)
             return []
 
