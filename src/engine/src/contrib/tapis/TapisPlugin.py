@@ -16,6 +16,7 @@ from contrib.tapis.middleware.request import (
 )
 from contrib.tapis.middleware.event_handlers.archivers import TapisSystemArchiver
 from contrib.tapis.middleware.event_handlers.notifications import TapisWorkflowsAPIBackend
+from contrib.tapis.middleware.engines import TapisSKSecretsEngine
 from contrib.tapis.executors import TapisActor, TapisJob
 from contrib.tapis.constants import TASK_TYPE_TAPIS_ACTOR, TASK_TYPE_TAPIS_JOB, ARCHIVER_TYPE_TAPIS_SYSTEM
 
@@ -48,6 +49,7 @@ class TapisPlugin(Plugin):
         )
         self.register("task_executor", {TASK_TYPE_TAPIS_ACTOR: TapisActor})
         self.register("task_executor", {TASK_TYPE_TAPIS_JOB: TapisJob})
+        self.register("engine", {"tapis-security-kernal": TapisSKSecretsEngine})
         self.register("schema_extension", SchemaExtension(
             _type="task_executor",
             sub_type="function",

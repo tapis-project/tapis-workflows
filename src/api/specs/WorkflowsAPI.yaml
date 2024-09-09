@@ -2542,11 +2542,11 @@ components:
       anyOf:
         - $ref: '#/components/schemas/DockerhubDestination'
         - $ref: '#/components/schemas/LocalDestination'
-      discriminator:
-        propertyName: type
-        mapping:
-          dockerhub: "#/components/schemas/DockerhubDestination"
-          local: "#/components/schemas/LocalDestination"
+      # discriminator:
+      #   propertyName: type
+      #   mapping:
+      #     dockerhub: "#/components/schemas/DockerhubDestination"
+      #     local: "#/components/schemas/LocalDestination"
 
     BaseDestination:
       type: object
@@ -2793,6 +2793,12 @@ components:
           type: string
     
     ValueFromSecret:
+      type: object
+      properties:
+        secret:
+          $ref: "#/components/schemas/SecretRef"
+
+    SecretRef:
       type: object
       properties:
         engine:

@@ -1,3 +1,6 @@
+from typing import List
+
+from owe_python_sdk.Plugin import Plugin
 from core.ioc import IOCContainer
 from core.state import ReactiveState
 from core.daos import (
@@ -33,7 +36,7 @@ from core.expressions import (
 )
 
 class IOCContainerFactory:
-    def build(self):
+    def build(self, plugins: List[Plugin] = []):
         container = IOCContainer()
 
         container.register("ReactiveState",
@@ -152,7 +155,8 @@ class IOCContainerFactory:
                 container.load("TaskRepository"),
                 container.load("TaskOutputRepository"),
                 container.load("ArgRepository"),
-                container.load("EnvRepository")
+                container.load("EnvRepository"),
+                plugins=plugins if len(plugins) > 0 else []
             )
         )
 
