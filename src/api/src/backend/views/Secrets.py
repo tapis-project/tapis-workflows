@@ -18,7 +18,7 @@ class Secrets(RestrictedAPIView):
     def get(self, request, secret_id=None):
         try:
             if secret_id == None:
-                self.list(request.username, request.tenant_id)
+                return self.list(request.username, request.tenant_id)
 
             # Get the secret
             secret = Secret.objects.filter(
