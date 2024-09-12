@@ -39,7 +39,7 @@ class SecretService(Service):
     def delete(self, secret_id, tenant_id, owner):
         service_client = self.tapis_service_api_gateway.get_client()
         
-        secret = Secret.objects.filter(secret_id=secret_id, tenant_id=tenant_id, owner=owner).first()
+        secret = Secret.objects.filter(id=secret_id, tenant_id=tenant_id, owner=owner).first()
         if secret is not None:
             secret.delete()
 
