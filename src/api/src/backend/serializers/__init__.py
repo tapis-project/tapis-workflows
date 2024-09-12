@@ -15,3 +15,5 @@ from backend.serializers.ContextSerializer import ContextSerializer
 from backend.serializers.DestinationSerializer import DestinationSerializer
 from backend.serializers.CredentialsSerializer import CredentialsSerializer
 from backend.serializers.PipelineSerializer import PipelineSerializer
+from backend.serializers.SecretSerializer import SecretSerializer
+from backend.serializers.GroupSecretSerializer import GroupSecretSerializer

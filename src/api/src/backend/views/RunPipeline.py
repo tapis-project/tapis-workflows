@@ -10,11 +10,11 @@ from backend.errors.api import ServerError
 from backend.helpers.PipelineDispatchRequestBuilder import PipelineDispatchRequestBuilder
 from backend.services.PipelineDispatcher import service as pipeline_dispatcher
 from backend.services.GroupService import service as group_service
-from backend.services.SecretService import service as secret_service
+from backend.services.CredentialsService import service as credentials_service
 from backend.models import Pipeline
 
 
-request_builder = PipelineDispatchRequestBuilder(secret_service)
+request_builder = PipelineDispatchRequestBuilder(credentials_service)
 
 class RunPipeline(RestrictedAPIView):
     def post(self, request, group_id, pipeline_id, *_, **__):
