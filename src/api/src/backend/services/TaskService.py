@@ -30,7 +30,7 @@ from backend.views.http.requests import (
     DockerhubDestination,
     LocalDestination
 )
-from backend.services.SecretService import service as secret_service
+from backend.services.CredentialsService import service as credentials_service
 from backend.services.Service import Service
 from backend.errors.api import BadRequestError, ServerError
 
@@ -190,11 +190,11 @@ class TaskService(Service):
                     cred_data[key] = getattr(credentials, key)
             
             try:
-                cred = secret_service.save(f"pipeline:{pipeline.id}", cred_data)
+                cred = credentials_service.save(f"pipeline:{pipeline.id}", cred_data)
                 
                 # Register a rollback funtion(partial) that will be used to delete the credentials
                 # should any subsequent model creations fail
-                self._add_rollback(secret_service.delete, cred.sk_id)
+                self._add_rollback(credentials_service.delete, cred.sk_id)
             except Exception as e:
                 raise ServerError(str(e))
         

@@ -23,6 +23,8 @@ from backend.views.CreateTaskExecution import CreateTaskExecution
 from backend.views.ETLPipelines import ETLPipelines
 from backend.views.PipelineLocksGetList import PipelineLocksGetList
 from backend.views.PipelineLocksPostDelete import PipelineLocksPostDelete
+from backend.views.Secrets import Secrets
+from backend.views.GroupSecrets import GroupSecrets
 
 
 urlpatterns = [
@@ -34,10 +36,18 @@ urlpatterns = [
     # Identities
     path("identities", Identities.as_view(), name="identities"),
     path("identities/<str:identity_uuid>", Identities.as_view(), name="identity"),
+
+    # Secrets
+    path("secrets", Secrets.as_view(), name="secrets"),
+    path("secrets/<str:secret_id>", Secrets.as_view(), name="secret"),
     
     # Groups
     path("groups", Groups.as_view(), name="groups"),
     path("groups/<str:group_id>", Groups.as_view(), name="group"),
+
+    # Group Secrets
+    path("groups/<str:group_id>/secrets", GroupSecrets.as_view(), name="groupSecrets"),
+    path("groups/<str:group_id>/secrets/<str:group_secret_id>", GroupSecrets.as_view(), name="groupSecret"),
 
     # Group Users
     path("groups/<str:group_id>/users", Users.as_view(), name="users"),

@@ -237,6 +237,156 @@ paths:
               schema:
                 $ref: '#/components/schemas/RespError'
 
+  '/v3/workflows/secrets':
+    get:
+      tags:
+        - Secrets
+      summary: Retrieve secrets
+      description: |
+        Retrieve all secrets for a user
+      operationId: listSecrets
+      responses:
+        '200':
+          description: List secrets successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespSecretList'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+    post:
+      tags:
+        - Secrets
+      summary: Create a secret
+      description: |
+        Create a secret.
+      operationId: createSecret
+      requestBody:
+        required: true
+        description: A JSON object specifying information for the pipeline to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReqCreateSecret'
+      responses:
+        '201':
+          description: Secert created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespSecret'
+        '400':
+          description: Bad request. Invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '409':
+          description: Conflict. Secret with provided id already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '415':
+          description: Unsupported media type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
+  '/v3/workflows/secrets/{secret_id}':
+    get:
+      tags:
+        - Secrets
+      summary: Retrieve a secret
+      description: |
+        Retrieve a secret
+      parameters:
+        - name: secret_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: getSecret
+      responses:
+        '200':
+          description: Get secret successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespSecret'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+    delete:
+      tags:
+        - Secrets
+      summary: Delete a secret
+      description: Delete a secret and all of the objects that belong to them
+      parameters:
+        - name: secret_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: deleteSecret
+      responses:
+        '200':
+          description: Delete secret.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespString'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot remove a user to this secret.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '404':
+          description: Secret does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
   '/v3/workflows/groups/{group_id}/users':
     get:
       tags:
@@ -497,6 +647,216 @@ paths:
                 $ref: '#/components/schemas/RespError'
         '404':
           description: Group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
+  '/v3/workflows/groups/{group_id}/secrets':
+    get:
+      tags:
+        - GroupSecrets
+      summary: List group secrets
+      description: |
+        List group_secrets.
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: listGroupSecrets
+      responses:
+        '200':
+          description: List Group Secrets successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespGroupSecretList'
+        '400':
+          description: Bad request. Invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot access resources for this Group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '404':
+          description: Group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+    post:
+      tags:
+        - GroupSecrets
+      summary: Add a user's secret to a group
+      description: |
+        Add a user's secret to a group.
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: addGroupSecret
+      requestBody:
+        required: true
+        description: A JSON object specifying the GroupSecret to add.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReqGroupSecret'
+      responses:
+        '201':
+          description: GroupSecret successfully added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespResourceURL'
+        '400':
+          description: Bad request. Invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot add a secret to this group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '404':
+          description: Group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
+  '/v3/workflows/groups/{group_id}/secrets/{group_secret_id}':
+    get:
+      tags:
+        - GroupSecrets
+      summary: Get group secret
+      description: |
+        Get a group secret
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: group_secret_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: getGroupSecret
+      responses:
+        '200':
+          description: Get GroupSecret successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespGroupSecret'
+        '400':
+          description: Bad request. Invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot access resources for this Group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '404':
+          description: Group does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+    
+    delete:
+      tags:
+        - GroupSecrets
+      summary: Remove user from group
+      description: |
+        Remove a user from a group.
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: group_secret_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      operationId: removeGroupSecret
+      responses:
+        '200':
+          description: GroupSecret removed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespObject'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Cannot remove a secret from this group.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '404':
+          description: Group or GroupSecret does not exist.
           content:
             application/json:
               schema:
@@ -2728,6 +3088,36 @@ components:
           type: string
           format: uuid
 
+    Secret:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        description:
+          type: string
+        tenant_id:
+          type: string
+        owner:
+          type: string
+        sk_secret_name:
+          type: string
+        uuid:
+          type: string
+          format: uuid
+
+    GroupSecret:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        group_id:
+          $ref: "#/components/schemas/ID"
+        uuid:
+          type: string
+          format: uuid
+        secret:
+          $ref: "#/components/schemas/Secret"
+
     Identity:
       type: object
       properties:
@@ -2969,6 +3359,30 @@ components:
         is_admin:
           type: boolean
           default: false
+
+    ReqCreateSecret:
+      type: object
+      required:
+        - id
+        - data
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        description:
+          type: string
+        data:
+          type: object
+
+    ReqGroupSecret:
+      type: object
+      required:
+        - secret_id
+      properties:
+        secret_id:
+          $ref: '#/components/schemas/ID'
+        id:
+          type: string
+          description: The unique identifier of the secret in the group. Defaults to the secret_id of no id is provided
 
     ReqUpdateGroupUser:
       type: object
@@ -3871,6 +4285,42 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/GroupUser'
+
+    RespSecret:
+      allOf:
+        - $ref: '#/components/schemas/RespObject'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/Secret'
+    
+    RespSecretList:
+      allOf:
+        - $ref: '#/components/schemas/RespList'
+        - type: object
+          properties:
+            result:
+              type: array
+              items:
+                $ref: '#/components/schemas/Secret'
+
+    RespGroupSecret:
+      allOf:
+        - $ref: '#/components/schemas/RespObject'
+        - type: object
+          properties:
+            result:
+              $ref: '#/components/schemas/GroupSecret'
+    
+    RespGroupSecretList:
+      allOf:
+        - $ref: '#/components/schemas/RespList'
+        - type: object
+          properties:
+            result:
+              type: array
+              items:
+                $ref: '#/components/schemas/GroupSecret'
 
     RespGroupList:
       allOf:
