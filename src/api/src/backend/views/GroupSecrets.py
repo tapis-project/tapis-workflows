@@ -72,7 +72,7 @@ class GroupSecrets(RestrictedAPIView):
                 return Forbidden(message="You do not have access to this group")
             
             # Fetch the secret
-            secret = Secret.object.filter(
+            secret = Secret.objects.filter(
                 secret_id=secret_id,
                 tenant_id=request.tenant_id,
                 owner=request.username
@@ -89,7 +89,7 @@ class GroupSecrets(RestrictedAPIView):
                 return Conflict(message=f"A GroupSecret already exists with id '{group_secret_id}'")
 
             # Create group secret
-            group_secret = GroupSecret.object.create(
+            group_secret = GroupSecret.objects.create(
                 id=group_secret_id,
                 group=group,
                 secret=secret
