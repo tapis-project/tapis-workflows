@@ -94,13 +94,14 @@ class GroupSecrets(RestrictedAPIView):
                 group=group,
                 secret=secret
             )
+
+            return BaseResponse(result=GroupSecretSerializer.serialize(group_secret))
+        
         except (IntegrityError, OperationalError, DatabaseError) as e:
             return BadRequest(message=e.__cause__)
         except Exception as e:
             logger.exception(e.__cause__)
             return ServerError(f"{e}")
-
-        return BaseResponse(result=GroupSecretSerializer.serialize(group_secret))
 
     def put(self, *_, **__):
         return MethodNotAllowed("Method 'PUT' not allowed for 'GroupSecret' objects")
@@ -109,32 +110,32 @@ class GroupSecrets(RestrictedAPIView):
         return MethodNotAllowed("Method 'PATCH' not allowed for 'GroupSecret' objects")
 
     def delete(self, request, group_id, group_secret_id):
-        # Get the group
-        group = group_service.get(group_id, request.tenant_id)
-        if group == None:
-            return NotFound(f"No group found with id '{group_id}'")
-
-        # Check that the user belongs to the group
-        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
-            return Forbidden(message="You do not have access to this group")
-
-        # Get the group secret
-        group_secret = GroupSecret.objects.filter(
-            group=group,
-            id=group_secret_id
-        ).prefetch_related("secret").first()
-
-        if group_secret == None:
-            return NotFound(f"Secret with id '{group_secret_id}' not found in group '{group.id}'")
-        
-        # Only group_secret owners can delete the group_secret
-        if (
-            request.username != group_secret.secret.owner
-            or group_service.user_in_group(request.username, group_id, request.tenant_id, is_admin=True)
-        ):
-            return Forbidden(message="Only GroupSecret owners and group admins can delete a GroupSecret")
-
         try:
+            # Get the group
+            group = group_service.get(group_id, request.tenant_id)
+            if group == None:
+                return NotFound(f"No group found with id '{group_id}'")
+
+            # Check that the user belongs to the group
+            if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+                return Forbidden(message="You do not have access to this group")
+
+            # Get the group secret
+            group_secret = GroupSecret.objects.filter(
+                group=group,
+                id=group_secret_id
+            ).prefetch_related("secret").first()
+
+            if group_secret == None:
+                return NotFound(f"Secret with id '{group_secret_id}' not found in group '{group.id}'")
+            
+            # Only group_secret owners can delete the group_secret
+            if (
+                request.username != group_secret.secret.owner
+                and not group_service.user_in_group(request.username, group_id, request.tenant_id, is_admin=True)
+            ):
+                return Forbidden(message="Only GroupSecret owners and group admins can delete a GroupSecret")
+
             group_secret.delete()
         except Exception as e:
             logger.exception(e.__cause__)
