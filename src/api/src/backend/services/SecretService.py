@@ -1,11 +1,10 @@
-import uuid
-
 from typing import Dict
 
-from backend.models import Credentials
+from backend.models import Secret
 from backend.conf.constants import SECRETS_TENANT, TAPIS_SERVICE_ACCOUNT, SECRETS_TENANT
 from backend.services.TapisServiceAPIGateway import TapisServiceAPIGateway
 from backend.services.Service import Service
+from backend.views.http.secrets import ReqCreateSecret
 
 
 class SecretService(Service):
@@ -13,66 +12,44 @@ class SecretService(Service):
         self.tapis_service_api_gateway = TapisServiceAPIGateway()
         Service.__init__(self)
 
-    def save(self, owner: str, data: Dict[str, str]):
+    def create(self, tenant_id, owner, req_secret: ReqCreateSecret):
         service_client = self.tapis_service_api_gateway.get_client()
 
-        sk_id = f"workflows+{owner}+{uuid.uuid4()}"
+        sk_secret_name = f"tapis+{tenant_id}+workflows+{owner}+{req_secret.id}"
         try:
             service_client.sk.writeSecret(
                 secretType="user",
-                secretName=sk_id,
+                secretName=sk_secret_name,
                 user=TAPIS_SERVICE_ACCOUNT,
                 tenant=SECRETS_TENANT,
-                data=data,
+                data=req_secret.data,
                 _tapis_set_x_headers_from_service=True
+            )
+
+            return Secret.objects.create(
+                id=req_secret.id,
+                description=req_secret.description,
+                sk_secret_name=sk_secret_name,
+                owner=owner,
+                tenant_id=tenant_id
             )
         except Exception as e:
             raise e
 
-        credentials = Credentials.objects.create(sk_id=sk_id, owner=owner)
-    
-        return credentials
-
-    def delete(self, sk_id: str):
+    def delete(self, secret_id, tenant_id, owner):
         service_client = self.tapis_service_api_gateway.get_client()
         
-        service_client.sk.deleteSecret(
+        secret = Secret.objects.filter(secret_id=secret_id, tenant_id=tenant_id, owner=owner).first()
+        if secret is not None:
+            secret.delete()
+
+        service_client.sk.destroySecret(
             secretType="user",
-            secretName=sk_id,
+            secretName=secret.sk_secret_name,
             user=TAPIS_SERVICE_ACCOUNT,
             tenant=SECRETS_TENANT,
             versions=[],
             _tapis_set_x_headers_from_service=True
         )
-
-        credentials = Credentials.objects.filter(sk_id=sk_id).first()
-        if credentials is not None:
-            credentials.delete()
-
-    def get(self, sk_id: str):
-        if Credentials.objects.filter(sk_id=sk_id).exists():
-            return Credentials.objects.filter(sk_id=sk_id)[0]
-        
-        return None
-
-    def get_secret(self, sk_id: str):
-        service_client = self.tapis_service_api_gateway.get_client()
-        
-        try:
-            res = service_client.sk.readSecret(
-                secretType="user",
-                secretName=sk_id,
-                user=TAPIS_SERVICE_ACCOUNT,
-                tenant=SECRETS_TENANT,
-                version=0,
-                _tapis_set_x_headers_from_service=True
-            )
-            
-            return res.secretMap.__dict__
-        except Exception as e:
-            return None # TODO catch network error
-
-    def _format_secret_name(self, secret_name: str):
-        return secret_name.replace(" ", "-")
 
 service = SecretService()

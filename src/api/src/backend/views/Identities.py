@@ -6,7 +6,7 @@ from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses.errors import BadRequest, NotFound, Forbidden, ServerError
 from backend.views.http.responses import ResourceURLResponse
 from backend.views.http.requests import IdentityCreateRequest
-from backend.services.SecretService import service as secret_service
+from backend.services.CredentialsService import service as credentials_service
 from utils.cred_validators import validate_by_type
 from backend.helpers import resource_url_builder
 
@@ -55,7 +55,7 @@ class Identities(RestrictedAPIView):
 
         # Persist the credentials in sk
         try:
-            credentials = secret_service.save(request.username, body.credentials)
+            credentials = credentials_service.save(request.username, body.credentials)
         except Exception as e:
             return BadRequest(message=e)
 
@@ -69,7 +69,7 @@ class Identities(RestrictedAPIView):
                 tenant_id=request.tenant_id
             )
         except IntegrityError as e:
-            secret_service.delete(credentials.sk_id)
+            credentials_service.delete(credentials.sk_id)
             return BadRequest(message=e.__cause__)
 
         return ResourceURLResponse(
@@ -89,7 +89,7 @@ class Identities(RestrictedAPIView):
         if identity.owner != request.username:
             return Forbidden("You do not have access to this identity")
 
-        secret_service.delete(identity.credentials.sk_id)
+        credentials_service.delete(identity.credentials.sk_id)
 
         identity.delete()
 

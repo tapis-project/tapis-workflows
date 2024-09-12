@@ -325,6 +325,7 @@ class Destination(models.Model):
 
 class Group(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128, unique=True)
+    description = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.CharField(max_length=64)
     tenant_id = models.CharField(max_length=128)
@@ -338,6 +339,20 @@ class Group(models.Model):
             models.UniqueConstraint(
                 fields=["id", "tenant_id"],
                 name="group_id_tenant_id"
+            )
+        ]
+
+class GroupSecret(models.Model):
+    id = models.CharField(max_length=128)
+    group = models.ForeignKey("backend.Group", related_name="groupsecrets", on_delete=models.CASCADE)
+    secret = models.ForeignKey("backend.Secret", related_name="groupsecrets", on_delete=models.CASCADE)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["group", "id"],
+                name="groupsecret_secret_and_id"
             )
         ]
 
@@ -434,6 +449,26 @@ class PipelineRun(models.Model):
     status = models.CharField(max_length=16, choices=RUN_STATUSES, default=RUN_STATUS_SUBMITTED)
     started_at = models.DateTimeField(null=True)
     uuid = models.UUIDField(primary_key=True)
+
+class Secret(models.Model):
+    id = models.CharField(max_length=128)
+    tenant_id = models.CharField(max_length=128)
+    description = models.TextField(null=True)
+    sk_secret_name = models.CharField(max_length=128, unique=True)
+    owner = models.CharField(max_length=64)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["sk_secret_name"]),
+            models.Index(fields=["owner", "tenant_id"])
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id", "tenant_id", "owner"],
+                name="secret_id_tenant_id_owner"
+            )
+        ]
 
 class Task(models.Model):
     class Meta:

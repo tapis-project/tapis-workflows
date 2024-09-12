@@ -7,8 +7,8 @@ from backend.serializers import TaskSerializer, PipelineSerializer
 
 
 class PipelineDispatchRequestBuilder:
-    def __init__(self, secret_service):
-        self.secret_service = secret_service
+    def __init__(self, credentials_service):
+        self.credentials_service = credentials_service
 
     def build(
         self,
@@ -119,7 +119,7 @@ class PipelineDispatchRequestBuilder:
 
         if context_creds != None:
             # Get the context credentials data
-            context_cred_data = self.secret_service.get_secret(context_creds.sk_id)
+            context_cred_data = self.credentials_service.get_secret(context_creds.sk_id)
             task_request["context"]["credentials"] = context_cred_data
 
         # NOTE Workflow engine expect build_file_path and not recipe_file_path
@@ -134,7 +134,7 @@ class PipelineDispatchRequestBuilder:
 
         if destination_creds != None:
             # Get the context credentials data
-            destination_cred_data = self.secret_service.get_secret(destination_creds.sk_id)
+            destination_cred_data = self.credentials_service.get_secret(destination_creds.sk_id)
             task_request["destination"]["credentials"] = destination_cred_data
 
         return task_request
