@@ -73,7 +73,7 @@ class GroupSecrets(RestrictedAPIView):
             
             # Fetch the secret
             secret = Secret.objects.filter(
-                secret_id=secret_id,
+                id=secret_id,
                 tenant_id=request.tenant_id,
                 owner=request.username
             )
