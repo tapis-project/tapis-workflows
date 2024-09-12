@@ -76,7 +76,7 @@ class GroupSecrets(RestrictedAPIView):
                 id=secret_id,
                 tenant_id=request.tenant_id,
                 owner=request.username
-            )
+            ).first()
 
             if secret == None:
                 return NotFound(message=f"No secret found with id '{secret_id}'")
