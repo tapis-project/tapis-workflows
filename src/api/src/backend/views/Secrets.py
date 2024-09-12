@@ -48,9 +48,9 @@ class Secrets(RestrictedAPIView):
             logger.exception(e.__cause__)
             return ServerError(f"{e}")
 
-    def post(self, request, secret_id, *_, **__):
+    def post(self, request, *_, **__):
         # Validate and prepare the create reqeust
-        prepared_request = self.prepare(ReqCreateSecret, id=secret_id)
+        prepared_request = self.prepare(ReqCreateSecret)
 
         # Return the failure view instance if validation failed
         if not prepared_request.is_valid:
@@ -60,7 +60,7 @@ class Secrets(RestrictedAPIView):
         req_secret = prepared_request.body
 
         # Check if secret exists
-        if Secret.objects.filter(id=secret_id, owner=request.username, tenant_id=request.tenant_id).exists():
+        if Secret.objects.filter(id=req_secret.id, owner=request.username, tenant_id=request.tenant_id).exists():
             return Conflict(f"A secret already exists for owner '{request.username}' with the id '{req_secret.id}'")
 
         # Create secret
