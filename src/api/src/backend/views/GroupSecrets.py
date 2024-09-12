@@ -57,38 +57,38 @@ class GroupSecrets(RestrictedAPIView):
             return ServerError(f"{e}")
 
     def post(self, request, group_id, *_, **__):
-        secret_id = self.request_body.get("secret_id")
-        if secret_id == None:
-            return BadRequest("Property 'secret_id' missing from request")
-        
-        # Get the group
-        group = group_service.get(group_id, request.tenant_id)
-        if group == None:
-            return NotFound(f"No group found with id '{group_id}'")
-
-        # Check that the user belongs to the group
-        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
-            return Forbidden(message="You do not have access to this group")
-        
-        # Fetch the secret
-        secret = Secret.object.filter(
-            secret_id=secret_id,
-            tenant_id=request.tenant_id,
-            owner=request.username
-        )
-
-        if secret == None:
-            return NotFound(message=f"No secret found with id '{secret_id}'")
-        
-        group_secret_id = self.request_body.get("id")
-        if group_secret_id == None:
-            group_secret_id = secret.id
-
-        if GroupSecret.objects.filter(group=group, id=group_secret_id).exists():
-            return Conflict(message=f"A GroupSecret already exists with id '{group_secret_id}'")
-
-        # Create group secret
         try:
+            secret_id = self.request_body.get("secret_id")
+            if secret_id == None:
+                return BadRequest("Property 'secret_id' missing from request")
+            
+            # Get the group
+            group = group_service.get(group_id, request.tenant_id)
+            if group == None:
+                return NotFound(f"No group found with id '{group_id}'")
+
+            # Check that the user belongs to the group
+            if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+                return Forbidden(message="You do not have access to this group")
+            
+            # Fetch the secret
+            secret = Secret.object.filter(
+                secret_id=secret_id,
+                tenant_id=request.tenant_id,
+                owner=request.username
+            )
+
+            if secret == None:
+                return NotFound(message=f"No secret found with id '{secret_id}'")
+            
+            group_secret_id = self.request_body.get("id")
+            if group_secret_id == None:
+                group_secret_id = secret.id
+
+            if GroupSecret.objects.filter(group=group, id=group_secret_id).exists():
+                return Conflict(message=f"A GroupSecret already exists with id '{group_secret_id}'")
+
+            # Create group secret
             group_secret = GroupSecret.object.create(
                 id=group_secret_id,
                 group=group,
