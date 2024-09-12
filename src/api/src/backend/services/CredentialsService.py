@@ -6,7 +6,6 @@ from backend.models import Credentials, Secret
 from backend.conf.constants import SECRETS_TENANT, TAPIS_SERVICE_ACCOUNT, SECRETS_TENANT
 from backend.services.TapisServiceAPIGateway import TapisServiceAPIGateway
 from backend.services.Service import Service
-from backend.views.http.secrets import ReqSecret
 
 
 class CredentialsService(Service):
