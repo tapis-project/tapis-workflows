@@ -36,6 +36,9 @@ class ValueFromService:
         value = self._arg_repo.get_value_by_key(key)
         return value
     
+    def get_args(self):
+        return self._arg_repo.get_all()
+    
     # Finds the first secrets engine from plugins and fetches the secret
     def get_secret_value_by_engine_and_pk(self, engine, pk):
         plugin = next(filter(
@@ -43,4 +46,4 @@ class ValueFromService:
             self._plugins
         ))
         secrets_engine = plugin.engines[engine]
-        return secrets_engine(pk)
+        return secrets_engine(pk, self._arg_repo.get_all())

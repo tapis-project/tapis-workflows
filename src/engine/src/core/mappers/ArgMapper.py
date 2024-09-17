@@ -9,3 +9,6 @@ class ArgMapper:
         arg = self._dao.get_state().ctx.args.get(key, None)
         if arg == None: return None
         return arg.value
+    
+    def get_all(self):
+        return self._dao.get_state().ctx.args

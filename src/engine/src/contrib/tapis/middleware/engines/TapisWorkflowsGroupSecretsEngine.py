@@ -1,7 +1,7 @@
 from contrib.tapis.helpers import TapisServiceAPIGateway
 
 
-class TapisSKSecretsEngine:
+class TapisWorkflowsGroupSecretsEngine:
     def __init__(self):
         
         service_api_gateway = TapisServiceAPIGateway()
@@ -16,17 +16,25 @@ class TapisSKSecretsEngine:
         #     }
         # }
 
-    def __call__(self, tapis_tenant_id, sk_id):
+    def __call__(self, pk, args):
         try:
+            group_secret = self.service_client.workflows.getGroupSecret(
+                _tapis_set_x_headers_from_service=True,
+                _x_tapis_tenant=args["tapis_tenant_id"].value,
+                _x_tapis_user=args["tapis_pipeline_owner"].value,
+                group_id=args["tapis_workflows_group_id"].value,
+                group_secret_id=pk
+            )
+
             resp = self.service_client.sk.readSecret(
                 secretType="user",
-                secretName=sk_id,
+                secretName=group_secret.secret.sk_secret_name,
                 user="workflows",
-                tenant=tapis_tenant_id,
+                tenant="admin",
                 version=0,
                 _tapis_set_x_headers_from_service=True
             )
-            # ctx.args["tapis_tenant_id"].value
-            return resp.secretMap.__dict__
+            
+            return resp.secretMap.__dict__["data"]
         except Exception as e:
             return None # TODO catch network error

@@ -64,7 +64,7 @@ class TaskInputFileStagingService:
                     value = select_field(
                         self._value_from_service.get_secret_value_by_engine_and_pk(
                             value_from[key].engine,
-                            value_from[key].pk
+                            value_from[key].pk,
                         ),
                         value_from[key].field_selector
                     )
