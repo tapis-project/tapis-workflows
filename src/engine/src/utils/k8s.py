@@ -2,7 +2,7 @@ import os, re
 
 from uuid import uuid4
 
-from core.tasks.Flavor import Flavor
+from tasks.Flavor import Flavor
 from conf.constants import IS_LOCAL
 
 
