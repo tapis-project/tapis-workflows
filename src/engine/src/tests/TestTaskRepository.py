@@ -2,7 +2,7 @@ import unittest
 
 from unittest.mock import Mock
 
-from core.repositories import TaskRepository
+from repositories import TaskRepository
 
 
 class TestTaskRepository(unittest.TestCase):

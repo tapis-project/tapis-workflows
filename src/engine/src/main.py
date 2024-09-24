@@ -1,6 +1,6 @@
 import sys, logging
 
-from core.Server import Server
+from Server import Server
 
 
 # Set all third-party library loggers to critical
