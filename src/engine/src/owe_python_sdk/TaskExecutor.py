@@ -9,7 +9,7 @@ from owe_python_sdk.TaskResult import TaskResult
 from owe_python_sdk.TaskOutputFile import TaskOutputFile
 from owe_python_sdk.constants import STDERR, STDOUT
 from utils import lbuffer_str as lbuf
-from core.resources import Resource, ResourceType
+from resources import Resource, ResourceType
 from conf.constants import (
     DEFAULT_POLLING_INTERVAL,
     KUBERNETES_NAMESPACE,

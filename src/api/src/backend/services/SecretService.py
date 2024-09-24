@@ -22,7 +22,7 @@ class SecretService(Service):
                 secretName=sk_secret_name,
                 user=TAPIS_SERVICE_ACCOUNT,
                 tenant=SECRETS_TENANT,
-                data=req_secret.data,
+                data={"secret": req_secret.data},
                 _tapis_set_x_headers_from_service=True
             )
 

@@ -2,7 +2,7 @@ import unittest
 
 from unittest.mock import Mock
 
-from core.expressions import (
+from expressions import (
     ConditionalExpressionEvaluator,
     
 )

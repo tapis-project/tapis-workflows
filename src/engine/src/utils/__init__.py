@@ -4,7 +4,7 @@ from importlib import import_module
 
 from conf.constants import FLAVORS
 # from errors import InvalidFlavorError
-from core.tasks.Flavor import Flavor
+from tasks.Flavor import Flavor
 from utils.CompositeLogger import CompositeLogger # NOTE imported to re-export
 
 
