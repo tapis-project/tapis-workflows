@@ -108,17 +108,17 @@ class TemplateMapper:
         # map target object
         new_obj = map_target_class(**tmp_obj)
 
-        # Now update all of the properties to the map target object from the tmp
+        # Now update all of the properties to the map target object from the new
         # object.
         # NOTE this allows us to return the exact same object that was passed as
-        # and argument but with the modifications, there by maintaining the
+        # and argument but with the modifications, thereby maintaining the
         # objects identity. 
         for attr in new_obj.dict().keys():
             if attr == "tasks":
                 continue
 
             updated_value = getattr(new_obj, attr)
-            if getattr(map_target, attr) != updated_value:
+            if getattr(map_target, attr, None) != updated_value:
                 setattr(map_target, attr, updated_value)
 
         return map_target
