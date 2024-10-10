@@ -53,6 +53,8 @@ class TemplateMapper:
                 None
             )
 
+        print(f"TYPE map_target_class: {map_target_class.__name__}")
+
         # Raise exception if no class could be resolved from the template
         if map_target_class == None:
             raise Exception(f"Invalid Template: Unable to resolve object type from Template. Task template object 'type' property must be one of {list(self.task_map_by_type.keys())} | Recieved: {template.get('type', 'None')}")
@@ -60,6 +62,8 @@ class TemplateMapper:
         # This temporty object will hold the updated values for the final
         # map target
         tmp_obj = map_target.dict()
+
+        print(f"TYPE tmp_obj: {type(tmp_obj)}")
 
         # Create a dictionary of the map target object and map the properties of
         # the template onto the dictionary
@@ -108,17 +112,17 @@ class TemplateMapper:
         # map target object
         new_obj = map_target_class(**tmp_obj)
 
-        # Now update all of the properties to the map target object from the tmp
+        # Now update all of the properties to the map target object from the new
         # object.
         # NOTE this allows us to return the exact same object that was passed as
-        # and argument but with the modifications, there by maintaining the
+        # and argument but with the modifications, thereby maintaining the
         # objects identity. 
         for attr in new_obj.dict().keys():
             if attr == "tasks":
                 continue
 
             updated_value = getattr(new_obj, attr)
-            if getattr(map_target, attr) != updated_value:
+            if getattr(map_target, attr, None) != updated_value:
                 setattr(map_target, attr, updated_value)
 
         return map_target
