@@ -53,8 +53,6 @@ class TemplateMapper:
                 None
             )
 
-        print(f"TYPE map_target_class: {map_target_class.__name__}")
-
         # Raise exception if no class could be resolved from the template
         if map_target_class == None:
             raise Exception(f"Invalid Template: Unable to resolve object type from Template. Task template object 'type' property must be one of {list(self.task_map_by_type.keys())} | Recieved: {template.get('type', 'None')}")
@@ -62,8 +60,6 @@ class TemplateMapper:
         # This temporty object will hold the updated values for the final
         # map target
         tmp_obj = map_target.dict()
-
-        print(f"TYPE tmp_obj: {type(tmp_obj)}")
 
         # Create a dictionary of the map target object and map the properties of
         # the template onto the dictionary
