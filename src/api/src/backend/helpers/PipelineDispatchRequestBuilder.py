@@ -1,7 +1,6 @@
 from uuid import uuid4
 from django.forms import model_to_dict
 
-from backend.utils.parse_directives import parse_directives as parse
 from backend.conf.constants import WORKFLOW_EXECUTOR_ACCESS_TOKEN
 from backend.serializers import TaskSerializer, PipelineSerializer
 
@@ -19,6 +18,7 @@ class PipelineDispatchRequestBuilder:
         description=None,
         commit=None,
         directives=None,
+        run=None,
         args={}
     ):
         # Get the pipeline tasks, their contexts, destinations, and respective
@@ -89,26 +89,15 @@ class PipelineDispatchRequestBuilder:
 
         request["meta"]["origin"] = base_url # Origin of the request
 
-        request["pipeline_run"] = {}
+        request["pipeline_run"] = run if run else {}
+        if not run:
+            uuid = uuid4()
+            request["pipeline_run"]["uuid"] = uuid
+            request["pipeline_run"]["name"] = name or uuid
+            request["pipeline_run"]["description"] = description
         
-        # Generate the uuid for this pipeline run
-        uuid = uuid4()
-        request["pipeline_run"]["uuid"] = uuid
-        request["pipeline_run"]["name"] = name or uuid
-        request["pipeline_run"]["description"] = description
-
-        # # Parse the directives from the commit message
-        # directives_request = {}
-        # if commit != None:
-        #     directives_request = parse(commit)
-
-        # if directives != None and len(directives) > 0:
-        #     directive_str = f"[{'|'.join([d for d in directives])}]"
-        #     directives_request = parse(directive_str)
-
-        # request["directives"] = directives_request
-
-        request["directives"] = {}
+        # if not directives are provided. Default to RUN
+        request["directives"] = directives if directives else {"RUN": run.uuid}
 
         return request
 

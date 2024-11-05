@@ -23,11 +23,7 @@ def lbuffer_str(string, length=10):
     buffer = " " * diff
     return string + buffer
 
-def serialize_request(bytestring):
-    # DELETE THE BELOW BY: 2024/10/31
-    # OLD Caused a serialization bug. But may have had use? 
-    # value = bytestring.decode("utf8").replace("'", '"') 
-
+def deserialize_message(bytestring):
     # Decode UTF-8 bytes to Unicode, and convert single quotes
     # to double quotes to make it valid JSON
     value = bytestring.decode("utf8")

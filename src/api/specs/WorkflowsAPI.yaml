@@ -2085,6 +2085,35 @@ paths:
                 $ref: '#/components/schemas/RespPipelineLock'
 
   '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}/runs/{pipeline_run_uuid}':
+    post:
+      tags:
+        - PipelineRuns
+      summary: Terminate a running pipeline
+      description: Terminate a running pipeline
+      operationId: terminatePipeline
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_run_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pipeline terminated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespPipelineRun'
     get:
       tags:
         - PipelineRuns

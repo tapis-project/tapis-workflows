@@ -64,17 +64,58 @@ TASK_PROTOCOLS = [
     (TASK_PROTOCOL_FTPS, "ftps"),
 ]
 
+FUNCTION_TASK_RUNTIME_PYTHON_LATEST = EnumRuntimeEnvironment.PythonLatest
+FUNCTION_TASK_RUNTIME_PYTHON_SLIM = EnumRuntimeEnvironment.PythonSlim 
+FUNCTION_TASK_RUNTIME_PYTHON312 = EnumRuntimeEnvironment.Python312 
+FUNCTION_TASK_RUNTIME_PYTHON312_SLIM = EnumRuntimeEnvironment.Python312Slim
+FUNCTION_TASK_RUNTIME_PYTHON311 = EnumRuntimeEnvironment.Python311 
+FUNCTION_TASK_RUNTIME_PYTHON311_SLIM = EnumRuntimeEnvironment.Python311Slim
+FUNCTION_TASK_RUNTIME_PYTHON310 = EnumRuntimeEnvironment.Python10 
+FUNCTION_TASK_RUNTIME_PYTHON310_SLIM = EnumRuntimeEnvironment.Python10Slim
 FUNCTION_TASK_RUNTIME_PYTHON39 = EnumRuntimeEnvironment.Python39
+FUNCTION_TASK_RUNTIME_PYTHON39_SLIM = EnumRuntimeEnvironment.Python39Slim
+FUNCTION_TASK_RUNTIME_PYTHON38 = EnumRuntimeEnvironment.Python38 
+FUNCTION_TASK_RUNTIME_PYTHON38_SLIM = EnumRuntimeEnvironment.Python38Slim
+FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW_LATEST = EnumRuntimeEnvironment.TensorflowLatest
+FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW_LATEST_GPU = EnumRuntimeEnvironment.TensorflowLatestGPU
+FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW2120 = EnumRuntimeEnvironment.Tensorflow2120
+FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW2120_GPU = EnumRuntimeEnvironment.Tensorflow2120GPU
+FUNCTION_TASK_RUNTIME_PYTHON_PYTORCH_LATEST = EnumRuntimeEnvironment.PytorchLatest
+FUNCTION_TASK_RUNTIME_PYTHON_PYTORCH_LATEST_GPU = EnumRuntimeEnvironment.HuggingfaceTranformersPytorchGPULatest
+FUNCTION_TASK_RUNTIME_PYTHON_HUGGINGFACE_TRANSFORMERS_PYTORCH_GPU4292 = EnumRuntimeEnvironment.HuggingfaceTranformersPytorchGPU4292
 FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY = EnumRuntimeEnvironment.PythonSingularity
+FUNCTION_TASK_RUNTIME_PYTHON_PYGEOFLOOD = EnumRuntimeEnvironment.PyGeoFlood
 FUNCTION_TASK_RUNTIMES = [
+    (FUNCTION_TASK_RUNTIME_PYTHON_LATEST, EnumRuntimeEnvironment.PythonLatest),
+    (FUNCTION_TASK_RUNTIME_PYTHON_SLIM, EnumRuntimeEnvironment.PythonSlim), 
+    (FUNCTION_TASK_RUNTIME_PYTHON312, EnumRuntimeEnvironment.Python312), 
+    (FUNCTION_TASK_RUNTIME_PYTHON312_SLIM, EnumRuntimeEnvironment.Python312Slim),
+    (FUNCTION_TASK_RUNTIME_PYTHON311, EnumRuntimeEnvironment.Python311), 
+    (FUNCTION_TASK_RUNTIME_PYTHON311_SLIM, EnumRuntimeEnvironment.Python311Slim),
+    (FUNCTION_TASK_RUNTIME_PYTHON310, EnumRuntimeEnvironment.Python10), 
+    (FUNCTION_TASK_RUNTIME_PYTHON310_SLIM, EnumRuntimeEnvironment.Python10Slim),
     (FUNCTION_TASK_RUNTIME_PYTHON39, EnumRuntimeEnvironment.Python39),
-    (FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY, EnumRuntimeEnvironment.PythonSingularity)
+    (FUNCTION_TASK_RUNTIME_PYTHON39_SLIM, EnumRuntimeEnvironment.Python39Slim),
+    (FUNCTION_TASK_RUNTIME_PYTHON38, EnumRuntimeEnvironment.Python38), 
+    (FUNCTION_TASK_RUNTIME_PYTHON38_SLIM, EnumRuntimeEnvironment.Python38Slim),
+    (FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW_LATEST, EnumRuntimeEnvironment.TensorflowLatest),
+    (FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW_LATEST_GPU, EnumRuntimeEnvironment.TensorflowLatestGPU),
+    (FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW2120, EnumRuntimeEnvironment.Tensorflow2120),
+    (FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW2120_GPU, EnumRuntimeEnvironment.Tensorflow2120GPU),
+    (FUNCTION_TASK_RUNTIME_PYTHON_PYTORCH_LATEST, EnumRuntimeEnvironment.PytorchLatest),
+    (FUNCTION_TASK_RUNTIME_PYTHON_PYTORCH_LATEST_GPU, EnumRuntimeEnvironment.HuggingfaceTranformersPytorchGPULatest),
+    (FUNCTION_TASK_RUNTIME_PYTHON_HUGGINGFACE_TRANSFORMERS_PYTORCH_GPU4292, EnumRuntimeEnvironment.HuggingfaceTranformersPytorchGPU4292),
+    (FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY, EnumRuntimeEnvironment.PythonSingularity),
+    (FUNCTION_TASK_RUNTIME_PYTHON_PYGEOFLOOD, EnumRuntimeEnvironment.PyGeoFlood),
 ]
 
 FUNCTION_TASK_INSTALLERS = [
     (EnumInstaller.Pip, EnumInstaller.Pip)
 ]
 
+TASK_FLAVOR_C1_TINY = EnumTaskFlavor.C1_TINY
+TASK_FLAVOR_C1_XXSML = EnumTaskFlavor.C1_XXSML
+TASK_FLAVOR_C1_XSML = EnumTaskFlavor.C1_XSML
 TASK_FLAVOR_C1_SML = EnumTaskFlavor.C1_SML
 TASK_FLAVOR_C1_MED = EnumTaskFlavor.C1_MED
 TASK_FLAVOR_C1_LRG = EnumTaskFlavor.C1_LRG
@@ -85,6 +126,9 @@ TASK_FLAVOR_G1_NVD_MED = EnumTaskFlavor.G1_NVD_MED
 TASK_FLAVOR_G1_NVD_LRG = EnumTaskFlavor.G1_NVD_LRG
 
 TASK_FLAVORS = [
+    (TASK_FLAVOR_C1_TINY, EnumTaskFlavor.C1_TINY),
+    (TASK_FLAVOR_C1_XXSML, EnumTaskFlavor.C1_XXSML),
+    (TASK_FLAVOR_C1_XSML, EnumTaskFlavor.C1_XSML),
     (TASK_FLAVOR_C1_SML, EnumTaskFlavor.C1_SML),
     (TASK_FLAVOR_C1_MED, EnumTaskFlavor.C1_MED),
     (TASK_FLAVOR_C1_LRG, EnumTaskFlavor.C1_LRG),
@@ -452,10 +496,10 @@ class PipelineRun(models.Model):
 
 class Secret(models.Model):
     id = models.CharField(max_length=128)
-    tenant_id = models.CharField(max_length=128)
     description = models.TextField(null=True)
-    sk_secret_name = models.CharField(max_length=128, unique=True)
     owner = models.CharField(max_length=64)
+    sk_secret_name = models.CharField(max_length=128, unique=True)
+    tenant_id = models.CharField(max_length=128)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
 
     class Meta:
@@ -542,10 +586,6 @@ class Task(models.Model):
 
     def clean(self):
         errors = {}
-        
-        # Validate runtimes
-        (success, error) = self.validate_function_task_installers()
-        if not success: errors = {**errors, "invalid-runtime-installer": error}
 
         # Validate packages schema
         (success, error) = self.validate_packages_schema()
@@ -553,17 +593,6 @@ class Task(models.Model):
 
         if errors:
             raise ValidationError(errors)
-
-    def validate_function_task_installers(self) -> Tuple[bool, str]:
-        installer_runtime_mapping = {
-            FUNCTION_TASK_RUNTIME_PYTHON39: [EnumInstaller.Pip],
-            FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY: [EnumInstaller.Pip]
-        }
-
-        installers_for_runtime = installer_runtime_mapping.get(self.runtime, None)
-        if installers_for_runtime == None: return (False, f"Invalid runtime '{self.runtime}'")
-        if self.installer not in installers_for_runtime:
-            return (False, f"Installer '{self.installer}' for runtime {self.runtime}")
 
     def validate_packages_schema(self) -> Tuple[bool, str]:
         if type(self.packages) != list:
