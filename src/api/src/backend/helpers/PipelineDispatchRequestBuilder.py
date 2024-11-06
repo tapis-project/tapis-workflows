@@ -97,7 +97,7 @@ class PipelineDispatchRequestBuilder:
             request["pipeline_run"]["description"] = description
         
         # if not directives are provided. Default to RUN
-        request["directives"] = directives if directives else {"RUN": run.uuid}
+        request["directives"] = directives if directives else {"RUN": request["pipeline_run"]["uuid"]}
 
         return request
 

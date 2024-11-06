@@ -19,7 +19,7 @@ class PipelineDispatcher:
         now = timezone.now()
         try: 
             # Create the pipeline run object if one was not provied
-            if pipeline_run != None:
+            if pipeline_run == None:
                 pipeline_run = PipelineRun.objects.create(
                     name=service_request["pipeline_run"]["name"],
                     description=service_request["pipeline_run"]["description"],

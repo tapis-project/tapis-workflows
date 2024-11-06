@@ -65,9 +65,7 @@ class Server:
         # Create a worker pool that consists of the workflow executors that will
         # run the pipelines
         # TODO catch error for worker classes that dont inherit from "Worker"
-        logger.info(f"Initializing workers {PLUGINS}")
-        logger.info(f"Starting workers {STARTING_WORKERS}")
-        logger.info(f"Max workers {MAX_WORKERS}")
+        logger.info(f"Starting {STARTING_WORKERS} workers. Max workers ({MAX_WORKERS})")
         self.worker_pool = WorkerPool(
             worker_cls=WorkflowExecutor,
             starting_worker_count=STARTING_WORKERS,
@@ -104,7 +102,7 @@ class Server:
                 )
             )
 
-            logger.debug(f"Worker Engine Server started and ready to recieve workflow submissions.")
+            logger.debug(f"Server started and ready to recieve workflow submissions.")
 
             channel.start_consuming()
 
