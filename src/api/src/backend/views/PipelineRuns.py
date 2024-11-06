@@ -10,7 +10,7 @@ from backend.views.http.responses.errors import (
     BadRequest
 )
 from backend.services.GroupService import service as group_service
-from backend.models import PipelineRun, Pipeline
+from backend.models import PipelineRun, Pipeline, TERMINAL_STATUSES
 from backend.helpers.PipelineDispatchRequestBuilder import PipelineDispatchRequestBuilder
 from backend.services.PipelineDispatcher import service as pipeline_dispatcher
 from backend.errors.api import ServerError
@@ -61,6 +61,9 @@ class PipelineRuns(RestrictedAPIView):
             
             if not pipeline_run:
                 return BadRequest(f"PiplineRun with uuid '{pipeline_run_uuid}' does not exist")
+            
+            if pipeline_run.status not in TERMINAL_STATUSES:
+                return BadRequest(f"PiplineRun with uuid '{pipeline_run_uuid}' is not in a terminable state")
 
             try:
                 # Build the pipeline dispatch request
