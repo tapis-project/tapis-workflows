@@ -57,7 +57,7 @@ class PipelineRuns(RestrictedAPIView):
             pipeline_run = PipelineRun.objects.filter(
                 pipeline=pipeline,
                 uuid=pipeline_run_uuid
-            ).next()
+            ).first()
             
             if not pipeline_run:
                 return BadRequest(f"PiplineRun with uuid '{pipeline_run_uuid}' does not exist")
