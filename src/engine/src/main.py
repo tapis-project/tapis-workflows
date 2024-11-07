@@ -1,7 +1,6 @@
 import sys, logging
 
 from Server import Server
-from utils import lbuffer_str
 from conf.constants import (
     INBOUND_EXCHANGE,
     INBOUND_QUEUE,
@@ -14,7 +13,7 @@ for name in logging.root.manager.loggerDict:
 
 server_logger = logging.getLogger("server")
 handler = logging.StreamHandler(stream=sys.stdout)
-handler.setFormatter(logging.Formatter(f"{lbuffer_str('[SERVER]')} %(message)s"))
+handler.setFormatter(logging.Formatter(f"%(message)s"))
 server_logger.setLevel(logging.DEBUG)
 server_logger.addHandler(handler)
 

@@ -32,11 +32,12 @@ from conf.constants import (
     DUPLICATE_SUBMISSION_POLICY_DEFER,
     PLUGINS,
 )
+from utils import lbuffer_str
 from owe_python_sdk.schema import WorkflowSubmissionRequest, EmptyObject
 
 from workers import WorkerPool
 from workflows import WorkflowExecutor
-from utils import deserialize_message, load_plugins
+from utils import deserialize_message, load_plugins, lbuffer_str
 from errors import NoAvailableWorkers, WorkflowTerminated
 
 
@@ -56,16 +57,16 @@ class Server:
         workers, establishes a connection with RabbitMQ, creates the channel, 
         exchanges, and queues, and begins consuming from the inbound queue"""
 
-        logger.info(f"Starting server")
+        logger.info(f"{lbuffer_str('[SERVER]')}  Starting server")
 
         # Initialize plugins
-        logger.info(f"Loading plugins {PLUGINS}")
+        logger.info(f"{lbuffer_str('[SERVER]')} Loading plugins {PLUGINS}")
         self.plugins = load_plugins(PLUGINS)
 
         # Create a worker pool that consists of the workflow executors that will
         # run the pipelines
         # TODO catch error for worker classes that dont inherit from "Worker"
-        logger.info(f"Starting {STARTING_WORKERS} workers. Max workers ({MAX_WORKERS})")
+        logger.info(f"{lbuffer_str('[SERVER]')} Starting {STARTING_WORKERS} workers. Max workers ({MAX_WORKERS})")
         self.worker_pool = WorkerPool(
             worker_cls=WorkflowExecutor,
             starting_worker_count=STARTING_WORKERS,
@@ -74,8 +75,8 @@ class Server:
                 "plugins": self.plugins
             }
         )
-        logger.debug(f"Worker initialization complete")
-        logger.debug(f"Available workers ({self.worker_pool.count()})")
+        logger.debug(f"{lbuffer_str('[SERVER]')} Worker initialization complete")
+        logger.debug(f"{lbuffer_str('[SERVER]')} Available workers ({self.worker_pool.count()})")
 
         # Connect to the message broker
         connection = self._connect()
@@ -102,7 +103,7 @@ class Server:
                 )
             )
 
-            logger.debug(f"Server started and ready to recieve workflow submissions.")
+            logger.debug(f"{lbuffer_str('[SERVER]')} Server started and ready to recieve workflow submissions.")
 
             channel.start_consuming()
 
@@ -111,17 +112,17 @@ class Server:
                 thread.join()
 
             connection.close()
-            logger.info(f"Closing connection to message broker")
+            logger.info(f"{lbuffer_str('[SERVER]')} Closing connection to message broker")
 
         # Occurs when basic_consume recieves the wrong args
         except ValueError as e:
-            logger.critical(f"Critical Workflow Executor Error: {e}")
+            logger.critical(f"{lbuffer_str('[SERVER]')} Critical Error: {e}")
         # Cathes all ampq errors from .start_consuming()
         except AMQPError as e:
-            logger.error(f"{e.__class__.__name__} - {e}")
+            logger.error(f"{lbuffer_str('[SERVER]')} {e.__class__.__name__} - {e}")
         # Catch all other exceptions
         except Exception as e:
-            logger.error(e)
+            logger.error(f"{lbuffer_str('[SERVER]')} {e}")
 
     def _on_message_callback(self, channel, method, _, body, args):
         '''
@@ -137,7 +138,7 @@ class Server:
         try:
             request = WorkflowSubmissionRequest(**deserialize_message(body))
         except JSONDecodeError as e:
-            logger.error(e)
+            logger.error(f"{lbuffer_str('[SERVER]')} {e}")
             channel.basic_reject(method.delivery_tag, requeue=False)
             return
         
@@ -150,7 +151,7 @@ class Server:
             for plugin in self.plugins:
                 request = plugin.dispatch("request", request)
         except Exception as e:
-            logger.error(e)
+            logger.error(f"{lbuffer_str('[SERVER]')} {e}")
             channel.basic_reject(method.delivery_tag, requeue=False)
             return
 
@@ -163,7 +164,7 @@ class Server:
         try:
             worker = self.worker_pool.check_out()
         except NoAvailableWorkers:
-            logger.info(f"Insufficient workers available. RETRYING (10s)")
+            logger.info(f"{lbuffer_str('[SERVER]')} Insufficient workers available. RETRYING (10s)")
             connection.add_callback_threadsafe(
                 partial(
                     self._ack_nack,
@@ -213,7 +214,7 @@ class Server:
                     t.join()
             except Exception as e:
                 # Deregister and return executor back to the worker pool
-                logger.error(e)
+                logger.error(f"{lbuffer_str('[SERVER]')} {e}")
 
         # Handle TERMINATE directive
         if "TERMINATE_RUN" in directives:
@@ -263,7 +264,7 @@ class Server:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        logger.info(f"Connecting to message broker")
+        logger.info(f"{lbuffer_str('[SERVER]')} Connecting to message broker")
 
         connected = False
         connection_attempts = 0
@@ -273,15 +274,15 @@ class Server:
                 connection = pika.BlockingConnection(connection_parameters)
                 connected = True
             except Exception:
-                logger.info(f"Connection failed ({connection_attempts})")
+                logger.info(f"{lbuffer_str('[SERVER]')} Connection failed ({connection_attempts})")
                 time.sleep(CONNECTION_RETRY_DELAY)
 
         # Kill the build service if unable to connect
         if connected == False:
-            logger.critical(f"Error: Maximum connection attempts reached ({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker.")
+            logger.critical(f"{lbuffer_str('[SERVER]')} Error: Maximum connection attempts reached ({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker.")
             sys.exit(1)
 
-        logger.info(f"Connected to message broker established")
+        logger.info(f"{lbuffer_str('[SERVER]')} Connection to message broker established")
 
         return connection
 
@@ -310,7 +311,7 @@ class Server:
                 active_worker.terminate()
                 self._deregister_worker(active_worker, terminated=True)
         elif policy == DUPLICATE_SUBMISSION_POLICY_DEFER:
-            logger.info(f"Warning: Duplicate Submission Policy of 'DEFER' not implemented. Handling as 'ALLOW'")
+            logger.info(f"{lbuffer_str('[SERVER]')} Warning: Duplicate Submission Policy of 'DEFER' not implemented. Handling as 'ALLOW'")
             pass
         elif policy == DUPLICATE_SUBMISSION_POLICY_ALLOW:
             pass
@@ -337,7 +338,7 @@ class Server:
         try:
             return channel.queue_declare(queue=queue, exclusive=exclusive)
         except ChannelClosedByBroker as e:
-            logger.critical(f"Exclusive queue declaration error for queue '{queue}' | {e}")
+            logger.critical(f"{lbuffer_str('[SERVER]')} Exclusive queue declaration error for queue '{queue}' | {e}")
             sys.exit(1)
 
     def _resolve_idempotency_key(self, request):
@@ -380,9 +381,9 @@ class Server:
                 idempotency_key = idempotency_key + part_delimiter + str(key_part)
             return idempotency_key
         except (AttributeError, TypeError) as e:
-            logger.info(f"Warning: Failed to resolve idempotency key from provided constraints. {str(e)}. Defaulted to pipeline run uuid '{default_idempotency_key}'")
+            logger.info(f"{lbuffer_str('[SERVER]')} Warning: Failed to resolve idempotency key from provided constraints. {str(e)}. Defaulted to pipeline run uuid '{default_idempotency_key}'")
         except Exception as e:
-            logger.info(f"Any unknown error occured resolving idempotency key | {str(e)}. Defaulted to pipeline run uuid '{default_idempotency_key}'")
+            logger.info(f"{lbuffer_str('[SERVER]')} Any unknown error occured resolving idempotency key | {str(e)}. Defaulted to pipeline run uuid '{default_idempotency_key}'")
  
         return default_idempotency_key
     

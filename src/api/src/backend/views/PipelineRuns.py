@@ -13,6 +13,7 @@ from backend.services.GroupService import service as group_service
 from backend.models import PipelineRun, Pipeline, TERMINAL_STATUSES
 from backend.helpers.PipelineDispatchRequestBuilder import PipelineDispatchRequestBuilder
 from backend.services.PipelineDispatcher import service as pipeline_dispatcher
+from backend.views.http.responses.models import ModelResponse
 from backend.errors.api import ServerError
 from backend.utils import logger
 from backend.services.CredentialsService import service as credentials_service
@@ -76,25 +77,17 @@ class PipelineRuns(RestrictedAPIView):
                     run=pipeline_run,
                 )
                 # Dispatch the request
-                pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline, pipeline_run=pipeline_run)
+                run = pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline, pipeline_run=pipeline_run)
             except ServerError as e:
                 return ServerErrorResp(message=str(e))
             except Exception as e:
                 return ServerErrorResp(message=str(e))
-
-
-            # Format the started at and last_modified
-            run = model_to_dict(pipeline_run)
             
             run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S") if run["started_at"] else None
             run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S") if run["last_modified"] else None
 
-            return BaseResponse(
-                status=200,
-                success=True,
-                message="success",
-                result=run
-            )
+            # Respond with the pipeline run
+            return ModelResponse(run)
             
         # TODO catch the specific error thrown by the group service
         except (DatabaseError, IntegrityError, OperationalError) as e:
@@ -103,7 +96,6 @@ class PipelineRuns(RestrictedAPIView):
         except Exception as e:
             logger.exception(e.__cause__)
             return ServerError(message=e)
-        
 
     def get(self, request, group_id, pipeline_id, pipeline_run_uuid=None, *_,  **__):
         try:

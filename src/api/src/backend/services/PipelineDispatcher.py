@@ -60,7 +60,7 @@ class PipelineDispatcher:
             logger.error(message)
             logger.exception(e.__cause__)
             raise ServerError(message=message)
-        
+
         return pipeline_run
 
     def _uuid_convert(self, obj):
