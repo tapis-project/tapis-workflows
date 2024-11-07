@@ -18,7 +18,7 @@ class PipelineDispatchRequestBuilder:
         description=None,
         commit=None,
         directives=None,
-        run=None,
+        pipeline_run=None,
         args={}
     ):
         # Get the pipeline tasks, their contexts, destinations, and respective
@@ -89,14 +89,14 @@ class PipelineDispatchRequestBuilder:
 
         request["meta"]["origin"] = base_url # Origin of the request
 
-        request["pipeline_run"] = run if run else {}
-        if not run:
+        request["pipeline_run"] = model_to_dict(pipeline_run) if pipeline_run else {}
+        if not pipeline_run:
             uuid = uuid4()
             request["pipeline_run"]["uuid"] = uuid
             request["pipeline_run"]["name"] = name or uuid
             request["pipeline_run"]["description"] = description
         
-        # if not directives are provided. Default to RUN
+        # If no directives are provided. Default to RUN
         request["directives"] = directives if directives else {"RUN": request["pipeline_run"]["uuid"]}
 
         return request

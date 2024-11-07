@@ -74,7 +74,7 @@ class PipelineRuns(RestrictedAPIView):
                     pipeline,
                     directives={"TEMINATE_RUN": [pipeline_run_uuid]},
                     args={},
-                    run=pipeline_run,
+                    pipeline_run=pipeline_run,
                 )
                 # Dispatch the request
                 run = pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline, pipeline_run=pipeline_run)
