@@ -62,7 +62,7 @@ class PipelineRuns(RestrictedAPIView):
             if not pipeline_run:
                 return BadRequest(f"PiplineRun with uuid '{pipeline_run_uuid}' does not exist")
             
-            if pipeline_run.status not in TERMINAL_STATUSES:
+            if pipeline_run.status in TERMINAL_STATUSES:
                 return BadRequest(f"PiplineRun with uuid '{pipeline_run_uuid}' is not in a terminable state")
 
             try:
