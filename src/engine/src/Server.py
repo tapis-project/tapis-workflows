@@ -57,7 +57,7 @@ class Server:
         workers, establishes a connection with RabbitMQ, creates the channel, 
         exchanges, and queues, and begins consuming from the inbound queue"""
 
-        logger.info(f"{lbuffer_str('[SERVER]')}  Starting server")
+        logger.info(f"{lbuffer_str('[SERVER]')} Starting server")
 
         # Initialize plugins
         logger.info(f"{lbuffer_str('[SERVER]')} Loading plugins {PLUGINS}")
