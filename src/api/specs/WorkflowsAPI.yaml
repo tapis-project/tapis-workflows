@@ -4656,6 +4656,7 @@ components:
         - "pytorch/pytorch:latest"
         - "huggingface/transformers-pytorch-gpu:latest"
         - "huggingface/transformers-pytorch-gpu:4.29.2"
+        - "ghcr.io/tobiashi26/pygeoflood-container:main"
 
     EnumTaskIOType:
       type: string
