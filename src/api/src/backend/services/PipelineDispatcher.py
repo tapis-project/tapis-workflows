@@ -8,6 +8,7 @@ from backend.utils import logger
 from backend.services.MessageBroker import service as broker
 from backend.models import Pipeline, PipelineRun, RUN_STATUS_SUBMITTED
 from backend.errors.api import ServerError
+from pprint import pprint
 
 
 class PipelineDispatcher:
@@ -50,6 +51,8 @@ class PipelineDispatcher:
             logger.exception(e.__cause__)
             raise ServerError(message=str(e))
 
+
+        pprint(service_request)
         try:
             broker.publish(
                 "workflows",
