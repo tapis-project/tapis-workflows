@@ -82,9 +82,6 @@ class PipelineRuns(RestrictedAPIView):
                 return ServerErrorResp(message=str(e))
             except Exception as e:
                 return ServerErrorResp(message=str(e))
-            
-            run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S") if run["started_at"] else None
-            run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S") if run["last_modified"] else None
 
             # Respond with the pipeline run
             return ModelResponse(run)
