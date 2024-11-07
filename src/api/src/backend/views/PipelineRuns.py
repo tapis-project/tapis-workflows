@@ -84,7 +84,7 @@ class PipelineRuns(RestrictedAPIView):
 
 
             # Format the started at and last_modified
-            run = model_to_dict(run)
+            run = model_to_dict(pipeline_run)
             
             run["started_at"] = run["started_at"].strftime("%Y-%m-%d %H:%M:%S") if run["started_at"] else None
             run["last_modified"] = run["last_modified"].strftime("%Y-%m-%d %H:%M:%S") if run["last_modified"] else None
