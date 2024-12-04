@@ -54,11 +54,38 @@ class EnumImageBuilder(str, Enum, metaclass=_EnumMeta):
     Kaniko = "kaniko"
     Singularity = "singularity"
 
-LiteralRuntimeEnvironments = Literal["python:3.9"]
-RuntimeEnvironments = list(get_args(LiteralRuntimeEnvironments))
+
 class EnumRuntimeEnvironment(str, Enum, metaclass=_EnumMeta):
-    Python39 = "python:3.9"
-    PythonSingularity = "tapis/workflows-python-singularity:0.1.0"
+    # Basic python
+    PythonLatest = "python:latest",
+    PythonSlim = "python:slim",
+    Python312 = "python:3.12",
+    Python312Slim = "python:3.12-slim",
+    Python311 = "python:3.11",
+    Python311Slim = "python:3.11-slim",
+    Python10 = "python:3.10",
+    Python10Slim = "python:3.10-slim",
+    Python39 = "python:3.9",
+    Python39Slim = "python:3.9-slim",
+    Python38 = "python:3.8",
+    Python38Slim = "python:3.8-slim"
+
+    # Machine Learning
+    TensorflowLatest = "tensorflow/tensorflow:latest",
+    TensorflowLatestGPU = "tensorflow/tensorflow:latest-gpu",
+    Tensorflow2120 = "tensorflow/tensorflow:2.12.0",
+    Tensorflow2120GPU = "tensorflow/tensorflow:2.12.0-gpu",
+    PytorchLatest = "pytorch/pytorch:latest",
+    HuggingfaceTranformersPytorchGPULatest = "huggingface/transformers-pytorch-gpu:latest",
+    HuggingfaceTranformersPytorchGPU4292 = "huggingface/transformers-pytorch-gpu:4.29.2"
+
+    # Tapis specific # TODO Factor out into the tapis plugin
+    PythonSingularity = "tapis/workflows-python-singularity:0.1.0",
+
+    # TACC specific # TODO Factor out into a new plugin for TACC
+    PyGeoFlood = "ghcr.io/tobiashi26/pygeoflood-container:main"
+    
+RuntimeEnvironments = [i.value for i in EnumRuntimeEnvironment]
 
 LiteralInstallers = Literal["pip", "apt_get"]
 Installers = list(get_args(LiteralInstallers))
@@ -837,7 +864,9 @@ class WorkflowSubmissionRequest(BaseModel):
     args: Args = {}
     pipeline: Pipeline
     pipeline_run: PipelineRun
+    directives = {}
     meta: WorkflowSubmissionRequestMeta
+    idempotency_key: str = None
 
     class Config:
         extra = Extra.allow

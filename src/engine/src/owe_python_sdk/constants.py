@@ -30,7 +30,10 @@ FUNCTION_TASK_RUNTIMES = {
         "tensorflow/tensorflow:2.12.0-gpu",
         "pytorch/pytorch:latest",
         "huggingface/transformers-pytorch-gpu:latest",
-        "huggingface/transformers-pytorch-gpu:4.29.2"
+        "huggingface/transformers-pytorch-gpu:4.29.2",
+
+        # TACC custom runtime # TODO refactor into a plugin
+        "ghcr.io/tobiashi26/pygeoflood-container:main",
     ]
 }
 

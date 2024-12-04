@@ -1,5 +1,5 @@
 
-import os, sys, time, logging, json
+import os, sys, time, logging
 from threading import Thread
 
 from typing import Literal, Union
@@ -32,11 +32,12 @@ from conf.constants import (
     DUPLICATE_SUBMISSION_POLICY_DEFER,
     PLUGINS,
 )
+from utils import lbuffer_str
 from owe_python_sdk.schema import WorkflowSubmissionRequest, EmptyObject
 
 from workers import WorkerPool
 from workflows import WorkflowExecutor
-from utils import serialize_request, load_plugins, lbuffer_str as lbuf
+from utils import deserialize_message, load_plugins, lbuffer_str
 from errors import NoAvailableWorkers, WorkflowTerminated
 
 
@@ -44,24 +45,28 @@ logger = logging.getLogger("server")
 
 # TODO Keep track of workflows submissions somehow so they can be terminated later
 class Server:
-    def __init__(self):
+    def __init__(self, inbound_queue_name, inbound_exchange_name):
         self.active_workers = []
         self.worker_pool = None
         self.plugins = []
+        self.inbound_queue_name = inbound_queue_name
+        self.inbound_exchange_name = inbound_exchange_name
 
     def __call__(self):
-        """Initializes the dynamic worker pool comprised of WorkflowExecutor
+        """Initializes the dynamic worker pool composed of WorkflowExecutor
         workers, establishes a connection with RabbitMQ, creates the channel, 
         exchanges, and queues, and begins consuming from the inbound queue"""
 
-        logger.info(f"{lbuf('[SERVER]')} Starting server")
+        logger.info(f"{lbuffer_str('[SERVER]')} Starting server")
 
         # Initialize plugins
+        logger.info(f"{lbuffer_str('[SERVER]')} Loading plugins {PLUGINS}")
         self.plugins = load_plugins(PLUGINS)
 
         # Create a worker pool that consists of the workflow executors that will
         # run the pipelines
         # TODO catch error for worker classes that dont inherit from "Worker"
+        logger.info(f"{lbuffer_str('[SERVER]')} Starting {STARTING_WORKERS} workers. Max workers ({MAX_WORKERS})")
         self.worker_pool = WorkerPool(
             worker_cls=WorkflowExecutor,
             starting_worker_count=STARTING_WORKERS,
@@ -70,7 +75,8 @@ class Server:
                 "plugins": self.plugins
             }
         )
-        logger.debug(f"{lbuf('[SERVER]')} Workers initialized ({self.worker_pool.count()})")
+        logger.debug(f"{lbuffer_str('[SERVER]')} Worker initialization complete")
+        logger.debug(f"{lbuffer_str('[SERVER]')} Available workers ({self.worker_pool.count()})")
 
         # Connect to the message broker
         connection = self._connect()
@@ -79,9 +85,9 @@ class Server:
         channel = connection.channel()
 
         # Inbound exchange and queue handles workflow submissions or resubmissions
-        channel.exchange_declare(INBOUND_EXCHANGE, exchange_type=ExchangeType.fanout)
-        inbound_queue = self._declare_queue(channel, INBOUND_QUEUE, exclusive=True)
-        channel.queue_bind(exchange=INBOUND_EXCHANGE, queue=inbound_queue.method.queue)
+        channel.exchange_declare(self.inbound_exchange_name, exchange_type=ExchangeType.fanout)
+        inbound_queue = self._declare_queue(channel, self.inbound_queue_name, exclusive=True)
+        channel.queue_bind(exchange=self.inbound_exchange_name, queue=inbound_queue.method.queue)
 
         # The threads that will be started within the on_message callback
         threads = []
@@ -97,6 +103,8 @@ class Server:
                 )
             )
 
+            logger.debug(f"{lbuffer_str('[SERVER]')} Server started and ready to recieve workflow submissions.")
+
             channel.start_consuming()
 
             # Wait for all to complete
@@ -104,106 +112,124 @@ class Server:
                 thread.join()
 
             connection.close()
+            logger.info(f"{lbuffer_str('[SERVER]')} Closing connection to message broker")
 
         # Occurs when basic_consume recieves the wrong args
         except ValueError as e:
-            logger.critical(f"Critical Workflow Executor Error: {e}")
+            logger.critical(f"{lbuffer_str('[SERVER]')} Critical Error: {e}")
         # Cathes all ampq errors from .start_consuming()
         except AMQPError as e:
-            logger.error(f"{e.__class__.__name__} - {e}")
+            logger.error(f"{lbuffer_str('[SERVER]')} {e.__class__.__name__} - {e}")
         # Catch all other exceptions
         except Exception as e:
-            logger.error(e)
+            logger.error(f"{lbuffer_str('[SERVER]')} {e}")
 
-    def _start_worker(self, body, connection, channel, delivery_tag):
-        """Validates and prepares the message from the inbound exchange(and queue),
-        provisions a worker from the worker pool, acks the message, registers the 
-        active worker to the server, handles the termination of duplicate
-        workflow submissions and starts the worker."""
+    def _on_message_callback(self, channel, method, _, body, args):
+        '''
+        1. Deserializes and validates message from the inbound queue
+        2. Provisions a worker from the worker pool
+        3. Acks(or nacks) the message
+        4. Registers the active worker to the server
+        5. Dispatches the worker to process the worklfow submission request
+        '''
 
-        # Prepare the execution context. The execution context contains all the 
-        # information required to run a workflow
-        worker = None
-        acked = False # Indicates that the message as been acked
+        # Deserialze the message then convert to an object. If deserialization
+        # fails, reject the message.
         try:
-            # Decode the message body, then convert to an object.
-            serialized_request = serialize_request(body)
-            request = WorkflowSubmissionRequest(**serialized_request)
-            
-            # Get a workflow executor worker. If there are none available,
-            # this will raise a "NoWorkersAvailabe" error which is handled
-            # an the exception block below
-            worker = self.worker_pool.check_out()
+            request = WorkflowSubmissionRequest(**deserialize_message(body))
+        except JSONDecodeError as e:
+            logger.error(f"{lbuffer_str('[SERVER]')} {e}")
+            channel.basic_reject(method.delivery_tag, requeue=False)
+            return
+        
+        # Resolve the idempotency key from the request
+        request.idempotency_key = self._resolve_idempotency_key(request)
 
-            # Run request middlewares over the workflow context
-            # NOTE Request middlewares will very likely mutate the workflow context
+        # Run request middlewares over the workflow context
+        # NOTE Request middlewares will very likely mutate the request
+        try:
             for plugin in self.plugins:
                 request = plugin.dispatch("request", request)
-            
-            # Ack the message before running the workflow executor
-            cb = partial(self._ack_nack, "ack", channel, delivery_tag)
-            connection.add_callback_threadsafe(cb)
-
-            # Set the acked flag to True(Used to nack the message if an exception
-            # occurs above)
-            acked = True
-
-            # Register the active worker to the server. If worker cannot 
-            # execute, check it back in.
-            worker = self._register_worker(request, worker)
-
-            threads = []
-            
-            if worker.can_start:
-                worker.start(request, threads)
-
-            for t in threads:
-                t.join()
-
-        # Thrown when decoding the message body. Reject the message
-        except JSONDecodeError as e:
-            logger.error(e)
-            channel.basic_reject(delivery_tag, requeue=False)
+        except Exception as e:
+            logger.error(f"{lbuffer_str('[SERVER]')} {e}")
+            channel.basic_reject(method.delivery_tag, requeue=False)
             return
+
+        # Get the connection to the message queue for acks and nacks
+        (connection, threads) = args
+
+        # Get a workflow executor worker. If there are none available,
+        # this will raise a "NoWorkersAvailabe" error which is handled
+        # an the exception block below
+        try:
+            worker = self.worker_pool.check_out()
         except NoAvailableWorkers:
-            logger.info(f"{lbuf('[SERVER]')} Insufficient workers available. RETRYING (10s)")
+            logger.info(f"{lbuffer_str('[SERVER]')} Insufficient workers available. RETRYING (10s)")
             connection.add_callback_threadsafe(
                 partial(
                     self._ack_nack,
                     "nack",
                     channel,
-                    delivery_tag,
+                    method.delivery_tag,
                     delay=INSUFFICIENT_WORKER_RETRY_DELAY
                 )
             )
             return
-        except Exception as e:
-            logger.error(e)
-            # Nack the message if it has not already been ack
-            # TODO Nack the message into a retry queue. 
-            # Or reject? Why would it not be rejected?
-            if not acked:
-                cb = partial(self._ack_nack, "nack", channel, delivery_tag)
-                connection.add_callback_threadsafe(cb)
-            raise e
+        
 
-        # Deregister and return executor back to the worker pool
-        self._deregister_worker(worker)
-        self.worker_pool.check_in(worker)
+        # Register the active worker to the server
+        worker = self._register_worker(request, worker)
 
-    def _on_message_callback(self, channel, method, _, body, args):
-        (connection, threads) = args
-
-        t = Thread(
-            target=self._start_worker,
-            args=(body, connection, channel, method.delivery_tag)
+        # Ack the message before dispatching the worker
+        connection.add_callback_threadsafe(
+            partial(
+                self._ack_nack,
+                "ack",
+                channel,
+                method.delivery_tag
+            )
         )
-
+        
+        # Dispatch the worker (workflow executor) in a thread 
+        t = Thread(target=self._dispatch, args=(worker, request))
         t.start()
         threads.append(t)
 
         # Clean up the stopped threads
         threads = [t for t in threads if t.is_alive()]
+
+    def _dispatch(self, worker, request):
+        """Handle the starting and termination of workflows"""
+        
+        directives = request.directives.keys()
+        # Handle RUN directive
+        if "RUN" in directives:
+            try:
+                threads = []
+                
+                if worker.can_start:
+                    worker.start(request, threads)
+
+                for t in threads:
+                    t.join()
+            except Exception as e:
+                # Deregister and return executor back to the worker pool
+                logger.error(f"{lbuffer_str('[SERVER]')} {e}")
+
+        # Handle TERMINATE directive
+        if "TERMINATE_RUN" in directives:
+            workers = self._get_active_workers(worker.key)
+            for w in workers:
+                # Terminates all of the pipeline runs for which their are uuids
+                # in the TERMINATE_RUN directive array
+                if worker.pipeline_run_uuid in directives["TERMINATE_RUN"]:
+                    w.terminate()
+                    # Deregister and return executor back to the worker pool
+                    self._deregister_worker(w)
+                    self.worker_pool.check_in(w)
+    
+        self._deregister_worker(worker)
+        self.worker_pool.check_in(worker)
 
     def _ack_nack(
         self,
@@ -212,16 +238,21 @@ class Server:
         delivery_tag,
         delay=0
     ):
-        fn = channel.basic_ack if ack_nack == "ack" else channel.basic_nack
-        kwargs = {}
-        if ack_nack == "nack": kwargs = {"requeue": False}
-        if channel.is_open:
-            # Wait the delay if necessary
-            delay == 0 or time.sleep(abs(delay))
-            fn(delivery_tag, **kwargs)
-            return
+        if not channel.is_open:
+            raise Exception(f"Channel closed: Cannot {'negatively acknowledge' if ack_nack == 'nack' else 'acknowledge'} the message")
         
-        # TODO do something if channel is closed
+        kwargs = {}
+        if ack_nack == "nack":
+            kwargs = {"requeue": False}
+        
+        # Wait the delay if necessary
+        delay = abs(delay)
+        if delay > 0:
+            time.sleep(delay)
+
+        # Call the acknowledge or negative acknowlege function
+        fn = channel.basic_ack if ack_nack == "ack" else channel.basic_nack
+        fn(delivery_tag, **kwargs)
 
     def _connect(self):
         # Initialize connection parameters with plain credentials
@@ -233,7 +264,7 @@ class Server:
                 os.environ["BROKER_USER"], os.environ["BROKER_PASSWORD"])
         )
 
-        logger.info(f"{lbuf('[SERVER]')} Connecting to message broker")
+        logger.info(f"{lbuffer_str('[SERVER]')} Connecting to message broker")
 
         connected = False
         connection_attempts = 0
@@ -243,15 +274,15 @@ class Server:
                 connection = pika.BlockingConnection(connection_parameters)
                 connected = True
             except Exception:
-                logger.info(f"{lbuf('[SERVER]')} Connection failed ({connection_attempts})")
+                logger.info(f"{lbuffer_str('[SERVER]')} Connection failed ({connection_attempts})")
                 time.sleep(CONNECTION_RETRY_DELAY)
 
         # Kill the build service if unable to connect
         if connected == False:
-            logger.critical(f"{lbuf('[SERVER]')} Error: Maximum connection attempts reached ({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker.")
+            logger.critical(f"{lbuffer_str('[SERVER]')} Error: Maximum connection attempts reached ({MAX_CONNECTION_ATTEMPTS}). Unable to connect to message broker.")
             sys.exit(1)
 
-        logger.info(f"{lbuf('[SERVER]')} Connected; Ready to recieve workflow submissions")
+        logger.info(f"{lbuffer_str('[SERVER]')} Connection to message broker established")
 
         return connection
 
@@ -260,14 +291,13 @@ class Server:
     def _register_worker(self, request, worker):
         """Registers the worker to the Server. Handles duplicate workflow
         submissions"""
-        # Returns a key based on user-defined idempotency key or pipeline
-        # run uuid if no idempotency key is provided
-        worker.key = self._resolve_idempotency_key(request)
+        # Set the idempotency key on the worker
+        worker.key = request.idempotency_key
+        
+        # Set the pipeline run uuid on the worker
+        worker.pipeline_run_uuid = request.pipeline_run.uuid
 
-        # Set the idempotency key on the context
-        request.idempotency_key = worker.key
-
-        # Check if there are workers running that have the same unique constraint key
+        # Check if there are workers running that have the same idempotency key
         active_workers = self._get_active_workers(worker.key)
         policy = request.pipeline.execution_profile.duplicate_submission_policy
 
@@ -281,7 +311,7 @@ class Server:
                 active_worker.terminate()
                 self._deregister_worker(active_worker, terminated=True)
         elif policy == DUPLICATE_SUBMISSION_POLICY_DEFER:
-            logger.info(f"{lbuf('[SERVER]')} Warning: Duplicate Submission Policy of 'DEFER' not implemented. Handling as 'ALLOW'")
+            logger.info(f"{lbuffer_str('[SERVER]')} Warning: Duplicate Submission Policy of 'DEFER' not implemented. Handling as 'ALLOW'")
             pass
         elif policy == DUPLICATE_SUBMISSION_POLICY_ALLOW:
             pass
@@ -293,17 +323,22 @@ class Server:
 
     def _deregister_worker(self, worker, terminated=False):
         worker.key = None
+        worker.current_run = None
         self.active_workers = [ w for w in self.active_workers if w.id != worker.id ]
         worker.reset(terminated=terminated)
 
-    def _get_active_workers(self, key):
-        return [worker for worker in self.active_workers if worker.key == key]
+    def _get_active_workers(self, idempotency_key):
+        """
+        Fetch all of the workers actively processing pipeline runs which have the
+        proivded idempotency key
+        """
+        return [worker for worker in self.active_workers if worker.key == idempotency_key]
     
     def _declare_queue(self, channel, queue, exclusive=True):
         try:
             return channel.queue_declare(queue=queue, exclusive=exclusive)
         except ChannelClosedByBroker as e:
-            logger.critical(f"{lbuf('[SERVER]')} Exclusive queue declaration error for queue '{queue}' | {e}")
+            logger.critical(f"{lbuffer_str('[SERVER]')} Exclusive queue declaration error for queue '{queue}' | {e}")
             sys.exit(1)
 
     def _resolve_idempotency_key(self, request):
@@ -312,7 +347,7 @@ class Server:
         # to their duplicate submission policy.
         
         # Defaults to the pipeline id
-        default_idempotency_key = request.pipeline.id
+        default_idempotency_key = request.pipeline_run.uuid
 
         if type(request.meta.idempotency_key) == str:
             return request.meta.idempotency_key
@@ -345,9 +380,10 @@ class Server:
 
                 idempotency_key = idempotency_key + part_delimiter + str(key_part)
             return idempotency_key
-
         except (AttributeError, TypeError) as e:
-            logger.info(f"{lbuf('[SERVER]')} Warning: Failed to resolve idempotency key from provided constraints. {str(e)}. Defaulted to pipeline id '{default_idempotency_key}'")
-            return default_idempotency_key
-
+            logger.info(f"{lbuffer_str('[SERVER]')} Warning: Failed to resolve idempotency key from provided constraints. {str(e)}. Defaulted to pipeline run uuid '{default_idempotency_key}'")
+        except Exception as e:
+            logger.info(f"{lbuffer_str('[SERVER]')} Any unknown error occured resolving idempotency key | {str(e)}. Defaulted to pipeline run uuid '{default_idempotency_key}'")
+ 
+        return default_idempotency_key
     

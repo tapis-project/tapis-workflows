@@ -12,6 +12,7 @@ from backend.services.PipelineDispatcher import service as pipeline_dispatcher
 from backend.services.GroupService import service as group_service
 from backend.services.CredentialsService import service as credentials_service
 from backend.models import Pipeline
+from backend.utils import logger
 
 
 request_builder = PipelineDispatchRequestBuilder(credentials_service)
@@ -60,11 +61,14 @@ class RunPipeline(RestrictedAPIView):
                 directives=body.directives,
                 args=body.args
             )
+            
             # Dispatch the request
             pipeline_run = pipeline_dispatcher.dispatch(pipeline_dispatch_request, pipeline)
         except ServerError as e:
+            logger.exception(e.__cause__)
             return ServerErrorResp(message=str(e))
         except Exception as e:
+            logger.exception(e.__cause__)
             return ServerErrorResp(message=str(e))
 
         # Respond with the pipeline run
