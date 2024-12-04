@@ -233,7 +233,7 @@ class TapisWorkflowsAPIBackend(EventHandler):
 
         with open(f"{task.output_dir}{filename.lstrip('/')}", flag) as file:
             file.seek(offset, os.SEEK_END)
-            return str(file.read())
+            return file.read().decode("utf-8")
         
     def _tail_stdout(self, task):
         return self._tail_output(task, STDOUT)

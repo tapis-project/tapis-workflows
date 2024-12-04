@@ -6,7 +6,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest
-from backend.views.http.requests import PreparedRequest
+from backend.views.http.PreparedRequest import PreparedRequest
 from backend.conf.constants import (
     PERMITTED_HTTP_METHODS,
     PERMITTED_CONTENT_TYPES,

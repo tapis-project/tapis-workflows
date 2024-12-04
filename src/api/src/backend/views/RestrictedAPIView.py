@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from backend.views.http.responses.errors import MethodNotAllowed, UnsupportedMediaType, BadRequest, Unauthorized, ServerError
 from backend.views.http.responses import NoContentResponse
-from backend.views.http.requests import PreparedRequest
+from backend.views.http.PreparedRequest import PreparedRequest
 from backend.services.TapisAPIGateway import TapisAPIGateway
 from backend.services.TapisServiceAPIGateway import TapisServiceAPIGateway
 from backend.utils import one_in

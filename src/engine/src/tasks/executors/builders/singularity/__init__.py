@@ -1,0 +1,1 @@
+from tasks.executors.builders.singularity.Singularity import Singularity

@@ -54,11 +54,38 @@ class EnumImageBuilder(str, Enum, metaclass=_EnumMeta):
     Kaniko = "kaniko"
     Singularity = "singularity"
 
-LiteralRuntimeEnvironments = Literal["python:3.9"]
-RuntimeEnvironments = list(get_args(LiteralRuntimeEnvironments))
+
 class EnumRuntimeEnvironment(str, Enum, metaclass=_EnumMeta):
-    Python39 = "python:3.9"
-    PythonSingularity = "tapis/workflows-python-singularity:0.1.0"
+    # Basic python
+    PythonLatest = "python:latest",
+    PythonSlim = "python:slim",
+    Python312 = "python:3.12",
+    Python312Slim = "python:3.12-slim",
+    Python311 = "python:3.11",
+    Python311Slim = "python:3.11-slim",
+    Python10 = "python:3.10",
+    Python10Slim = "python:3.10-slim",
+    Python39 = "python:3.9",
+    Python39Slim = "python:3.9-slim",
+    Python38 = "python:3.8",
+    Python38Slim = "python:3.8-slim"
+
+    # Machine Learning
+    TensorflowLatest = "tensorflow/tensorflow:latest",
+    TensorflowLatestGPU = "tensorflow/tensorflow:latest-gpu",
+    Tensorflow2120 = "tensorflow/tensorflow:2.12.0",
+    Tensorflow2120GPU = "tensorflow/tensorflow:2.12.0-gpu",
+    PytorchLatest = "pytorch/pytorch:latest",
+    HuggingfaceTranformersPytorchGPULatest = "huggingface/transformers-pytorch-gpu:latest",
+    HuggingfaceTranformersPytorchGPU4292 = "huggingface/transformers-pytorch-gpu:4.29.2"
+
+    # Tapis specific # TODO Factor out into the tapis plugin
+    PythonSingularity = "tapis/workflows-python-singularity:0.1.0",
+
+    # TACC specific # TODO Factor out into a new plugin for TACC
+    PyGeoFlood = "ghcr.io/tobiashi26/pygeoflood-container:main"
+    
+RuntimeEnvironments = [i.value for i in EnumRuntimeEnvironment]
 
 LiteralInstallers = Literal["pip", "apt_get"]
 Installers = list(get_args(LiteralInstallers))
@@ -77,12 +104,20 @@ RetryPolicies = list(get_args(LiteralRetryPolicies))
 class EnumRetryPolicy(str, Enum, metaclass=_EnumMeta):
     ExponentialBackoff = "exponential_backoff"
 
+LiteralLockExpirationPolicies = Literal["no_op", "disable_pipeline", "delete_lock"]
+LockExpirationPolicies = list(get_args(LiteralLockExpirationPolicies))
+class EnumLockExpirationPolicy(str, Enum, metaclass=_EnumMeta):
+    NoOp = "no_op"
+    DisablePipeline = "disable_pipeline"
+    DeleteLock = "delete_lock"
+
 LiteralInvocationModes = Literal["async", "sync"]
 InvocationModes = list(get_args(LiteralInvocationModes))
 class EnumInvocationMode(str, Enum, metaclass=_EnumMeta):
     Async = "async"
     Sync = "sync"
 
+# NOTE FIXME typo -> "mixed_arrray" in the line below
 LiteralTaskIOTypes = Literal["string", "number", "boolean", "string_array", "number_array", "boolean_array", "mixed_arrray", "tapis_file_input", "tapis_file_input_array"]
 TaskIOTypes = list(get_args(LiteralTaskIOTypes))
 class EnumTaskIOTypes(str, Enum, metaclass=_EnumMeta):
@@ -501,6 +536,7 @@ class BaseExecutionProfile(BaseModel):
 
 class PipelineExecutionProfile(BaseExecutionProfile):
     duplicate_submission_policy: str = EnumDuplicateSubmissionPolicy.Terminate
+    lock_expiration_policy: str = EnumLockExpirationPolicy.NoOp
 
 class TaskExecutionProfile(BaseExecutionProfile):
     flavor: EnumTaskFlavor = EnumTaskFlavor.C1_MED
@@ -781,6 +817,9 @@ class Pipeline(BaseModel):
     class Config:
         extra = Extra.allow
 
+class PipelineLockRequest(BaseModel):
+    expires_in: int = 0
+
 # Pipeline runs and task executions
 # TODO rename ReqCreateTaskExecution
 class TaskExecution(BaseModel):
@@ -823,10 +862,11 @@ class WorkflowSubmissionRequest(BaseModel):
     archives: List[Archive] = []
     env: Env = {}
     args: Args = {}
-    group: Group
     pipeline: Pipeline
     pipeline_run: PipelineRun
+    directives = {}
     meta: WorkflowSubmissionRequestMeta
+    idempotency_key: str = None
 
     class Config:
         extra = Extra.allow
@@ -852,16 +892,3 @@ class WorkflowSubmissionRequest(BaseModel):
 # Generic object. NOTE Only used in idempotency key resolution
 class EmptyObject(BaseModel):
     pass
-
-class PreparedRequest:
-    def __init__(
-        self,
-        is_valid=True,
-        body=None,
-        message=None,
-        failure_view=None
-    ):
-        self.is_valid = is_valid
-        self.body = body
-        self.message = message
-        self.failure_view = failure_view

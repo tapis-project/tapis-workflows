@@ -19,7 +19,7 @@ import pymysql
 ENVS = ["LOCAL", "DEV", "STAGE", "PROD"]
 
 # The environment in which the application is currently deployed
-ENV = os.environ["ENV"]
+ENV = os.environ.get("ENV")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,10 +28,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-LOG_LEVEL = os.environ["LOG_LEVEL"]
+LOG_LEVEL = os.environ.get("LOG_LEVEL")
 DEBUG = True if ENV != "PROD" else False
 
 # LOGGING = {
@@ -139,10 +139,10 @@ WSGI_APPLICATION = 'workflows.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.environ["DB_NAME"],
-        "HOST": os.environ["DB_HOST"],
-        "USER": os.environ["DB_USER"],
-        "PASSWORD": os.environ["DB_PASSWORD"]
+        "NAME": os.environ.get("DB_NAME"),
+        "HOST": os.environ.get("DB_HOST"),
+        "USER": os.environ.get("DB_USER"),
+        "PASSWORD": os.environ.get("DB_PASSWORD")
     }
 }
 

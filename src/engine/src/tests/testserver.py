@@ -1,6 +1,6 @@
 import unittest
 
-from core.Server import Server
+from Server import Server
 
 
 class TestServer(unittest.TestCase):

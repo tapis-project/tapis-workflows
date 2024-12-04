@@ -2,14 +2,11 @@ from django.test import SimpleTestCase
 from django.urls import reverse, resolve
 from backend.views import (
     AddPipelineArchive, Auth, Archives, ChangePipelineOwner, CreateTaskExecution,
-    Credentials, Destinations, Groups, HealthCheck, Identities,
+    Groups, HealthCheck, Identities,
     ListPipelineArchives, PipelineRuns, Pipelines, RemovePipelineArchive,
     TaskExecutions, Tasks, UpdatePipelineRunStatus, UpdateTaskExecutionStatus,
     Users, RunPipelineWebhook
 )
-
-from backend.conf.constants import DJANGO_TAPIS_TOKEN_HEADER
-from backend.utils.fixture_loader import fixture_loader as load
 
 
 VIEW_MAPPING = {

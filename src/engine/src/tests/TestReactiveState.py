@@ -1,7 +1,7 @@
 import unittest
 
-from core.ioc import IOCContainerFactory
-from core.daos import WorkflowExecutorStateDAO
+from ioc import IOCContainerFactory
+from daos import WorkflowExecutorStateDAO
 
 
 class TestIOCContainerFactory(unittest.TestCase):

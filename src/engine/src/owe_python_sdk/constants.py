@@ -1,5 +1,6 @@
 STDOUT = ".stdout"
 STDERR = ".stderr"
+LOGFILE = ".logs"
 INPUT_PREFIX = "_OWE_WORKFLOW_INPUT_"
 
 FUNCTION_TASK_RUNTIMES = {
@@ -20,9 +21,7 @@ FUNCTION_TASK_RUNTIMES = {
         "python:3.9",
         "python:3.9-slim",
         "python:3.8",
-        "python:3.8-slim",
-        "python:2.7.18",
-        "python:2.7.18-slim",
+        "python:3.8-slim"
 
         # Machine Learning
         "tensorflow/tensorflow:latest",
@@ -31,7 +30,10 @@ FUNCTION_TASK_RUNTIMES = {
         "tensorflow/tensorflow:2.12.0-gpu",
         "pytorch/pytorch:latest",
         "huggingface/transformers-pytorch-gpu:latest",
-        "huggingface/transformers-pytorch-gpu:4.29.2"
+        "huggingface/transformers-pytorch-gpu:4.29.2",
+
+        # TACC custom runtime # TODO refactor into a plugin
+        "ghcr.io/tobiashi26/pygeoflood-container:main",
     ]
 }
 

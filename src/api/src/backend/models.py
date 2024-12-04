@@ -17,6 +17,7 @@ from backend.views.http.requests import (
     EnumInvocationMode,
     EnumRetryPolicy,
     EnumDuplicateSubmissionPolicy,
+    EnumLockExpirationPolicy,
     DEFAULT_MAX_RETRIES,
     DEFAULT_MAX_TASK_EXEC_TIME,
     DEFAULT_MAX_WORKFLOW_EXEC_TIME
@@ -63,17 +64,58 @@ TASK_PROTOCOLS = [
     (TASK_PROTOCOL_FTPS, "ftps"),
 ]
 
+FUNCTION_TASK_RUNTIME_PYTHON_LATEST = EnumRuntimeEnvironment.PythonLatest
+FUNCTION_TASK_RUNTIME_PYTHON_SLIM = EnumRuntimeEnvironment.PythonSlim 
+FUNCTION_TASK_RUNTIME_PYTHON312 = EnumRuntimeEnvironment.Python312 
+FUNCTION_TASK_RUNTIME_PYTHON312_SLIM = EnumRuntimeEnvironment.Python312Slim
+FUNCTION_TASK_RUNTIME_PYTHON311 = EnumRuntimeEnvironment.Python311 
+FUNCTION_TASK_RUNTIME_PYTHON311_SLIM = EnumRuntimeEnvironment.Python311Slim
+FUNCTION_TASK_RUNTIME_PYTHON310 = EnumRuntimeEnvironment.Python10 
+FUNCTION_TASK_RUNTIME_PYTHON310_SLIM = EnumRuntimeEnvironment.Python10Slim
 FUNCTION_TASK_RUNTIME_PYTHON39 = EnumRuntimeEnvironment.Python39
+FUNCTION_TASK_RUNTIME_PYTHON39_SLIM = EnumRuntimeEnvironment.Python39Slim
+FUNCTION_TASK_RUNTIME_PYTHON38 = EnumRuntimeEnvironment.Python38 
+FUNCTION_TASK_RUNTIME_PYTHON38_SLIM = EnumRuntimeEnvironment.Python38Slim
+FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW_LATEST = EnumRuntimeEnvironment.TensorflowLatest
+FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW_LATEST_GPU = EnumRuntimeEnvironment.TensorflowLatestGPU
+FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW2120 = EnumRuntimeEnvironment.Tensorflow2120
+FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW2120_GPU = EnumRuntimeEnvironment.Tensorflow2120GPU
+FUNCTION_TASK_RUNTIME_PYTHON_PYTORCH_LATEST = EnumRuntimeEnvironment.PytorchLatest
+FUNCTION_TASK_RUNTIME_PYTHON_PYTORCH_LATEST_GPU = EnumRuntimeEnvironment.HuggingfaceTranformersPytorchGPULatest
+FUNCTION_TASK_RUNTIME_PYTHON_HUGGINGFACE_TRANSFORMERS_PYTORCH_GPU4292 = EnumRuntimeEnvironment.HuggingfaceTranformersPytorchGPU4292
 FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY = EnumRuntimeEnvironment.PythonSingularity
+FUNCTION_TASK_RUNTIME_PYTHON_PYGEOFLOOD = EnumRuntimeEnvironment.PyGeoFlood
 FUNCTION_TASK_RUNTIMES = [
+    (FUNCTION_TASK_RUNTIME_PYTHON_LATEST, EnumRuntimeEnvironment.PythonLatest),
+    (FUNCTION_TASK_RUNTIME_PYTHON_SLIM, EnumRuntimeEnvironment.PythonSlim), 
+    (FUNCTION_TASK_RUNTIME_PYTHON312, EnumRuntimeEnvironment.Python312), 
+    (FUNCTION_TASK_RUNTIME_PYTHON312_SLIM, EnumRuntimeEnvironment.Python312Slim),
+    (FUNCTION_TASK_RUNTIME_PYTHON311, EnumRuntimeEnvironment.Python311), 
+    (FUNCTION_TASK_RUNTIME_PYTHON311_SLIM, EnumRuntimeEnvironment.Python311Slim),
+    (FUNCTION_TASK_RUNTIME_PYTHON310, EnumRuntimeEnvironment.Python10), 
+    (FUNCTION_TASK_RUNTIME_PYTHON310_SLIM, EnumRuntimeEnvironment.Python10Slim),
     (FUNCTION_TASK_RUNTIME_PYTHON39, EnumRuntimeEnvironment.Python39),
-    (FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY, EnumRuntimeEnvironment.PythonSingularity)
+    (FUNCTION_TASK_RUNTIME_PYTHON39_SLIM, EnumRuntimeEnvironment.Python39Slim),
+    (FUNCTION_TASK_RUNTIME_PYTHON38, EnumRuntimeEnvironment.Python38), 
+    (FUNCTION_TASK_RUNTIME_PYTHON38_SLIM, EnumRuntimeEnvironment.Python38Slim),
+    (FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW_LATEST, EnumRuntimeEnvironment.TensorflowLatest),
+    (FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW_LATEST_GPU, EnumRuntimeEnvironment.TensorflowLatestGPU),
+    (FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW2120, EnumRuntimeEnvironment.Tensorflow2120),
+    (FUNCTION_TASK_RUNTIME_PYTHON_TENSORFLOW2120_GPU, EnumRuntimeEnvironment.Tensorflow2120GPU),
+    (FUNCTION_TASK_RUNTIME_PYTHON_PYTORCH_LATEST, EnumRuntimeEnvironment.PytorchLatest),
+    (FUNCTION_TASK_RUNTIME_PYTHON_PYTORCH_LATEST_GPU, EnumRuntimeEnvironment.HuggingfaceTranformersPytorchGPULatest),
+    (FUNCTION_TASK_RUNTIME_PYTHON_HUGGINGFACE_TRANSFORMERS_PYTORCH_GPU4292, EnumRuntimeEnvironment.HuggingfaceTranformersPytorchGPU4292),
+    (FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY, EnumRuntimeEnvironment.PythonSingularity),
+    (FUNCTION_TASK_RUNTIME_PYTHON_PYGEOFLOOD, EnumRuntimeEnvironment.PyGeoFlood),
 ]
 
 FUNCTION_TASK_INSTALLERS = [
     (EnumInstaller.Pip, EnumInstaller.Pip)
 ]
 
+TASK_FLAVOR_C1_TINY = EnumTaskFlavor.C1_TINY
+TASK_FLAVOR_C1_XXSML = EnumTaskFlavor.C1_XXSML
+TASK_FLAVOR_C1_XSML = EnumTaskFlavor.C1_XSML
 TASK_FLAVOR_C1_SML = EnumTaskFlavor.C1_SML
 TASK_FLAVOR_C1_MED = EnumTaskFlavor.C1_MED
 TASK_FLAVOR_C1_LRG = EnumTaskFlavor.C1_LRG
@@ -84,6 +126,9 @@ TASK_FLAVOR_G1_NVD_MED = EnumTaskFlavor.G1_NVD_MED
 TASK_FLAVOR_G1_NVD_LRG = EnumTaskFlavor.G1_NVD_LRG
 
 TASK_FLAVORS = [
+    (TASK_FLAVOR_C1_TINY, EnumTaskFlavor.C1_TINY),
+    (TASK_FLAVOR_C1_XXSML, EnumTaskFlavor.C1_XXSML),
+    (TASK_FLAVOR_C1_XSML, EnumTaskFlavor.C1_XSML),
     (TASK_FLAVOR_C1_SML, EnumTaskFlavor.C1_SML),
     (TASK_FLAVOR_C1_MED, EnumTaskFlavor.C1_MED),
     (TASK_FLAVOR_C1_LRG, EnumTaskFlavor.C1_LRG),
@@ -195,6 +240,8 @@ RUN_STATUSES = [
     (RUN_STATUS_DEFERRED, "deferred")
 ]
 
+TERMINAL_STATUSES = [RUN_STATUS_FAILED, RUN_STATUS_COMPLETED, RUN_STATUS_TERMINATED]
+
 EXEC_STATUS_PENDING = "pending"
 EXEC_STATUS_ACTIVE = "active"
 EXEC_STATUS_STAGING = "staging"
@@ -228,6 +275,15 @@ DUPLICATE_SUBMISSION_POLICIES = [
     (DUPLICATE_SUBMISSION_POLICY_DENY, EnumDuplicateSubmissionPolicy.Deny),
     (DUPLICATE_SUBMISSION_POLICY_TERMINATE, EnumDuplicateSubmissionPolicy.Terminate),
     (DUPLICATE_SUBMISSION_POLICY_DEFER, EnumDuplicateSubmissionPolicy.Defer)
+]
+
+PIPELINE_LOCK_EXPIRATION_POLICY_NOOP = EnumLockExpirationPolicy.NoOp
+PIPELINE_LOCK_EXPIRATION_POLICY_DELETE_LOCK = EnumLockExpirationPolicy.DeleteLock
+PIPELINE_LOCK_EXPIRATION_POLICY_DISABLE_PIPELINE = EnumLockExpirationPolicy.DisablePipeline
+PIPELINE_LOCK_EXPIRATION_POLICIES = [
+    (PIPELINE_LOCK_EXPIRATION_POLICY_NOOP, EnumLockExpirationPolicy.NoOp),
+    (PIPELINE_LOCK_EXPIRATION_POLICY_DELETE_LOCK, EnumLockExpirationPolicy.DeleteLock),
+    (PIPELINE_LOCK_EXPIRATION_POLICY_DISABLE_PIPELINE, EnumLockExpirationPolicy.DisablePipeline)
 ]
 
 VISIBILITY_PUBLIC = EnumVisibility.Public
@@ -315,6 +371,7 @@ class Destination(models.Model):
 
 class Group(models.Model):
     id = models.CharField(validators=[validate_id], max_length=128, unique=True)
+    description = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.CharField(max_length=64)
     tenant_id = models.CharField(max_length=128)
@@ -328,6 +385,20 @@ class Group(models.Model):
             models.UniqueConstraint(
                 fields=["id", "tenant_id"],
                 name="group_id_tenant_id"
+            )
+        ]
+
+class GroupSecret(models.Model):
+    id = models.CharField(max_length=128)
+    group = models.ForeignKey("backend.Group", related_name="groupsecrets", on_delete=models.CASCADE)
+    secret = models.ForeignKey("backend.Secret", related_name="groupsecrets", on_delete=models.CASCADE)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["group", "id"],
+                name="groupsecret_secret_and_id"
             )
         ]
 
@@ -358,6 +429,7 @@ class Pipeline(models.Model):
     description = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     env = models.JSONField(null=True)
+    enabled = models.BooleanField(default=True)
     params = models.JSONField(null=True)
     uses = models.JSONField(null=True)
     group = models.ForeignKey("backend.Group", related_name="pipelines", on_delete=models.CASCADE)
@@ -366,6 +438,7 @@ class Pipeline(models.Model):
         default=DEFAULT_MAX_WORKFLOW_EXEC_TIME,
         validators=[MaxValueValidator(DEFAULT_MAX_WORKFLOW_EXEC_TIME), MinValueValidator(1)]
     )
+    lock_expiration_policy = models.CharField(max_length=16, choices=PIPELINE_LOCK_EXPIRATION_POLICIES, default=PIPELINE_LOCK_EXPIRATION_POLICY_DISABLE_PIPELINE)
     max_retries = models.IntegerField(default=DEFAULT_MAX_RETRIES)
     duplicate_submission_policy = models.CharField(max_length=32, choices=DUPLICATE_SUBMISSION_POLICIES, default=EnumDuplicateSubmissionPolicy.Terminate)
     owner = models.CharField(max_length=64)
@@ -382,6 +455,23 @@ class Pipeline(models.Model):
                 name="pipeline_id_group"
             )
         ]
+
+class PipelineLock(models.Model):
+    pipeline = models.ForeignKey("backend.Pipeline", related_name="pipelinelocks", on_delete=models.CASCADE)
+    pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="pipelinelocks", null=True, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    acquired_at = models.DateTimeField(null=True, default=None)
+    expires_in = models.BigIntegerField(default=0)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["pipeline", "pipeline_run"],
+                name="pipelinelock_pipeline_pipeline_run"
+            )
+        ]
+
 
 class PipelineArchive(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="archives", on_delete=models.CASCADE)
@@ -406,6 +496,26 @@ class PipelineRun(models.Model):
     started_at = models.DateTimeField(null=True)
     uuid = models.UUIDField(primary_key=True)
 
+class Secret(models.Model):
+    id = models.CharField(max_length=128)
+    description = models.TextField(null=True)
+    owner = models.CharField(max_length=64)
+    sk_secret_name = models.CharField(max_length=128, unique=True)
+    tenant_id = models.CharField(max_length=128)
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["sk_secret_name"]),
+            models.Index(fields=["owner", "tenant_id"])
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id", "tenant_id", "owner"],
+                name="secret_id_tenant_id_owner"
+            )
+        ]
+
 class Task(models.Model):
     class Meta:
         constraints = [
@@ -421,10 +531,10 @@ class Task(models.Model):
     # Props
     id = models.CharField(validators=[validate_id], max_length=128)
     cache = models.BooleanField(null=True)
+    conditions = models.JSONField(null=True, default=list)
     depends_on = models.JSONField(null=True, default=list)
     description = models.TextField(null=True)
     flavor = models.CharField(max_length=32, choices=TASK_FLAVORS, default=TASK_FLAVOR_C1_MED)
-    conditions = models.JSONField(null=True, default=list)
     input = models.JSONField(null=True)
     invocation_mode = models.CharField(max_length=16, default=EnumInvocationMode.Async)
     max_exec_time = models.BigIntegerField(
@@ -434,7 +544,6 @@ class Task(models.Model):
     max_retries = models.IntegerField(default=DEFAULT_MAX_RETRIES)
     output = models.JSONField(null=True)
     pipeline = models.ForeignKey("backend.Pipeline", related_name="tasks", on_delete=models.CASCADE)
-    poll = models.BooleanField(null=True)
     retry_policy = models.CharField(max_length=32, default=EnumRetryPolicy.ExponentialBackoff)
     type = models.CharField(max_length=32, choices=TASK_TYPES)
     uses = models.JSONField(null=True)
@@ -463,7 +572,7 @@ class Task(models.Model):
     packages = models.JSONField(null=True, default=list)
     entrypoint = models.TextField(null=True)
 
-    # Container run specific properties
+    # Application run specific properties
     # Full image name for container run. includes scheme.
     image = models.CharField(max_length=128, null=True)
 
@@ -474,12 +583,11 @@ class Task(models.Model):
     tapis_actor_id = models.CharField(max_length=128, null=True)
     tapis_actor_message = models.TextField(null=True)
 
+    # Shared properties (Tapis job and Tapis actor)
+    poll = models.BooleanField(null=True)
+
     def clean(self):
         errors = {}
-        
-        # Validate runtimes
-        (success, error) = self.validate_function_task_installers()
-        if not success: errors = {**errors, "invalid-runtime-installer": error}
 
         # Validate packages schema
         (success, error) = self.validate_packages_schema()
@@ -487,17 +595,6 @@ class Task(models.Model):
 
         if errors:
             raise ValidationError(errors)
-
-    def validate_function_task_installers(self) -> Tuple[bool, str]:
-        installer_runtime_mapping = {
-            FUNCTION_TASK_RUNTIME_PYTHON39: [EnumInstaller.Pip],
-            FUNCTION_TASK_RUNTIME_PYTHON_SINGULARITY: [EnumInstaller.Pip]
-        }
-
-        installers_for_runtime = installer_runtime_mapping.get(self.runtime, None)
-        if installers_for_runtime == None: return (False, f"Invalid runtime '{self.runtime}'")
-        if self.installer not in installers_for_runtime:
-            return (False, f"Installer '{self.installer}' for runtime {self.runtime}")
 
     def validate_packages_schema(self) -> Tuple[bool, str]:
         if type(self.packages) != list:

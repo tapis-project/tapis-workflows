@@ -4,7 +4,7 @@ from importlib import import_module
 
 from conf.constants import FLAVORS
 # from errors import InvalidFlavorError
-from core.tasks.Flavor import Flavor
+from tasks.Flavor import Flavor
 from utils.CompositeLogger import CompositeLogger # NOTE imported to re-export
 
 
@@ -23,14 +23,14 @@ def lbuffer_str(string, length=10):
     buffer = " " * diff
     return string + buffer
 
-def bytes_to_json(bytestring):
+def deserialize_message(bytestring):
     # Decode UTF-8 bytes to Unicode, and convert single quotes
     # to double quotes to make it valid JSON
-    value = bytestring.decode("utf8").replace("'", '"')
+    value = bytestring.decode("utf8")
 
     data = json.loads(value)
 
-    return json.dumps(data)
+    return data
 
 def get_flavor(flavor: str):
     if flavor not in FLAVORS:

@@ -22,7 +22,8 @@ from backend.views.http.requests import (
     TaskDependency,
     TaskInputSpec
 )
-from backend.views.http.etl import TapisETLPipeline
+from backend.views.http.tapis_etl import TapisETLPipeline
+from backend.utils import build_etl_pipeline_env
 from backend.models import (
     Pipeline as PipelineModel,
     Archive,
@@ -127,61 +128,14 @@ class ETLPipelines(RestrictedAPIView):
                 },
                 env={
                     **pipeline_template.get("env"),
-                    "LOCAL_INBOX_SYSTEM_ID": {
-                        "type": "string",
-                        "value": body.local_inbox.system_id
-                    },
-                    "LOCAL_INBOX_DATA_PATH": {
-                        "type": "string",
-                        "value": body.local_inbox.data_path
-                    },
-                    "LOCAL_INBOX_MANIFEST_PATH": {
-                        "type": "string",
-                        "value": body.local_inbox.manifests_path
-                    },
-                    "LOCAL_INBOX_MANIFEST_GENERATION_POLICY": {
-                        "type": "string",
-                        "value": body.local_inbox.manifest_generation_policy
-                    },
-                    "LOCAL_INBOX_MANIFEST_PRIORITY": {
-                        "type": "string",
-                        "value": body.local_inbox.manifest_priority
-                    },
-                    "LOCAL_OUTBOX_SYSTEM_ID": {
-                        "type": "string",
-                        "value": body.local_outbox.system_id
-                    },
-                    "LOCAL_OUTBOX_DATA_PATH": {
-                        "type": "string",
-                        "value": body.local_outbox.data_path
-                    },
-                    "LOCAL_OUTBOX_MANIFEST_PATH": {
-                        "type": "string",
-                        "value": body.local_outbox.manifests_path
-                    },
-                    "LOCAL_OUTBOX_MANIFEST_GENERATION_POLICY": {
-                        "type": "string",
-                        "value": body.local_outbox.manifest_generation_policy
-                    },
-                    "LOCAL_OUTBOX_MANIFEST_PRIORITY": {
-                        "type": "string",
-                        "value": body.local_outbox.manifest_priority
-                    },
-                    "REMOTE_INBOX_PATH": {
-                        "type": "string",
-                        "value": body.remote_inbox.path
-                    },
-                    "REMOTE_INBOX_SYSTEM_ID": {
-                        "type": "string",
-                        "value": body.remote_inbox.system_id
-                    }
+                    **build_etl_pipeline_env(body),
                 },
                 params=pipeline_template.get("params", {})
             )
         except (IntegrityError, OperationalError) as e:
             return BadRequest(message=e.__cause__)
         except Exception as e:
-            return ServerErrorResp(f"{e}")
+            return ServerErrorResp(f"Failed to create ETL Pipeline: {e}")
 
         # Fetch the archives specified in the request then create relations
         # between them and the pipline
@@ -211,85 +165,86 @@ class ETLPipelines(RestrictedAPIView):
             [pipeline_archive.delete() for pipeline_archive in pipeline_archives]
             return BadRequest(message=e.__cause__)
         
-        # The first tapis job should be dependent on the gen-inbound-manifests task
-        last_task_id = "gen-inbound-manifests"
+        # # The first tapis job should be dependent on the gen-inbound-manifests task
+        # last_task_id = "gen-inbound-manifests"
 
-        # No-op condition
-        # Create a condition that should only be applied to the first Tapis Job
-        # in the series to ensure that when there is no data to process, the first
-        # job (and all subsequent jobs) do not run
-        no_op_condition = {
-            "ne": [
-                {
-                    "task_output": {
-                        "task_id": last_task_id,
-                        "output_id": "ACTIVE_MANIFEST"
-                    }
-                },
-                "null"
-            ]
-        }
+        # # No-op condition
+        # # Create a condition that should only be applied to the first Tapis Job
+        # # in the series to ensure that when there is no data to process, the first
+        # # job (and all subsequent jobs) do not run
+        # no_op_condition = {
+        #     "ne": [
+        #         {
+        #             "task_output": {
+        #                 "task_id": last_task_id,
+        #                 "output_id": "ACTIVE_MANIFEST"
+        #             }
+        #         },
+        #         "null"
+        #     ]
+        # }
 
-        # Create a tapis job task for each job provided in the request.
-        tasks = []
-        job_tasks = []
-        try:
-            for i, job in enumerate(body.jobs, start=1):
-                # Set up the conditions for the job to run
-                conditions = [
-                    {
-                        "eq": [
-                            {"args": "RESUBMIT_OUTBOUND"},
-                            None
-                        ]
-                    }
-                ]
+        # # Create a tapis job task for each job provided in the request.
+        # tasks = []
+        # job_tasks = []
+        # try:
+        #     for i, job in enumerate(body.jobs, start=1):
+        #         # Set up the conditions for the job to run
+        #         conditions = [
+        #             {
+        #                 "eq": [
+        #                     {"args": "RESUBMIT_OUTBOUND"},
+        #                     None
+        #                 ]
+        #             }
+        #         ]
                 
-                # Add no-op condition for only first task
-                if i == 1:
-                    conditions.append(no_op_condition)
+        #         # Add no-op condition for only first task
+        #         if i == 1:
+        #             conditions.append(no_op_condition)
 
-                task_id = f"etl_job_{i}"
-                tapis_job_task = TapisJobTask(**{
-                        "id": task_id,
-                        "type": "tapis_job",
-                        "tapis_job_def": job,
-                        "depends_on": [{"id": last_task_id}],
-                        "conditions": conditions
-                    })
-                tasks.append(tapis_job_task)
-                job_tasks.append(tapis_job_task)
-                last_task_id = task_id
+        #         task_id = f"etl_job_{i}"
+        #         tapis_job_task = TapisJobTask(**{
+        #                 "id": task_id,
+        #                 "type": "tapis_job",
+        #                 "tapis_job_def": job,
+        #                 "depends_on": [{"id": last_task_id}],
+        #                 "conditions": conditions
+        #             })
+        #         tasks.append(tapis_job_task)
+        #         job_tasks.append(tapis_job_task)
+        #         last_task_id = task_id
 
-            # Add the tasks from the template to the tasks list
-            tasks.extend([TemplateTask(**task) for task in pipeline_template.get("tasks")])
+        #     # Add the tasks from the template to the tasks list
+        #     tasks.extend([TemplateTask(**task) for task in pipeline_template.get("tasks")])
 
-            # Update the dependecies of the inbound-status-reduce task to
-            # include all tapis-job tasks
-            status_reduce_task = next(filter(lambda t: t.id == "inbound-status-reduce", tasks))
-            for job_task in job_tasks:
-                status_reduce_task.depends_on.append(
-                    TaskDependency(id=job_task.id, can_fail=True)
-                )
+        #     # Update the dependecies of the inbound-status-reduce task to
+        #     # include all tapis-job tasks
+        #     status_reduce_task = next(filter(lambda t: t.id == "inbound-status-reduce", tasks))
+        #     for job_task in job_tasks:
+        #         status_reduce_task.depends_on.append(
+        #             TaskDependency(id=job_task.id, can_fail=True)
+        #         )
 
-                status_reduce_task.input[f"{job_task.id}_JOB_STATUS"] = TaskInputSpec(
-                    value_from={
-                        "task_output": {
-                            "task_id": job_task.id,
-                            "output_id": "STATUS"
-                        }
-                    }
-                )
-        except ValidationError as e:
-            # Delete the pipeline
-            pipeline.delete()
-            return BadRequest(str(e))
-        except Exception as e:
-            # Delete the pipeline
-            pipeline.delete()
-            return ServerErrorResp(str(e))
+        #         status_reduce_task.input[f"{job_task.id}_JOB_STATUS"] = TaskInputSpec(
+        #             value_from={
+        #                 "task_output": {
+        #                     "task_id": job_task.id,
+        #                     "output_id": "STATUS"
+        #                 }
+        #             }
+        #         )
+        # except ValidationError as e:
+        #     # Delete the pipeline
+        #     pipeline.delete()
+        #     return BadRequest(str(e))
+        # except Exception as e:
+        #     # Delete the pipeline
+        #     pipeline.delete()
+        #     return ServerErrorResp(str(e))
         
         # Add the tasks to the database
+        tasks = [TemplateTask(**task) for task in pipeline_template.get("tasks")]
         for task in tasks:
             try:
                 task_service.create(pipeline, task)
@@ -304,11 +259,11 @@ class ETLPipelines(RestrictedAPIView):
             except ServerError as e:
                 pipeline.delete()
                 task_service.delete(tasks)
-                return ServerErrorResp(message=e)
+                return ServerErrorResp(message=f"Server Error: {e}")
             except Exception as e:
                 pipeline.delete()
                 task_service.delete(tasks)
-                return ServerErrorResp(message=e)
+                return ServerErrorResp(message=f"Unexpected Error: {e}")
         return ResourceURLResponse(
             url=resource_url_builder(request.url, pipeline.id)
         )

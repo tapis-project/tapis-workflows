@@ -21,6 +21,10 @@ from backend.views.UpdatePipelineRunStatus import UpdatePipelineRunStatus
 from backend.views.UpdateTaskExecutionStatus import UpdateTaskExecutionStatus
 from backend.views.CreateTaskExecution import CreateTaskExecution
 from backend.views.ETLPipelines import ETLPipelines
+from backend.views.PipelineLocksGetList import PipelineLocksGetList
+from backend.views.PipelineLocksPostDelete import PipelineLocksPostDelete
+from backend.views.Secrets import Secrets
+from backend.views.GroupSecrets import GroupSecrets
 
 
 urlpatterns = [
@@ -32,10 +36,18 @@ urlpatterns = [
     # Identities
     path("identities", Identities.as_view(), name="identities"),
     path("identities/<str:identity_uuid>", Identities.as_view(), name="identity"),
+
+    # Secrets
+    path("secrets", Secrets.as_view(), name="secrets"),
+    path("secrets/<str:secret_id>", Secrets.as_view(), name="secret"),
     
     # Groups
     path("groups", Groups.as_view(), name="groups"),
     path("groups/<str:group_id>", Groups.as_view(), name="group"),
+
+    # Group Secrets
+    path("groups/<str:group_id>/secrets", GroupSecrets.as_view(), name="groupSecrets"),
+    path("groups/<str:group_id>/secrets/<str:group_secret_id>", GroupSecrets.as_view(), name="groupSecret"),
 
     # Group Users
     path("groups/<str:group_id>/users", Users.as_view(), name="users"),
@@ -67,6 +79,10 @@ urlpatterns = [
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs", PipelineRuns.as_view(), name="pipelineRuns"),
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>", PipelineRuns.as_view(), name="pipelineRun"),
     
+    # Pipeline Locks
+    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/locks", PipelineLocksGetList.as_view(), name="pipelineLocks"),
+    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/locks/<str:pipeline_lock_uuid>", PipelineLocksGetList.as_view(), name="pipelineLock"),
+
     # NOTE The route below must come before the route below it as it matches
     # the more general pattern layed out in the latter route
     # Task Executions
@@ -74,6 +90,9 @@ urlpatterns = [
     
     # Pipeline Runs cont.
     path("executor/runs/<str:pipeline_run_uuid>/<str:status>", UpdatePipelineRunStatus.as_view(), name="updatePipelineRunStatus"),
+
+    # Pipeline Locks
+    path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>/locks", PipelineLocksPostDelete.as_view(), name="createDeletePipelineLocks"),
 
     # Task Executions
     path("groups/<str:group_id>/pipelines/<str:pipeline_id>/runs/<str:pipeline_run_uuid>/executions", TaskExecutions.as_view(), name="taskExecutions"),
