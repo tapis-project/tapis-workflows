@@ -3174,7 +3174,7 @@ components:
         required:
           type: boolean
         type:
-          $ref: "#/components/schemas/EnumTaskIOType"
+          type: string
 
     Params:
       type: object
@@ -3271,7 +3271,7 @@ components:
         type: object
         properties:
           type:
-            $ref: "#/components/schemas/EnumTaskIOType"
+            type: string
 
     EnvSpec:
       allOf: 
@@ -4657,13 +4657,7 @@ components:
         - "huggingface/transformers-pytorch-gpu:latest"
         - "huggingface/transformers-pytorch-gpu:4.29.2"
         - "ghcr.io/tobiashi26/pygeoflood-container:main"
-
-    EnumTaskIOType:
-      type: string
-      enum:
-        - string
-        - number
-        - boolean
+        - "ghcr.io/icicle-ai/plug-n-play-megadetector-v6b:main"
 
     EnumLogicalOperator:
       type: string
