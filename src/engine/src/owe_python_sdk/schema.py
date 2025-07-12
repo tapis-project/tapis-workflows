@@ -806,6 +806,33 @@ class Pipeline(BaseModel):
     class Config:
         extra = Extra.allow
 
+class PatchPipelineRequest(BaseModel):
+    description: Union[str, None] = None
+    disabled: Union[bool, None] = None
+    tasks: Union[
+        List[
+            Annotated[
+                Union[
+                    TemplateTask,
+                    ApplicationTask,
+                    ImageBuildTask,
+                    FunctionTask,
+                    RequestTask,
+                    TapisActorTask,
+                    TapisJobTask,
+                ],
+                Field(discriminator="type")
+            ]
+        ],
+        None
+    ] = None
+    env: Union[Env, None] = None
+    params: Union[Params, None] = None
+
+    class Config:
+        extra = Extra.allow
+
+
 class PipelineLockRequest(BaseModel):
     expires_in: int = 0
 
