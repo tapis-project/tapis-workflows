@@ -9,3 +9,4 @@ tapipy==1.6.1
 tapisservice==1.6.0
 typing-extensions==4.5.0
 spython==0.3.0
+zope.event==5.1
