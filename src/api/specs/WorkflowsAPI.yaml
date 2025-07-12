@@ -1725,7 +1725,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/RespError'  
 
   '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}':
     get:
@@ -1767,6 +1767,62 @@ paths:
                 $ref: '#/components/schemas/RespError'
         '404':
           description: Pipeline not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
+    patch:
+      tags:
+        - Pipelines
+      summary: Patch a pipeline
+      description: Update a pipelines properties
+      operationId: patchPipeline
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        description: Pipeline patch.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReqPatchPipeline'
+      responses:
+        '201':
+          description: Pipeline created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespResourceURL'
+        '400':
+          description: Bad request. Invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Forbidden.
           content:
             application/json:
               schema:
@@ -3523,6 +3579,22 @@ components:
         expires_in:
           type: integer
           default: 0
+
+    ReqPatchPipeline:
+      type: object
+      properties:
+        description:
+          $ref: '#/components/schemas/DescriptionString'
+        env:
+          $ref: "#/components/schemas/Env"
+        enabled:
+          type: boolean
+        params:
+          $ref: "#/components/schemas/Params"
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReqTask"
 
     ReqPipeline:
       type: object
