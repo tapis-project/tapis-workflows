@@ -17,3 +17,4 @@ requests==2.27.1
 tapipy==1.6.1
 tapisservice==1.6.0
 typing-extensions==4.5.0
+uwsgi==2.0.30
