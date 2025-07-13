@@ -226,6 +226,7 @@ class Pipelines(RestrictedAPIView):
             updates = {}
             if body.env != None:
                 env = body.dict()["env"],
+                print(env)
                 updates = {
                     **updates,
                     "env": env
