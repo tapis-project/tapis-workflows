@@ -266,13 +266,13 @@ class Pipelines(RestrictedAPIView):
                     updated_at=timezone.now(),
                 )
             except (DatabaseError, IntegrityError, OperationalError) as e:
-                return ServerError(f"Server Error: {e.__cause__}")
+                return ServerErrorResp(f"Server Error: {e.__cause__}")
             except Exception as e:
-                return ServerError(f"Server Error: {e}")
+                return ServerErrorResp(f"Server Error: {e}")
             
             return BaseResponse(result="Pipeline updated")
         except Exception as e:
-            return ServerError(f"Server Error: {e}")
+            return ServerErrorResp(f"Server Error: {e}")
 
     def delete(self, request, group_id, pipeline_id, *_, **__):
         # Get the group
