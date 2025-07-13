@@ -165,7 +165,7 @@ class Tasks(RestrictedAPIView):
                 task_tag_service.update_by_task_model(task_model, task.tags)
 
             updated_task = Task.objects.prefetch_related("tags").filter(id=task.id, pipeline=pipeline).first()
-            task_response = TaskSerializer.convert(updated_task)
+            task_response = TaskSerializer.serialize(updated_task)
             return BaseResponse(result=task_response, message="successfully updated")
         
         except (DatabaseError, OperationalError, IntegrityError) as e:
