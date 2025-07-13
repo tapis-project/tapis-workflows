@@ -4,6 +4,7 @@ from django.db import DatabaseError, IntegrityError, OperationalError
 from django.forms import model_to_dict
 from backend.utils import logger
 from django.utils import timezone
+from backend.services.TaskService import service as task_service
 
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import (
@@ -19,6 +20,7 @@ from backend.views.http.requests import Pipeline, ImageBuildTask, PatchPipelineR
 from backend.views.http.cicd import CIPipeline
 from backend.models import (
     Pipeline as PipelineModel,
+    Task as TaskModel,
     Archive,
     PipelineArchive,
     TASK_TYPE_IMAGE_BUILD
@@ -212,14 +214,16 @@ class Pipelines(RestrictedAPIView):
             # Get the JSON encoded body from the validation result
             body = prepared_request.body
 
+            # This endpoint also handles batch task creation
+            if body.tasks != None:
+                for task in body.tasks:
+                    try: 
+                        task_service.create(pipeline, task)
+                    except Exception as e:
+                        return ServerErrorResp(f"Error creating tasks: {e}")
+
             # Updates
             updates = {}
-            if body.tasks != None:
-                updates = {
-                    **updates,
-                    "tasks": body.tasks
-                }
-
             if body.env != None:
                 updates = {
                     **updates,
