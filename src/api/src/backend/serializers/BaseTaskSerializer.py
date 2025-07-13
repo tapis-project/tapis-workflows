@@ -17,7 +17,7 @@ class BaseTaskSerializer:
         task["uuid"] = UUIDSerializer.serialize(model.uuid)
         task["tags"] = []
         if getattr(model, "tags", None) != None:
-            for tag in model.tags:
+            for tag in model.tags.all():
                 task["tags"].append(tag.value)
 
         # Build execution profile
