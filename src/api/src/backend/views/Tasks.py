@@ -158,7 +158,7 @@ class Tasks(RestrictedAPIView):
             Task.objects.filter(
                 pipeline=pipeline,
                 id=task_id
-            ).update(**DictFromTaskModel.convert(task))
+            ).update(**DictFromTaskModel.convert(task_model))
 
             # Patch the tags if any provided
             if task.tags != None:
