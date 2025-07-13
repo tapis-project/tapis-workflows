@@ -625,6 +625,7 @@ class BaseTask(BaseModel):
     input: Dict[str, TaskInputSpec] = {}
     output: Dict[str, TaskOutputSpec] = {}
     conditions: ConditionalExpressions = []
+    tags: List[str] = []
 
     class Config:
         arbitrary_types_allowed = True
@@ -784,6 +785,7 @@ class Pipeline(BaseModel):
     archive_ids: List[str] = []
     env: Env = {}
     params: Params = {}
+    tags: List[str] = []
 
     # NOTE This pre validation transformer is for backwards-compatibility
     # Previous pipelines did not have environments or parmas
@@ -828,6 +830,7 @@ class PatchPipelineRequest(BaseModel):
     ] = None
     env: Union[Env, None] = None
     params: Union[Params, None] = None
+    tags: Union[List[str], None] = None
 
     class Config:
         extra = Extra.allow

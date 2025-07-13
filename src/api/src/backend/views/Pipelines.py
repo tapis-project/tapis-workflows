@@ -5,7 +5,7 @@ from django.forms import model_to_dict
 from backend.utils import logger
 from django.utils import timezone
 from backend.services.TaskService import service as task_service
-
+from backend.services.PipelineTagService import service as pipeline_tag_service
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import (
     Conflict,
@@ -148,6 +148,11 @@ class Pipelines(RestrictedAPIView):
             return BadRequest(message=e.__cause__)
         except Exception as e:
             return ServerErrorResp(f"{e}")
+        
+        try:
+            pipeline_tag_service.batch_create(pipeline, body.tags)
+        except Exception as e:
+            return ServerErrorResp(f"{e}")
 
         # Fetch the archives specified in the request then create relations
         # between them and the pipline
@@ -257,6 +262,12 @@ class Pipelines(RestrictedAPIView):
                     **updates,
                     "disabled": body.disabled
                 }
+
+            if body.tags != None:
+                try:
+                    pipeline_tag_service.update_by_pipeline_model(pipeline, list(set(body.tags)))
+                except Exception as e:
+                    return ServerErrorResp(f"Error update pipeline tags: {e}")
 
             # Just return 200 if they didn't provide any updates
             if len(updates) == 0:

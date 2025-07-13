@@ -24,6 +24,9 @@ class PipelineSerializer:
             "retry_policy": pipeline_model.retry_policy
         }
         pipeline["uuid"] = UUIDSerializer.serialize(pipeline_model.uuid)
+        if getattr(pipeline_model, "tags", None) != None:
+            for tag in pipeline_model.tags:
+                pipeline["tags"].append(tag.value)
 
         # Serialize the task models
         if task_models != None:
@@ -39,4 +42,8 @@ class PipelineSerializer:
         if pipeline_model.last_run != None:
             pipeline["last_run"] = UUIDSerializer.serialize(pipeline_model.last_run.uuid)
         
+        pipeline["tags"] = []
+        if getattr(pipeline_model, "tags", None) != None:
+            pipeline["tags"] = [tag.value for tag in pipeline_model.tags]
+
         return pipeline

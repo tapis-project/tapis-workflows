@@ -9,8 +9,9 @@ from backend.views.http.responses.errors import BadRequest, Forbidden, NotFound,
 from backend.views.http.responses.models import ModelListResponse, ModelResponse
 from backend.views.http.responses import BaseResponse
 from backend.services.TaskService import service as task_service
+from backend.services.TaskTagService import service as task_tag_service
 from backend.services.GroupService import service as group_service
-from backend.serializers import TaskSerializer, TaskDTOSerializer
+from backend.serializers import TaskSerializer, DictFromTaskModel
 from backend.errors.api import ServerError as APIServerError
 from backend.helpers import resource_url_builder
 from backend.utils import logger
@@ -46,7 +47,7 @@ class Tasks(RestrictedAPIView):
             if not group_service.user_in_group(request.username, group_id, request.tenant_id):
                 return Forbidden(message="You cannot view tasks for this pipeline")
 
-            task = Task.objects.filter(pipeline=pipeline, id=task_id).first()
+            task = Task.objects.prefetch_related('tags').filter(pipeline=pipeline, id=task_id).first()
 
             if task == None:
                 return NotFound(f"Task with id '{task_id}' does not exists for pipeline '{pipeline_id}'")
@@ -59,7 +60,7 @@ class Tasks(RestrictedAPIView):
     def list(self, pipeline, *_, **__):
         tasks = []
         try:
-            task_models = Task.objects.filter(pipeline=pipeline)
+            task_models = Task.objects.prefetch_related('tags').filter(pipeline=pipeline)
             for task_model in task_models:
                 tasks.append(TaskSerializer.serialize(task_model))
             
@@ -137,7 +138,7 @@ class Tasks(RestrictedAPIView):
                 id=pipeline_id
             ).first()
 
-            task_model = Task.objects.filter(pipeline=pipeline, id=task_id).first()
+            task_model = Task.objects.prefetch_related('tags').filter(pipeline=pipeline, id=task_id).first()
 
             if task_model == None:
                 return NotFound(f"Task with id '{task_id}' not found in pipeline '{pipeline_id}'")
@@ -157,9 +158,16 @@ class Tasks(RestrictedAPIView):
             Task.objects.filter(
                 pipeline=pipeline,
                 id=task_id
-            ).update(**TaskDTOSerializer.serialize(task))
+            ).update(**DictFromTaskModel.convert(task))
 
-            return ModelResponse(Task.objects.filter(id=task.id, pipeline=pipeline).first())
+            # Patch the tags if any provided
+            if task.tags != None:
+                task_tag_service.update_by_task_model(task_model, task.tags)
+
+            updated_task = Task.objects.prefetch_related("tags").filter(id=task.id, pipeline=pipeline).first()
+            task_response = TaskSerializer.convert(updated_task)
+            return BaseResponse(result=task_response, message="successfully updated")
+        
         except (DatabaseError, OperationalError, IntegrityError) as e:
             logger.exception(e.__cause__)
             return ServerError(message=e.__cause__)
