@@ -181,95 +181,98 @@ class Pipelines(RestrictedAPIView):
         return fn(request, body, pipeline)
     
     def patch(self, request, group_id, pipeline_id):
-        """Patch a pipeline's tasks, environment, and params"""
-       
-        # Get the group
-        group = group_service.get(group_id, request.tenant_id)
-        if group == None:
-            return NotFound(f"No group found with id '{group_id}'")
-
-        # Check that the user belongs to the group
-        if not group_service.user_in_group(request.username, group_id, request.tenant_id):
-            return Forbidden(message="You do not have access to this group")
-        
-        # Get the pipeline by the id provided in the path params
-        pipeline = PipelineModel.objects.filter(
-            id=pipeline_id,
-            group=group
-        ).prefetch_related("tasks").first()
-
-        if pipeline == None:
-            return NotFound(f"Pipeline not found with id '{pipeline_id}'")
-
-        # Validate the request body based on the type of pipeline specified
-        prepared_request = self.prepare(PatchPipelineRequest)
-
-        # Return the failure view instance if validation failed
-        if not prepared_request.is_valid:
-            return prepared_request.failure_view
-
-        # Get the JSON encoded body from the validation result
-        body = prepared_request.body
-
-        # Updates
-        updates = {}
-        if body.tasks != None:
-            updates = {
-                **updates,
-                "tasks": body.tasks
-            }
-
-        if body.env != None:
-            updates = {
-                **updates,
-                "env": body.env
-            }
-
-        if body.params != None:
-            updates = {
-                **updates,
-                "params": body.params
-            }
-
-        if body.description != None:
-            updates = {
-                **updates,
-                "description": body.description
-            }
-
-        if body.disabled != None:
-            if (
-                not (   
-                    group_service.user_in_group(request.username, group_id, request.tenant_id, is_admin=True)
-                    or pipeline.owner == request.username
-                )
-            ):
-                return Forbidden(message="You do not have permission to disabled this pipeline")
-            
-            updates = {
-                **updates,
-                "disabled": body.disabled
-            }
-
-        # Just return 200 if they didn't provide any updates
-        if len(updates) == 0:
-            return BaseResponse(result="Pipeline updated")
-
-        # Updated values provided, update the db
         try:
-            PipelineModel.objects.filter(
+            """Patch a pipeline's tasks, environment, and params"""
+        
+            # Get the group
+            group = group_service.get(group_id, request.tenant_id)
+            if group == None:
+                return NotFound(f"No group found with id '{group_id}'")
+
+            # Check that the user belongs to the group
+            if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+                return Forbidden(message="You do not have access to this group")
+            
+            # Get the pipeline by the id provided in the path params
+            pipeline = PipelineModel.objects.filter(
                 id=pipeline_id,
                 group=group
-            ).update(
-                **updates,
-                updated_at=timezone.now(),
-            )
-        except (DatabaseError, IntegrityError, OperationalError) as e:
-            return ServerError(f"Server Error: {e.__cause__}")
+            ).prefetch_related("tasks").first()
+
+            if pipeline == None:
+                return NotFound(f"Pipeline not found with id '{pipeline_id}'")
+
+            # Validate the request body based on the type of pipeline specified
+            prepared_request = self.prepare(PatchPipelineRequest)
+
+            # Return the failure view instance if validation failed
+            if not prepared_request.is_valid:
+                return prepared_request.failure_view
+
+            # Get the JSON encoded body from the validation result
+            body = prepared_request.body
+
+            # Updates
+            updates = {}
+            if body.tasks != None:
+                updates = {
+                    **updates,
+                    "tasks": body.tasks
+                }
+
+            if body.env != None:
+                updates = {
+                    **updates,
+                    "env": body.env
+                }
+
+            if body.params != None:
+                updates = {
+                    **updates,
+                    "params": body.params
+                }
+
+            if body.description != None:
+                updates = {
+                    **updates,
+                    "description": body.description
+                }
+
+            if body.disabled != None:
+                if (
+                    not (   
+                        group_service.user_in_group(request.username, group_id, request.tenant_id, is_admin=True)
+                        or pipeline.owner == request.username
+                    )
+                ):
+                    return Forbidden(message="You do not have permission to disabled this pipeline")
+                
+                updates = {
+                    **updates,
+                    "disabled": body.disabled
+                }
+
+            # Just return 200 if they didn't provide any updates
+            if len(updates) == 0:
+                return BaseResponse(result="Pipeline updated")
+
+            # Updated values provided, update the db
+            try:
+                PipelineModel.objects.filter(
+                    id=pipeline_id,
+                    group=group
+                ).update(
+                    **updates,
+                    updated_at=timezone.now(),
+                )
+            except (DatabaseError, IntegrityError, OperationalError) as e:
+                return ServerError(f"Server Error: {e.__cause__}")
+            except Exception as e:
+                return ServerError(f"Server Error: {e}")
+            
+            return BaseResponse(result="Pipeline updated")
         except Exception as e:
             return ServerError(f"Server Error: {e}")
-        
-        return BaseResponse(result="Pipeline updated")
 
     def delete(self, request, group_id, pipeline_id, *_, **__):
         # Get the group
