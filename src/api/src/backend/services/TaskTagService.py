@@ -32,6 +32,7 @@ class TaskTagService(Service):
         try:
             # Delete all tags if an empty list is provided
             if len(tags_patch) == 0:
+                print("TYPE OF TASK MODEL", type(task_model))
                 TaskTag.objects.filter(task=task_model).delete()
                 return
         except Exception as e:
