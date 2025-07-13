@@ -70,10 +70,10 @@ class TaskTagService(Service):
         # tags patch list
         for tag in tags_to_delete:
             try:
-                TaskTag.objects.delete(
+                TaskTag.objects.filter(
                     value=tag,
                     task=task_model
-                )
+                ).delete()
             except Exception as e:
                 print(f"Failed to create tag '{tag}' for task '{task_model.id}': {e}")
                 raise e
