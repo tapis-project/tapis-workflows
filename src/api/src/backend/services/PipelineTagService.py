@@ -74,10 +74,10 @@ class PipelineTagService(Service):
         # tags patch list
         for tag in tags_to_delete:
             try:
-                PipelineTag.objects.delete(
+                PipelineTag.objects.filter(
                     value=tag,
                     pipeline=pipeline_model
-                )
+                ).delete()
             except Exception as e:
                 print(f"Failed to create tag '{tag}' for pipeline '{pipeline_model.id}': {e}")
                 raise e
