@@ -222,6 +222,8 @@ class Pipelines(RestrictedAPIView):
                     except Exception as e:
                         return ServerErrorResp(f"Error creating tasks: {e}")
 
+            print("body as a dict", body.dict())
+
             # Updates
             updates = {}
             if body.env != None:
