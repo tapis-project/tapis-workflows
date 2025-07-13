@@ -225,15 +225,17 @@ class Pipelines(RestrictedAPIView):
             # Updates
             updates = {}
             if body.env != None:
+                env = body.dict()["env"],
                 updates = {
                     **updates,
-                    "env": body.env
+                    "env": env
                 }
 
             if body.params != None:
+                params = body.dict()["params"]
                 updates = {
                     **updates,
-                    "params": body.params
+                    "params": params
                 }
 
             if body.description != None:
