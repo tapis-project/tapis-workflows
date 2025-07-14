@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [v1.9.0] - 2024-07-17
+
+### Features
+- Added list all tasks endpoint
+- Added list all pipelines endpoint
+- Added tags to pipelines and tasks
+- Added the following images as task runtimes:
+    * "ghcr.io/tobiashi26/pygeoflood-container:main"
+    * "ghcr.io/icicle-ai/plug-n-play-megadetector-v6b:main"
+
+### Breaking Changes
+Changed the type of the `type` property on the Spec model for inputs and outputs from an enum to a string, enabling custom type definitions
 
 ## [v1.7.0] - 2024-09-17
 
