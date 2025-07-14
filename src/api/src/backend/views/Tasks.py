@@ -11,7 +11,7 @@ from backend.views.http.responses import BaseResponse
 from backend.services.TaskService import service as task_service
 from backend.services.TaskTagService import service as task_tag_service
 from backend.services.GroupService import service as group_service
-from backend.serializers import TaskSerializer, DictFromTaskModel
+from backend.serializers import TaskSerializer, DictFromPydanticTaskModel
 from backend.errors.api import ServerError as APIServerError
 from backend.helpers import resource_url_builder
 from backend.utils import logger
@@ -145,14 +145,11 @@ class Tasks(RestrictedAPIView):
 
             # Resolve the the proper pydantic object for this task type
             TaskSchema = task_service.resolve_request_type(task_model.type)
-            print(type(TaskSchema))
             task = TaskSchema(**{
                 **TaskSerializer.serialize(task_model),
                 **self.request_body
             })
-
-            print(task.model_dump())
-
+            
             # Disallow updating the type property
             if (task_model.type != task.type):
                 return BadRequest(f"Updating the type of a task is not allowed. Expected task.type: {task_model.type} - Recieved: {task.type}")
@@ -160,11 +157,13 @@ class Tasks(RestrictedAPIView):
             Task.objects.filter(
                 pipeline=pipeline,
                 id=task_id
-            ).update(**DictFromTaskModel.convert(task))
+            ).update(**DictFromPydanticTaskModel.convert(task))
 
             # Patch the tags if any provided
             if task.tags != None:
+                print("PYDANTIC TASK TAGS", task.tags)
                 task_tag_service.update_by_task_model(task_model, task.tags)
+                print("After tag update")
 
             updated_task = Task.objects.prefetch_related("tags").filter(id=task.id, pipeline=pipeline).first()
             task_response = TaskSerializer.serialize(updated_task)
