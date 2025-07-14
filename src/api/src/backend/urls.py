@@ -25,6 +25,8 @@ from backend.views.PipelineLocksGetList import PipelineLocksGetList
 from backend.views.PipelineLocksPostDelete import PipelineLocksPostDelete
 from backend.views.Secrets import Secrets
 from backend.views.GroupSecrets import GroupSecrets
+from backend.views.ListAllPipelines import ListAllPipelines
+from backend.views.ListAllTasks import ListAllTasks
 
 
 urlpatterns = [
@@ -41,6 +43,12 @@ urlpatterns = [
     path("secrets", Secrets.as_view(), name="secrets"),
     path("secrets/<str:secret_id>", Secrets.as_view(), name="secret"),
     
+    # All pipelines
+    path("pipelines", ListAllPipelines.as_view(), name="allPipelines"),
+
+    # All tasks
+    path("tasks", ListAllTasks.as_view(), name="allTasks"),
+
     # Groups
     path("groups", Groups.as_view(), name="groups"),
     path("groups/<str:group_id>", Groups.as_view(), name="group"),

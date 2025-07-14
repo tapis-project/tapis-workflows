@@ -153,7 +153,7 @@ class Tasks(RestrictedAPIView):
             # Disallow updating the type property
             if (task_model.type != task.type):
                 return BadRequest(f"Updating the type of a task is not allowed. Expected task.type: {task_model.type} - Recieved: {task.type}")
-
+            
             Task.objects.filter(
                 pipeline=pipeline,
                 id=task_id
@@ -161,9 +161,7 @@ class Tasks(RestrictedAPIView):
 
             # Patch the tags if any provided
             if task.tags != None:
-                print("PYDANTIC TASK TAGS", task.tags)
                 task_tag_service.update_by_task_model(task_model, task.tags)
-                print("After tag update")
 
             updated_task = Task.objects.prefetch_related("tags").filter(id=task.id, pipeline=pipeline).first()
             task_response = TaskSerializer.serialize(updated_task)

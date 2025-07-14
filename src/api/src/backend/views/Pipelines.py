@@ -220,6 +220,7 @@ class Pipelines(RestrictedAPIView):
             body = prepared_request.body
 
             # This endpoint also handles batch task creation
+            # NOTE You cannot update tasks in the endpoint
             if body.tasks != None:
                 for task in body.tasks:
                     try: 
