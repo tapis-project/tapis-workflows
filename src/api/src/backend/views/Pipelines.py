@@ -249,18 +249,18 @@ class Pipelines(RestrictedAPIView):
                     "description": body.description
                 }
 
-            if body.disabled != None:
+            if body.enabled != None:
                 if (
                     not (   
                         group_service.user_in_group(request.username, group_id, request.tenant_id, is_admin=True)
                         or pipeline.owner == request.username
                     )
                 ):
-                    return Forbidden(message="You do not have permission to disabled this pipeline")
+                    return Forbidden(message="You do not have permission to enabled this pipeline")
                 
                 updates = {
                     **updates,
-                    "disabled": body.disabled
+                    "enabled": body.enabled
                 }
 
             if body.tags != None:

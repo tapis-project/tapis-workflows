@@ -810,7 +810,7 @@ class Pipeline(BaseModel):
 
 class PatchPipelineRequest(BaseModel):
     description: Union[str, None] = None
-    disabled: Union[bool, None] = None
+    enabled: Union[bool, None] = None
     tasks: Union[
         List[
             Annotated[

@@ -2637,6 +2637,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
+        tags:
+          type: array
+          items:
+            type: string
 
     PipelineLock:
       type: object
@@ -2754,6 +2758,10 @@ components:
           $ref: "#/components/schemas/Output"
         conditions:
           $ref: "#/components/schemas/ConditionalExpressions"
+        tags:
+          type: array
+          items:
+            type: string
 
     ####### Conditions ##########
     ConditionalExpressions:
@@ -3595,6 +3603,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ReqTask"
+        tags:
+          type: array
+          items:
+            type: string
 
     ReqPipeline:
       type: object
@@ -3626,6 +3638,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ReqTask"
+        tags:
+          type: array
+          items:
+            type: string
+        
 
     ReqBaseTask:
       type: object
@@ -3651,6 +3668,10 @@ components:
           $ref: "#/components/schemas/Output"
         conditions:
           $ref: "#/components/schemas/ConditionalExpressions"
+        tags:
+          type: array
+          items:
+            type: string
 
     ReqImageBuildTask:
       allOf:
