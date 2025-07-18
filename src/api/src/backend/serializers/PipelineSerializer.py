@@ -4,7 +4,7 @@ from backend.serializers.TaskSerializer import TaskSerializer
 
 class PipelineSerializer:
     @staticmethod
-    def serialize(pipeline_model, task_models=None):
+    def serialize(pipeline_model, task_models=None, archive_ids=[]):
         pipeline = {}
         pipeline["id"] = pipeline_model.id
         pipeline["description"] = pipeline_model.description
@@ -25,6 +25,9 @@ class PipelineSerializer:
         }
         pipeline["uuid"] = UUIDSerializer.serialize(pipeline_model.uuid)
 
+        # Add the archive ids
+        pipeline["archive_ids"] = archive_ids
+
         # Serialize the task models
         if task_models != None:
             pipeline["tasks"] = [ TaskSerializer.serialize(t) for t in task_models ]
@@ -39,4 +42,8 @@ class PipelineSerializer:
         if pipeline_model.last_run != None:
             pipeline["last_run"] = UUIDSerializer.serialize(pipeline_model.last_run.uuid)
         
+        pipeline["tags"] = []
+        if getattr(pipeline_model, "tags", None) != None:
+            pipeline["tags"] = [tag.value for tag in pipeline_model.tags.all()]
+
         return pipeline

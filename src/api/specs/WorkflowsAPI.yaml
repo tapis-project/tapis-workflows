@@ -68,21 +68,37 @@ paths:
         '500':
           description: Server error.
 
-  # '/v3/workflows/readycheck':
-  #   get:
-  #     tags:
-  #       - General
-  #     description: Health check.
-  #     operationId: readyCheck
-  #     responses:
-  #       '200':
-  #         description: Message received.
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/RespObject'
-  #       '500':
-  #         description: Server error.
+  '/v3/workflows/tasks':
+    get:
+      tags:
+        - Tasks
+      summary: List all tasks
+      description: |
+        Get a list of all tasks in all pipelines from all groups
+      operationId: listAllTasks
+      responses:
+        '200':
+          description: Tasks found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespTaskList'
+
+  '/v3/workflows/pipelines':
+    get:
+      tags:
+        - Pipelines
+      summary: List all pipelines
+      description: |
+        Get a list of all pipleines from all groups
+      operationId: listAllPipelines
+      responses:
+        '200':
+          description: Pipelines found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespPipelineList'
           
   '/v3/workflows/groups':
     get:
@@ -1534,12 +1550,12 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/ID'
-      # requestBody:
-      #   required: false
-      #   description: Empty JSON object.
-      #   content:
-      #     application/json:
-      #       schema: {}
+      requestBody:
+        required: true
+        description: request body
+        content:
+          application/json:
+            $ref: '#/components/schemas/ReqAddPipelineArchive'
       responses:
         '200':
           description: Archive added
@@ -1725,7 +1741,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RespError'
+                $ref: '#/components/schemas/RespError'  
 
   '/v3/workflows/groups/{group_id}/pipelines/{pipeline_id}':
     get:
@@ -1767,6 +1783,62 @@ paths:
                 $ref: '#/components/schemas/RespError'
         '404':
           description: Pipeline not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+
+    patch:
+      tags:
+        - Pipelines
+      summary: Patch a pipeline
+      description: Update a pipelines properties
+      operationId: patchPipeline
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+        - name: pipeline_id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        description: Pipeline patch.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReqPatchPipeline'
+      responses:
+        '201':
+          description: Pipeline created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespResourceURL'
+        '400':
+          description: Bad request. Invalid JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '401':
+          description: Not authorized. Invalid or Expired Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespError'
+        '403':
+          description: Forbidden.
           content:
             application/json:
               schema:
@@ -2551,6 +2623,11 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/ID'
+        archive_ids:
+          type: array
+          items:
+            type:
+              $ref: "#/components/schemas/ID"
         description:
           $ref: '#/components/schemas/DescriptionString'
         uses:
@@ -2581,6 +2658,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Task'
+        tags:
+          type: array
+          items:
+            type: string
 
     PipelineLock:
       type: object
@@ -2698,6 +2779,10 @@ components:
           $ref: "#/components/schemas/Output"
         conditions:
           $ref: "#/components/schemas/ConditionalExpressions"
+        tags:
+          type: array
+          items:
+            type: string
 
     ####### Conditions ##########
     ConditionalExpressions:
@@ -3174,7 +3259,7 @@ components:
         required:
           type: boolean
         type:
-          $ref: "#/components/schemas/EnumTaskIOType"
+          type: string
 
     Params:
       type: object
@@ -3271,7 +3356,7 @@ components:
         type: object
         properties:
           type:
-            $ref: "#/components/schemas/EnumTaskIOType"
+            type: string
 
     EnvSpec:
       allOf: 
@@ -3524,6 +3609,34 @@ components:
           type: integer
           default: 0
 
+    ReqPatchPipeline:
+      type: object
+      properties:
+        description:
+          $ref: '#/components/schemas/DescriptionString'
+        env:
+          $ref: "#/components/schemas/Env"
+        enabled:
+          type: boolean
+        params:
+          $ref: "#/components/schemas/Params"
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReqTask"
+        tags:
+          type: array
+          items:
+            type: string
+
+    ReqAddPipelineArchive:
+      type: object
+      required:
+        - archive_id
+      properties:
+        archive_id:
+          $ref: '#/components/schemas/ID'
+
     ReqPipeline:
       type: object
       required:
@@ -3554,6 +3667,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ReqTask"
+        tags:
+          type: array
+          items:
+            type: string
+        
 
     ReqBaseTask:
       type: object
@@ -3579,6 +3697,10 @@ components:
           $ref: "#/components/schemas/Output"
         conditions:
           $ref: "#/components/schemas/ConditionalExpressions"
+        tags:
+          type: array
+          items:
+            type: string
 
     ReqImageBuildTask:
       allOf:
@@ -4657,13 +4779,7 @@ components:
         - "huggingface/transformers-pytorch-gpu:latest"
         - "huggingface/transformers-pytorch-gpu:4.29.2"
         - "ghcr.io/tobiashi26/pygeoflood-container:main"
-
-    EnumTaskIOType:
-      type: string
-      enum:
-        - string
-        - number
-        - boolean
+        - "ghcr.io/icicle-ai/plug-n-play-megadetector-v6b:main"
 
     EnumLogicalOperator:
       type: string

@@ -456,6 +456,18 @@ class Pipeline(models.Model):
             )
         ]
 
+class PipelineTag(models.Model):
+    pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE, related_name='tags')
+    value = models.CharField(max_length=128)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["pipeline", "value"],
+                name="pipeline_tag_pipeline_value_id"
+            )
+        ]
+
 class PipelineLock(models.Model):
     pipeline = models.ForeignKey("backend.Pipeline", related_name="pipelinelocks", on_delete=models.CASCADE)
     pipeline_run = models.ForeignKey("backend.PipelineRun", related_name="pipelinelocks", null=True, on_delete=models.CASCADE)
@@ -609,6 +621,17 @@ class Task(models.Model):
     def validate_output(self):
         pass
 
+class TaskTag(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='tags')
+    value = models.CharField(max_length=128)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["task", "value"],
+                name="task_tag_task_value_id"
+            )
+        ]
 
 class TaskExecution(models.Model):
     last_modified = models.DateTimeField(null=True)

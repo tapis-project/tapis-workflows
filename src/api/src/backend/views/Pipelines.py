@@ -1,20 +1,20 @@
-from typing import List
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
-from django.forms import model_to_dict
 from backend.utils import logger
-
+from django.utils import timezone
+from backend.services.TaskService import service as task_service
+from backend.services.PipelineTagService import service as pipeline_tag_service
 from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import (
     Conflict,
     BadRequest,
     NotFound,
     Forbidden,
-    ServerError as ServerErrorResp
+    ServerError as ServerErrorResp,
 )
 from backend.views.http.responses.models import ModelListResponse
 from backend.views.http.responses import BaseResponse, ResourceURLResponse
-from backend.views.http.requests import Pipeline, ImageBuildTask
+from backend.views.http.requests import Pipeline, ImageBuildTask, PatchPipelineRequest
 from backend.views.http.cicd import CIPipeline
 from backend.models import (
     Pipeline as PipelineModel,
@@ -67,8 +67,17 @@ class Pipelines(RestrictedAPIView):
             # Get the pipeline tasks.
             tasks = pipeline.tasks.all()
 
+            # Get the pipeline archive ids
+            archive_ids = [ 
+                archive.id
+                for archive
+                in list(Archive.objects.filter(
+                    pipelines__pipeline=pipeline
+                ))
+            ]
+
             # Convert pipeline and task models into a dict
-            result = PipelineSerializer.serialize(pipeline, tasks)
+            result = PipelineSerializer.serialize(pipeline, tasks, archive_ids)
             
             return BaseResponse(result=result)
         except Exception as e:
@@ -145,6 +154,11 @@ class Pipelines(RestrictedAPIView):
             return BadRequest(message=e.__cause__)
         except Exception as e:
             return ServerErrorResp(f"{e}")
+        
+        try:
+            pipeline_tag_service.batch_create(pipeline, body.tags)
+        except Exception as e:
+            return ServerErrorResp(f"{e}")
 
         # Fetch the archives specified in the request then create relations
         # between them and the pipline
@@ -178,6 +192,111 @@ class Pipelines(RestrictedAPIView):
         fn = getattr(self, PIPELINE_TYPE_MAPPING[body.type])
 
         return fn(request, body, pipeline)
+    
+    def patch(self, request, group_id, pipeline_id):
+        try:
+            """Patch a pipeline's tasks, environment, and params"""
+        
+            # Get the group
+            group = group_service.get(group_id, request.tenant_id)
+            if group == None:
+                return NotFound(f"No group found with id '{group_id}'")
+
+            # Check that the user belongs to the group
+            if not group_service.user_in_group(request.username, group_id, request.tenant_id):
+                return Forbidden(message="You do not have access to this group")
+            
+            # Get the pipeline by the id provided in the path params
+            pipeline = PipelineModel.objects.filter(
+                id=pipeline_id,
+                group=group
+            ).prefetch_related("tasks").first()
+
+            if pipeline == None:
+                return NotFound(f"Pipeline not found with id '{pipeline_id}'")
+
+            # Validate the request body based on the type of pipeline specified
+            prepared_request = self.prepare(PatchPipelineRequest)
+
+            # Return the failure view instance if validation failed
+            if not prepared_request.is_valid:
+                return prepared_request.failure_view
+
+            # Get the JSON encoded body from the validation result
+            body = prepared_request.body
+
+            # This endpoint also handles batch task creation
+            # NOTE You cannot update tasks in the endpoint
+            if body.tasks != None:
+                for task in body.tasks:
+                    try: 
+                        task_service.create(pipeline, task)
+                    except Exception as e:
+                        return ServerErrorResp(f"Error creating tasks: {e}")
+
+            # Updates
+            updates = {}
+            if body.env != None:
+                env = body.dict()["env"]
+                updates = {
+                    **updates,
+                    "env": env
+                }
+
+            if body.params != None:
+                params = body.dict()["params"]
+                updates = {
+                    **updates,
+                    "params": params
+                }
+
+            if body.description != None:
+                updates = {
+                    **updates,
+                    "description": body.description
+                }
+
+            if body.enabled != None:
+                if (
+                    not (   
+                        group_service.user_in_group(request.username, group_id, request.tenant_id, is_admin=True)
+                        or pipeline.owner == request.username
+                    )
+                ):
+                    return Forbidden(message="You do not have permission to enabled this pipeline")
+                
+                updates = {
+                    **updates,
+                    "enabled": body.enabled
+                }
+
+            if body.tags != None:
+                try:
+                    pipeline_tag_service.update_by_pipeline_model(pipeline, list(set(body.tags)))
+                except Exception as e:
+                    return ServerErrorResp(f"Error update pipeline tags: {e}")
+
+            # Just return 200 if they didn't provide any updates
+            if len(updates) == 0:
+                return BaseResponse(result="Pipeline updated")
+
+            # Updated values provided, update the db
+            try:
+                PipelineModel.objects.filter(
+                    id=pipeline_id,
+                    group=group
+                ).update(
+                    **updates,
+                    updated_at=timezone.now(),
+                )
+            except (DatabaseError, IntegrityError, OperationalError) as e:
+                return ServerErrorResp(f"Server Error: {e.__cause__}")
+            except Exception as e:
+                return ServerErrorResp(f"Server Error: {e}")
+            
+            return BaseResponse(result="Pipeline updated")
+        except Exception as e:
+            return ServerErrorResp(f"Server Error: {e}")
 
     def delete(self, request, group_id, pipeline_id, *_, **__):
         # Get the group

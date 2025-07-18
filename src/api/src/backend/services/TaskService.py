@@ -6,7 +6,7 @@ from pydantic import ValidationError, BaseModel
 from django.db import DatabaseError, IntegrityError, OperationalError
 from django.core.exceptions import ValidationError as ModelValidationError
 
-from backend.models import Task, Context, Destination, Identity
+from backend.models import Task, TaskTag, Context, Destination, Identity 
 from backend.models import (
     TASK_TYPE_REQUEST,
     TASK_TYPE_IMAGE_BUILD,
@@ -31,6 +31,7 @@ from backend.views.http.requests import (
     LocalDestination
 )
 from backend.services.CredentialsService import service as credentials_service
+from backend.services.TaskTagService import service as task_tag_service;
 from backend.services.Service import Service
 from backend.errors.api import BadRequestError, ServerError
 
@@ -57,17 +58,17 @@ class TaskService(Service):
     def __init__(self):
         Service.__init__(self)
 
-    def create(self, pipeline, request):
+    def create(self, pipeline, newTask):
         context = None
         destination = None
         try:
-            if request.type == "image_build":
+            if newTask.type == "image_build":
                 # Create the context
-                if request.context != None:
-                    context = self._create_context(request, pipeline)
+                if newTask.context != None:
+                    context = self._create_context(newTask, pipeline)
                 # Create the destination
-                if request.destination != None:
-                    destination = self._create_destination(request, pipeline)
+                if newTask.destination != None:
+                    destination = self._create_destination(newTask, pipeline)
 
         except Exception as e:
             self.rollback()
@@ -75,67 +76,67 @@ class TaskService(Service):
 
         # Convert the input and output to jsonserializable
         _input = {}
-        for key in request.input:
-            _input[key] = request.input[key].dict()
+        for key in newTask.input:
+            _input[key] = newTask.input[key].dict()
 
         output = {}
-        for key in request.output:
-            output[key] = request.output[key].dict()
+        for key in newTask.output:
+            output[key] = newTask.output[key].dict()
 
         # Prepare the uses property
-        uses = getattr(request, "uses", None)
+        uses = getattr(newTask, "uses", None)
         if uses != None:
             uses = uses.dict()
 
         # Create task
         try:
             task = Task.objects.create(
-                auth=getattr(request, "auth", None),
-                builder=getattr(request, "builder", None),
-                cache=getattr(request, "cache", None),
-                code=getattr(request, "code", None),
-                command=getattr(request, "command", None),
+                auth=getattr(newTask, "auth", None),
+                builder=getattr(newTask, "builder", None),
+                cache=getattr(newTask, "cache", None),
+                code=getattr(newTask, "code", None),
+                command=getattr(newTask, "command", None),
                 context=context,
                 conditions=[
                     self._recursive_pydantic_model_to_dict(c) 
-                    for c in getattr(request, "conditions", [])
+                    for c in getattr(newTask, "conditions", [])
                 ],
-                data=getattr(request, "data", None),
-                description=request.description,
+                data=getattr(newTask, "data", None),
+                description=newTask.description,
                 destination=destination,
-                headers=getattr(request, "headers", None),
-                http_method=getattr(request, "http_method", None),
-                # Set to None if the request contains no git repositories, else, set as an array of dicts of git repos
+                headers=getattr(newTask, "headers", None),
+                http_method=getattr(newTask, "http_method", None),
+                # Set to None if the newTask contains no git repositories, else, set as an array of dicts of git repos
                 git_repositories=(
-                    [ dict(item) for item in getattr(request, "git_repositories", []) ]
-                    if getattr(request, "git_repositories") != None
+                    [ dict(item) for item in getattr(newTask, "git_repositories", []) ]
+                    if getattr(newTask, "git_repositories") != None
                     else None
                 ),
-                image=getattr(request, "image", None),
+                image=getattr(newTask, "image", None),
                 input=_input,
-                installer=getattr(request, "installer", None),
-                id=request.id,
+                installer=getattr(newTask, "installer", None),
+                id=newTask.id,
                 output=output,
-                packages=getattr(request, "packages", None),
+                packages=getattr(newTask, "packages", None),
                 pipeline=pipeline,
-                poll=getattr(request, "poll", None),
-                query_params=getattr(request, "query_params", None),
-                runtime=getattr(request, "runtime", None),
-                type=request.type,
-                depends_on=[ dict(item) for item in request.depends_on ],
-                tapis_job_def=getattr(request, "tapis_job_def", None),
-                tapis_actor_id=getattr(request, "tapis_actor_id", None),
+                poll=getattr(newTask, "poll", None),
+                query_params=getattr(newTask, "query_params", None),
+                runtime=getattr(newTask, "runtime", None),
+                type=newTask.type,
+                depends_on=[ dict(item) for item in newTask.depends_on ],
+                tapis_job_def=getattr(newTask, "tapis_job_def", None),
+                tapis_actor_id=getattr(newTask, "tapis_actor_id", None),
                 tapis_actor_message=self._tapis_actor_message_to_str(
-                    getattr(request, "tapis_actor_message", None)
+                    getattr(newTask, "tapis_actor_message", None)
                 ),
-                url=getattr(request, "url", None),
+                url=getattr(newTask, "url", None),
                 uses=uses,
                 # Exection profile
-                flavor=request.execution_profile.flavor,
-                max_exec_time=request.execution_profile.max_exec_time,
-                max_retries=request.execution_profile.max_retries,
-                invocation_mode=request.execution_profile.invocation_mode,
-                retry_policy=request.execution_profile.retry_policy
+                flavor=newTask.execution_profile.flavor,
+                max_exec_time=newTask.execution_profile.max_exec_time,
+                max_retries=newTask.execution_profile.max_retries,
+                invocation_mode=newTask.execution_profile.invocation_mode,
+                retry_policy=newTask.execution_profile.retry_policy
             )
 
             # TODO Calls the validators on the task model
@@ -154,6 +155,17 @@ class TaskService(Service):
             raise e
         except Exception as e:
             print(f"Unexpected Error: {e}", flush=True)
+            self.rollback()
+            raise e
+        
+        try:
+            task_tag_service.batch_create(task, getattr(newTask, "tags", []))
+        except (IntegrityError, OperationalError, DatabaseError) as e:
+            print(f"Failed creating tags for task '{task.id}': {e}", flush=True)
+            self.rollback()
+            raise e
+        except Exception as e:
+            print(f"Unexpected Error when creating tags for task '{task.id}': {e}", flush=True)
             self.rollback()
             raise e
 

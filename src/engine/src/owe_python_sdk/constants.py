@@ -34,6 +34,9 @@ FUNCTION_TASK_RUNTIMES = {
 
         # TACC custom runtime # TODO refactor into a plugin
         "ghcr.io/tobiashi26/pygeoflood-container:main",
+
+        # ICICLE specific # TODO Factor out into a new plugin for ICICILE
+        "ghcr.io/icicle-ai/plug-n-play-megadetector-v6b:main"
     ]
 }
 

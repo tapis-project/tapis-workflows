@@ -1,9 +1,12 @@
 import json
 
-class TaskDTOSerializer:
+class DictFromPydanticTaskModel:
     @staticmethod
-    def serialize(model):
+    def convert(model):
         entity = json.loads(model.json())
+        if entity.get("tags", None) != None:
+            del entity["tags"]
+            
         entity = {
             **entity,
             **entity["execution_profile"]

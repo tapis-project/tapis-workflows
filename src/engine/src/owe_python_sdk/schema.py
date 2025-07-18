@@ -84,6 +84,9 @@ class EnumRuntimeEnvironment(str, Enum, metaclass=_EnumMeta):
 
     # TACC specific # TODO Factor out into a new plugin for TACC
     PyGeoFlood = "ghcr.io/tobiashi26/pygeoflood-container:main"
+
+    # ICICLE specific # TODO Factor out into a new plugin for ICICILE
+    PlugNPlay = "ghcr.io/icicle-ai/plug-n-play-megadetector-v6b:main"
     
 RuntimeEnvironments = [i.value for i in EnumRuntimeEnvironment]
 
@@ -116,20 +119,6 @@ InvocationModes = list(get_args(LiteralInvocationModes))
 class EnumInvocationMode(str, Enum, metaclass=_EnumMeta):
     Async = "async"
     Sync = "sync"
-
-# NOTE FIXME typo -> "mixed_arrray" in the line below
-LiteralTaskIOTypes = Literal["string", "number", "boolean", "string_array", "number_array", "boolean_array", "mixed_arrray", "tapis_file_input", "tapis_file_input_array"]
-TaskIOTypes = list(get_args(LiteralTaskIOTypes))
-class EnumTaskIOTypes(str, Enum, metaclass=_EnumMeta):
-    String = "string"
-    Number = "number"
-    Boolean = "boolean"
-    StringArray = "string_array"
-    NumberArray = "number_array"
-    BooleanArray = "boolean_array"
-    MixedArray = "mixed_array"
-    TapisFileInput = "tapis_file_input"
-    TapisFileInputArray = "tapis_file_input_array"
 
 LiteralTaskInputValueFromKeys = Literal["env", "args", "task_output"]
 TaskInputValueFromKeys = list(get_args(LiteralTaskInputValueFromKeys))
@@ -263,7 +252,7 @@ Value = Union[str, int, float, bool, bytes]
 class Spec(BaseModel):
     description: str = None
     required: bool = False
-    type: EnumTaskIOTypes = EnumTaskIOTypes.String
+    type: str = "string"
 
 class SpecWithValue(Spec):
     value: Value = None
@@ -516,7 +505,7 @@ class TaskDependency(BaseModel):
 # Output -----------------------------------------------------------------
 
 class TaskOutputSpec(BaseModel):
-    type: EnumTaskIOTypes
+    type: str
 
 # ------------------------------------------------------------------------
 
@@ -636,6 +625,7 @@ class BaseTask(BaseModel):
     input: Dict[str, TaskInputSpec] = {}
     output: Dict[str, TaskOutputSpec] = {}
     conditions: ConditionalExpressions = []
+    tags: List[str] = []
 
     class Config:
         arbitrary_types_allowed = True
@@ -795,6 +785,7 @@ class Pipeline(BaseModel):
     archive_ids: List[str] = []
     env: Env = {}
     params: Params = {}
+    tags: List[str] = []
 
     # NOTE This pre validation transformer is for backwards-compatibility
     # Previous pipelines did not have environments or parmas
@@ -816,6 +807,34 @@ class Pipeline(BaseModel):
     
     class Config:
         extra = Extra.allow
+
+class PatchPipelineRequest(BaseModel):
+    description: Union[str, None] = None
+    enabled: Union[bool, None] = None
+    tasks: Union[
+        List[
+            Annotated[
+                Union[
+                    TemplateTask,
+                    ApplicationTask,
+                    ImageBuildTask,
+                    FunctionTask,
+                    RequestTask,
+                    TapisActorTask,
+                    TapisJobTask,
+                ],
+                Field(discriminator="type")
+            ]
+        ],
+        None
+    ] = None
+    env: Union[Env, None] = None
+    params: Union[Params, None] = None
+    tags: Union[List[str], None] = None
+
+    class Config:
+        extra = Extra.allow
+
 
 class PipelineLockRequest(BaseModel):
     expires_in: int = 0

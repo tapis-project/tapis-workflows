@@ -34,24 +34,19 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 LOG_LEVEL = os.environ.get("LOG_LEVEL")
 DEBUG = True if ENV != "PROD" else False
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': True,
-#     'handlers': {
-#         'file': {
-#             'level': LOG_LEVEL,
-#             'class': 'logging.FileHandler',
-#             'filename': f'./logs/{LOG_LEVEL}.logs',
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'handlers': ['file'],
-#             'level': LOG_LEVEL,
-#             'propagate': True,
-#         },
-#     },
-# }
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
 
 # Set allowed hosts by env
 ALLOWED_HOSTS = []
