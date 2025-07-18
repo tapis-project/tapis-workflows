@@ -4,7 +4,7 @@ from backend.serializers.TaskSerializer import TaskSerializer
 
 class PipelineSerializer:
     @staticmethod
-    def serialize(pipeline_model, task_models=None):
+    def serialize(pipeline_model, task_models=None, archive_ids=[]):
         pipeline = {}
         pipeline["id"] = pipeline_model.id
         pipeline["description"] = pipeline_model.description
@@ -24,6 +24,9 @@ class PipelineSerializer:
             "retry_policy": pipeline_model.retry_policy
         }
         pipeline["uuid"] = UUIDSerializer.serialize(pipeline_model.uuid)
+
+        # Add the archive ids
+        pipeline["archive_ids"] = archive_ids
 
         # Serialize the task models
         if task_models != None:

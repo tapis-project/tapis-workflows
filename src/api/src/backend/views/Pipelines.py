@@ -1,7 +1,5 @@
-from typing import List
 from pydantic import ValidationError
 from django.db import DatabaseError, IntegrityError, OperationalError
-from django.forms import model_to_dict
 from backend.utils import logger
 from django.utils import timezone
 from backend.services.TaskService import service as task_service
@@ -20,7 +18,6 @@ from backend.views.http.requests import Pipeline, ImageBuildTask, PatchPipelineR
 from backend.views.http.cicd import CIPipeline
 from backend.models import (
     Pipeline as PipelineModel,
-    Task as TaskModel,
     Archive,
     PipelineArchive,
     TASK_TYPE_IMAGE_BUILD
@@ -70,8 +67,13 @@ class Pipelines(RestrictedAPIView):
             # Get the pipeline tasks.
             tasks = pipeline.tasks.all()
 
+            # Get the pipeline archive ids
+            archive_ids = Archive.objects.filter(
+                pipelines__pipeline=pipeline
+            ).values_list("id", flat=True)
+
             # Convert pipeline and task models into a dict
-            result = PipelineSerializer.serialize(pipeline, tasks)
+            result = PipelineSerializer.serialize(pipeline, tasks, archive_ids)
             
             return BaseResponse(result=result)
         except Exception as e:

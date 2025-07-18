@@ -1550,12 +1550,12 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/ID'
-      # requestBody:
-      #   required: false
-      #   description: Empty JSON object.
-      #   content:
-      #     application/json:
-      #       schema: {}
+      requestBody:
+        required: true
+        description: request body
+        content:
+          application/json:
+            $ref: '#/components/schemas/ReqAddPipelineArchive'
       responses:
         '200':
           description: Archive added
@@ -2623,6 +2623,11 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/ID'
+        archive_ids:
+          type: array
+          items:
+            type:
+              $ref: "#/components/schemas/ID"
         description:
           $ref: '#/components/schemas/DescriptionString'
         uses:
@@ -3623,6 +3628,14 @@ components:
           type: array
           items:
             type: string
+
+    ReqAddPipelineArchive:
+      type: object
+      required:
+        - archive_id
+      properties:
+        archive_id:
+          $ref: '#/components/schemas/ID'
 
     ReqPipeline:
       type: object
