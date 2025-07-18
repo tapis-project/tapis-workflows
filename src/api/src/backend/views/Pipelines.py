@@ -68,9 +68,13 @@ class Pipelines(RestrictedAPIView):
             tasks = pipeline.tasks.all()
 
             # Get the pipeline archive ids
-            archive_ids = Archive.objects.filter(
-                pipelines__pipeline=pipeline
-            ).values_list("id", flat=True)
+            archive_ids = [ 
+                archive.id
+                for archive
+                in list(Archive.objects.filter(
+                    pipelines__pipeline=pipeline
+                ))
+            ]
 
             # Convert pipeline and task models into a dict
             result = PipelineSerializer.serialize(pipeline, tasks, archive_ids)
