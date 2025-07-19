@@ -43,7 +43,7 @@ class TapisSystemArchiver(EventHandler):
             #     _x_tapis_user=archive.owner
             # )
 
-            client = new_tapis_client(args.get("X-Tapis-Token").decode('utf-8'))
+            client = new_tapis_client(args.get("X-Tapis-Token").value.decode("utf8"))
             perms = client.systems.getUserPerms(
                 systemId=archive.system_id,
                 userName=archive.owner
