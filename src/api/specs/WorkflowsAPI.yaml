@@ -1555,7 +1555,8 @@ paths:
         description: request body
         content:
           application/json:
-            $ref: '#/components/schemas/ReqAddPipelineArchive'
+            schmea:
+              $ref: '#/components/schemas/ReqAddPipelineArchive'
       responses:
         '200':
           description: Archive added
