@@ -15,6 +15,4 @@ def new_tapis_client(jwt: str) -> Tapis:
         jwt=jwt
     )
 
-    client.get_tokens()
-
     return client
