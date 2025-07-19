@@ -4,7 +4,7 @@ from tapipy.errors import InvalidInputError
 
 from owe_python_sdk.events import Event, EventHandler
 from owe_python_sdk.events.types import PIPELINE_COMPLETED, PIPELINE_TERMINATED, PIPELINE_FAILED
-from contrib.tapis.helpers import TapisServiceAPIGateway
+from contrib.tapis.helpers import TapisServiceAPIGateway, new_tapis_client
 from conf.constants import BASE_WORK_DIR
 from errors.archives import ArchiveError
 from utils import trunc_uuid
@@ -33,14 +33,20 @@ class TapisSystemArchiver(EventHandler):
 
     def archive(self, archive, pipeline, args, logger):
         try:
-            tapis_service_api_gateway = TapisServiceAPIGateway()
-            service_client = tapis_service_api_gateway.get_client()
+            # tapis_service_api_gateway = TapisServiceAPIGateway()
+            # service_client = tapis_service_api_gateway.get_client()
 
-            perms = service_client.systems.getUserPerms(
+            # perms = service_client.systems.getUserPerms(
+            #     systemId=archive.system_id,
+            #     userName=archive.owner,
+            #     _x_tapis_tenant=args.get("tapis_tenant_id").value,
+            #     _x_tapis_user=archive.owner
+            # )
+
+            client = new_tapis_client(args.get("X-Tapis-Token"))
+            perms = client.systems.getUserPerms(
                 systemId=archive.system_id,
-                userName=archive.owner,
-                _x_tapis_tenant=args.get("tapis_tenant_id").value,
-                _x_tapis_user=archive.owner
+                userName=archive.owner
             )
         except InvalidInputError as e:
             raise ArchiveError(f"System '{archive.system_id}' does not exist or you do not have access to it – {e}")
@@ -66,11 +72,18 @@ class TapisSystemArchiver(EventHandler):
 
             # Create the directories on the system (like an mkdir -p)
             try:
-                service_client.files.mkdir(
+                # service_client.files.mkdir(
+                #     systemId=archive.system_id,
+                #     path=archive_output_dir,
+                #     _x_tapis_tenant=args.get("tapis_tenant_id").value,
+                #     _x_tapis_user=archive.owner
+                # )
+
+                client.files.mkdir(
                     systemId=archive.system_id,
                     path=archive_output_dir,
-                    _x_tapis_tenant=args.get("tapis_tenant_id").value,
-                    _x_tapis_user=archive.owner
+                    # _x_tapis_tenant=args.get("tapis_tenant_id").value,
+                    # _x_tapis_user=archive.owner
                 )
             except Exception as e:
                 logger.error(e)
@@ -86,12 +99,17 @@ class TapisSystemArchiver(EventHandler):
                     # Upload the files to the system
                     try:
                         with open(path_to_file, "rb") as blob:
-                            service_client.files.insert(
+                            # service_client.files.insert(
+                            #     systemId=archive.system_id,
+                            #     path=os.path.join(archive_output_dir, filename),
+                            #     file=blob,
+                            #     _x_tapis_tenant=args.get("tapis_tenant_id").value,
+                            #     _x_tapis_user=archive.owner
+                            # )
+                            client.files.insert(
                                 systemId=archive.system_id,
                                 path=os.path.join(archive_output_dir, filename),
-                                file=blob,
-                                _x_tapis_tenant=args.get("tapis_tenant_id").value,
-                                _x_tapis_user=archive.owner
+                                file=blob
                             )
                         logger.info(f"[PIPELINE] {pipeline.id} [ARCHIVED] {filename}")
                     except Exception as e:

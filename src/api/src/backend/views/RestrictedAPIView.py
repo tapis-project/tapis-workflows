@@ -77,6 +77,7 @@ class RestrictedAPIView(View):
 
         # Authenticate the user and get the account
         jwt = request.META[DJANGO_TAPIS_TOKEN_HEADER]
+        request.x_tapis_token = jwt
         request.authenticated = self.tapis_api_gateway.authenticate(
             {"jwt": jwt},
             auth_method="jwt"
