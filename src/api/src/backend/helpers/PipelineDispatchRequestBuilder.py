@@ -73,7 +73,7 @@ class PipelineDispatchRequestBuilder:
             },
             "X-Tapis-Token": {
                 "value": x_tapis_token
-            } 
+            },
             **req_args
         }
 
