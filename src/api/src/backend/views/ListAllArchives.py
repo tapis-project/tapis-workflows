@@ -3,7 +3,7 @@ from backend.views.RestrictedAPIView import RestrictedAPIView
 from backend.views.http.responses.errors import (
     ServerError as ServerErrorResp,
 )
-from backend.models import Group, GroupUser, Archive
+from backend.models import GroupUser, Archive
 from backend.views.http.responses.models import ModelListResponse
 
 class ListAllArchives(RestrictedAPIView):
