@@ -59,7 +59,8 @@ class RunPipeline(RestrictedAPIView):
                 group,
                 pipeline,
                 directives=body.directives,
-                args=body.args
+                args=body.args,
+                x_tapis_token=request.x_tapis_token
             )
             
             # Dispatch the request

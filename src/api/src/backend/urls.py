@@ -27,6 +27,7 @@ from backend.views.Secrets import Secrets
 from backend.views.GroupSecrets import GroupSecrets
 from backend.views.ListAllPipelines import ListAllPipelines
 from backend.views.ListAllTasks import ListAllTasks
+from backend.views.ListAllArchives import ListAllArchives
 
 
 urlpatterns = [
@@ -42,6 +43,9 @@ urlpatterns = [
     # Secrets
     path("secrets", Secrets.as_view(), name="secrets"),
     path("secrets/<str:secret_id>", Secrets.as_view(), name="secret"),
+
+    # All archives
+    path("archives", ListAllArchives.as_view(), name="allArchives"),
     
     # All pipelines
     path("pipelines", ListAllPipelines.as_view(), name="allPipelines"),

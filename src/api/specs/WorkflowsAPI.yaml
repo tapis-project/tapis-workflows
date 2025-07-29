@@ -83,6 +83,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RespTaskList'
+  
+  '/v3/workflows/archives':
+    get:
+      tags:
+        - Archives
+      summary: List all archives
+      description: |
+        Get a list of all archives from all groups
+      operationId: listAllArchives
+      responses:
+        '200':
+          description: Archives found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespArchiveList'
 
   '/v3/workflows/pipelines':
     get:
@@ -1555,7 +1571,8 @@ paths:
         description: request body
         content:
           application/json:
-            $ref: '#/components/schemas/ReqAddPipelineArchive'
+            schema:
+              $ref: '#/components/schemas/ReqAddPipelineArchive'
       responses:
         '200':
           description: Archive added
@@ -1583,6 +1600,13 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        description: request body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReqAddPipelineArchive'
       responses:
         '200':
           description: Archive added
@@ -2626,8 +2650,7 @@ components:
         archive_ids:
           type: array
           items:
-            type:
-              $ref: "#/components/schemas/ID"
+            type: string
         description:
           $ref: '#/components/schemas/DescriptionString'
         uses:
@@ -3630,6 +3653,14 @@ components:
             type: string
 
     ReqAddPipelineArchive:
+      type: object
+      required:
+        - archive_id
+      properties:
+        archive_id:
+          $ref: '#/components/schemas/ID'
+
+    ReqRemovePipelineArchive:
       type: object
       required:
         - archive_id

@@ -1,6 +1,5 @@
 from uuid import uuid4
 from django.forms import model_to_dict
-
 from backend.conf.constants import WORKFLOW_EXECUTOR_ACCESS_TOKEN
 from backend.serializers import TaskSerializer, PipelineSerializer
 
@@ -19,7 +18,8 @@ class PipelineDispatchRequestBuilder:
         commit=None,
         directives=None,
         pipeline_run=None,
-        args={}
+        args={},
+        x_tapis_token=None,
     ):
         # Get the pipeline tasks, their contexts, destinations, and respective
         # credentials and generate a piplines_service_request
@@ -70,6 +70,9 @@ class PipelineDispatchRequestBuilder:
             },
             "tapis_workflows_group_id": {
                 "value": group.id
+            },
+            "X-Tapis-Token": {
+                "value": x_tapis_token
             },
             **req_args
         }
