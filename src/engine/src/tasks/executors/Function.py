@@ -91,7 +91,7 @@ class Function(TaskExecutor):
                                     )
                                 ],
                                 env=container_details.env,
-                                resources=flavor_to_k8s_resource_reqs(get_flavor("c1sml"))
+                                resources=flavor_to_k8s_resource_reqs(get_flavor(self.task.flavor))
                             )
                         ],
                         restart_policy="Never",
