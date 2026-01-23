@@ -118,7 +118,7 @@ class Function(TaskExecutor):
             # Register the job to be deleted after execution
             self._register_resource(JobResource(job=job))
         except Exception as e:
-            self.ctx.logger.error(e)
+            self.ctx.logger.error(f"Error creating namespaced job: {e}")
             return self._task_result(1, errors=[e])
 
         try:
@@ -130,12 +130,13 @@ class Function(TaskExecutor):
                     return self._task_result(2, errors=["Workflow Terminated"])
 
                 job = self.batch_v1_api.read_namespaced_job(
-                    job.metadata.name, KUBERNETES_NAMESPACE
+                    job.metadata.name,
+                    KUBERNETES_NAMESPACE
                 )
 
                 time.sleep(self.polling_interval)
         except Exception as e:
-            self.ctx.logger.error(str(e))
+            self.ctx.logger.error(f"Error poling namespaced job: {e}")
             self._stderr(str(e), "w")
             return self._task_result(1, errors=[e])
 
