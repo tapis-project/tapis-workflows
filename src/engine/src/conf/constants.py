@@ -61,6 +61,8 @@ except Exception:
 
 KUBERNETES_NAMESPACE = os.environ.get("K8S_JOBS_NAMESPACE", k8s_namespace)
 
+print("KUBERNETES_NAMESPACE", KUBERNETES_NAMESPACE)
+
 WORKFLOW_NFS_SERVER = os.environ.get("WORKFLOW_NFS_SERVER")
 
 # Polling intervals in seconds
