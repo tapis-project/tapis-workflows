@@ -37,8 +37,6 @@ BASE_WORK_DIR = "/var/lib/open-workflow-engine/"
 
 LOG_FILE = BASE_DIR + "logs/service.log"
 
-LOG_LEVEL = os.environ.get("LOG_LEVEL", None)
-
 BROKER_USER = os.environ.get("BROKER_USER", None)
 BROKER_PASSWORD = os.environ.get("BROKER_PASSWORD", None)
 BROKER_HOST = os.environ.get("BROKER_URL", None)
@@ -57,9 +55,13 @@ BACKEND_URL = f"db+mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}
 
 # Read the kubernetes namespace from the serviceaccount namespace directly
 try:
-    KUBERNETES_NAMESPACE = open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read()
+    k8s_namespace = open("/var/run/secrets/kubernetes.io/serviceaccount/namespace").read()
 except Exception:
-    KUBERNETES_NAMESPACE = "default"
+    k8s_namespace = "default"
+
+KUBERNETES_NAMESPACE = os.environ.get("K8S_JOBS_NAMESPACE", k8s_namespace)
+
+print("KUBERNETES_NAMESPACE", KUBERNETES_NAMESPACE)
 
 WORKFLOW_NFS_SERVER = os.environ.get("WORKFLOW_NFS_SERVER")
 
