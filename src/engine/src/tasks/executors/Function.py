@@ -108,16 +108,12 @@ class Function(TaskExecutor):
                 )
             )
         )
-
-        print("V1Job", body)
         
         try:
             job = self.batch_v1_api.create_namespaced_job(
                 namespace=KUBERNETES_NAMESPACE,
                 body=body
             )
-
-            print("job", body)
 
             # Register the job to be deleted after execution
             self._register_resource(JobResource(job=job))
