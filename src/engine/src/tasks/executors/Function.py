@@ -130,7 +130,8 @@ class Function(TaskExecutor):
                     return self._task_result(2, errors=["Workflow Terminated"])
 
                 job = self.batch_v1_api.read_namespaced_job(
-                    job.metadata.name, KUBERNETES_NAMESPACE
+                    job.metadata.name,
+                    KUBERNETES_NAMESPACE
                 )
 
                 time.sleep(self.polling_interval)
