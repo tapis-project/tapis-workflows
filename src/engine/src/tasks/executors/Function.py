@@ -135,7 +135,7 @@ class Function(TaskExecutor):
 
                 time.sleep(self.polling_interval)
         except Exception as e:
-            self.ctx.logger.error(str(e))
+            self.ctx.logger.error(f"Error poling namespaced job: {e}")
             self._stderr(str(e), "w")
             return self._task_result(1, errors=[e])
 
