@@ -108,6 +108,8 @@ class Function(TaskExecutor):
                 )
             )
         )
+
+        print("V1Job", body)
         
         try:
             job = self.batch_v1_api.create_namespaced_job(
@@ -115,10 +117,12 @@ class Function(TaskExecutor):
                 body=body
             )
 
+            print("job", body)
+
             # Register the job to be deleted after execution
             self._register_resource(JobResource(job=job))
         except Exception as e:
-            self.ctx.logger.error(e)
+            self.ctx.logger.error(f"Error creating namespaced job: {e}")
             return self._task_result(1, errors=[e])
 
         try:
