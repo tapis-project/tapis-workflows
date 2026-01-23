@@ -105,15 +105,13 @@ class TaskExecutor(EventPublisher):
                 # Jobs and Job Pods
                 if resource.type == ResourceType.job:
                     try:
-                        print("Deleting namespaced job")
                         self.batch_v1_api.delete_namespaced_job(
                             name=resource.job.metadata.name,
                             namespace=KUBERNETES_NAMESPACE,
                             body=client.V1DeleteOptions(propagation_policy="Background"),
                         )
-                        print("Namespaced Job deleted")
                     except Exception as e:
-                        print(f"Error deleting namepsaced job: {e}")
+                        print(f"Error deleting namepsaced job {resource.job.metadata.name}:{e}")
                     continue
 
                 # ConfigMaps
